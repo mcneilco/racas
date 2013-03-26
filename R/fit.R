@@ -11,7 +11,7 @@ fit <- function(dataSet, formula = RESPONSE ~ DOSE, drcFunction = LL.4, paramNam
   return(drcObj)
 }
 drcObject.getKeyValues <- function(drcObj = drcObject) {
-  #Get calculated values (non-fixed parameters)
+  #Get calculated values (only non-fixed parameters)
   fitValues <- as.data.frame(drcObj$parmMat)
   row.names(fitValues) <- drcObj$fct$names
   fixedValues <- as.data.frame(drcObj$fct$fixed)
