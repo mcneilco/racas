@@ -1,0 +1,9 @@
+Package: racas
+Type: Package
+Title: R Package for ACAS
+Version: 0.1
+Date: 2013-03-26
+Author: Brian Bolt
+Maintainer: Brian Bolt <brian@mcneilco.com>
+Description: R Package for ACAS
+License: What license is it under?
