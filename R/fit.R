@@ -115,7 +115,7 @@ fitParams.getOperatorParams <- function(fixedValues) {
 }
 
 fitParams.getAboveMaxTestedParams <- function(drData = data$rawPoints, curveID = "curve_id", fixedValues = data$fitParams) {
-  #Function to remove IC50 if above the max concentration tested
+  #Function to remove IC50 if above max concentration tested
   IC50AboveMaxTested <- function(id) {
     returnValues <- subset(fixedValues,FALSE)
     if(length(fixedValues$resultvalue[fixedValues$curveid==id]) > 0) {
