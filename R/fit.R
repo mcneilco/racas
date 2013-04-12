@@ -10,6 +10,7 @@ fit <- function(dataSet, formula = RESPONSE ~ DOSE, drcFunction = LL.4, paramNam
            })
   return(drcObj)
 }
+
 drcObject.getKeyValues <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fitValues <- as.data.frame(drcObj$parmMat)
@@ -23,6 +24,7 @@ drcObject.getKeyValues <- function(drcObj = drcObject) {
   keyValues <- as.data.table(t(keyValues))
   return(keyValues)
 }
+
 drcList.getKeyValues.as.dataFrame <- function(drcList = drcObjectList) {
   keyValueMatrix <- t(sapply(drcList, drcObject.getKeyValues.as.dataFrame))
   mode(keyValueMatrix) <- "numeric"
