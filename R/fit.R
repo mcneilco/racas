@@ -11,6 +11,13 @@ fit <- function(dataSet, formula = RESPONSE ~ DOSE, drcFunction = LL.4, paramNam
   return(drcObj)
 }
 
+fitExperiment <- function() {
+  cat("Hello")
+  
+  
+}
+
+
 drcObject.getKeyValues <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fitValues <- as.data.frame(drcObj$parmMat)
