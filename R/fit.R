@@ -12,6 +12,7 @@ getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = c("
   return(drcObj)
 }
 
+<<<<<<< HEAD
 getCurveData <- function(curveids) {
   
   points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""))
@@ -49,6 +50,12 @@ getCurveData <- function(curveids) {
     points = points,
     parameters = parameters
   ))
+=======
+fitExperiment <- function() {
+  cat("Hello")
+  
+  
+>>>>>>> 272e261bd7674d7304c67d992b2cb842f8eeb8db
 }
 
 
