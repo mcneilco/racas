@@ -7,4 +7,10 @@ Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
-Imports: drc, data.table, RJSONIO, drc, RPostgreSQL
+Imports: 
+      drc, 
+    data.table, 
+    rjson, 
+    RCurl,
+    drc, 
+    RPostgreSQL

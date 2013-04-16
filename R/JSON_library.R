@@ -2,8 +2,6 @@
 ## example R code to interact with LabSynch JSON services
 
 options(scipen=99)
-require(RCurl)
-require(rjson)
 
 #lsServerURL <- "http://localhost:8080/labseer/"
 #lsServerURL <- "http://host3.labsynch.com:8080/acas/"
