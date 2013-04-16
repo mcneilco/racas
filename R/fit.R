@@ -15,13 +15,14 @@ getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = c("
 getCurveData <- function(curveids) {
   
   points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""))
+  names(points) <- tolower(names(points))
   
-  points <- data.frame(	curveid = as.factor(points$curveid),
-                        dose = as.numeric(points$dose), 
-                        doseUnits = as.factor(points$doseunits), 
-                        response = as.numeric(points$response),
-                        responseUnits = as.factor(points$responseunits),
-                        flag = as.factor(points$flag)
+  points <- data.frame(  curveid = as.factor(points$curveid),
+                         dose = as.numeric(points$dose), 
+                         doseUnits = as.factor(points$doseunits), 
+                         response = as.numeric(points$response),
+                         responseUnits = as.factor(points$responseunits),
+                         flag = as.factor(points$flag)
   )
   
   if(nrow(points) > 0) {
@@ -50,7 +51,6 @@ getCurveData <- function(curveids) {
     parameters = parameters
   ))
 }
-
 
 drcObject.getKeyValues <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
