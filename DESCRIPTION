@@ -8,9 +8,12 @@ Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
 Imports: 
-      drc, 
+    drc, 
     data.table, 
     rjson, 
     RCurl,
-    drc, 
-    RPostgreSQL
+    drc
+Suggests:
+  RPostgreSQL,
+  ROracle,
+  RMySQL
