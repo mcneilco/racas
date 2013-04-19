@@ -1,5 +1,5 @@
 require(drc)
-getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = c("SLOPE","MIN","MAX","EC50"), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
+getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
   fct <- drcFunction(fixed=fixedValues, names=paramNames)
   drcObj <- NULL
   tryCatch({

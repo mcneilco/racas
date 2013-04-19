@@ -16,4 +16,5 @@ Imports:
 Suggests:
   RPostgreSQL,
   ROracle,
-  RMySQL
+  RMySQL,
+  RJDBC
