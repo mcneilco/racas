@@ -8,3 +8,16 @@ applicationSettings <- data.frame(
   db_port = "5432",               #ACAS Port Number
   stringsAsFactors = FALSE
 )
+
+readConfigFile <- function(configLocation) {
+  #This function reads a config file and sets the applicationSettings
+  configFile <- readLines(configLocation)
+  configurations <- configFile[grepl("^SeuratAddOns\\.configuration\\.",configFile)]
+  configList <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\2", configurations)
+  applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)))
+  names(applicationSettings) <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\1", configurations)
+  if (!is.null(applicationSettings$db_driver_package)) {
+    eval(parse(text = applicationSettings$db_driver_package))
+  }
+  assignInNamespace("applicationSettings",applicationSettings, ns="racas")
+}
