@@ -14,7 +14,7 @@ readConfigFile <- function(configLocation) {
   configFile <- readLines(configLocation)
   configurations <- configFile[grepl("^SeuratAddOns\\.configuration\\.",configFile)]
   configList <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\2", configurations)
-  applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)))
+  applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)), stringsAsFactors=FALSE)
   names(applicationSettings) <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\1", configurations)
   if (!is.null(applicationSettings$db_driver_package)) {
     eval(parse(text = applicationSettings$db_driver_package))
