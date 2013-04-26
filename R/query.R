@@ -9,7 +9,7 @@ errorHandler <- function(ex, conn, driver) {
     return(NULL)
   }
 }
-query <- function(qu, globalConnect=FALSE) {
+query <- function(qu, globalConnect=FALSE, ...) {
   if(!globalConnect) {
     conn <- getDabaseConnection()
   }
