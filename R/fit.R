@@ -14,7 +14,7 @@ getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
 
 getCurveData <- function(curveids) {
   
-  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""))
+  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""), globalConnect=TRUE)
   names(points) <- tolower(names(points))
   
   points <- data.frame(  curveid = as.factor(points$curveid),
@@ -32,7 +32,7 @@ getCurveData <- function(curveids) {
   }
   parameters <- query(paste("SELECT curveid, min, fittedmin, max, fittedmax, hillslope as hill,fittedhillslope, ec50, fittedec50, ec50operator as operator, b.tested_lot
 								FROM api_curve_params a join api_analysis_group_results b on a.curveid=b.string_value
-								WHERE curveid in (",sqliz(curveids),")"))
+								WHERE curveid in (",sqliz(curveids),")"), globalConnect=TRUE)
   names(parameters) <- tolower(names(parameters))
   parameters <- data.frame(curveid = as.factor(parameters$curveid),
                            min = as.numeric(parameters$min), 
