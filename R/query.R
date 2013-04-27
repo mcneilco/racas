@@ -1,27 +1,46 @@
-errorHandler <- function(ex, conn, driver) {
-  if(class(conn)=="character") {
-    if(conn==class(driver)) {
-      print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$db_driver '",parse(text = racas::applicationSettings$db_driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
-      return(NULL)
-    }
-  } else{
-    print(ex)
-    return(NULL)
-  }
-}
+#' Query the application data server.
+#'
+#' This function queries the acas databse specified in the variable \code{\link{applicationSettings}} and
+#' returns the result as a data.frame
+#'
+#' @param qu a sql query character string
+#' @param globalConnect should the query assume a global conn variable and return one to the global namespace?
+#' @param ... expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}
+#' @return A data frame result from the query
+#' @keywords query
+#' @export
+#' @examples
+#' result <- query("select * from api_curve_params")
+#' # conn
+#' # Error: object 'conn' not found
+#' result <- query("select * from api_curve_params", globalConnect=TRUE)
+#' # conn
+#' # <PostgreSQLConnection:(96699,1)> 
+#' 
+#' # The globalConnect option:
+#' # The first query using the global connect option will create a conn varable in the global namespace
+#' system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
+#' # user  system elapsed 
+#' # 0.010   0.002   0.784 
+#' # The second query will use this global variable instead of opening a new connection, which makes subsequent queryies faster
+#' # If the connection is expired or closes, the globalConnect option will create a new connection
+#' system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
+#' # user  system elapsed 
+#' # 0.007   0.001   0.468 
+#' 
 query <- function(qu, globalConnect=FALSE, ...) {
   if(!globalConnect) {
     conn <- getDabaseConnection()
   }
   result <- tryCatch({
-    result <- DBI::dbGetQuery(conn,qu)
+    result <- DBI::dbGetQuery(conn,qu, ...)
     return(result)
   },
   error = function(ex) {
     if(globalConnect) {
       conn <<- getDabaseConnection()
       tryCatch({
-        result <- DBI::dbGetQuery(conn,qu)
+        result <- DBI::dbGetQuery(conn,qu, ...)
         return(result)
       },
       error = function(ex) {
@@ -32,7 +51,7 @@ query <- function(qu, globalConnect=FALSE, ...) {
     }
   }, finally = {
     if(!globalConnect) {
-      DBI::dbDisconnect(conn)
+      DBI::dbDisconnect(conn, ...)
     }
   })
   return(result)
@@ -57,4 +76,15 @@ getDabaseConnection <- function() {
                  class(driver)
   )
   return(conn)
+}
+errorHandler <- function(ex, conn, driver) {
+  if(class(conn)=="character") {
+    if(conn==class(driver)) {
+      print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$db_driver '",parse(text = racas::applicationSettings$db_driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
+      return(NULL)
+    }
+  } else{
+    print(ex)
+    return(NULL)
+  }
 }

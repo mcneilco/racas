@@ -1,0 +1,44 @@
+\name{readConfigFile}
+\alias{readConfigFile}
+\title{Query the application data server.}
+\usage{
+  readConfigFile(configLocation)
+}
+\arguments{
+  \item{qu}{a sql query character string}
+
+  \item{globalConnect}{should the query assume a global
+  conn variable and return one to the global namespace?}
+
+  \item{...}{expressions fed to \code{\link{dbGetQuery}} or
+  \code{\link{dbDisconnect}}}
+}
+\value{
+  A data frame result from the query
+}
+\description{
+  This function queries the acas databse specified in the
+  variable \code{\link{applicationSettings}} and returns
+  the result as a data.frame
+}
+\examples{
+result <- query("select * from api_curve_params")
+# conn
+# Error: object 'conn' not found
+result <- query("select * from api_curve_params", globalConnect=TRUE)
+# conn
+# <PostgreSQLConnection:(96699,1)>
+
+# The globalConnect option:
+# The first query using the global connect option will create a conn varable in the global namespace
+system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
+# user  system elapsed
+# 0.010   0.002   0.784
+# The second query will use this global variable instead of opening a new connection, which makes subsequent queryies faster
+# If the connection is expired or closes, the globalConnect option will create a new connection
+system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
+# user  system elapsed
+# 0.007   0.001   0.468
+}
+\keyword{query}
+
