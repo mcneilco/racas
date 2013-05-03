@@ -29,19 +29,32 @@
 #' # 0.007   0.001   0.468 
 #' 
 query <- function(qu, globalConnect=FALSE, ...) {
+  isUpdate <- grepl("^UPDATE",toupper(sub("^\\s+", "", qu)))
   if(!globalConnect) {
     conn <- getDabaseConnection()
+    jdbcConn <- class(conn)=="JDBCConnection"
   }
   result <- tryCatch({
-    result <- DBI::dbGetQuery(conn,qu, ...)
-    return(result)
+    if(isUpdate && jdbcConn) {
+      result <- RJDBC::dbSendUpdate(conn, qu, ...)
+      return(TRUE)
+    } else {
+      result <- DBI::dbGetQuery(conn,qu, ...)
+      return(result)
+    }
   },
   error = function(ex) {
     if(globalConnect) {
       conn <<- getDabaseConnection()
+      jdbcConn <- class(conn)=="JDBCConnection"
       tryCatch({
-        result <- DBI::dbGetQuery(conn,qu, ...)
-        return(result)
+        if(isUpdate && jdbcConn) {
+          result <- RJDBC::dbSendUpdate(conn, qu, ..)
+          return(TRUE)
+        } else {
+         result <- DBI::dbGetQuery(conn,qu, ...)
+          return(result)
+        }
       },
       error = function(ex) {
         errorHandler(ex, conn, driver)
