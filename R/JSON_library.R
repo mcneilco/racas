@@ -336,9 +336,10 @@ createLsState <- function(lsValues=NULL, recordedBy="userName", stateType="state
 	)
 	return(LsState)
 }
-createProtocolState <- function(protocolValues=NULL, recordedBy="userName", stateType="stateType", 
+createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", stateType="stateType", 
 									stateKind="stateKind", comments="", lsTransaction=NULL){
 	protocolState = list(
+    protocol=protocol,
 		protocolValues=protocolValues,
 	  	recordedBy=recordedBy,
 	    stateType=stateType,
@@ -452,7 +453,8 @@ createStateValue <- function(valueType="valueType", valueKind="valueKind", strin
                              dateValue=NULL, clobValue=NULL, blobValue=NULL, valueOperator=NULL, numericValue=NULL,
                              sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, comments=NULL, 
-                             lsTransaction=NULL, thingIdValue=NULL, codeValue=NULL,    
+                             lsTransaction=NULL, thingIdValue=NULL, codeValue=NULL,  
+                             entityState=NULL,
                              protocolState=NULL,
                              experimentState=NULL,
                              analysisGroupState=NULL,
@@ -462,6 +464,7 @@ createStateValue <- function(valueType="valueType", valueKind="valueKind", strin
                              containerContainerItxState=NULL,
                              subjectContainerItxState=NULL){
 	stateValue = list(
+    entityState=entityState,
     protocolState=protocolState,
     experimentState=experimentState,
     analysisGroupState=analysisGroupState,
@@ -582,6 +585,21 @@ createContainer <- function(codeName=NULL, ignored = FALSE, kind=NULL, lsTransac
   
   return(container)	
 }		
+
+createLabelSequence <- function(labelPrefix = "PREF", labelSeparator="-", groupDigits = FALSE, digits=8, latestNumber = 1,
+                                ignored=FALSE, modifiedDate = as.numeric(format(Sys.time(), "%s"))*1000, thingTypeAndKind,
+                                labelTypeAndKind = "id_codeName") {
+  labelSequence <- list(
+    labelPrefix=labelPrefix,
+    labelSeparator=labelSeparator,
+    groupDigits=groupDigits,
+    digits=digits,
+    latestNumber=latestNumber,
+    ignored=ignored,
+    modifiedDate=modifiedDate,
+    thingTypeAndKind=thingTypeAndKind,
+    labelTypeAndKind=labelTypeAndKind)
+}
 
 createContainerState <- function(container=NULL,containerValues=NULL, recordedBy="userName", stateType="stateType", stateKind="stateKind", 
                                  comments="", lsTransaction=NULL){
@@ -1036,6 +1054,14 @@ saveExperimentValues <- function(experimentValues){
   }
   response <- fromJSON(response)
   return(response)
+}
+
+saveLabelSequence <- function(labelSequence) {
+  response <- getURL(
+    paste(lsServerURL, "labelsequences", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(labelSequence))
 }
 
 
