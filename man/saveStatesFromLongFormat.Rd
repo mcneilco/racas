@@ -1,0 +1,46 @@
+\name{saveStatesFromLongFormat}
+\alias{saveStatesFromLongFormat}
+\title{Save states from a long format}
+\usage{
+  saveStatesFromLongFormat(entityData, entityKind,
+    stateGroups, idColumn, recordedBy, lsTransaction,
+    stateGroupIndices = NULL)
+}
+\arguments{
+  \item{entityData}{a data.frame, including one column
+  named 'stateGroupIndex', one that matches idColumn, and
+  one of the form 'entityID'}
+
+  \item{entityKind}{a string, the kind of the state,
+  limited to "protocol", "experiment", "analysisgroup",
+  "treatmentgroup", "subject", "container",
+  "itxcontainercontainer"}
+
+  \item{stateGroups}{a list of lists, each of which
+  includes details about how to save states (TODO link
+  later)}
+
+  \item{stateGroupIndices}{an integer vector of indices to
+  use from stateGroups}
+
+  \item{idColumn}{a string, the name of the column used to
+  separate states (often stateID)}
+
+  \item{recordedBy}{a string, the name of the person
+  recording the data}
+
+  \item{lsTransaction}{a list, inclues an id and version}
+}
+\value{
+  A data.frame with columns "entityStateId" and
+  "entityStateVersion", which are often added back to the
+  original data.frame
+}
+\description{
+  This function saves states to the database specified in
+  \code{\link{applicationSettings}}
+}
+\keyword{format,}
+\keyword{save,}
+\keyword{stateGroups}
+
