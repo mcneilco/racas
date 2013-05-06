@@ -1,7 +1,6 @@
 exportPattern("^[[:alpha:]]+")
-import(RPostgreSQL)
 import(data.table)
-import(RJSONIO)
+import(rjson)
 export(toJSON)
 export(fromJSON)
 export(data.table)

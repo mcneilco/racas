@@ -1,5 +1,5 @@
 require(drc)
-getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = c("SLOPE","MIN","MAX","EC50"), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
+getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
   fct <- drcFunction(fixed=fixedValues, names=paramNames)
   drcObj <- NULL
   tryCatch({
@@ -12,16 +12,16 @@ getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = c("
   return(drcObj)
 }
 
-getCurveData <- function(curveids) {
+getCurveData <- function(curveids, ...) {
+  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""), ...)
+  names(points) <- tolower(names(points))
   
-  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""))
-  
-  points <- data.frame(	curveid = as.factor(points$curveid),
-                        dose = as.numeric(points$dose), 
-                        doseUnits = as.factor(points$doseunits), 
-                        response = as.numeric(points$response),
-                        responseUnits = as.factor(points$responseunits),
-                        flag = as.factor(points$flag)
+  points <- data.frame(  curveid = as.factor(points$curveid),
+                         dose = as.numeric(points$dose), 
+                         doseUnits = as.factor(points$doseunits), 
+                         response = as.numeric(points$response),
+                         responseUnits = as.factor(points$responseunits),
+                         flag = as.factor(points$flag)
   )
   
   if(nrow(points) > 0) {
@@ -31,7 +31,7 @@ getCurveData <- function(curveids) {
   }
   parameters <- query(paste("SELECT curveid, min, fittedmin, max, fittedmax, hillslope as hill,fittedhillslope, ec50, fittedec50, ec50operator as operator, b.tested_lot
 								FROM api_curve_params a join api_analysis_group_results b on a.curveid=b.string_value
-								WHERE curveid in (",sqliz(curveids),")"))
+								WHERE curveid in (",sqliz(curveids),")"), ...)
   names(parameters) <- tolower(names(parameters))
   parameters <- data.frame(curveid = as.factor(parameters$curveid),
                            min = as.numeric(parameters$min), 
@@ -50,7 +50,6 @@ getCurveData <- function(curveids) {
     parameters = parameters
   ))
 }
-
 
 drcObject.getKeyValues <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
