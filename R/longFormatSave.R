@@ -79,7 +79,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
   names(entityStates) <- NULL
   savedEntityStates <- saveAcasEntities(entityStates, paste0(entityKind, "states"))
   
-  entityStateIds <- sapply(savedEntityStates, getId)
+  entityStateIds <- sapply(savedEntityStates, function(x) x$id)
   entityStateVersions <- sapply(savedEntityStates, function(x) return(x$version))
   entityStateTranslation <- data.frame(entityStateId = entityStateIds, 
                                        originalStateId = originalStateIds, 
@@ -138,6 +138,13 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   #
   # Returns:
   #   NULL
+  
+  if (any(!(c("stateGroupIndex", "valueType", "valueKind", "publicData", "stateVersion") %in% names(entityData)))) {
+    stop("Missing input columns in entityData")
+  }
+  if (any(is.na(entityData$stateID))) {
+    stop("No stateID can be NA")
+  }
   
   require(plyr)
   
