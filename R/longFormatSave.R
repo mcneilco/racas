@@ -69,10 +69,15 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                           recordedBy=recordedBy,
                                           lsTransaction=lsTransaction)
       },
+      interaction = {createInteractionState(interaction = list(id=entityData$interactionID[1], version = 0),
+                                            stateType=stateType,
+                                            stateKind=stateKind,
+                                            recordedBy=recordedBy,
+                                            lsTransaction=lsTransaction)
+      })
       stop(paste("Unrecognized entityKind:", entityKind)))
     return(entityState)
   }
-  #TODO: the variables remains sketchy... fix once expanded
   entityStates <- dlply(.data=entityData[entityData$stateGroupIndex %in% stateGroupIndices,], .variables=idColumn, .fun=createRawOnlyEntityState, 
                         stateGroups=stateGroups, entityKind=entityKind, recordedBy=recordedBy, lsTransaction=lsTransaction)
   originalStateIds <- names(entityStates)
@@ -99,7 +104,7 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices) {
   # It will run once, mostly. So it is a for loop
   output <- data.frame()
   for (index in batchCodeStateIndices) {
-    batchCodeValues  <- entityData[entityData$stateGroupIndex==index,c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")]
+    batchCodeValues  <- unique(entityData[entityData$stateGroupIndex==index,c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
     if (nrow(batchCodeValues) > 0) {
       names(batchCodeValues)[1] <- "codeValue"
       batchCodeValues$valueType <- "codeValue"

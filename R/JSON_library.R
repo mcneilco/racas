@@ -299,6 +299,20 @@ createInteraction <- function(firstThing, secondThing, recordedBy, interactionTy
 	)
 	return(interaction)
 }
+createInteractionState <- function(interaction=NULL, interactionValues=NULL, recordedBy="userName", stateType="stateType", stateKind="stateKind", comments="", lsTransaction=NULL){
+  interactionState = list(
+    interaction=interaction,
+    interactionValues=interactionValues,
+    recordedBy=recordedBy,
+    stateType=stateType,
+    stateKind=stateKind,
+    comments=comments,
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(treatmentGroupState)
+}
 
 saveInteractions <- function(lsInteractions){
 	response <- getURL(
@@ -1248,9 +1262,9 @@ deleteExperiment <- function(experiment){
     customrequest='DELETE',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(experiment))
-#   if(response!="") {
-#     stop (paste("The loader was unable to delete the old experiment. Instead, it got this response:", response))
-#   }
+  if(response!="") {
+    stop (paste("The loader was unable to delete the old experiment. Instead, it got this response:", response))
+  }
   return(response)
 }
 
@@ -1289,4 +1303,19 @@ deleteEntity <- function(entity, acasCategory) {
     stop (paste0("The loader was unable to delete the ", acasCategory, ". Instead, it got this response: ", response))
   }
   return(response)
+}
+
+#' Turns 'true' and 'false' into TRUE and FALSE
+#' 
+#' Other inputs not affected
+interpretJSONBoolean <- function(JSONBoolean) {
+  if (is.null(JSONBoolean)) {
+    return(NULL)
+  } else if (JSONBoolean=="true") {
+    return(TRUE)
+  } else if (JSONBoolean=="false") {
+    return(FALSE)
+  } else {
+    return(JSONBoolean)
+  }
 }
