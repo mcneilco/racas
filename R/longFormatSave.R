@@ -74,7 +74,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                             stateKind=stateKind,
                                             recordedBy=recordedBy,
                                             lsTransaction=lsTransaction)
-      })
+      },
       stop(paste("Unrecognized entityKind:", entityKind)))
     return(entityState)
   }
