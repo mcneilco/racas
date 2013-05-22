@@ -12,7 +12,8 @@ Imports:
     data.table, 
     rjson, 
     RCurl,
-    drc
+    drc,
+    plyr
 Suggests:
   RPostgreSQL,
   ROracle,

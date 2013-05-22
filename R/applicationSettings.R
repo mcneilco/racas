@@ -34,12 +34,13 @@
 #' assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 applicationSettings <- data.frame(
   appName = "ACAS",               #Application Display Name
-  db_driver = "PostgreSQL()",     #Must be supplied in your own package load (MySQL(), Oracle() supported)
-  db_user = "username",           #ACAS Schema db user
-  db_password = "password",       #ACAS Schema db password
-  db_name = "databasename",       #ACAS Schema db name
-  db_host = "mcneilco.com",       #ACAS Host Name
-  db_port = "5432",               #ACAS Port Number
+  db_driver = "JDBC('oracle.jdbc.driver.OracleDriver','/Users/bbolt/Documents/clients/nexval/SeuratAddOns/public/src/modules/GenericDataParser/src/server/ojdbc6.jar')",     #Must be supplied in your own package load (MySQL(), Oracle() supported)
+  db_user = "acas_dev",           #ACAS Schema db user
+  db_password = "acas_dev_password",       #ACAS Schema db password
+  db_name = "osl",       #ACAS Schema db name
+  db_host = "ora.labsynch.com",       #ACAS Host Name
+  db_port = "1521",               #ACAS Port Number
+  db_driver_package = "require(RJDBC)",
   stringsAsFactors = FALSE
 )
 #' Query the application data server.

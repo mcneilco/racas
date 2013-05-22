@@ -13,7 +13,7 @@ getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
 }
 
 getCurveData <- function(curveids, ...) {
-  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag from api_dose_response where curveid in (",sqliz(curveids),")",sep=""), ...)
+  points <- query(paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep=""), ...)
   names(points) <- tolower(names(points))
   
   points <- data.frame(  curveid = as.factor(points$curveid),
@@ -21,7 +21,11 @@ getCurveData <- function(curveids, ...) {
                          doseUnits = as.factor(points$doseunits), 
                          response = as.numeric(points$response),
                          responseUnits = as.factor(points$responseunits),
-                         flag = as.factor(points$flag)
+                         flag = as.factor(points$flag),
+                         response_ss_id = as.numeric(points$response_ss_id),
+                         s_id = as.numeric(points$s_id),
+                         tg_id = as.numeric(points$tg_id),
+                         ag_id = as.numeric(points$tg_id)
   )
   
   if(nrow(points) > 0) {
@@ -29,11 +33,12 @@ getCurveData <- function(curveids, ...) {
     points$flag <- !is.na(points$flag)
     points$id <- 1:nrow(points)
   }
-  parameters <- query(paste("SELECT curveid, min, fittedmin, max, fittedmax, hillslope as hill,fittedhillslope, ec50, fittedec50, ec50operator as operator, b.tested_lot
+  parameters <- query(paste("SELECT curveid, a.ag_id, min, fittedmin, max, fittedmax, hillslope as hill,fittedhillslope, ec50, fittedec50, ec50operator as operator, b.tested_lot
 								FROM api_curve_params a join api_analysis_group_results b on a.curveid=b.string_value
 								WHERE curveid in (",sqliz(curveids),")"), ...)
   names(parameters) <- tolower(names(parameters))
   parameters <- data.frame(curveid = as.factor(parameters$curveid),
+                           ag_id = as.factor(parameters$ag_id),
                            min = as.numeric(parameters$min), 
                            fittedmin = as.numeric(parameters$fittedmin), 
                            max = as.numeric(parameters$max), 
@@ -62,6 +67,20 @@ drcObject.getKeyValues <- function(drcObj = drcObject) {
   fixedValues <- subset(fixedValues, !is.na(fixedValues))	
   keyValues <- rbind(fitValues,fixedValues)
   keyValues <- as.data.table(t(keyValues))
+  return(keyValues)
+}
+
+drcObject.getKeyValues.as.dataFrame <- function(drcObj = drcObject) {
+  #Get calculated values (non fixed parameters)
+  fitValues <- as.data.frame(drcObj$parmMat)
+  row.names(fitValues) <- drcObj$fct$names
+  fixedValues <- as.data.frame(drcObj$fct$fixed)
+  fixedValues <- subset(fixedValues, row.names(fixedValues) <= length(drcObj$paramNames))
+  row.names(fixedValues) <- drcObj$paramNames
+  names(fixedValues) <- drcObj$name
+  fixedValues <- subset(fixedValues, !is.na(fixedValues))	
+  keyValues <- rbind(fitValues,fixedValues)
+  keyValues <- as.data.frame(t(keyValues))
   return(keyValues)
 }
 
