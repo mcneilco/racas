@@ -8,7 +8,7 @@
                    "Or, you can set this in your system environment before loading R"),call.=FALSE)
   } else {
     tryCatch({
-        configFileLocation <- paste0(appHome,"/public/src/conf/configuration.js")
+        configFileLocation <- paste0(appHome,"/public/src/conf/configurationNode.js")
         output <- suppressWarnings(readConfigFile(configFileLocation))
       },error = function(ex) {
         #error <- capture.output(print(ex))

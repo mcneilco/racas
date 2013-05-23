@@ -75,10 +75,11 @@ applicationSettings <- data.frame(
 readConfigFile <- function(configLocation) {
   #This function reads a config file and sets the applicationSettings
   configFile <- readLines(configLocation)
-  configurations <- configFile[grepl("^SeuratAddOns\\.configuration\\.",configFile)]
-  configList <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\2", configurations)
+  configurations <- configFile[grepl("exports\\.serverConfigurationParams\\.configuration\\.",configFile)]
+  configList <- gsub(".*exports\\.serverConfigurationParams\\.configuration\\.(.*) = (.*)", "\\2", configurations)
+  configList <- gsub(";$", "", configList)
   applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)), stringsAsFactors=FALSE)
-  names(applicationSettings) <- gsub("SeuratAddOns\\.configuration\\.(.*) = (.*)", "\\1", configurations)
+  names(applicationSettings) <- gsub(".*exports\\.serverConfigurationParams\\.configuration\\.(.*) = (.*)", "\\1", configurations)
   if (!is.null(applicationSettings$db_driver_package)) {
     eval(parse(text = applicationSettings$db_driver_package))
   }
