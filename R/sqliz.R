@@ -1,17 +1,9 @@
-sqliz <- function(set) {
+sqliz <- function(vector) {
   if (class(set)=="numeric") {
-    tempstr <- as.data.frame(paste(set,",",sep=""),stringsAsFactors=FALSE)
-    names(tempstr) <- "OBJECT"
-    LastRow <- gsub(",","",tempstr$OBJECT[length(tempstr$OBJECT)])
-    tempstr$OBJECT[length(tempstr$OBJECT)] <- LastRow
-    sql <- paste(tempstr$OBJECT,collapse=" ")
+    sql <- paste(vector, collapse = ',')
     return(sql)
   }	else {
-    tempstr <- as.data.frame(paste("'",set,"',",sep=""),stringsAsFactors=FALSE)
-    names(tempstr) <- "OBJECT"
-    LastRow <- gsub(",","",tempstr$OBJECT[length(tempstr$OBJECT)])
-    tempstr$OBJECT[length(tempstr$OBJECT)] <- LastRow
-    sql <- paste(tempstr$OBJECT,collapse=" ")
+    sql <- paste0("'",paste(vector, collapse = "','"), "'")
     return(sql)
   }
 }
