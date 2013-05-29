@@ -1,14 +1,16 @@
 require(drc)
+LL4 <- 'min + (max - min)/((1 + exp(-hill * (log(x/ec50))))^1)'
+KiFCT <- 'Bottom + (Top-Bottom)/(1+10^(x-log10((10^Log10Ki)*(1+HotNM/HotKDNM))))'
 getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
   fct <- drcFunction(fixed=fixedValues, names=paramNames)
   drcObj <- NULL
   tryCatch({
     drcObj <- drm(formula = response ~ dose, data = dataSet, subset = !dataSet$flag, robust=robust, fct = fct)
   },
-  error = function(ex) {
-    #Turned of printing of error message because shiny was printing to the browser because of a bug
-    #print(ex$message)
-  })
+           error = function(ex) {
+             #Turned of printing of error message because shiny was printing to the browser because of a bug
+             #print(ex$message)
+           })
   return(drcObj)
 }
 
@@ -33,23 +35,62 @@ getCurveData <- function(curveids, ...) {
     points$flag <- !is.na(points$flag)
     points$id <- 1:nrow(points)
   }
-  parameters <- query(paste("SELECT curveid, a.ag_id, min, fittedmin, max, fittedmax, hillslope as hill,fittedhillslope, ec50, fittedec50, ec50operator as operator, b.tested_lot
-								FROM api_curve_params a join api_analysis_group_results b on a.curveid=b.string_value
-								WHERE curveid in (",sqliz(curveids),")"), ...)
+  
+  parameters <- query(paste("SELECT TESTED_LOT,
+  						  AG_ID,
+							  AGV_ID,
+							  VALUE_KIND,
+							  VALUE_OPERATOR,
+							  NUMERIC_VALUE,
+							  STRING_VALUE,
+							  VALUE_UNIT,
+							  RECORDED_DATE
+							FROM api_analysis_group_results
+							WHERE ag_id IN
+							  (SELECT ag_id
+							  FROM api_analysis_group_results
+							  WHERE value_kind='curve id'
+							  AND string_value in (",sqliz(curveids),"))
+						"))
   names(parameters) <- tolower(names(parameters))
-  parameters <- data.frame(curveid = as.factor(parameters$curveid),
-                           ag_id = as.factor(parameters$ag_id),
-                           min = as.numeric(parameters$min), 
-                           fittedmin = as.numeric(parameters$fittedmin), 
-                           max = as.numeric(parameters$max), 
-                           fittedmax = as.numeric(parameters$fittedmax), 
-                           hill = as.numeric(parameters$hill), 
-                           fittedhillslope = as.numeric(parameters$fittedhillslope), 
-                           ec50 = as.numeric(parameters$ec50), 
-                           fittedec50 = as.numeric(parameters$fittedec50), 
-                           operator = as.factor(parameters$operator),
-                           tested_lot = as.factor(parameters$tested_lot)
-  )
+  
+  longFormat <- parameters
+  row.names(longFormat) <- parameters$agv_id
+  longFormat <- longFormat[,c("ag_id","tested_lot","value_kind","numeric_value","string_value","value_unit")]
+  wideFormat <- reshape(longFormat,
+                        timevar="value_kind",
+                        idvar=c("ag_id","tested_lot"),direction="wide")
+  
+  wideName = c("tested_lot", "string_value.curve id", "numeric_value.Min","numeric_value.Fitted Min",
+               "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
+               "numeric_value.EC50", "numeric_value.Fitted EC50", "string_value.Operator")
+  newName = c("tested_lot", "curveid", "min", "fittedmin",
+                           "max", "fittedmax", "hill", "fittedhillslope",
+                           "ec50", "fittedec50", "operator")
+  valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
+  parameters <- data.frame(ag_id = as.factor(wideFormat$ag_id))
+  for(i in 1:nrow(valuesToGet)) {
+    colName <- as.character(valuesToGet$wideName[i])
+    newName <- as.character(valuesToGet$newName[i])
+    if(colName %in% colnames(wideFormat)) {
+      split <- strsplit(colName,"\\.")[[1]]
+      if(length(split)==1) {
+        parameters <- cbind(parameters,  wideFormat[,split])
+      } else {
+        parameters <- cbind(parameters, switch(split[1],
+               "numeric_value" = as.numeric(wideFormat[,colName]),
+               "string_value" = as.factor(wideFormat[,colName])
+               ))        
+      } 
+    } else {
+      parameters <- cbind(parameters, switch(split[1],
+                               "numeric_value" = as.numeric(rep(NA, times = nrow(parameters))),
+                               "string_value" = factor(rep(NA, times = nrow(parameters)))
+      ))      
+    }
+    names(parameters)[ncol(parameters)] <- newName
+  }
+  
   return (list(
     points = points,
     parameters = parameters

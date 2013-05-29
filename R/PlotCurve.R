@@ -25,15 +25,14 @@
 #' curveData <- curveData$points
 #' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 #'
-#' curveData <- read.csv("/Users/bbolt/Documents/clients/dns/KI\ DATA/points.csv")
-#' curveData$curveid <- 1
-#' curveData$flag <- FALSE
-#' params <- data.frame(curveid = 1, HotNM = 0.100, HotKDNM = 0.1578, Bottom = 116.5, Top = 2027, Log10Ki = -8.826)
+#' data(kiData)
+#' params <- kiData$parameters
+#' points <- kiData$points
 #' paramNames <- c("Top", "Bottom", "HotNM", "HotKDNM", "Log10Ki")
 #' KiFCT <- 'Bottom + (Top-Bottom)/(1+10^(x-log10((10^Log10Ki)*(1+HotNM/HotKDNM))))'
-
+#' PlotCurve(points, params, KiFCT, paramNames, drawIntercept= "Log10Ki", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 #'
-PlotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, ...) {
+PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, ...) {
   
   #Check if paramNames match params column headers
   if(any(is.na(match(paramNames, names(params))))) {
@@ -219,3 +218,5 @@ PlotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     dev.off()
   }
 }
+
+
