@@ -27,7 +27,7 @@ getCurveData <- function(curveids, ...) {
                          response_ss_id = as.numeric(points$response_ss_id),
                          s_id = as.numeric(points$s_id),
                          tg_id = as.numeric(points$tg_id),
-                         ag_id = as.numeric(points$tg_id)
+                         ag_id = as.numeric(points$ag_id)
   )
   
   if(nrow(points) > 0) {
