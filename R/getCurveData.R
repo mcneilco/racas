@@ -73,7 +73,7 @@ getPoints <- function(curveids, ...) {
 
 getRenderingHintParameters <- function(parametersDataFrame) {
   longFormat <- parametersDataFrame
-  row.names(longFormat) <- parameters$agv_id
+  row.names(longFormat) <- parametersDataFrame$agv_id
   longFormat <- longFormat[,c("ag_id","tested_lot","value_kind","numeric_value","string_value","value_unit")]
   wideFormat <- reshape(longFormat,
                         timevar="value_kind",
