@@ -3,7 +3,7 @@
  
 ## Installing racas
 
-...from and R session...
+...from an R session...
 
     if (!require('devtools')) {
           install.packages('devtools')
