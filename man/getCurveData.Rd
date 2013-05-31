@@ -1,0 +1,31 @@
+\name{getCurveData}
+\alias{getCurveData}
+\title{Extract the parameters of a given set of curveids (of the same type of rendering hint)}
+\usage{
+  getCurveData(curveids, ...)
+}
+\arguments{
+  \item{curveids}{a list of curveids of the same rendering
+  hint E.G. "4 parameter D-R"}
+
+  \item{...}{expressions fed to underlying function E.G.
+  globalConnect (see \code{\link{query}} documentation )}
+}
+\value{
+  A list of length 2 containing the points and parameters
+  of the curveids
+}
+\description{
+  Given a list of curveids, this function queries the acas
+  databse specified in the variable
+  \code{\link{applicationSettings}} and returns a list of
+  length=2 with the points and parameters
+}
+\examples{
+getCurveData(c("126933_AG-00000615", "126933_AG-00000123"))
+getCurveData(c("126933_AG-00000615", "126933_AG-00000123"), globalConnect=TRUE)
+}
+\keyword{curveData}
+\keyword{curveids,}
+\keyword{parameters,}
+
