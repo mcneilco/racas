@@ -96,7 +96,12 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
   return(stateIdAndVersion)
 }
 
-
+#' Turns a batchCode column into rows in a long format
+#' 
+#' @param entityData a data frame with data
+#' @param batchCodeStateIndices a numeric vector of indices in the stateGroupIndexColumn which should have batchCodes melted
+#' 
+#' Does not work with data.table
 meltBatchCodes <- function(entityData, batchCodeStateIndices) {
   require('plyr')
   # Turns a batchCode column into rows in a long format
@@ -114,6 +119,68 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices) {
   }
   return(output)
 }
+
+
+#' Turns concentration columns into rows in a long format
+#' 
+#' @param entityData a data frame with data, must include rows "concentration" and "concentrationUnit"
+meltConcentrations <- function(entityData) {
+  require('plyr')
+  
+  createConcentrationRows <- function(entityData) {
+    if(any(is.na(entityData$concentration))) {
+      return(data.frame())
+    } else {
+      output <- data.frame(batchCode = entityData$batchCode[1], 
+                           valueKind = "tested concentration", 
+                           valueType = "numericValue",
+                           numericValue = entityData$concentration[1],
+                           valueUnit = entityData$concentrationUnit[1],
+                           stateID = entityData$stateID[1],
+                           stateGroupIndex = entityData$stateGroupIndex[1],
+                           publicData = entityData$publicData[1],
+                           resultTypeAndUnit = "INTERNAL---tested concentration",
+                           stringsAsFactors = FALSE)
+      if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
+        output$treatmentGroupID <- entityData$treatmentGroupID[1]
+      }
+      return(output)
+    }
+  }
+  output <- ddply(.data=entityData, .variables = c("stateID"), .fun = createConcentrationRows)
+  return(output)
+}
+
+#' Turns time columns into rows in a long format
+#' 
+#' @param entityData a data frame with data, must include rows "time" and "timeUnit"
+meltTimes <- function(entityData) {
+  require('plyr')
+  
+  createTimeRows <- function(entityData) {
+    if(any(is.na(entityData$time))) {
+      return(data.frame())
+    } else {
+      output <- data.frame(batchCode = entityData$batchCode[1], 
+                           valueKind = "time", 
+                           valueType = "numericValue",
+                           numericValue = entityData$time[1],
+                           valueUnit = entityData$timeUnit[1],
+                           stateID = entityData$stateID[1],
+                           stateGroupIndex = entityData$stateGroupIndex[1],
+                           publicData = entityData$publicData[1],
+                           resultTypeAndUnit = "INTERNAL---time",
+                           stringsAsFactors = FALSE)
+      if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
+        output$treatmentGroupID <- entityData$treatmentGroupID[1]
+      }
+      return(output)
+    }
+  }
+  output <- ddply(.data=entityData, .variables = c("stateID"), .fun = createTimeRows)
+  return(output)
+}
+
 saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL, lsTransaction, stateGroupIndices = NULL, testMode=FALSE) {
   # saves "raw only" states
   # 
@@ -147,7 +214,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   if (any(!(c("stateGroupIndex", "valueType", "valueKind", "publicData", "stateVersion") %in% names(entityData)))) {
     stop("Missing input columns in entityData")
   }
-  if (any(is.na(entityData$stateID))) {
+  if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
     stop("No stateID can be NA")
   }
   
