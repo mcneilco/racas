@@ -74,4 +74,48 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
                             <ul><li>", paste(warningList,collapse='</li><li>'), "</li></ul>")
   
   return(paste(capture.output(brew(text=htmlOutputFormat)),collapse="\n"))
+}
+
+#' Save the HTML summary into the experiment
+#' 
+#' Saves a summary to the given experiment
+#' 
+#' @param experiment An experiment list of lists
+#' @param hasError A boolean in the analysis had an error
+#' @param htmlSummary A string that is html
+#' @export
+saveAnalysisResults <- function(experiment, hasError, htmlSummary) {
+  # Saves (replace) the analysis html and status
+  # Notes: experiment must have an "experiment metadata" state with values "analysis result html" and "analysis status"
+  
+  if (is.null(experiment)) {
+    return (htmlSummary)
   }
+  
+  metadataState <- experiment$experimentStates[lapply(experiment$experimentStates, function(x) x$stateKind)=="experiment metadata"][[1]]
+  
+  valueKinds <- lapply(metadataState$experimentValues, function(x) x$valueKind)
+  
+  valuesToDelete <- metadataState$experimentValues[valueKinds == "analysis result html" | valueKinds == "analysis status"]
+  
+  htmlValue <- createStateValue(
+    valueType = "clobValue",
+    valueKind = "analysis result html",
+    clobValue = htmlSummary,
+    experimentState = metadataState
+  )
+  
+  statusValue <- createStateValue(
+    valueType = "stringValue",
+    valueKind = "analysis status",
+    stringValue = if(hasError) {"failed"} else {"complete"},
+    experimentState = metadataState)
+  
+  tryCatch({
+    lapply(valuesToDelete, deleteExperimentValue)
+    saveExperimentValues(list(htmlValue,statusValue))
+  }, error = function(e) {
+    htmlSummary <- paste(htmlSummary, "<p>Could not save the experiment status</p>")
+  })
+  return (htmlSummary)
+}
