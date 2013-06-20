@@ -17,7 +17,7 @@ options(scipen=99)
 
 
 #to get system label IDs
-getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1){
+getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$serverPath){
 	labelSequenceDTO = list(
 		thingTypeAndKind=thingTypeAndKind,
 		labelTypeAndKind=labelTypeAndKind,
@@ -34,7 +34,7 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
 
 
 #to get system labels
-getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1){
+getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$serverPath){
 	labelSequenceDTO = list(
 		thingTypeAndKind=thingTypeAndKind,
 		labelTypeAndKind=labelTypeAndKind,
@@ -56,7 +56,7 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
 # getAutoLabelId(thingType="document", thingKind="protocol", labelType="id", labelKind="codeName", numberOfLabels=1)
 
 #to create a new thing kind
-createThingKind <- function(thingType="thingType List Object", kindName="kindName"){
+createThingKind <- function(thingType="thingType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	thingKind = list(
 		thingType=thingType,
 		kindName=kindName
@@ -71,7 +71,7 @@ createThingKind <- function(thingType="thingType List Object", kindName="kindNam
 
 
 #to create a new labelkind
-createLabelKind <- function(labelType="labelType List Object", kindName="kindName"){
+createLabelKind <- function(labelType="labelType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	labelKind = list( 
 		labelType=labelType,
 		kindName=kindName
@@ -85,7 +85,7 @@ createLabelKind <- function(labelType="labelType List Object", kindName="kindNam
 }
 
 # to create a new thingstatetype
-createStateType <- function(typeName="typeName"){
+createStateType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$serverPath){
 	stateType = list(
 		typeName=typeName
 	)
@@ -98,7 +98,7 @@ createStateType <- function(typeName="typeName"){
 }
 
 # to create a new thingstatekind
-createStateKind <- function(stateType="stateType List Object", kindName="kindName"){
+createStateKind <- function(stateType="stateType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	stateKind = list(
 		stateType=stateType,
 		kindName=kindName
@@ -112,7 +112,7 @@ createStateKind <- function(stateType="stateType List Object", kindName="kindNam
 }
 
 # to create a new state value type
-createValueType <- function(typeName="typeName"){
+createValueType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$serverPath){
 	valueType = list(
 		typeName=typeName
 	)
@@ -125,7 +125,7 @@ createValueType <- function(typeName="typeName"){
 }
 
 # to create a new state value kind
-createValueKind <- function(valueType="valueType List Object", kindName="kindName"){
+createValueKind <- function(valueType="valueType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	valueKind = list(
 		valueType=valueType,
 		kindName=kindName
@@ -139,7 +139,7 @@ createValueKind <- function(valueType="valueType List Object", kindName="kindNam
 }
 
 # to create a new interaction kind
-createInteractionKind <- function(interactionType="interactionType List Object", kindName="kindName"){
+createInteractionKind <- function(interactionType="interactionType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	interactionKind = list(
 		interactionType=interactionType,
 		kindName=kindName
@@ -152,7 +152,7 @@ createInteractionKind <- function(interactionType="interactionType List Object",
 	return(response)
 }
 ##to create a new LsTransaction
-createLsTransaction <- function(comments=""){
+createLsTransaction <- function(comments="", lsServerURL = racas::applicationSettings$serverPath){
 	newLsTransaction = list(
 	  	comments=comments,
 		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
@@ -167,7 +167,7 @@ createLsTransaction <- function(comments=""){
 
 
 ##to create a new basic thing
-createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL){
+createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL, lsServerURL = racas::applicationSettings$serverPath){
 	newThing = list(
 	  	recordedBy=recordedBy,
 		thingType=thingType,
@@ -198,7 +198,7 @@ createThingLabel <- function(thing, labelText, author, labelType, labelKind, lsT
 	return(thingLabel)
 }
 
-saveThingLabels <- function(thingLabels){
+saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$serverPath){
 	response <- fromJSON(getURL(
 	  paste(lsServerURL, "thinglabels/jsonArray", sep=""),
 	  customrequest='POST',
@@ -314,7 +314,7 @@ createInteractionState <- function(interaction=NULL, interactionValues=NULL, rec
   return(treatmentGroupState)
 }
 
-saveInteractions <- function(lsInteractions){
+saveInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
 	  paste(lsServerURL, "interactions/jsonArray", sep=""),
 	  customrequest='POST',
@@ -327,7 +327,7 @@ saveInteractions <- function(lsInteractions){
 	return(response)
 }
 
-saveLsInteractions <- function(lsInteractions){
+saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
 	response <- fromJSON(getURL(
 	  paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
 	  customrequest='POST',
@@ -740,7 +740,7 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
   return(interactionState)
 }
 
-saveProtocols <- function(protocols){
+saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$serverPath){
  	  response <- getURL(
 	  paste(lsServerURL, "protocols/jsonArray", sep=""),
 	  customrequest='POST',
@@ -754,7 +754,7 @@ saveProtocols <- function(protocols){
 }
 
 
-saveProtocol <- function(protocol){
+saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
 	  paste(lsServerURL, "protocols/", sep=""),
 	  customrequest='POST',
@@ -769,7 +769,7 @@ saveProtocol <- function(protocol){
 
 
 
-saveExperiment <- function(experiment){
+saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
 	  paste(lsServerURL, "experiments/", sep=""),
 	  customrequest='POST',
@@ -783,7 +783,7 @@ saveExperiment <- function(experiment){
 }
 
 
-saveExperiments <- function(experiments){
+saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
 	  paste(lsServerURL, "experiments/jsonArray", sep=""),
 	  customrequest='POST',
@@ -796,7 +796,7 @@ saveExperiments <- function(experiments){
 	return(response)
 }
 
-saveAnalysisGroups <- function(analysisGroups){
+saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroups)
   # toJSON fails with NA, NaN, and Inf, but so far it seems that these have been successfully stripped out
   #message <- gsub("\"NA\"|\"NaN\"", "null", message)
@@ -812,7 +812,7 @@ saveAnalysisGroups <- function(analysisGroups){
   return(response)
 }
 
-saveAnalysisGroup <- function(analysisGroup){
+saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
 	  paste(lsServerURL, "analysisgroups/", sep=""),
 	  customrequest='POST',
@@ -826,7 +826,7 @@ saveAnalysisGroup <- function(analysisGroup){
 }
 
 # Currently, this cannot accept labels and states
-saveContainer <- function(container){
+saveContainer <- function(container, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "containers/", sep=""),
     customrequest='POST',
@@ -839,7 +839,7 @@ saveContainer <- function(container){
   return(response)
 }
 
-saveContainers <- function(containers){
+saveContainers <- function(containers, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "containers/jsonArray", sep=""),
     customrequest='POST',
@@ -852,7 +852,7 @@ saveContainers <- function(containers){
   return(response)
 }
 
-saveContainerLabel <- function(containerLabel) {
+saveContainerLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "containerlabels/", sep=""),
     customrequest='POST',
@@ -865,7 +865,7 @@ saveContainerLabel <- function(containerLabel) {
   return(response)
 }
 
-saveContainerLabels <- function(containerLabels) {
+saveContainerLabels <- function(containerLabels, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "containerlabels/jsonArray", sep=""),
     customrequest='POST',
@@ -878,7 +878,7 @@ saveContainerLabels <- function(containerLabels) {
     return(response)
 }
 
-saveContainerState <- function(containerState) {
+saveContainerState <- function(containerState, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "containerstates/", sep=""),
     customrequest='POST',
@@ -891,7 +891,7 @@ saveContainerState <- function(containerState) {
   return(response)
 }
 
-saveContainerStates <- function(containerStates) {
+saveContainerStates <- function(containerStates, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "containerstates/jsonArray", sep=""),
     customrequest='POST',
@@ -904,7 +904,7 @@ saveContainerStates <- function(containerStates) {
   return(response)
 }
 
-saveContainerContainerInteraction <- function(containerContainerInteraction){
+saveContainerContainerInteraction <- function(containerContainerInteraction, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "itxcontainercontainers/", sep=""),
     customrequest='POST',
@@ -917,7 +917,7 @@ saveContainerContainerInteraction <- function(containerContainerInteraction){
   return(response)
 }
 
-saveContainerContainerInteractions <- function(containerContainerInteractions){
+saveContainerContainerInteractions <- function(containerContainerInteractions, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "itxcontainercontainers/jsonArray", sep=""),
     customrequest='POST',
@@ -930,7 +930,7 @@ saveContainerContainerInteractions <- function(containerContainerInteractions){
   return(response)
 }
 
-saveSubjectContainerInteraction <- function(subjectContainerInteraction){
+saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "itxsubjectcontainers/", sep=""),
     customrequest='POST',
@@ -943,7 +943,7 @@ saveSubjectContainerInteraction <- function(subjectContainerInteraction){
   return(response)
 }
 
-saveProtocolLabel <- function(containerLabel) {
+saveProtocolLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "protocollabels/", sep=""),
     customrequest='POST',
@@ -956,7 +956,7 @@ saveProtocolLabel <- function(containerLabel) {
   return(response)
 }
 
-saveAcasEntity <- function(entity, acasCategory) {
+saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
   response <- getURL(
@@ -971,7 +971,7 @@ saveAcasEntity <- function(entity, acasCategory) {
   return(response)
 }
 
-saveAcasEntities <- function(entities, acasCategory) {
+saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
   response <- getURL(
@@ -986,7 +986,7 @@ saveAcasEntities <- function(entities, acasCategory) {
   return(response)
 }
 
-saveAnalysisGroupState <- function(analysisGroupState){
+saveAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroupState)
   response <- getURL(
     paste(lsServerURL, "analysisgroupstates", sep=""),
@@ -1000,7 +1000,7 @@ saveAnalysisGroupState <- function(analysisGroupState){
   return(response)
 }
 
-saveAnalysisGroupStates <- function(analysisGroupStates){
+saveAnalysisGroupStates <- function(analysisGroupStates, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroupStates)
   response <- getURL(
     paste(lsServerURL, "analysisgroupstates/jsonArray", sep=""),
@@ -1014,7 +1014,7 @@ saveAnalysisGroupStates <- function(analysisGroupStates){
   return(response)
 }
 
-saveExperimentState <- function(experimentState){
+saveExperimentState <- function(experimentState, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentState)
   response <- getURL(
     paste(lsServerURL, "experimentstates", sep=""),
@@ -1028,7 +1028,7 @@ saveExperimentState <- function(experimentState){
   return(response)
 }
 
-saveExperimentStates <- function(experimentStates){
+saveExperimentStates <- function(experimentStates, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentStates)
   response <- getURL(
     paste(lsServerURL, "experimentstates/jsonArray", sep=""),
@@ -1042,7 +1042,7 @@ saveExperimentStates <- function(experimentStates){
   return(response)
 }
 
-saveExperimentValue <- function(experimentValue){
+saveExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentValue)
   response <- getURL(
     paste(lsServerURL, "experimentvalues", sep=""),
@@ -1056,7 +1056,7 @@ saveExperimentValue <- function(experimentValue){
   return(response)
 }
 
-saveExperimentValues <- function(experimentValues){
+saveExperimentValues <- function(experimentValues, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentValues)
   response <- getURL(
     paste(lsServerURL, "experimentvalues/jsonArray", sep=""),
@@ -1070,7 +1070,7 @@ saveExperimentValues <- function(experimentValues){
   return(response)
 }
 
-saveLabelSequence <- function(labelSequence) {
+saveLabelSequence <- function(labelSequence, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "labelsequences", sep=""),
     customrequest='POST',
@@ -1256,7 +1256,7 @@ getAuthorById <- function( userId="userId" ){
 	return (returnListItem(outputList))
 }
 
-deleteExperiment <- function(experiment){
+deleteExperiment <- function(experiment, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "experiments/",experiment$id, sep=""),
     customrequest='DELETE',
@@ -1268,7 +1268,7 @@ deleteExperiment <- function(experiment){
   return(response)
 }
 
-deleteExperimentValue <- function(experimentValue){
+deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
     paste(lsServerURL, "experimentvalues/",experimentValue$id, sep=""),
     customrequest='DELETE',
@@ -1281,7 +1281,7 @@ deleteExperimentValue <- function(experimentValue){
   
 }
 
-deleteAnalysisGroupState <- function(analysisGroupState) {
+deleteAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, "analysisgroupstates/",analysisGroupState$id, sep=""),
     customrequest='DELETE',
@@ -1293,7 +1293,7 @@ deleteAnalysisGroupState <- function(analysisGroupState) {
   return(response)
 }
 
-deleteEntity <- function(entity, acasCategory) {
+deleteEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
     paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
     customrequest='DELETE',
