@@ -23,7 +23,7 @@
 #' data(curveData)
 #' params <- curveData$parameters
 #' curveData <- curveData$points
-#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 #'
 #' data(kiData)
 #' params <- kiData$parameters
@@ -42,7 +42,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   #Assign Colors
   plotColors <- rep(c("black","green","red", "blue", "orange","purple", "cyan"),100, replace = TRUE)
   params$color <- plotColors[1:nrow(params)]
-  curveData$color <- plotColors[match(curveData$curveid,params$curveid)]
+  curveData$color <- plotColors[match(curveData$curveid,params$curveid)] 
   
   #Determine axes ranges
   maxDose <- max(curveData$dose)
@@ -58,13 +58,22 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
     ymax <- (maxResponse + 0.01*responseRange)
   }
   if(is.na(xmax)) {
-    xmax <- maxDose + abs(0.01*doseRange)
+    if(logDose) {
+      xmax <- maxDose + abs(0.01 * doseRange)
+    } else {
+      xmax <- 10^(log10(maxDose) + 0.5)
+      
+    }  
   }
   if(is.na(xmin)) {
-    xmin <- minDose - abs(0.01*doseRange)
+    if(logDose) {
+      xmin <- minDose - abs(0.01 * doseRange)
+    } else {
+      xmin <- 10^(log10(minDose) - 0.5)
+    }
   }
   #If plotting log data then xrange vals cannot be negative
-  if(logDose) {
+  if(!logDose) {
     if(!is.na(xmin)) {
       if(xmin <= 0) {
         xmin = 0.001
@@ -114,7 +123,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   
   #First Plot Good Points so we that can see the flagged points if they are overlayed
-  plot(goodPoints$dose, goodPoints$response, log = ifelse(logDose, "x", ""), col = goodPoints$color, xlab = "", ylab = "dose", xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE)
+  plot(goodPoints$dose, goodPoints$response, log = ifelse(!logDose, "x", ""), col = goodPoints$color, xlab = "", ylab = "dose", xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE)
   
   #If grid, then add grid
   if(showGrid) {
@@ -162,7 +171,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   ##DO axes and Grid
   box()
   if(showAxes) {
-    if(logDose) {
+    if(!logDose) {
       axis(2,las=1)
       xTickRange <- par("xaxp")[1:2]
       log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
@@ -192,11 +201,10 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       ylin$y <- c(par("usr")[3],curveIntercept)
       #Horizontal
       xlin <- c()
-      if(logDose) {
+      if(!logDose) {
         xlin$x <- c(0.0000000000000001,get(drawIntercept))
       } else {
         xlin$x <- c(par("usr")[1],get(drawIntercept))
-        
       }
       xlin$y <- c(curveIntercept,curveIntercept)
       #Draw AC50 Lines
