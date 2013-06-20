@@ -31,28 +31,29 @@
 query <- function(qu, globalConnect=FALSE, ...) {
   isUpdate <- grepl("^UPDATE",toupper(sub("^\\s+", "", qu)))
   if(!globalConnect) {
-    conn <- getDabaseConnection()
+    conn <- getDabaseConnection(...)
     jdbcConn <- class(conn)=="JDBCConnection"
   }
   result <- tryCatch({
     if(isUpdate && jdbcConn) {
-      result <- RJDBC::dbSendUpdate(conn, qu, ...)
+      result <- RJDBC::dbSendUpdate(conn, qu)
       return(TRUE)
     } else {
-      result <- DBI::dbGetQuery(conn,qu, ...)
+      
+      result <- DBI::dbGetQuery(conn,qu)
       return(result)
     }
   },
   error = function(ex) {
     if(globalConnect) {
-      conn <<- getDabaseConnection()
+      conn <<- getDabaseConnection(...)
       jdbcConn <- class(conn)=="JDBCConnection"
       tryCatch({
         if(isUpdate && jdbcConn) {
-          result <- RJDBC::dbSendUpdate(conn, qu, ..)
+          result <- RJDBC::dbSendUpdate(conn, qu)
           return(TRUE)
         } else {
-         result <- DBI::dbGetQuery(conn,qu, ...)
+         result <- DBI::dbGetQuery(conn,qu)
           return(result)
         }
       },
@@ -69,7 +70,7 @@ query <- function(qu, globalConnect=FALSE, ...) {
   })
   return(result)
 }
-getDabaseConnection <- function() {
+getDabaseConnection <- function(applicationSettings = racas::applicationSettings) {
   getDBString <- function(driverString) {
     supportedDBs <- c("oracle", "postgres", "mysql")
     db <- supportedDBs[unlist(lapply(supportedDBs, grep, x = driverString))[1]]
@@ -82,10 +83,10 @@ getDabaseConnection <- function() {
   }
   driver <- eval(parse(text = racas::applicationSettings$db_driver))
   conn <- switch(class(driver),
-                 "OraDriver" = DBI::dbConnect(driver, dbname=paste0(racas::applicationSettings$db_host,":",racas::applicationSettings$db_port,"/",racas::applicationSettings$db_name), user=racas::applicationSettings$db_user, pass=racas::applicationSettings$db_password),
-                 "PostgreSQLDriver" = DBI::dbConnect(driver , user= racas::applicationSettings$db_user, password=racas::applicationSettings$db_password, dbname=racas::applicationSettings$db_name, host=racas::applicationSettings$db_host, port=racas::applicationSettings$db_port),
-                 "MySQLDriver" = DBI::dbConnect(driver , user= racas::applicationSettings$db_user, password=racas::applicationSettings$db_password, dbname=racas::applicationSettings$db_name, host=racas::applicationSettings$db_host, port=racas::applicationSettings$db_port),
-                 "JDBCDriver" = DBI::dbConnect(driver, paste0(getDBString(racas::applicationSettings$db_driver),racas::applicationSettings$db_host,":",racas::applicationSettings$db_port,":",racas::applicationSettings$db_name), user=racas::applicationSettings$db_user, pass=racas::applicationSettings$db_password),
+                 "OraDriver" = DBI::dbConnect(driver, dbname=paste0(applicationSettings$db_host,":",applicationSettings$db_port,"/",applicationSettings$db_name), user=applicationSettings$db_user, pass=applicationSettings$db_password),
+                 "PostgreSQLDriver" = DBI::dbConnect(driver , user= applicationSettings$db_user, password=applicationSettings$db_password, dbname=applicationSettings$db_name, host=applicationSettings$db_host, port=applicationSettings$db_port),
+                 "MySQLDriver" = DBI::dbConnect(driver , user= applicationSettings$db_user, password=applicationSettings$db_password, dbname=applicationSettings$db_name, host=applicationSettings$db_host, port=applicationSettings$db_port),
+                 "JDBCDriver" = DBI::dbConnect(driver, paste0(getDBString(applicationSettings$db_driver),applicationSettings$db_host,":",applicationSettings$db_port,":",applicationSettings$db_name), user=applicationSettings$db_user, pass=applicationSettings$db_password),
                  class(driver)
   )
   return(conn)
