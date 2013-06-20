@@ -54,7 +54,7 @@ LL4 <- 'min + (max - min)/((1 + exp(-hill * (log(x/ec50))))^1)'
 data(curveData)
 params <- curveData$parameters
 curveData <- curveData$points
-PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 
 data(kiData)
 params <- kiData$parameters
