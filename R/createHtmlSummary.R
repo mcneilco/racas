@@ -91,25 +91,24 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary) {
   if (is.null(experiment)) {
     return (htmlSummary)
   }
+  metadataState <- experiment$lsStates[lapply(experiment$lsStates, getElement, "lsKind")=="experiment metadata"][[1]]
   
-  metadataState <- experiment$experimentStates[lapply(experiment$experimentStates, function(x) x$stateKind)=="experiment metadata"][[1]]
+  valueKinds <- lapply(metadataState$lsValues, getElement, "lsKind")
   
-  valueKinds <- lapply(metadataState$experimentValues, function(x) x$valueKind)
-  
-  valuesToDelete <- metadataState$experimentValues[valueKinds == "analysis result html" | valueKinds == "analysis status"]
+  valuesToDelete <- metadataState$lsValues[valueKinds == "analysis result html" | valueKinds == "analysis status"]
   
   htmlValue <- createStateValue(
-    valueType = "clobValue",
-    valueKind = "analysis result html",
+    lsType = "clobValue",
+    lsKind = "analysis result html",
     clobValue = htmlSummary,
-    experimentState = metadataState
+    lsState = metadataState
   )
   
   statusValue <- createStateValue(
-    valueType = "stringValue",
-    valueKind = "analysis status",
+    lsType = "stringValue",
+    lsKind = "analysis status",
     stringValue = if(hasError) {"failed"} else {"complete"},
-    experimentState = metadataState)
+    lsState = metadataState)
   
   tryCatch({
     lapply(valuesToDelete, deleteExperimentValue)
