@@ -139,7 +139,11 @@ meltConcentrations <- function(entityData) {
                            stateID = entityData$stateID[1],
                            stateGroupIndex = entityData$stateGroupIndex[1],
                            publicData = entityData$publicData[1],
-                           resultTypeAndUnit = "INTERNAL---tested concentration",
+                           resultTypeAndUnit = paste("INTERNAL---tested concentration", 
+                                                     entityData$concentration[1], 
+                                                     entityData$concentrationUnit[1], 
+                                                     entityData$time[1], 
+                                                     entityData$timeUnit[1]),
                            stringsAsFactors = FALSE)
       if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
         output$treatmentGroupID <- entityData$treatmentGroupID[1]
@@ -169,7 +173,11 @@ meltTimes <- function(entityData) {
                            stateID = entityData$stateID[1],
                            stateGroupIndex = entityData$stateGroupIndex[1],
                            publicData = entityData$publicData[1],
-                           resultTypeAndUnit = "INTERNAL---time",
+                           resultTypeAndUnit = paste("INTERNAL---time", 
+                                                     entityData$concentration[1], 
+                                                     entityData$concentrationUnit[1], 
+                                                     entityData$time[1], 
+                                                     entityData$timeUnit[1]),
                            stringsAsFactors = FALSE)
       if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
         output$treatmentGroupID <- entityData$treatmentGroupID[1]
