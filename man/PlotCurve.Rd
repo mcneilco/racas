@@ -5,7 +5,7 @@
   PlotCurve(curveData, params, fitFunction,
     paramNames = c("ec50", "min", "max", "hill"),
     drawIntercept = "ec50", outFile = NA, ymin = NA,
-    logDose = TRUE, ymax = NA, xmin = NA, xmax = NA,
+    logDose = FALSE, ymax = NA, xmin = NA, xmax = NA,
     height = 300, width = 300, showGrid = FALSE,
     showLegend = FALSE, showAxes = TRUE, ...)
 }

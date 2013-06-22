@@ -134,7 +134,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   
   #Draw Error Bars and Means
   #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
-  getDrawValues <- function() {
+  getDrawValues <- function(params) {
     reportedValueColumns <- match(paramNames, names(params))
     reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
     reportedValues <- params[,reportedValueColumns]
@@ -157,7 +157,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   #Curve Drawing Function
   drawCurve <- function(cid) {
-    drawValues <- getDrawValues()
+    drawValues <- getDrawValues(params = params[cid,])
     curveID <- params$curveid[cid]
     curveParams <- subset(params, params$curveid == curveID)
     for(i in 1:ncol(drawValues)) {
