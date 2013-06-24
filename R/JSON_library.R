@@ -383,7 +383,7 @@ createExperimentState <- function(experimentValues=NULL, recordedBy="userName", 
 createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
   analysisGroupState = list(
     analysisGroup=analysisGroup, #This will fail if not given an id and version (but the version does not matter)
-    analysisGroupValues=analysisGroupValues,
+    lsValues=analysisGroupValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -398,7 +398,7 @@ createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=N
 createTreatmentGroupState <- function(treatmentGroup=NULL, treatmentGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
 	treatmentGroupState = list(
     treatmentGroup=treatmentGroup,
-    treatmentGroupValues=treatmentGroupValues,
+    lsValues=treatmentGroupValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -454,7 +454,7 @@ createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="defau
 createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
   sampleState = list(
     subject=subject,
-    subjectValues=subjectValues,
+    lsValues=subjectValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -485,6 +485,7 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
     clobValue=clobValue,
     blobValue=blobValue,
     operatorKind=valueOperator,
+    operatorType="comparison",
     numericValue=numericValue,
     sigFigs=sigFigs,
     uncertainty=uncertainty,
@@ -608,7 +609,7 @@ createContainerState <- function(container=NULL,containerValues=NULL, recordedBy
                                  comments="", lsTransaction=NULL){
   containerState = list(
     container=container,
-    containerValues=containerValues,
+    lsValues=containerValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -674,7 +675,7 @@ createContainerContainerItxState <- function(container=NULL, interactionValues=N
                                  comments="", lsTransaction=NULL){
   interactionState = list(
     container=container,
-    interactionValues=interactionValues,
+    lsValues=interactionValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -715,7 +716,7 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
                                              comments="", lsTransaction=NULL){
   interactionState = list(
     subjectContainerInteraction=subjectContainerInteraction,
-    interactionValues=interactionValues,
+    lsValues=interactionValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
