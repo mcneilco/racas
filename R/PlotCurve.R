@@ -15,6 +15,12 @@
 #' @param showGrid adds a grid to the plot
 #' @param showLegend shows a legend with curve ids on the right hand side of the plot
 #' @param showAxes turns axes on or off
+#' @param plotMeans will plot the mean Y given a given X
+#' @param drawStdDevs will plot the Standard Deviations for each dose response combination
+#' @param connectPoints will draw a line between the means of each mean X - Y
+#' @param drawCurve turn the curve drawing on and off
+#' @param drawCurve turn the curve drawing on and off
+#' 
 #' @return If  outFile is specified, then the function prints an image to the out file, if outFile is not specified, then then an image is plotted to a graphics device
 #' @keywords plot, render, curve
 #' @export
@@ -24,26 +30,58 @@
 #' params <- curveData$parameters
 #' curveData <- curveData$points
 #' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
-#'
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = TRUE)
+#' 
+#' #Ki Data (using raw data)
 #' data(kiData)
 #' params <- kiData$parameters
 #' points <- kiData$points
 #' paramNames <- c("Top", "Bottom", "HotNM", "HotKDNM", "Log10Ki")
 #' KiFCT <- 'Bottom + (Top-Bottom)/(1+10^(x-log10((10^Log10Ki)*(1+HotNM/HotKDNM))))'
-#' PlotCurve(points, params, KiFCT, paramNames, drawIntercept= "Log10Ki", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+#' PlotCurve(points, params, KiFCT, paramNames, drawIntercept= "Log10Ki", outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 #'
-PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, ...) {
+#' #PK Curves
+#' #PO
+#' data(poPKCurveData)
+#' params <- poPKCurveData$parameters
+#' curveData <- poPKCurveData$points
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
+#' 
+#' #IV
+#' data(ivPKCurveData)
+#' params <- ivPKCurveData$parameters
+#' curveData <- ivPKCurveData$points
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
+#' 
+#' #PO IV
+#' data(poIVPKCurveData)
+#' params <- poIVPKCurveData$parameters
+#' curveData <- poIVPKCurveData$points
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
+PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxis = TRUE, ...) {
   
   #Check if paramNames match params column headers
-  if(any(is.na(match(paramNames, names(params))))) {
-    stop("paramNames not found in names of params")
+  if(!is.na(paramNames) && drawCurve == TRUE) {
+    if(any(is.na(match(paramNames, names(params))))) {
+      stop("paramNames not found in names of params")
+    }
+  } else {
+    drawCurve <- FALSE
+    drawIntercept <- NA
   }
   
   #Assign Colors
-  plotColors <- rep(c("black","green","red", "blue", "orange","purple", "cyan"),100, replace = TRUE)
+  plotColors <- rep(c("black","red","green", "blue", "orange","purple", "cyan"),100, replace = TRUE)
   params$color <- plotColors[1:nrow(params)]
   curveData$color <- plotColors[match(curveData$curveid,params$curveid)] 
-  
+  if(addShapes) {
+    params$pch <- 1:nrow(params)
+    curveData$pch <- match(curveData$curveid,params$curveid)
+  }
   #Determine axes ranges
   maxDose <- max(curveData$dose)
   minDose <- min(curveData$dose)
@@ -95,10 +133,10 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   goodPoints <- subset(curveData, !curveData$flag)
   
   ##Caldulate Means and SDs
-  #sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid),sd)
-  #names(sds)[2] <- "SD"
-  #means <- aggregate(goodPoints$dose,list(dose=goodPoints$dose,curveid=goodPoints$curveid),mean)
-  #names(means)[2] <- "MEAN"
+  sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), sd)
+  names(sds)[ncol(sds)] <- "sd"
+  means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), mean)
+  names(means)[ncol(means)] <- "mean"
   
   ###Begin Drawing the Plot
   if(!is.na(outFile)) {
@@ -106,24 +144,35 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   
   #showLegend is the signal to put curve ids in the legend, for this push the image to be bigger on right and then put legend
-  if(showLegend==TRUE) {
-    #Increase right margin for legend
-    if(showAxes) {
-      par(mar=c(2.1,3,0.1,16)) #Set margin to east to fit legend
-    } else {
-      par(mar=c(0,0,0.1,16)) #Set margin to east to fit legend
-    }
-  } else {
-    #Set margins for no legend
-    if(showAxes) {
-      par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
-    } else {
-      par(mar=c(0,0,0.1,0.1))
-    }
+  defaultMargins=c(0.1,1,0.0,0.3)
+  #par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
+  margins <- defaultMargins
+  if(labelAxis) {
+    margins[c(1,2)] <- defaultMargins[c(1,2)] + 4
   }
+  if(showAxes) {
+    margins[c(1,2)] <- defaultMargins[c(1,2)] + 2
+  }
+  par(mar = margins)
   
   #First Plot Good Points so we that can see the flagged points if they are overlayed
-  plot(goodPoints$dose, goodPoints$response, log = ifelse(!logDose, "x", ""), col = goodPoints$color, xlab = "", ylab = "dose", xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE)
+  if(!plotMeans) {
+    #TODO: what if plotMeans but also plotPoints? deal with that later
+    plot(goodPoints$dose, goodPoints$response, log = ifelse(!logDose, "x", ""), col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+  } else {
+    plot(means$dose, means$mean, log = ifelse(!logDose, "x", ""), col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+  }
+  if(drawStdDevs) {
+    plotCI(x=goodPoints$dose,y=goodPoints$response, uiw=goodPoints$standardDeviation, col = goodPoints$color, add=TRUE,err="y",pch=NA)
+  }
+  if(connectPoints) {
+    cids <- unique(means$curveid)
+    for(c in 1:length(cids)) {
+      cid <- cids[c]
+      lineData <- subset(means, means$curveid == cid)
+      lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
+    }
+  }
   
   #If grid, then add grid
   if(showGrid) {
@@ -156,7 +205,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
     return(tmp)
   }
   #Curve Drawing Function
-  drawCurve <- function(cid) {
+  drawCurveID <- function(cid) {
     drawValues <- getDrawValues(params = params[cid,])
     curveID <- params$curveid[cid]
     curveParams <- subset(params, params$curveid == curveID)
@@ -167,7 +216,9 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
     curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)	
   }
   #Actually Draw Curves
-  null <- lapply(1:length(params$curveid),drawCurve)
+  if(drawCurve) {
+    null <- lapply(1:length(params$curveid),drawCurveID)
+  }
   ##DO axes and Grid
   box()
   if(showAxes) {
@@ -190,7 +241,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   #Vertical
   if(!is.na(drawIntercept)) {
     if(nrow(params) == 1) {
-      drawValues <- getDrawValues()
+      drawValues <- getDrawValues(params = params[1,])
       for(i in 1:ncol(drawValues)) {
         assign(names(drawValues)[i], drawValues[,i])
       }
@@ -214,13 +265,19 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   #Draw Legend if specified
   if(showLegend) {
-    par(xpd=TRUE) # allows legends to be printed outside plot area
-    legendYPosition <- 10 ^ par("usr")[2]
-    legendXPosition <- par("usr")[4]
+    #par(xpd=TRUE) # allows legends to be printed outside plot area
+    #legendYPosition <- 10 ^ par("usr")[2]
+    #legendXPosition <- par("usr")[4]
     legendText <- params$curveid
     legendTextColor <- params$color
+    legendPCH <- params$pch
     legendLineWidth <- 1
-    legend(legendYPosition,legendXPosition,legendText,legendTextColor,legendLineWidth)
+    legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH)
+  }
+  if(labelAxis) {
+    xlabel <- paste0(curveData$doseType[1], " (",curveData$doseUnits[1],")")
+    ylabel <- paste0(curveData$responseType[1], " (",curveData$responseUnits[1],")")
+    title(xlab = xlabel, ylab = ylabel)
   }
   if(!is.na(outFile)) {
     dev.off()
