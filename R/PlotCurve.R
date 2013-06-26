@@ -62,7 +62,7 @@
 #' params <- poIVPKCurveData$parameters
 #' curveData <- poIVPKCurveData$points
 #' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
-PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxis = TRUE, ...) {
+PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = TRUE, ...) {
   
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
@@ -147,11 +147,12 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   defaultMargins=c(0.1,1,0.0,0.3)
   #par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
   margins <- defaultMargins
-  if(labelAxis) {
+  if(labelAxes) {
     margins[c(1,2)] <- defaultMargins[c(1,2)] + 4
-  }
-  if(showAxes) {
-    margins[c(1,2)] <- defaultMargins[c(1,2)] + 2
+  } else {
+    if(showAxes) {
+      margins[c(1,2)] <- defaultMargins[c(1,2)] + 2
+    }
   }
   par(mar = margins)
   
@@ -274,7 +275,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
     legendLineWidth <- 1
     legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH)
   }
-  if(labelAxis) {
+  if(labelAxes) {
     xlabel <- paste0(curveData$doseType[1], " (",curveData$doseUnits[1],")")
     ylabel <- paste0(curveData$responseType[1], " (",curveData$responseUnits[1],")")
     title(xlab = xlabel, ylab = ylabel)
