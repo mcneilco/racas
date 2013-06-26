@@ -1,0 +1,14 @@
+\name{meltConcentrations}
+\alias{meltConcentrations}
+\title{Turns concentration columns into rows in a long format}
+\usage{
+  meltConcentrations(entityData)
+}
+\arguments{
+  \item{entityData}{a data frame with data, must include
+  rows "concentration" and "concentrationUnit"}
+}
+\description{
+  Turns concentration columns into rows in a long format
+}
+

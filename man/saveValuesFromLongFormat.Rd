@@ -1,0 +1,59 @@
+\name{saveValuesFromLongFormat}
+\alias{saveValuesFromLongFormat}
+\title{saves "raw only" states}
+\usage{
+  saveValuesFromLongFormat(entityData, entityKind,
+    stateGroups = NULL, lsTransaction, recordedBy,
+    stateGroupIndices = NULL, testMode = FALSE)
+}
+\arguments{
+  \item{entityData}{A data frame that includes columns:
+  \describe{ \item{stateGroupIndex}{Integer vector marking
+  the index of the state group for each row}
+  \item{operatorType}{String: the type of the operator}
+  \item{unitType}{String: the type of the unit}
+  \item{stateID}{An integer that is the ID of the state for
+  each value} \item{valueType}{A string of "stringValue",
+  "dateValue", or "numericValue"} \item{valueKind}{A string
+  value ofthe kind of value} \item{publicData}{Boolean:
+  Marks if each value should be hidden}
+  \item{stateVersion}{An integer that is the version of the
+  state for each value} \item{stringValue}{String: a string
+  value (optional)} \item{codeValue}{String: a code, such
+  as a batch code (optional)} \item{dateValue}{A Date value
+  (optional)} \item{valueOperator}{String: The operator for
+  each value (optional)} \item{valueUnit}{String: The units
+  for each value (optional)} \item{clobValue}{String: for
+  very long strings (optional)}
+  \item{numberOfReplicates}{Integer: The number of
+  replicates (optional)} \item{uncertainty}{Numeric: the
+  uncertainty (optional)} \item{uncertaintyType}{String:
+  the type of uncertainty, such as standard deviation
+  (optional)} }}
+
+  \item{entityKind}{String: the kind of the state, allowed
+  values are: "protocol", "experiment", "analysisgroup",
+  "subject", "treatmentgroup", "container",
+  "itxcontainercontainer", "itxsubjectcontainer"}
+
+  \item{stateGroups}{A list of lists, each of which
+  includes details about how to save states}
+
+  \item{stateGroupIndices}{An integer vector of the indices
+  to use from stateGroups (others are removed)}
+
+  \item{lsTransaction}{An id of an lsTransaction}
+
+  \item{testMode}{A boolean marking if the function should
+  return JSON instead of saving values}
+
+  \item{recordedBy}{String: the username recording the
+  data}
+}
+\value{
+  A list of value objects (lists)
+}
+\description{
+  Saves values from a specific format
+}
+

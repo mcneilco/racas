@@ -75,7 +75,7 @@ applicationSettings <- data.frame(
 readConfigFile <- function(configLocation) {
   #This function reads a config file and sets the applicationSettings
   configFile <- readLines(configLocation)
-  configurations <- configFile[grepl("exports\\.serverConfigurationParams\\.configuration\\.",configFile)]
+  configurations <- configFile[grepl("^\t\texports\\.serverConfigurationParams\\.configuration\\.",configFile)]
   configList <- gsub(".*exports\\.serverConfigurationParams\\.configuration\\.(.*) = (.*)", "\\2", configurations)
   configList <- gsub(";$", "", configList)
   applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)), stringsAsFactors=FALSE)
