@@ -68,7 +68,7 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                  select s.id AS S_ID,
                  api_agsvb.string_value as curveid,
                  max(CASE WHEN sv.ls_kind in ('time') then sv.numeric_value else null end) as dose,
-      	         'time' as dosetype,
+      	         'Time' as dosetype,
                  max(CASE WHEN sv.ls_kind in ('time') then sv.unit_kind else null end) as doseunits,
                  max(CASE WHEN sv.ls_kind in ('IV - PK_Concentration') then sv.numeric_value else null end) as response,
       	         'Conc' as responsetype,
