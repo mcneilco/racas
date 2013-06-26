@@ -704,7 +704,7 @@ createSubjectContainerInteraction <- function(subject, container, lsType, lsKind
     modifiedBy=recordedBy,
     modifiedDate=sysDateTime,
     lsType=lsType,
-    lsType=lsType,
+    lsKind=lsKind,
     subject=subject,
     container=container
   )

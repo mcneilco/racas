@@ -126,9 +126,10 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchC
       output <- rbind.fill(output, batchCodeValues)
     }
     if (nrow(fakeBatchCodeValues) > 0) {
-      names(fakeBatchCodeValues)[1] <- "stringValue"
-      fakeBatchCodeValues$valueType <- "stringValue"
+      names(fakeBatchCodeValues)[names(fakeBatchCodeValues) == "originalBatchCode"] <- "codeValue"
+      fakeBatchCodeValues$valueType <- "codeValue"
       fakeBatchCodeValues$valueKind <- "batch code"
+      fakeBatchCodeValues$batchCode <- NULL
       output <- rbind.fill(output, fakeBatchCodeValues)
     }
   }
