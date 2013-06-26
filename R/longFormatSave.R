@@ -99,21 +99,37 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' 
 #' @param entityData a data frame with data
 #' @param batchCodeStateIndices a numeric vector of indices in the stateGroupIndexColumn which should have batchCodes melted
+#' @param replacedFakeBatchCode a character vector of fake batch id's that were replaced, marking invalid batch codes
 #' 
-#' Does not work with data.table
-meltBatchCodes <- function(entityData, batchCodeStateIndices) {
+#' @details Does not work with data.table
+#' 
+#' @return A data frame with rows for all code values
+#' 
+meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL) {
   require('plyr')
-  # Turns a batchCode column into rows in a long format
   
   # It will run once, mostly. So it is a for loop
   output <- data.frame()
   for (index in batchCodeStateIndices) {
-    batchCodeValues  <- unique(entityData[entityData$stateGroupIndex==index,c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
+    if(is.null(replacedFakeBatchCode)) {
+      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
+      fakeBatchCodeValues <- data.frame()
+    } else {
+      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData", "originalBatchCode")])
+      fakeBatchCodeValues <- batchCodeValues[batchCodeValues$originalBatchCode %in% replacedFakeBatchCode, ]
+      batchCodeValues <- batchCodeValues[!(batchCodeValues$originalBatchCode %in% replacedFakeBatchCode), ]
+    }
     if (nrow(batchCodeValues) > 0) {
       names(batchCodeValues)[1] <- "codeValue"
       batchCodeValues$valueType <- "codeValue"
       batchCodeValues$valueKind <- "batch code"
       output <- rbind.fill(output, batchCodeValues)
+    }
+    if (nrow(fakeBatchCodeValues) > 0) {
+      names(fakeBatchCodeValues)[1] <- "stringValue"
+      fakeBatchCodeValues$valueType <- "stringValue"
+      fakeBatchCodeValues$valueKind <- "batch code"
+      output <- rbind.fill(output, fakeBatchCodeValues)
     }
   }
   return(output)
