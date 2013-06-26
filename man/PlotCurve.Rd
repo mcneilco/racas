@@ -10,7 +10,7 @@
     showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE,
     connectPoints = FALSE, plotMeans = FALSE,
     drawStdDevs = FALSE, addShapes = FALSE,
-    labelAxis = TRUE, ...)
+    labelAxes = TRUE, ...)
 }
 \arguments{
   \item{curveData}{a data frame with the points with column

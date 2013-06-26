@@ -111,9 +111,11 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
   qu <- switch(renderingHint,
                "PO IV pk curve id" = poIVQU,
                "PO pk curve id" = poQU,
-               "IV pk curve id" = ivQU,
-               drQU
-  )
+               "IV pk curve id" = ivQU
+      )
+  if(is.null(qu)) {
+    qu <- drQU
+  }
   
   points <- query(qu, ...)
   names(points) <- tolower(names(points))
@@ -127,6 +129,36 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                                   responseType = as.factor(points$responsetype),
                                   responseUnits = as.factor(points$responseunits),
                                   standardDeviation = as.numeric(points$standarddeviation),
+                                  flag = as.factor(points$flag),
+                                  response_ss_id = as.numeric(points$response_ss_id),
+                                  s_id = as.numeric(points$s_id),
+                                  tg_id = as.numeric(points$tg_id),
+                                  ag_id = as.numeric(points$ag_id)
+                     )
+                   },
+                   "IV pk curve id" = {
+                     data.frame(  curveid = as.factor(points$curveid),
+                                  dose = as.numeric(points$dose), 
+                                  doseType = as.factor(points$dosetype), 
+                                  doseUnits = as.factor(points$doseunits), 
+                                  response = as.numeric(points$response),
+                                  responseType = as.factor(points$responsetype),
+                                  responseUnits = as.factor(points$responseunits),
+                                  flag = as.factor(points$flag),
+                                  response_ss_id = as.numeric(points$response_ss_id),
+                                  s_id = as.numeric(points$s_id),
+                                  tg_id = as.numeric(points$tg_id),
+                                  ag_id = as.numeric(points$ag_id)
+                     )
+                   },
+                   "PO pk curve id" = {
+                     data.frame(  curveid = as.factor(points$curveid),
+                                  dose = as.numeric(points$dose), 
+                                  doseType = as.factor(points$dosetype), 
+                                  doseUnits = as.factor(points$doseunits), 
+                                  response = as.numeric(points$response),
+                                  responseType = as.factor(points$responsetype),
+                                  responseUnits = as.factor(points$responseunits),
                                   flag = as.factor(points$flag),
                                   response_ss_id = as.numeric(points$response_ss_id),
                                   s_id = as.numeric(points$s_id),
@@ -210,8 +242,8 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
 getLL4ParametersFromWideFormat <- function(wideFormat) {
   wideName = c("tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
                "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
-               "numeric_value.EC50", "numeric_value.Fitted EC50", "string_value.Operator")
-  newName = c("tested_lot", "curveid", "min", "fittedmin",
+               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50")
+  newName = c("tested_lot", "curveid", "renderingHint", "min", "fittedmin",
               "max", "fittedmax", "hill", "fittedhillslope",
               "ec50", "fittedec50", "operator")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
@@ -256,14 +288,14 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
       } else {
         parameters <- cbind(parameters, switch(split[1],
                                                "numeric_value" = as.numeric(wideFormat[,colName]),
-                                               "string_value" = as.factor(wideFormat[,colName])
-        ))        
+                                               as.factor(wideFormat[,colName]))
+        )        
       } 
     } else {
       parameters <- cbind(parameters, switch(split[1],
                                              "numeric_value" = as.numeric(rep(NA, times = nrow(parameters))),
-                                             "string_value" = factor(rep(NA, times = nrow(parameters)))
-      ))      
+                                             factor(rep(NA, times = nrow(parameters))))
+      )
     }
     names(parameters)[ncol(parameters)] <- newName
   }
