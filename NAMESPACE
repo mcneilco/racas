@@ -1,6 +1,8 @@
 exportPattern("^[[:alpha:]]+")
 import(data.table)
 import(rjson)
+import(plotrix)
+export(plotCI)
 export(toJSON)
 export(fromJSON)
 export(data.table)
