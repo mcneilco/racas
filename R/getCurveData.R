@@ -226,7 +226,7 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
   #BB - adding a case for "PK IV PO Single Dose" because I am only getting one rendering hint from the GDP for the 3 curves uploaded
   if(!is.null(renderingHint)) {
     if(renderingHint=="PK IV PO Single Dose") {
-      renderingHint <- parametersDataFrame$ls_kind[which(parametersDataFrame$string_value==curveids)][1]
+      renderingHint <- parametersDataFrame$ls_kind[which(parametersDataFrame$string_value %in% curveids)][1]
     }
   }
   if(is.null(renderingHint)) {
