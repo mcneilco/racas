@@ -38,7 +38,7 @@ getCurveData <- function(curveids, ...) {
     parameters = renderingHintParameters
   ))
 }
-getPoints <- function(curveids, renderingHint = NA, ...) {
+getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
   
   
   drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
@@ -120,8 +120,11 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
     qu <- drQU
   }
   
-  points <- query(qu, ...)
+  points <- query(qu)
   names(points) <- tolower(names(points))
+  if(nrow(points)==0) {
+    stop("Got 0 rows of points")
+  }
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
@@ -169,8 +172,7 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                                   ag_id = as.numeric(points$ag_id)
                      )
                    },
-                    {
-                      data.frame(  curveid = as.factor(points$curveid),
+                     data.frame(  curveid = as.factor(points$curveid),
                                    dose = as.numeric(points$dose), 
                                    doseUnits = as.factor(points$doseunits), 
                                    response = as.numeric(points$response),
@@ -181,9 +183,8 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                                    tg_id = as.numeric(points$tg_id),
                                    ag_id = as.numeric(points$ag_id)
                       )
-                    }
   )
-  
+  points
   if(nrow(points) > 0) {
     points$flag <- factor(points$flag, levels = c(levels(points$flag), TRUE, FALSE))
     points$flag <- !is.na(points$flag)
