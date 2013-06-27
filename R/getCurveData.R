@@ -89,7 +89,7 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
   poIVQU <- paste("select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
 				api_agsvb.string_value as curveid,
   			max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
-  			'time' as dosetype,
+  			'Time' as dosetype,
 				max(CASE WHEN tv.ls_kind in ('time') then tv.unit_kind else null end) as doseunits,
   			max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.numeric_value else null end) as response,
   			'Conc' as responsetype,

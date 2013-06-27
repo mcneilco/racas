@@ -10,6 +10,7 @@
 #' @param xmin specify the xmin axes location
 #' @param xmax specify the xmax axes location
 #' @param logDose specify if x axis is in log space
+#' @param logResponse specify if y axis is in log space
 #' @param height height of the plot in pixels
 #' @param width width of the plot in pixels
 #' @param showGrid adds a grid to the plot
@@ -29,10 +30,10 @@
 #' data(curveData)
 #' params <- curveData$parameters
 #' curveData <- curveData$points
-#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
-#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE)
-#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE)
-#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = TRUE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE)
+#' PlotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = TRUE)
 #' 
 #' #Ki Data (using raw data)
 #' data(kiData)
@@ -40,30 +41,30 @@
 #' points <- kiData$points
 #' paramNames <- c("Top", "Bottom", "HotNM", "HotKDNM", "Log10Ki")
 #' KiFCT <- 'Bottom + (Top-Bottom)/(1+10^(x-log10((10^Log10Ki)*(1+HotNM/HotKDNM))))'
-#' PlotCurve(points, params, KiFCT, paramNames, drawIntercept= "Log10Ki", outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+#' PlotCurve(points, params, KiFCT, paramNames, drawIntercept= "Log10Ki", outFile = NA, ymin = NA, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
 #'
 #' #PK Curves
 #' #PO
 #' data(poPKCurveData)
 #' params <- poPKCurveData$parameters
 #' curveData <- poPKCurveData$points
-#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
-#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
 #' 
 #' #IV
 #' data(ivPKCurveData)
 #' params <- ivPKCurveData$parameters
 #' curveData <- ivPKCurveData$points
-#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
-#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE, addShapes = TRUE)
 #' 
 #' #PO IV
 #' data(poIVPKCurveData)
 #' params <- poIVPKCurveData$parameters
 #' curveData <- poIVPKCurveData$points
-#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
-PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = TRUE, ...) {
-  
+#' PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
+PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -90,28 +91,36 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   responseRange <- abs(maxResponse-minResponse)
   doseRange <- abs(maxDose-minDose)
   if(is.na(ymin)) {
-    ymin <- (minResponse - 0.01*responseRange)
+    if(logResponse) {
+      ymin <- 10^(log10(min(curveData$response[curveData$response>0])) - 0.5)
+      curveData$response[curveData$response <= 0] <- ymin
+    } else {
+      ymin <- (minResponse - 0.01*responseRange)
+    } 
   }
   if(is.na(ymax)) {
-    ymax <- (maxResponse + 0.01*responseRange)
+    if(logResponse) {
+      ymax <- 10^(log10(maxResponse) + 0.5)
+    } else {
+      ymax <- (maxResponse + 0.01*responseRange)
+    } 
   }
   if(is.na(xmax)) {
     if(logDose) {
-      xmax <- maxDose + abs(0.01 * doseRange)
-    } else {
       xmax <- 10^(log10(maxDose) + 0.5)
-      
+    } else {
+      xmax <- maxDose + abs(0.01 * doseRange)
     }  
   }
   if(is.na(xmin)) {
     if(logDose) {
-      xmin <- minDose - abs(0.01 * doseRange)
+      xmin <- 10^(log10(min(curveData$dose[curveData$response>0])) - 0.5)
     } else {
-      xmin <- 10^(log10(minDose) - 0.5)
+      xmin <- minDose - abs(0.01 * doseRange)
     }
   }
   #If plotting log data then xrange vals cannot be negative
-  if(!logDose) {
+  if(logDose) {
     if(!is.na(xmin)) {
       if(xmin <= 0) {
         xmin = 0.001
@@ -121,6 +130,19 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       if(xmax <= xmin) {
         xmin = NA
         xmax = NA
+      }
+    }
+  }
+  if(logResponse) {
+    if(!is.na(ymin)) {
+      if(ymin <= 0) {
+        ymin = 0.001
+      }
+    }
+    if(!is.na(xmax) && !is.na(ymin)) {
+      if(ymax <= ymin) {
+        ymin = NA
+        ymax = NA
       }
     }
   }
@@ -156,12 +178,13 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   par(mar = margins)
   
+  plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
   #First Plot Good Points so we that can see the flagged points if they are overlayed
   if(!plotMeans) {
     #TODO: what if plotMeans but also plotPoints? deal with that later
-    plot(goodPoints$dose, goodPoints$response, log = ifelse(!logDose, "x", ""), col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+    plot(goodPoints$dose, goodPoints$response, log = plotLog, col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
   } else {
-    plot(means$dose, means$mean, log = ifelse(!logDose, "x", ""), col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+    plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
   }
   if(drawStdDevs) {
     plotCI(x=goodPoints$dose,y=goodPoints$response, uiw=goodPoints$standardDeviation, col = goodPoints$color, add=TRUE,err="y",pch=NA)
@@ -223,8 +246,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   ##DO axes and Grid
   box()
   if(showAxes) {
-    if(!logDose) {
-      axis(2,las=1)
+    if(logDose) {
       xTickRange <- par("xaxp")[1:2]
       log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
       major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {xTickRange[1]*10^(x-1)}))
@@ -234,6 +256,16 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       axis(1, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
     } else {
       axis(1)
+    }
+    if(logResponse) {
+      yTickRange <- par("yaxp")[1:2]
+      log10Range <- log10(abs(yTickRange[2]/yTickRange[1]))+1
+      major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {yTickRange[1]*10^(x-1)}))
+      axis(2,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8,,las=1)
+      intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
+      minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
+      axis(2, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
+    } else {
       axis(2)
     }
   }
@@ -253,7 +285,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       ylin$y <- c(par("usr")[3],curveIntercept)
       #Horizontal
       xlin <- c()
-      if(!logDose) {
+      if(logDose) {
         xlin$x <- c(0.0000000000000001,get(drawIntercept))
       } else {
         xlin$x <- c(par("usr")[1],get(drawIntercept))
