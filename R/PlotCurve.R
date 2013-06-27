@@ -166,7 +166,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   
   #showLegend is the signal to put curve ids in the legend, for this push the image to be bigger on right and then put legend
-  defaultMargins=c(0.1,1,0.3,0.3)
+  defaultMargins=c(0.1,1,0.3,0.8)
   #par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
   margins <- defaultMargins
   if(labelAxes) {

@@ -63,7 +63,8 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                  AND sv.ls_kind in ('time', 'PO - PK_Concentration')
                  AND api_agsvb.string_value in (",sqliz(curveids)," )
                  GROUP by s.id, ss.id, api_agsvb.string_value)
-                 where response is not null")
+                 where response is not null
+                 order by tg_id asc")
   ivQU <- paste("select * from (
                  select s.id AS S_ID,
                  api_agsvb.string_value as curveid,
@@ -85,7 +86,8 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
                  AND sv.ls_kind in ('time', 'IV - PK_Concentration')
                  AND api_agsvb.string_value in (",sqliz(curveids)," )
                  GROUP by s.id, ss.id, api_agsvb.string_value)
-                 where response is not null")
+                 where response is not null
+                 order by tg_id asc")
   poIVQU <- paste("select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
 				api_agsvb.string_value as curveid,
   			max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
@@ -105,7 +107,8 @@ getPoints <- function(curveids, renderingHint = NA, ...) {
 				WHERE api_agsvb.ls_kind like 'PO IV pk curve id'
 				 AND tv.ls_kind in ('time', 'PO - PK_Concentration', 'IV - PK_Concentration')
 				 AND api_agsvb.string_value in (",sqliz(curveids)," )
-					GROUP by tg.id, ts.id, api_agsvb.string_value"
+					GROUP by tg.id, ts.id, api_agsvb.string_value
+          order by tg_id asc"
   )
   
   qu <- switch(renderingHint,
