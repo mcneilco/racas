@@ -13,7 +13,8 @@ Imports:
     rjson, 
     RCurl,
     drc,
-    plyr
+    plyr,
+    plotrix
 Suggests:
   RPostgreSQL,
   ROracle,
