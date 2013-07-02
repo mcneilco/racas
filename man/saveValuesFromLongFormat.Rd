@@ -1,6 +1,6 @@
 \name{saveValuesFromLongFormat}
 \alias{saveValuesFromLongFormat}
-\title{saves "raw only" states}
+\title{saves "raw only" values}
 \usage{
   saveValuesFromLongFormat(entityData, entityKind,
     stateGroups = NULL, lsTransaction, recordedBy,

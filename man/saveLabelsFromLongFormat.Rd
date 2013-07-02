@@ -1,10 +1,10 @@
-\name{saveStatesFromLongFormat}
-\alias{saveStatesFromLongFormat}
-\title{Save states from a long format}
+\name{saveLabelsFromLongFormat}
+\alias{saveLabelsFromLongFormat}
+\title{Save labels from a long format}
 \usage{
-  saveStatesFromLongFormat(entityData, entityKind,
+  saveLabelsFromLongFormat(entityData, entityKind,
     stateGroups, idColumn, recordedBy, lsTransaction,
-    stateGroupIndices = NULL)
+    stateGroupIndices = NULL, labelPrefix = NULL)
 }
 \arguments{
   \item{entityData}{a data.frame, including one column
@@ -31,17 +31,19 @@
 
   \item{lsTransaction}{an integer, the id of the
   lsTransaction}
+
+  \item{labelPrefix}{a string, prefixed to all labels}
 }
 \value{
-  A data.frame with columns "entityStateId" and
-  "entityStateVersion", which are often added back to the
-  original data.frame
+  NULL
 }
 \description{
-  This function saves states to the database specified in
+  This function saves labels to the database specified in
   \code{\link{applicationSettings}}
 }
 \keyword{format,}
+\keyword{label,}
+\keyword{labels}
 \keyword{save,}
-\keyword{stateGroups}
+\keyword{stateGroups,}
 

@@ -9,37 +9,25 @@
 #' @param stateGroupIndices an integer vector of indices to use from stateGroups
 #' @param idColumn a string, the name of the column used to separate states (often stateID)
 #' @param recordedBy a string, the name of the person recording the data
-#' @param lsTransaction a list, inclues an id and version
+#' @param lsTransaction an integer, the id of the lsTransaction
 #' @return A data.frame with columns "entityStateId" and "entityStateVersion", which are often added back to the original data.frame
 #' @keywords save, format, stateGroups
 #' @export
 
 
 saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL) {
-  # saves "raw only" states
-  # 
-  # Args:
-  #   entityData:           A data frame that includes columns:
-  #     stateGroupIndex:      Integer vector marking the index of the state group for each row
-  #     (idColumn):           Integer vector that separates rows into states (used for grouping, does not use numbers)
-  #   entityKind:           A string of the kind of the state from list "subject", "treatmentgroup", "container"
-  #   stateGroups:          A list of lists, each of which includes details about how to save states
-  #   stateGroupIndices:    An integer vector of the indices to use from stateGroups (others are removed)
-  #   idColumn:             The name of the column to use to separate groups
-  #   recordedBy:           A string of the username
-  #   lsTransaction:        A list that is an lsTransaction (must have an "id" element)
-  #
-  # Returns:
-  #   An integer vector of the state id's
   
   require(plyr)
-  
+
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
+    
+    # This exists because labels were added, it removes indices for labels
+    realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
+    stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
   }
   
   createRawOnlyLsState <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction) {
-    
     
     lsType <- stateGroups[[entityData$stateGroupIndex[1]]]$stateType
     lsKind <- stateGroups[[entityData$stateGroupIndex[1]]]$stateKind
@@ -75,7 +63,8 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                             recordedBy=recordedBy,
                                             lsTransaction=lsTransaction)
       },
-      stop(paste("Unrecognized entityKind:", entityKind)))
+      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+    
     return(lsState)
   }
   lsStates <- dlply(.data=entityData[entityData$stateGroupIndex %in% stateGroupIndices,], .variables=idColumn, .fun=createRawOnlyLsState, 
@@ -93,6 +82,93 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                                     entityStateTranslation$originalStateId),
                                               c("entityStateId", "entityStateVersion")]
   return(stateIdAndVersion)
+}
+
+#' Save labels from a long format
+#'
+#' This function saves labels to the database specified in \code{\link{applicationSettings}}
+#' 
+#'
+#' @param entityData a data.frame, including one column named 'stateGroupIndex', one that matches idColumn, and one of the form 'entityID'
+#' @param entityKind a string, the kind of the state, limited to "protocol", "experiment", "analysisgroup", "treatmentgroup", "subject", "container", "itxcontainercontainer"
+#' @param stateGroups a list of lists, each of which includes details about how to save states (TODO link later)
+#' @param stateGroupIndices an integer vector of indices to use from stateGroups
+#' @param idColumn a string, the name of the column used to separate states (often stateID)
+#' @param recordedBy a string, the name of the person recording the data
+#' @param lsTransaction an integer, the id of the lsTransaction
+#' @param labelPrefix a string, prefixed to all labels
+#' @return NULL
+#' @keywords save, format, stateGroups, label, labels
+#' @export
+saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL, labelPrefix = NULL) {
+  
+  require(plyr)
+  if (is.null(stateGroupIndices)) {
+    stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
+    
+    labelStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$labelType)))
+    stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% labelStateGroups]
+  }
+  
+  createRawOnlyLsLabel <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction, labelPrefix) {
+    lsType <- stateGroups[[entityData$stateGroupIndex[1]]]$labelType
+    lsKind <- stateGroups[[entityData$stateGroupIndex[1]]]$labelKind
+    labelTextValueKind <- stateGroups[[entityData$stateGroupIndex[1]]]$labelText
+    labelText <- if(is.na(entityData$stringValue[entityData$valueKind == labelTextValueKind][1])) {
+      entityData$numericValue[entityData$valueKind == labelTextValueKind][1]
+    } else {
+      entityData$stringValue[entityData$valueKind == labelTextValueKind][1]
+    }
+    if(!is.null(labelPrefix)) {
+      labelText <- paste0(labelPrefix, "_", labelText)
+    }
+    
+    lsLabel <- switch(
+      entityKind,
+      "analysisgroup" = {createAnalysisGroupLabel(analysisGroup = list(id=entityData$analysisGroupID[1], version=0),
+                                                  lsType=lsType,
+                                                  lsKind=lsKind,
+                                                  labelText = labelText,
+                                                  recordedBy=recordedBy,
+                                                  lsTransaction=lsTransaction)
+      },
+      "subject" = {createSubjectLabel(subject = list(id=entityData$subjectID[1], version=0),
+                                      lsType=lsType,
+                                      lsKind=lsKind,
+                                      labelText = labelText,
+                                      recordedBy=recordedBy,
+                                      lsTransaction=lsTransaction)
+      },
+      "treatmentgroup" = {createTreatmentGroupLabel(treatmentGroup = list(id=entityData$treatmentGroupID[1], version=0),
+                                                    lsType=lsType,
+                                                    lsKind=lsKind,
+                                                    labelText = labelText,
+                                                    recordedBy=recordedBy,
+                                                    lsTransaction=lsTransaction)
+      },
+      "container" = {createContainerLabel(container = list(id=entityData$containerID[1], version=0),
+                                          lsType=lsType,
+                                          lsKind=lsKind,
+                                          labelText = labelText,
+                                          recordedBy=recordedBy,
+                                          lsTransaction=lsTransaction)
+      },
+      interaction = {createInteractionLabel(interaction = list(id=entityData$interactionID[1], version = 0),
+                                            lsType=lsType,
+                                            lsKind=lsKind,
+                                            labelText = labelText,
+                                            recordedBy=recordedBy,
+                                            lsTransaction=lsTransaction)
+      },
+      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+    return(lsLabel)
+  }
+  lsLabels <- dlply(.data=entityData[entityData$stateGroupIndex %in% stateGroupIndices,], .variables=idColumn, .fun=createRawOnlyLsLabel, 
+                    stateGroups=stateGroups, entityKind=entityKind, recordedBy=recordedBy, lsTransaction=lsTransaction, labelPrefix=labelPrefix)
+  names(lsLabels) <- NULL
+  savedLsLabels <- saveAcasEntities(lsLabels, paste0(entityKind, "labels"))
+  
+  return(NULL)
 }
 
 #' Turns a batchCode column into rows in a long format
@@ -205,7 +281,7 @@ meltTimes <- function(entityData) {
   return(output)
 }
 
-#' saves "raw only" states
+#' saves "raw only" values
 #' 
 #' Saves values from a specific format
 #' 
@@ -251,6 +327,10 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
+    
+    # This exists because labels were added, it removes indices for labels
+    realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
+    stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
   }
   
   entityData$rowID <- 1:(nrow(entityData))
