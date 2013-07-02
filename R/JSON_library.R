@@ -17,7 +17,7 @@ options(scipen=99)
 
 
 #to get system label IDs
-getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1){
+getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$serverPath){
 	labelSequenceDTO = list(
 		thingTypeAndKind=thingTypeAndKind,
 		labelTypeAndKind=labelTypeAndKind,
@@ -25,7 +25,7 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
 	)
 	cat(toJSON(labelSequenceDTO))
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "labelsequences/getNextLabelSequences", sep=""),
+	  paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(labelSequenceDTO)))
@@ -34,14 +34,14 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
 
 
 #to get system labels
-getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1){
+getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$serverPath){
 	labelSequenceDTO = list(
 		thingTypeAndKind=thingTypeAndKind,
 		labelTypeAndKind=labelTypeAndKind,
 		numberOfLabels=numberOfLabels
 	)
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "labelsequences/getLabels", sep=""),
+	  paste(lsServerURL, "labelsequences/getLabels", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(labelSequenceDTO))
@@ -56,13 +56,13 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
 # getAutoLabelId(thingType="document", thingKind="protocol", labelType="id", labelKind="codeName", numberOfLabels=1)
 
 #to create a new thing kind
-createThingKind <- function(thingType="thingType List Object", kindName="kindName"){
+createThingKind <- function(thingType="thingType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	thingKind = list(
 		thingType=thingType,
 		kindName=kindName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "thingkinds", sep=""),
+	  paste(lsServerURL, "thingkinds", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(thingKind)))
@@ -71,13 +71,13 @@ createThingKind <- function(thingType="thingType List Object", kindName="kindNam
 
 
 #to create a new labelkind
-createLabelKind <- function(labelType="labelType List Object", kindName="kindName"){
+createLabelKind <- function(labelType="labelType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	labelKind = list( 
 		labelType=labelType,
 		kindName=kindName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "labelkinds", sep=""),
+	  paste(lsServerURL, "labelkinds", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(labelKind)))
@@ -85,12 +85,12 @@ createLabelKind <- function(labelType="labelType List Object", kindName="kindNam
 }
 
 # to create a new thingstatetype
-createStateType <- function(typeName="typeName"){
+createStateType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$serverPath){
 	stateType = list(
 		typeName=typeName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "statetypes", sep=""),
+	  paste(lsServerURL, "statetypes", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(stateType)))
@@ -98,13 +98,13 @@ createStateType <- function(typeName="typeName"){
 }
 
 # to create a new thingstatekind
-createStateKind <- function(stateType="stateType List Object", kindName="kindName"){
+createStateKind <- function(stateType="stateType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	stateKind = list(
 		stateType=stateType,
 		kindName=kindName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "statekinds", sep=""),
+	  paste(lsServerURL, "statekinds", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(stateKind)))
@@ -112,12 +112,12 @@ createStateKind <- function(stateType="stateType List Object", kindName="kindNam
 }
 
 # to create a new state value type
-createValueType <- function(typeName="typeName"){
+createValueType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$serverPath){
 	valueType = list(
 		typeName=typeName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "valuetypes", sep=""),
+	  paste(lsServerURL, "valuetypes", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(valueType)))
@@ -125,13 +125,13 @@ createValueType <- function(typeName="typeName"){
 }
 
 # to create a new state value kind
-createValueKind <- function(valueType="valueType List Object", kindName="kindName"){
+createValueKind <- function(valueType="valueType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	valueKind = list(
 		valueType=valueType,
 		kindName=kindName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "valuekinds", sep=""),
+	  paste(lsServerURL, "valuekinds", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(valueKind)))
@@ -139,26 +139,26 @@ createValueKind <- function(valueType="valueType List Object", kindName="kindNam
 }
 
 # to create a new interaction kind
-createInteractionKind <- function(interactionType="interactionType List Object", kindName="kindName"){
+createInteractionKind <- function(interactionType="interactionType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$serverPath){
 	interactionKind = list(
 		interactionType=interactionType,
 		kindName=kindName
 	)
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "interactionkinds/", sep=""),
+	  paste(lsServerURL, "interactionkinds/", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(interactionKind)))
 	return(response)
 }
 ##to create a new LsTransaction
-createLsTransaction <- function(comments=""){
+createLsTransaction <- function(comments="", lsServerURL = racas::applicationSettings$serverPath){
 	newLsTransaction = list(
 	  	comments=comments,
 		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
 	)
 	response <- fromJSON(getURL(
-		  paste(racas::applicationSettings$serverPath, "lstransactions", sep=""),
+		  paste(lsServerURL, "lstransactions", sep=""),
 		  customrequest='POST',
 		  httpheader=c('Content-Type'='application/json'),
 		  postfields=toJSON(newLsTransaction)))
@@ -167,7 +167,7 @@ createLsTransaction <- function(comments=""){
 
 
 ##to create a new basic thing
-createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL){
+createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL, lsServerURL = racas::applicationSettings$serverPath){
 	newThing = list(
 	  	recordedBy=recordedBy,
 		thingType=thingType,
@@ -176,7 +176,7 @@ createThing <- function(thingType="thingType List Object", thingKind="thingKind 
 		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
 	)
 	response <- fromJSON(getURL(
-		  paste(racas::applicationSettings$serverPath, "lsthings", sep=""),
+		  paste(lsServerURL, "lsthings", sep=""),
 		  customrequest='POST',
 		  httpheader=c('Content-Type'='application/json'),
 		  postfields=toJSON(newThing)))
@@ -198,9 +198,9 @@ createThingLabel <- function(thing, labelText, author, lsType, lsKind, lsTransac
 	return(thingLabel)
 }
 
-saveThingLabels <- function(thingLabels){
+saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$serverPath){
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "thinglabels/jsonArray", sep=""),
+	  paste(lsServerURL, "thinglabels/jsonArray", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(thingLabels)))
@@ -314,9 +314,9 @@ createInteractionState <- function(interaction=NULL, interactionValues=NULL, rec
   return(treatmentGroupState)
 }
 
-saveInteractions <- function(lsInteractions){
+saveInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "interactions/jsonArray", sep=""),
+	  paste(lsServerURL, "interactions/jsonArray", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(lsInteractions))
@@ -327,9 +327,9 @@ saveInteractions <- function(lsInteractions){
 	return(response)
 }
 
-saveLsInteractions <- function(lsInteractions){
+saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
 	response <- fromJSON(getURL(
-	  paste(racas::applicationSettings$serverPath, "interactions/lsinteraction/jsonArray", sep=""),
+	  paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(lsInteractions)))
@@ -728,9 +728,9 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
   return(interactionState)
 }
 
-saveProtocols <- function(protocols){
+saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$serverPath){
  	  response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "protocols/jsonArray", sep=""),
+	  paste(lsServerURL, "protocols/jsonArray", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(protocols))
@@ -742,9 +742,9 @@ saveProtocols <- function(protocols){
 }
 
 
-saveProtocol <- function(protocol){
+saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "protocols/", sep=""),
+	  paste(lsServerURL, "protocols/", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(protocol))
@@ -757,9 +757,9 @@ saveProtocol <- function(protocol){
 
 
 
-saveExperiment <- function(experiment){
+saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "experiments/", sep=""),
+	  paste(lsServerURL, "experiments/", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(experiment))
@@ -771,9 +771,9 @@ saveExperiment <- function(experiment){
 }
 
 
-saveExperiments <- function(experiments){
+saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "experiments/jsonArray", sep=""),
+	  paste(lsServerURL, "experiments/jsonArray", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(experiments))
@@ -784,12 +784,12 @@ saveExperiments <- function(experiments){
 	return(response)
 }
 
-saveAnalysisGroups <- function(analysisGroups){
+saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroups)
   # toJSON fails with NA, NaN, and Inf, but so far it seems that these have been successfully stripped out
   #message <- gsub("\"NA\"|\"NaN\"", "null", message)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "analysisgroups/jsonArray", sep=""),
+    paste(lsServerURL, "analysisgroups/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -800,9 +800,9 @@ saveAnalysisGroups <- function(analysisGroups){
   return(response)
 }
 
-saveAnalysisGroup <- function(analysisGroup){
+saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$serverPath){
 	response <- getURL(
-	  paste(racas::applicationSettings$serverPath, "analysisgroups/", sep=""),
+	  paste(lsServerURL, "analysisgroups/", sep=""),
 	  customrequest='POST',
 	  httpheader=c('Content-Type'='application/json'),
 	  postfields=toJSON(analysisGroup))
@@ -814,9 +814,9 @@ saveAnalysisGroup <- function(analysisGroup){
 }
 
 # Currently, this cannot accept labels and states
-saveContainer <- function(container){
+saveContainer <- function(container, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containers/", sep=""),
+    paste(lsServerURL, "containers/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(container))
@@ -827,9 +827,9 @@ saveContainer <- function(container){
   return(response)
 }
 
-saveContainers <- function(containers){
+saveContainers <- function(containers, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containers/jsonArray", sep=""),
+    paste(lsServerURL, "containers/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containers))
@@ -840,9 +840,9 @@ saveContainers <- function(containers){
   return(response)
 }
 
-saveContainerLabel <- function(containerLabel) {
+saveContainerLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containerlabels/", sep=""),
+    paste(lsServerURL, "containerlabels/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabel))
@@ -853,9 +853,9 @@ saveContainerLabel <- function(containerLabel) {
   return(response)
 }
 
-saveContainerLabels <- function(containerLabels) {
+saveContainerLabels <- function(containerLabels, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containerlabels/jsonArray", sep=""),
+    paste(lsServerURL, "containerlabels/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabels))
@@ -866,9 +866,9 @@ saveContainerLabels <- function(containerLabels) {
     return(response)
 }
 
-saveContainerState <- function(containerState) {
+saveContainerState <- function(containerState, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containerstates/", sep=""),
+    paste(lsServerURL, "containerstates/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabel))
@@ -879,9 +879,9 @@ saveContainerState <- function(containerState) {
   return(response)
 }
 
-saveContainerStates <- function(containerStates) {
+saveContainerStates <- function(containerStates, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "containerstates/jsonArray", sep=""),
+    paste(lsServerURL, "containerstates/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabels))
@@ -892,9 +892,9 @@ saveContainerStates <- function(containerStates) {
   return(response)
 }
 
-saveContainerContainerInteraction <- function(containerContainerInteraction){
+saveContainerContainerInteraction <- function(containerContainerInteraction, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "itxcontainercontainers/", sep=""),
+    paste(lsServerURL, "itxcontainercontainers/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerContainerInteraction))
@@ -905,9 +905,9 @@ saveContainerContainerInteraction <- function(containerContainerInteraction){
   return(response)
 }
 
-saveContainerContainerInteractions <- function(containerContainerInteractions){
+saveContainerContainerInteractions <- function(containerContainerInteractions, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "itxcontainercontainers/jsonArray", sep=""),
+    paste(lsServerURL, "itxcontainercontainers/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerContainerInteractions))
@@ -918,9 +918,9 @@ saveContainerContainerInteractions <- function(containerContainerInteractions){
   return(response)
 }
 
-saveSubjectContainerInteraction <- function(subjectContainerInteraction){
+saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "itxsubjectcontainers/", sep=""),
+    paste(lsServerURL, "itxsubjectcontainers/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(subjectContainerInteraction))
@@ -931,9 +931,9 @@ saveSubjectContainerInteraction <- function(subjectContainerInteraction){
   return(response)
 }
 
-saveProtocolLabel <- function(containerLabel) {
+saveProtocolLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "protocollabels/", sep=""),
+    paste(lsServerURL, "protocollabels/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabel))
@@ -944,11 +944,11 @@ saveProtocolLabel <- function(containerLabel) {
   return(response)
 }
 
-saveAcasEntity <- function(entity, acasCategory) {
+saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, acasCategory, sep=""),
+    paste(lsServerURL, acasCategory, sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -959,11 +959,11 @@ saveAcasEntity <- function(entity, acasCategory) {
   return(response)
 }
 
-saveAcasEntities <- function(entities, acasCategory) {
+saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, acasCategory, "/jsonArray", sep=""),
+    paste(lsServerURL, acasCategory, "/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -974,10 +974,10 @@ saveAcasEntities <- function(entities, acasCategory) {
   return(response)
 }
 
-saveAnalysisGroupState <- function(analysisGroupState){
+saveAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroupState)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "analysisgroupstates", sep=""),
+    paste(lsServerURL, "analysisgroupstates", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -988,10 +988,10 @@ saveAnalysisGroupState <- function(analysisGroupState){
   return(response)
 }
 
-saveAnalysisGroupStates <- function(analysisGroupStates){
+saveAnalysisGroupStates <- function(analysisGroupStates, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(analysisGroupStates)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "analysisgroupstates/jsonArray", sep=""),
+    paste(lsServerURL, "analysisgroupstates/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1002,10 +1002,10 @@ saveAnalysisGroupStates <- function(analysisGroupStates){
   return(response)
 }
 
-saveExperimentState <- function(experimentState){
+saveExperimentState <- function(experimentState, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentState)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experimentstates", sep=""),
+    paste(lsServerURL, "experimentstates", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1016,10 +1016,10 @@ saveExperimentState <- function(experimentState){
   return(response)
 }
 
-saveExperimentStates <- function(experimentStates){
+saveExperimentStates <- function(experimentStates, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentStates)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experimentstates/jsonArray", sep=""),
+    paste(lsServerURL, "experimentstates/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1030,10 +1030,10 @@ saveExperimentStates <- function(experimentStates){
   return(response)
 }
 
-saveExperimentValue <- function(experimentValue){
+saveExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentValue)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experimentvalues", sep=""),
+    paste(lsServerURL, "experimentvalues", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1044,10 +1044,10 @@ saveExperimentValue <- function(experimentValue){
   return(response)
 }
 
-saveExperimentValues <- function(experimentValues){
+saveExperimentValues <- function(experimentValues, lsServerURL = racas::applicationSettings$serverPath){
   message <- toJSON(experimentValues)
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experimentvalues/jsonArray", sep=""),
+    paste(lsServerURL, "experimentvalues/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1058,9 +1058,9 @@ saveExperimentValues <- function(experimentValues){
   return(response)
 }
 
-saveLabelSequence <- function(labelSequence) {
+saveLabelSequence <- function(labelSequence, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "labelsequences", sep=""),
+    paste(lsServerURL, "labelsequences", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(labelSequence))
@@ -1224,9 +1224,9 @@ getAuthorById <- function( userId="userId" ){
 	return (returnListItem(outputList))
 }
 
-deleteExperiment <- function(experiment){
+deleteExperiment <- function(experiment, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experiments/",experiment$id, sep=""),
+    paste(lsServerURL, "experiments/",experiment$id, sep=""),
     customrequest='DELETE',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(experiment))
@@ -1236,9 +1236,9 @@ deleteExperiment <- function(experiment){
   return(response)
 }
 
-deleteExperimentValue <- function(experimentValue){
+deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "experimentvalues/",experimentValue$id, sep=""),
+    paste(lsServerURL, "experimentvalues/",experimentValue$id, sep=""),
     customrequest='DELETE',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(experimentValue))
@@ -1249,9 +1249,9 @@ deleteExperimentValue <- function(experimentValue){
   
 }
 
-deleteAnalysisGroupState <- function(analysisGroupState) {
+deleteAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, "analysisgroupstates/",analysisGroupState$id, sep=""),
+    paste(lsServerURL, "analysisgroupstates/",analysisGroupState$id, sep=""),
     customrequest='DELETE',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(analysisGroupState))
@@ -1261,9 +1261,9 @@ deleteAnalysisGroupState <- function(analysisGroupState) {
   return(response)
 }
 
-deleteEntity <- function(entity, acasCategory) {
+deleteEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$serverPath) {
   response <- getURL(
-    paste(racas::applicationSettings$serverPath, acasCategory, "/", entity$id, sep=""),
+    paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
     customrequest='DELETE',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(entity))
