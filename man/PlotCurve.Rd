@@ -105,8 +105,6 @@ params <- overlayIVPKCurveData$parameters
 curveData <- overlayIVPKCurveData$points
 PlotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = FALSE)
 
-
-
 #PO IV
 data(poIVPKCurveData)
 params <- poIVPKCurveData$parameters

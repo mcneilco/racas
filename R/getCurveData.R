@@ -23,8 +23,9 @@ getCurveData <- function(curveids, ...) {
     points <- getPoints(curveids, renderingHint = renderingHintParameters$renderingHint, ...)
     points$curveid <- paste0(points$curveid,"_s_id_",points$s_id)
     renderingHintParameters <- renderingHintParameters$parameters
-    renderingHintParameters <- merge(renderingHintParameters, unique(points$s_id))
-    renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$y)
+    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id)))
+    renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$s_id)
+    renderingHintParameters$name <- renderingHintParameters$name
   } else {
     points <- getPoints(curveids, ...)
   }
@@ -100,7 +101,8 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
 				max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.treatment_state_id else null end) as response_ss_id,
 				max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as tg_id,
 				max(api_agsvb.AG_ID) AS ag_id,
-				 max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation
+				 max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation,
+        max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration') then 'PO' WHEN tv.ls_kind in ('IV - PK_Concentration') then 'IV' else null end) as Route
 				FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
 					JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
 					JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
@@ -128,6 +130,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = as.factor(points$route),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -144,6 +147,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                    },
                    "IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = paste0(as.factor("IV"),"_",as.factor(points$curveid)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -159,6 +163,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                    },
                    "PO pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = paste0(as.factor("PO"),"_",as.factor(points$curveid)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -173,6 +178,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                      )
                    },
                      data.frame(  curveid = as.factor(points$curveid),
+                                   name = as.factor(points$curveid),
                                    dose = as.numeric(points$dose), 
                                    doseUnits = as.factor(points$doseunits), 
                                    response = as.numeric(points$response),

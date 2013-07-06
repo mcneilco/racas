@@ -126,7 +126,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       ymax <- 10^(log10(maxResponse) + 0.5)
     } else {
       ymax <- (maxResponse + 0.01*responseRange)
-    } 
+    }
   }
   if(is.na(xmax)) {
     if(logDose) {
@@ -205,14 +205,34 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   #Determine which axes will require log scale plotting
   plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
   #First Plot Good Points so we that can see the flagged points if they are overlayed
-  if(!plotMeans) {
-    #TODO: what if plotMeans but also plotPoints? deal with that later
-    plot(goodPoints$dose, goodPoints$response, log = plotLog, col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
-  } else {
-    plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+  doGoodPoints <- function(yrn) {
+    if(!plotMeans) {
+      #TODO: what if plotMeans but also plotPoints? deal with that later
+      plot(goodPoints$dose, goodPoints$response, log = plotLog, col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+    } else {
+      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+    }
+    if(drawStdDevs) {
+      plotCI(x=goodPoints$dose,y=goodPoints$response, uiw=goodPoints$standardDeviation, col = goodPoints$color, add=TRUE,err="y",pch=NA)
+    }
   }
-  if(drawStdDevs) {
-    plotCI(x=goodPoints$dose,y=goodPoints$response, uiw=goodPoints$standardDeviation, col = goodPoints$color, add=TRUE,err="y",pch=NA)
+  #Draw Legend if specified
+  doGoodPoints(yrn = yrn)
+  if(showLegend) {
+    #par(xpd=TRUE) # allows legends to be printed outside plot area
+    #legendYPosition <- 10 ^ par("usr")[2]
+    #legendXPosition <- par("usr")[4]
+    if(is.null(params$name)) {
+      legendText <- params$curveid
+    } else {
+      legendText <- params$name
+    }
+    legendTextColor <- params$color
+    legendPCH <- params$pch
+    legendLineWidth <- 1
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    doGoodPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h))
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
   }
   if(connectPoints) {
     cids <- unique(means$curveid)
@@ -320,17 +340,6 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       lines(ylin,lwd=0.7,col="red")
       lines(xlin,lwd=0.7,col="red")
     }
-  }
-  #Draw Legend if specified
-  if(showLegend) {
-    #par(xpd=TRUE) # allows legends to be printed outside plot area
-    #legendYPosition <- 10 ^ par("usr")[2]
-    #legendXPosition <- par("usr")[4]
-    legendText <- params$curveid
-    legendTextColor <- params$color
-    legendPCH <- params$pch
-    legendLineWidth <- 1
-    legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH)
   }
   if(labelAxes) {
     xlabel <- paste0(curveData$doseType[1], " (",curveData$doseUnits[1],")")
