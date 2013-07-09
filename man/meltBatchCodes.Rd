@@ -12,9 +12,9 @@
   in the stateGroupIndexColumn which should have batchCodes
   melted}
 
-  \item{replacedFakeBatchCode}{a character vector of fake
-  batch id's that were replaced, marking invalid batch
-  codes}
+  \item{replacedFakeBatchCode}{deprecated: a character
+  vector of fake batch id's that were replaced, marking
+  invalid batch codes}
 }
 \value{
   A data frame with rows for all code values

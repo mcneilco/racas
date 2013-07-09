@@ -175,7 +175,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' 
 #' @param entityData a data frame with data
 #' @param batchCodeStateIndices a numeric vector of indices in the stateGroupIndexColumn which should have batchCodes melted
-#' @param replacedFakeBatchCode a character vector of fake batch id's that were replaced, marking invalid batch codes
+#' @param replacedFakeBatchCode deprecated: a character vector of fake batch id's that were replaced, marking invalid batch codes
 #' 
 #' @details Does not work with data.table
 #' 
@@ -187,27 +187,27 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchC
   # It will run once, mostly. So it is a for loop
   output <- data.frame()
   for (index in batchCodeStateIndices) {
-    if(is.null(replacedFakeBatchCode)) {
+#     if(is.null(replacedFakeBatchCode)) {
       batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
-      fakeBatchCodeValues <- data.frame()
-    } else {
-      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData", "originalBatchCode")])
-      fakeBatchCodeValues <- batchCodeValues[batchCodeValues$originalBatchCode %in% replacedFakeBatchCode, ]
-      batchCodeValues <- batchCodeValues[!(batchCodeValues$originalBatchCode %in% replacedFakeBatchCode), ]
-    }
+#       fakeBatchCodeValues <- data.frame()
+#     } else {
+      #batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData", "originalBatchCode")])
+      #fakeBatchCodeValues <- batchCodeValues[batchCodeValues$originalBatchCode %in% replacedFakeBatchCode, ]
+      #batchCodeValues <- batchCodeValues[!(batchCodeValues$originalBatchCode %in% replacedFakeBatchCode), ]
+#     }
     if (nrow(batchCodeValues) > 0) {
       names(batchCodeValues)[1] <- "codeValue"
       batchCodeValues$valueType <- "codeValue"
       batchCodeValues$valueKind <- "batch code"
       output <- rbind.fill(output, batchCodeValues)
     }
-    if (nrow(fakeBatchCodeValues) > 0) {
-      names(fakeBatchCodeValues)[names(fakeBatchCodeValues) == "originalBatchCode"] <- "codeValue"
-      fakeBatchCodeValues$valueType <- "codeValue"
-      fakeBatchCodeValues$valueKind <- "batch code"
-      fakeBatchCodeValues$batchCode <- NULL
-      output <- rbind.fill(output, fakeBatchCodeValues)
-    }
+#     if (nrow(fakeBatchCodeValues) > 0) {
+#       names(fakeBatchCodeValues)[names(fakeBatchCodeValues) == "originalBatchCode"] <- "codeValue"
+#       fakeBatchCodeValues$valueType <- "codeValue"
+#       fakeBatchCodeValues$valueKind <- "batch code"
+#       fakeBatchCodeValues$batchCode <- NULL
+#       output <- rbind.fill(output, fakeBatchCodeValues)
+#     }
   }
   return(output)
 }
