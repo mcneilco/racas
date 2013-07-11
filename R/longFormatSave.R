@@ -110,6 +110,8 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% labelStateGroups]
   }
   
+  labelData <- entityData[entityData$stateGroupIndex %in% stateGroupIndices, ]
+  
   createRawOnlyLsLabel <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction, labelPrefix) {
     lsType <- stateGroups[[entityData$stateGroupIndex[1]]]$labelType
     lsKind <- stateGroups[[entityData$stateGroupIndex[1]]]$labelKind
@@ -163,7 +165,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
       stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     return(lsLabel)
   }
-  lsLabels <- dlply(.data=entityData[entityData$stateGroupIndex %in% stateGroupIndices,], .variables=idColumn, .fun=createRawOnlyLsLabel, 
+  lsLabels <- dlply(.data=labelData, .variables=idColumn, .fun=createRawOnlyLsLabel, 
                     stateGroups=stateGroups, entityKind=entityKind, recordedBy=recordedBy, lsTransaction=lsTransaction, labelPrefix=labelPrefix)
   names(lsLabels) <- NULL
   savedLsLabels <- saveAcasEntities(lsLabels, paste0(entityKind, "labels"))
@@ -378,5 +380,40 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   } else {
     savedEntityValues <- saveAcasEntities(entityValues, paste0(entityKind, "values"))
     return(savedEntityValues)
+  }
+}
+
+
+#' Links new subjects to old containers
+#' 
+#' @param entityData data.frame: must have columns stringValue, stateGroupIndices, numericValue
+#' @param stateGroups a list of state (and label) groups
+#' @param labelPrefix a string, often the experiment name
+#' @param stateGroupIndices numeric vector, use to list indices rather than having them automatically be found
+#' @return a list of two data frames, one with new data and one with old
+linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, stateGroupIndices = NULL) {
+  require(plyr)
+  if (is.null(stateGroupIndices)) {
+    stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == "container")
+    
+    labelStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$labelType)))
+    stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% labelStateGroups]
+  }
+  
+  labelData <- entityData[entityData$stateGroupIndex %in% stateGroupIndices, ]
+  labelVector <- pmax(labelData$stringValue, labelData$numericValue, na.rm=T)
+  
+  # This only checks for the prefixed version, not the unprefixed
+  if(!is.null(labelPrefix)) {
+    prefixedLabelVector <- paste0(labelPrefix, "_", labelVector)
+    labelData$stringValue <- prefixedLabelVector
+    oldLabels <- query(paste0("select label_text, container_id from container_label where label_text in ('",
+                              paste(prefixedLabelVector, collapse = "','"), "')"))
+    matchingLabelData <- labelData[labelData$stringValue %in% oldLabels$LABEL_TEXT, ]
+    matchingLabelData$containerID <- oldLabels$CONTAINER_ID[match(matchingLabelData$stringValue, oldLabels$LABEL_TEXT)]
+    
+    entityData <- entityData[!(entityData$subjectID %in% matchingLabelData$subjectID), ]
+    matchingLabelData <- matchingLabelData[, c("subjectID", "containerID")]
+    return(list(entityData=entityData, matchingLabelData=matchingLabelData))
   }
 }
