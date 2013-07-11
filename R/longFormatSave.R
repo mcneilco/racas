@@ -110,6 +110,8 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% labelStateGroups]
   }
   
+  labelData <- entityData[entityData$stateGroupIndex %in% stateGroupIndices, ]
+  
   createRawOnlyLsLabel <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction, labelPrefix) {
     lsType <- stateGroups[[entityData$stateGroupIndex[1]]]$labelType
     lsKind <- stateGroups[[entityData$stateGroupIndex[1]]]$labelKind
@@ -163,7 +165,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
       stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     return(lsLabel)
   }
-  lsLabels <- dlply(.data=entityData[entityData$stateGroupIndex %in% stateGroupIndices,], .variables=idColumn, .fun=createRawOnlyLsLabel, 
+  lsLabels <- dlply(.data=labelData, .variables=idColumn, .fun=createRawOnlyLsLabel, 
                     stateGroups=stateGroups, entityKind=entityKind, recordedBy=recordedBy, lsTransaction=lsTransaction, labelPrefix=labelPrefix)
   names(lsLabels) <- NULL
   savedLsLabels <- saveAcasEntities(lsLabels, paste0(entityKind, "labels"))
