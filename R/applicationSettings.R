@@ -83,5 +83,18 @@ readConfigFile <- function(configLocation) {
   if (!is.null(applicationSettings$db_driver_package)) {
     eval(parse(text = applicationSettings$db_driver_package))
   }
+  applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
   assignInNamespace("applicationSettings",applicationSettings, ns="racas")
+}
+
+validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
+  if(is.null(applicationSettings$logDir)) {
+    warning("applicationSettings$logDir is null. Setting to /tmp")
+    applicationSettings$logDir <- "/tmp"
+  }
+  if(!file.exists(applicationSettings$logDir)) {
+    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' does not exist.  Setting applicationSettings$logDir to \'/tmp\'"))
+    applicationSettings$logDir <- "/tmp"
+  }
+  return(applicationSettings)
 }
