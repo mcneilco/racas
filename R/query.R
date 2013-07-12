@@ -53,7 +53,7 @@ query <- function(qu, globalConnect=FALSE, ...) {
           return(TRUE)
         } else {
          result <- DBI::dbGetQuery(conn,qu)
-          return(result)
+         return(result)
         }
       },
       error = function(ex) {
@@ -94,10 +94,10 @@ errorHandler <- function(ex, conn, driver) {
   if(class(conn)=="character") {
     if(conn==class(driver)) {
       print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$db_driver '",parse(text = racas::applicationSettings$db_driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
-      return(FALSE)
+      return(list(success = FALSE, error = ex))
     }
   } else{
     print(ex)
-    return(FALSE)
+    return(list(success = FALSE, error = ex))
   }
 }
