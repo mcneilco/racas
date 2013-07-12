@@ -88,12 +88,20 @@ readConfigFile <- function(configLocation) {
 }
 
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
+  #LogDir validation
+  #Check if set
   if(is.null(applicationSettings$logDir)) {
     warning("applicationSettings$logDir is null. Setting to /tmp")
     applicationSettings$logDir <- "/tmp"
   }
+  #Check if exits
   if(!file.exists(applicationSettings$logDir)) {
     warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' does not exist.  Setting applicationSettings$logDir to \'/tmp\'"))
+    applicationSettings$logDir <- "/tmp"
+  }
+  #Check writeable
+  if(file.access(applicationSettings$logDir, mode = 2) != 0) {
+    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' is not writeable.  Setting applicationSettings$logDir to \'/tmp\'"))
     applicationSettings$logDir <- "/tmp"
   }
   return(applicationSettings)
