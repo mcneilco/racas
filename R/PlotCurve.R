@@ -84,7 +84,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
   
   #Assign Colors
-  plotColors <- rep(c("black","red","green", "blue", "orange","purple", "cyan"),100, replace = TRUE)
+  plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
   #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
   add.alpha <- function(col, alpha=1){
     if(missing(col))
@@ -103,7 +103,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
     pchs <- 1:24
     pchs <- rep(pchs[-c(4)],100, replace = TRUE)
     params$pch <- pchs[1:nrow(params)]
-    curveData$pch <- match(curveData$curveid,params$curveid)
+    curveData$pch <- params$pch[match(curveData$curveid,params$curveid)]
   }
   
   #Determine axes ranges

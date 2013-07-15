@@ -21,9 +21,10 @@ getCurveData <- function(curveids, ...) {
   #There are cases where getParametersByRenderingHint return curveids (See PK), in this case we call getParametersByRenderingHint again with those curveids 3_AG-00000040
   if(class(renderingHintParameters)=="list") {
     points <- getPoints(curveids, renderingHint = renderingHintParameters$renderingHint, ...)
+    points$oldcurveid <- points$curveid
     points$curveid <- paste0(points$curveid,"_s_id_",points$s_id)
     renderingHintParameters <- renderingHintParameters$parameters
-    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id)))
+    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id, curveid=points$oldcurveid)))
     renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$s_id)
     renderingHintParameters$name <- renderingHintParameters$name
   } else {
