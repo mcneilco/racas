@@ -1,7 +1,14 @@
 # racas
  
- 
-## Installing racas
+## Installing customer tag
+
+...from a user with install global privs (root)
+
+    curl -O --digest --user username:password https://bitbucket.org/mcneilco/racas/get/dns-avocet-1.0.tar.gz
+    Rscript -e "install.packages(\"dns-avocet-1.0.tar.gz\", repo = NULL)"
+    
+    
+## Installing customer branch
 
 ...from an R session...
 
