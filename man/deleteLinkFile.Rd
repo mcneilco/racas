@@ -5,14 +5,15 @@
   deleteLinkFile(experiment)
 }
 \arguments{
-  \item{experiment}{A list that is an experiment object,
-  needs to have values for id, verison, and codeName}
+  \item{experiment}{A list that is an experiment object;
+  needs to have values for id, version, and codeName}
 }
 \description{
   Deletes the file referenced as an annotation file in the
   experiment (in stateKind: "report locations").
 }
 \details{
-  Will delete more than one file, but not tested
+  Will delete all annotation files associated with the
+  experiment
 }
 

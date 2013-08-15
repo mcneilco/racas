@@ -39,7 +39,6 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     }
   }
   
-  
   analysisGroupStates <- list()
   analysisGroups <- list()
   
@@ -130,8 +129,6 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
   }, error = function(e) {
     stop("Could not save the annotation location")
   })
-  
-  file.remove(reportFilePath)
   return(NULL)
 }
 
@@ -139,9 +136,9 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
 #'
 #'Deletes the file referenced as an annotation file in the experiment (in stateKind: "report locations").
 #'
-#'@param experiment A list that is an experiment object, needs to have values for id, verison, and codeName
+#'@param experiment A list that is an experiment object; needs to have values for id, version, and codeName
 #'
-#'@details Will delete more than one file, but not tested
+#'@details Will delete all annotation files associated with the experiment
 #'@export
 deleteLinkFile <- function(experiment) {
   if (racas::applicationSettings$fileServiceType == "blueimp") {
@@ -156,8 +153,9 @@ deleteLinkFile <- function(experiment) {
       valuesToDelete <- locationState$lsValues[lsKinds %in% c("annotation file")]
       
       if (length(valuesToDelete) > 0) {
+        filesToDelete <- sapply(valuesToDelete,getElement, "fileValue")
         tryCatch({
-          file.remove(unlist(valuesToDelete))
+          file.remove(paste0("serverOnlyModules/blueimp-file-upload-node/public/files/", filesToDelete))
         }, error = function(e) {
           stop("There was an error deleting the old report file. Please contact your system adminstrator.")
         })
