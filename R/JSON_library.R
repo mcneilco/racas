@@ -311,7 +311,7 @@ createInteractionState <- function(interaction=NULL, interactionValues=NULL, rec
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
-  return(treatmentGroupState)
+  return(interactionState)
 }
 
 saveInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
@@ -466,7 +466,40 @@ createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="use
 	return(sampleState)
 }
 
-#TODO: use unitType and operatorType
+
+#'Creates a state value
+#'
+#'Creates a state value, used either in all cases
+#'
+#'@param lsType
+#'@param lsKind
+#'@param stringValue
+#'@param fileValue
+#'@param urlValue
+#'@param publicData
+#'@param ignored
+#'@param dateValue
+#'@param clobValue
+#'@param blobValue
+#'@param valueOperator
+#'@param operatorType
+#'@param numericValue
+#'@param sigFigs
+#'@param uncertainty
+#'@param uncertaintyType
+#'@param numberOfReplicates
+#'@param valueUnit
+#'@param unitType
+#'@param comments
+#'@param lsTransaction
+#'@param codeValue
+#'@param recordedBy
+#'@param lsState
+#'
+#'@details Use either in a nested object or alone
+#'
+#'@return list, a value object
+#'@export
 createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL, fileValue=NULL,
                              urlValue=NULL, publicData=TRUE, ignored=FALSE,
                              dateValue=NULL, clobValue=NULL, blobValue=NULL, valueOperator=NULL, operatorType=NULL, numericValue=NULL,
@@ -474,6 +507,7 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
                              lsTransaction=NULL, codeValue=NULL, recordedBy="username",
                              lsState=NULL){
+  #TODO: use unitType and operatorType
   stateValue = list(
     lsState=lsState,
     lsType=lsType,
@@ -655,7 +689,6 @@ createContainerContainerInteraction <- function(codeName=NULL, ignored = FALSE, 
   containerContainerInteraction <- list(
     codeName=codeName,
     ignored=ignored,
-    kind=kind,
     recordedBy=recordedBy,
     lsTransaction=lsTransaction,
     interactionStates=interactionStates,
@@ -884,7 +917,7 @@ saveContainerStates <- function(containerStates, lsServerURL = racas::applicatio
     paste(lsServerURL, "containerstates/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabels))
+    postfields=toJSON(containerStates))
   if (grepl("^<",response)) {
     stop (paste("The loader was unable to save your container states. Instead, it got this response:", response))
   }
@@ -1084,145 +1117,145 @@ returnListItem <- function(outputList){
 	}
 }
 
-getThingKind <- function( thingType="typeName", thingKind="kindName" ){
-	getThingKindFromList <- function(inputList, thingType=thingType, thingKind=thingKind){
-		if(inputList$thingType$typeName == thingType && inputList$kindName == thingKind){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(thingKinds.list, getThingKindFromList, thingType=thingType, thingKind=thingKind)
-	return (returnListItem(outputList))	
-}
-
-getThingKindByKindName <- function( thingKind="kindName" ){
-	getThingKindFromList <- function(inputList, thingType=typeName, thingKind=thingKind){
-		if( inputList$kindName == thingKind){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(thingKinds.list, getThingKindFromList, thingKind=thingKind)
-	return (returnListItem(outputList))	
-}
-
-getThingType <- function( typeName="typeName" ){
-	getThingTypeFromList <- function(inputList, typeName=""){
-		if(inputList$typeName == typeName){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(thingTypes.list, getThingTypeFromList, typeName=typeName)
-	return (returnListItem(outputList))
-}
-
-getLabelType <- function( typeName="typeName" ){
-	getTypeFromList <- function(inputList, typeName=""){
-		if(inputList$typeName == typeName){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(labelTypes.list, getTypeFromList, typeName=typeName)
-	return (returnListItem(outputList))
-}
-
-getLabelKind <- function( labelType="typeName", labelKind="kindName" ){
-	getLabelKindFromList <- function(inputList, labelType="", labelKind=""){
-		if(inputList$labelType$typeName == labelType && inputList$kindName == labelKind){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(labelKinds.list, getLabelKindFromList, labelType=labelType, labelKind=labelKind)
-	return (returnListItem(outputList))	
-}
-
-getLabelKindByKindName <- function( labelKind="kindName" ){
-	getLabelKindFromList <- function(inputList, labelType="", labelKind=""){
-		if(inputList$kindName == labelKind){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(labelKinds.list, getLabelKindFromList, labelKind=labelKind)
-	return (returnListItem(outputList))	
-}
-
-getInteractionType <- function( typeName="typeName" ){
-	getTypeFromList <- function(inputList, typeName=""){
-		if(inputList$typeName == typeName){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(interactionTypes.list, getTypeFromList, typeName=typeName)
-	return (returnListItem(outputList))
-}
-
-getInteractionTypeByVerb <- function( typeVerb="typeVerb" ){
-	getTypeFromList <- function(inputList, typeVerb=""){
-		if(inputList$typeVerb == typeVerb){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(interactionTypes.list, getTypeFromList, typeVerb=typeVerb)
-	return (returnListItem(outputList))
-}
-
-getInteractionKind <- function( typeName="typeName", kindName="kindName" ){
-	getInteractionKindFromList <- function(inputList, typeName="", kindName=""){
-		if(inputList$interactionType$typeName == typeName && inputList$kindName == kindName){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(interactionKinds.list, getInteractionKindFromList, typeName=typeName, kindName=kindName)
-	return (returnListItem(outputList))	
-}
-
-getInteractionKindByVerb <- function( typeVerb="typeVerb", kindName="kindName" ){
-	getInteractionKindFromList <- function(inputList, typeVerb="", kindName=""){
-		if(inputList$interactionType$typeVerb == typeVerb && inputList$kindName == kindName){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(interactionKinds.list, getInteractionKindFromList, typeVerb=typeVerb, kindName=kindName)
-	return (returnListItem(outputList))	
-}
-
-getStateType <- function( stateType="typeName" ){
-	getTypeFromList <- function(inputList, stateType=""){
-		if(inputList$typeName == stateType){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(stateTypes.list, getTypeFromList, stateType=stateType)
-	return (returnListItem(outputList))
-}
-
-getStateKind <- function( stateType="typeName", stateKind="kindName" ){
-	getStateKindFromList <- function(inputList, stateType="", stateKind=""){
-		if(inputList$stateType$typeName == stateType && inputList$kindName == stateKind){
-			return(inputList)
-		}	
-	}			
-	outputList <- lapply(stateKinds.list, getStateKindFromList, stateType=stateType, stateKind=stateKind)
-	return (returnListItem(outputList))	
-}
-
-getAuthorByUserName <- function( userName="userName" ){
-	getUserNameFromList <- function(inputList, userName=""){
-		if(inputList$userName == userName){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(authors.list, getUserNameFromList, userName=userName)
-	return (returnListItem(outputList))
-}
-
-getAuthorById <- function( userId="userId" ){
-	getTypeFromList <- function(inputList, userId=""){
-		if(inputList$id == userId){
-			return(inputList)
-		}	
-	}	
-	outputList <- lapply(authors.list, getTypeFromList, userId=userId)
-	return (returnListItem(outputList))
-}
+# getThingKind <- function( thingType="typeName", thingKind="kindName" ){
+# 	getThingKindFromList <- function(inputList, thingType=thingType, thingKind=thingKind){
+# 		if(inputList$thingType$typeName == thingType && inputList$kindName == thingKind){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(thingKinds.list, getThingKindFromList, thingType=thingType, thingKind=thingKind)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getThingKindByKindName <- function( thingKind="kindName" ){
+# 	getThingKindFromList <- function(inputList, thingType=typeName, thingKind=thingKind){
+# 		if( inputList$kindName == thingKind){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(thingKinds.list, getThingKindFromList, thingKind=thingKind)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getThingType <- function( typeName="typeName" ){
+# 	getThingTypeFromList <- function(inputList, typeName=""){
+# 		if(inputList$typeName == typeName){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(thingTypes.list, getThingTypeFromList, typeName=typeName)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getLabelType <- function( typeName="typeName" ){
+# 	getTypeFromList <- function(inputList, typeName=""){
+# 		if(inputList$typeName == typeName){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(labelTypes.list, getTypeFromList, typeName=typeName)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getLabelKind <- function( labelType="typeName", labelKind="kindName" ){
+# 	getLabelKindFromList <- function(inputList, labelType="", labelKind=""){
+# 		if(inputList$labelType$typeName == labelType && inputList$kindName == labelKind){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(labelKinds.list, getLabelKindFromList, labelType=labelType, labelKind=labelKind)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getLabelKindByKindName <- function( labelKind="kindName" ){
+# 	getLabelKindFromList <- function(inputList, labelType="", labelKind=""){
+# 		if(inputList$kindName == labelKind){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(labelKinds.list, getLabelKindFromList, labelKind=labelKind)
+# 	return (returnListItem(outputList))	
+# }
+#
+# getInteractionTypes <- function( typeName="typeName" ){
+# 	getTypeFromList <- function(inputList, typeName=""){
+# 		if(inputList$typeName == typeName){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(interactionTypes.list, getTypeFromList, typeName=typeName)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getInteractionTypeByVerb <- function( typeVerb="typeVerb" ){
+# 	getTypeFromList <- function(inputList, typeVerb=""){
+# 		if(inputList$typeVerb == typeVerb){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(interactionTypes.list, getTypeFromList, typeVerb=typeVerb)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getInteractionKind <- function( typeName="typeName", kindName="kindName" ){
+# 	getInteractionKindFromList <- function(inputList, typeName="", kindName=""){
+# 		if(inputList$interactionType$typeName == typeName && inputList$kindName == kindName){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(interactionKinds.list, getInteractionKindFromList, typeName=typeName, kindName=kindName)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getInteractionKindByVerb <- function( typeVerb="typeVerb", kindName="kindName" ){
+# 	getInteractionKindFromList <- function(inputList, typeVerb="", kindName=""){
+# 		if(inputList$interactionType$typeVerb == typeVerb && inputList$kindName == kindName){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(interactionKinds.list, getInteractionKindFromList, typeVerb=typeVerb, kindName=kindName)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getStateType <- function( stateType="typeName" ){
+# 	getTypeFromList <- function(inputList, stateType=""){
+# 		if(inputList$typeName == stateType){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(stateTypes.list, getTypeFromList, stateType=stateType)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getStateKind <- function( stateType="typeName", stateKind="kindName" ){
+# 	getStateKindFromList <- function(inputList, stateType="", stateKind=""){
+# 		if(inputList$stateType$typeName == stateType && inputList$kindName == stateKind){
+# 			return(inputList)
+# 		}	
+# 	}			
+# 	outputList <- lapply(stateKinds.list, getStateKindFromList, stateType=stateType, stateKind=stateKind)
+# 	return (returnListItem(outputList))	
+# }
+# 
+# getAuthorByUserName <- function( userName="userName" ){
+# 	getUserNameFromList <- function(inputList, userName=""){
+# 		if(inputList$userName == userName){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(authors.list, getUserNameFromList, userName=userName)
+# 	return (returnListItem(outputList))
+# }
+# 
+# getAuthorById <- function( userId="userId" ){
+# 	getTypeFromList <- function(inputList, userId=""){
+# 		if(inputList$id == userId){
+# 			return(inputList)
+# 		}	
+# 	}	
+# 	outputList <- lapply(authors.list, getTypeFromList, userId=userId)
+# 	return (returnListItem(outputList))
+# }
 
 deleteExperiment <- function(experiment, lsServerURL = racas::applicationSettings$serverPath){
   response <- getURL(
@@ -1274,6 +1307,8 @@ deleteEntity <- function(entity, acasCategory, lsServerURL = racas::applicationS
 }
 
 #' Turns 'true' and 'false' into TRUE and FALSE
+#' 
+#' @param JSONBoolean a string of "true" or "false"
 #' 
 #' Other inputs not affected
 interpretJSONBoolean <- function(JSONBoolean) {

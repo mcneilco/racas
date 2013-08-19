@@ -17,7 +17,7 @@
 
   \item{lsTransaction}{A number that is a transaction id}
 
-  \item{summary}{A description of the file or url
+  \item{reportFileSummary}{A description of the file or url
   annotation}
 
   \item{reportFilePath}{The path to the report file (may be

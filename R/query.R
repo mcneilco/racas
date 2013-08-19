@@ -29,32 +29,31 @@
 #' # 0.007   0.001   0.468 
 #' 
 query <- function(qu, globalConnect=FALSE, ...) {
-  isUpdate <- grepl("^UPDATE",toupper(sub("^\\s+", "", qu)))
+  isSend <- grepl("^UPDATE|^CREATE|^DELETE|^DROP|^INSERT|^ALTER",toupper(sub("^\\s+", "", qu)))
   if(!globalConnect) {
-    conn <- getDabaseConnection(...)
+    conn <- getDatabaseConnection(...)
     jdbcConn <- class(conn)=="JDBCConnection"
   }
   result <- tryCatch({
-    if(isUpdate && jdbcConn) {
+    if(isSend && jdbcConn) {
       result <- RJDBC::dbSendUpdate(conn, qu)
       return(TRUE)
     } else {
-      
       result <- DBI::dbGetQuery(conn,qu)
       return(result)
     }
   },
   error = function(ex) {
     if(globalConnect) {
-      conn <<- getDabaseConnection(...)
+      conn <<- getDatabaseConnection(...)
       jdbcConn <- class(conn)=="JDBCConnection"
       tryCatch({
-        if(isUpdate && jdbcConn) {
+        if(isSend && jdbcConn) {
           result <- RJDBC::dbSendUpdate(conn, qu)
           return(TRUE)
         } else {
          result <- DBI::dbGetQuery(conn,qu)
-          return(result)
+         return(result)
         }
       },
       error = function(ex) {
@@ -70,7 +69,7 @@ query <- function(qu, globalConnect=FALSE, ...) {
   })
   return(result)
 }
-getDabaseConnection <- function(applicationSettings = racas::applicationSettings) {
+getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
   getDBString <- function(driverString) {
     supportedDBs <- c("oracle", "postgres", "mysql")
     db <- supportedDBs[unlist(lapply(supportedDBs, grep, x = driverString))[1]]
@@ -95,10 +94,10 @@ errorHandler <- function(ex, conn, driver) {
   if(class(conn)=="character") {
     if(conn==class(driver)) {
       print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$db_driver '",parse(text = racas::applicationSettings$db_driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
-      return(NULL)
+      return(list(success = FALSE, error = ex))
     }
   } else{
     print(ex)
-    return(NULL)
+    return(list(success = FALSE, error = ex))
   }
 }

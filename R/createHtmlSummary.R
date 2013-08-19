@@ -83,7 +83,7 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
 #' @param experiment An experiment list of lists
 #' @param hasError A boolean in the analysis had an error
 #' @param htmlSummary A string that is html
-#' @param lsTransaction The id of the transaction
+#' @param lsTransaction An integer that is the transaction id
 #' @export
 saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction=NULL) {
   # Saves (replace) the analysis html and status
@@ -103,7 +103,7 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
     lsKind = "analysis result html",
     clobValue = htmlSummary,
     lsState = metadataState,
-    lsTransaction=lsTransaction
+    lsTransaction = lsTransaction
   )
   
   statusValue <- createStateValue(
@@ -111,7 +111,7 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
     lsKind = "analysis status",
     stringValue = if(hasError) {"failed"} else {"complete"},
     lsState = metadataState,
-    lsTransaction=lsTransaction)
+    lsTransaction = lsTransaction)
   
   tryCatch({
     lapply(valuesToDelete, deleteExperimentValue)

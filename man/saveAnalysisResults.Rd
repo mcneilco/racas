@@ -12,7 +12,8 @@
 
   \item{htmlSummary}{A string that is html}
 
-  \item{lsTransaction}{The id of the transaction}
+  \item{lsTransaction}{An integer that is the transaction
+  id}
 }
 \description{
   Saves a summary to the given experiment

@@ -14,9 +14,11 @@ Imports:
     RCurl,
     drc,
     plyr,
-    plotrix
+    plotrix,
+    brew
 Suggests:
   RPostgreSQL,
   ROracle,
   RMySQL,
-  RJDBC
+  RJDBC,
+  DBI

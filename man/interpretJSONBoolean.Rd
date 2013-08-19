@@ -4,7 +4,12 @@
 \usage{
   interpretJSONBoolean(JSONBoolean)
 }
+\arguments{
+  \item{JSONBoolean}{a string of "true" or "false"
+
+  Other inputs not affected}
+}
 \description{
-  Other inputs not affected
+  Turns 'true' and 'false' into TRUE and FALSE
 }
 

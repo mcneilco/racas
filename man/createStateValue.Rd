@@ -1,0 +1,75 @@
+\name{createStateValue}
+\alias{createStateValue}
+\title{Creates a state value}
+\usage{
+  createStateValue(lsType = "lsType", lsKind = "lsKind",
+    stringValue = NULL, fileValue = NULL, urlValue = NULL,
+    publicData = TRUE, ignored = FALSE, dateValue = NULL,
+    clobValue = NULL, blobValue = NULL,
+    valueOperator = NULL, operatorType = NULL,
+    numericValue = NULL, sigFigs = NULL,
+    uncertainty = NULL, uncertaintyType = NULL,
+    numberOfReplicates = NULL, valueUnit = NULL,
+    unitType = NULL, comments = NULL, lsTransaction = NULL,
+    codeValue = NULL, recordedBy = "username",
+    lsState = NULL)
+}
+\arguments{
+  \item{lsType}{}
+
+  \item{lsKind}{}
+
+  \item{stringValue}{}
+
+  \item{fileValue}{}
+
+  \item{urlValue}{}
+
+  \item{publicData}{}
+
+  \item{ignored}{}
+
+  \item{dateValue}{}
+
+  \item{clobValue}{}
+
+  \item{blobValue}{}
+
+  \item{valueOperator}{}
+
+  \item{operatorType}{}
+
+  \item{numericValue}{}
+
+  \item{sigFigs}{}
+
+  \item{uncertainty}{}
+
+  \item{uncertaintyType}{}
+
+  \item{numberOfReplicates}{}
+
+  \item{valueUnit}{}
+
+  \item{unitType}{}
+
+  \item{comments}{}
+
+  \item{lsTransaction}{}
+
+  \item{codeValue}{}
+
+  \item{recordedBy}{}
+
+  \item{lsState}{}
+}
+\value{
+  list, a value object
+}
+\description{
+  Creates a state value, used either in all cases
+}
+\details{
+  Use either in a nested object or alone
+}
+

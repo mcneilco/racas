@@ -6,7 +6,7 @@
 #'@param recordedBy The username of the person recording the data
 #'@param experiment A list that is an experiment object, needs to have values for id, verison, and codeName
 #'@param lsTransaction A number that is a transaction id
-#'@param summary A description of the file or url annotation
+#'@param reportFileSummary A description of the file or url annotation
 #'@param reportFilePath The path to the report file (may be relative)
 #'@param url A url (e.g. http://google.com)
 #'@param fileType The type of the annotation, used by some custom services
@@ -35,7 +35,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       
       serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
     } else {
-      stop("A file service custom code for", fileServiceType, "should be added in the configuration file")
+      stop("A file service custom code for", racas::applicationSettings$fileServiceType, "should be added in the configuration file")
     }
   }
   
@@ -50,7 +50,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         lsType = "fileValue",
         lsKind = "report file",
         fileValue = serverFileLocation,
-        comment = reportFileSummary,
+        comments = reportFileSummary,
         lsTransaction=lsTransaction
       )
     } else if (!is.null(url)) {
@@ -58,7 +58,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         lsType = "urlValue",
         lsKind = "report url",
         urlValue = url,
-        comment = summary,
+        comments = summary,
         lsTransaction=lsTransaction
       )
     } else {

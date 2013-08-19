@@ -42,36 +42,11 @@ applicationSettings <- data.frame(
   db_port = "5432",               #ACAS Port Number
   stringsAsFactors = FALSE
 )
-#' Query the application data server.
+#' Read a configuration file to racas::applicationSettings
 #'
-#' This function queries the acas databse specified in the variable \code{\link{applicationSettings}} and
-#' returns the result as a data.frame
-#'
-#' @param qu a sql query character string
-#' @param globalConnect should the query assume a global conn variable and return one to the global namespace?
-#' @param ... expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}
-#' @return A data frame result from the query
-#' @keywords query
+#' @param configLocation The location of the file to read
+#' @keywords applicationSettings, config, configuration, configurationNode.js
 #' @export
-#' @examples
-#' result <- query("select * from api_curve_params")
-#' # conn
-#' # Error: object 'conn' not found
-#' result <- query("select * from api_curve_params", globalConnect=TRUE)
-#' # conn
-#' # <PostgreSQLConnection:(96699,1)> 
-#' 
-#' # The globalConnect option:
-#' # The first query using the global connect option will create a conn varable in the global namespace
-#' system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
-#' # user  system elapsed 
-#' # 0.010   0.002   0.784 
-#' # The second query will use this global variable instead of opening a new connection, which makes subsequent queryies faster
-#' # If the connection is expired or closes, the globalConnect option will create a new connection
-#' system.time(result <- query("select * from api_curve_params", globalConnect=TRUE))
-#' # user  system elapsed 
-#' # 0.007   0.001   0.468 
-#' 
 readConfigFile <- function(configLocation) {
   #This function reads a config file and sets the applicationSettings
   configFile <- readLines(configLocation)
@@ -83,5 +58,26 @@ readConfigFile <- function(configLocation) {
   if (!is.null(applicationSettings$db_driver_package)) {
     eval(parse(text = applicationSettings$db_driver_package))
   }
+  applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
   assignInNamespace("applicationSettings",applicationSettings, ns="racas")
+}
+
+validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
+  #LogDir validation
+  #Check if set
+  if(is.null(applicationSettings$logDir)) {
+    warning("applicationSettings$logDir is null. Setting to /tmp")
+    applicationSettings$logDir <- "/tmp"
+  }
+  #Check if exits
+  if(!file.exists(applicationSettings$logDir)) {
+    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' does not exist.  Setting applicationSettings$logDir to \'/tmp\'"))
+    applicationSettings$logDir <- "/tmp"
+  }
+  #Check writeable
+  if(file.access(applicationSettings$logDir, mode = 2) != 0) {
+    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' is not writeable.  Setting applicationSettings$logDir to \'/tmp\'"))
+    applicationSettings$logDir <- "/tmp"
+  }
+  return(applicationSettings)
 }
