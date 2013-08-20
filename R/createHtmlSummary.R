@@ -84,8 +84,9 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
 #' @param hasError A boolean in the analysis had an error
 #' @param htmlSummary A string that is html
 #' @param lsTransaction An integer that is the transaction id
+#' @param testMode a boolean used for testing
 #' @export
-saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction=NULL) {
+saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction=NULL, testMode=FALSE) {
   # Saves (replace) the analysis html and status
   # Notes: experiment must have an "experiment metadata" state with values "analysis result html" and "analysis status"
   
@@ -103,7 +104,8 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
     lsKind = "analysis result html",
     clobValue = htmlSummary,
     lsState = metadataState,
-    lsTransaction = lsTransaction
+    lsTransaction = lsTransaction,
+    testMode = testMode
   )
   
   statusValue <- createStateValue(
@@ -111,13 +113,18 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
     lsKind = "analysis status",
     stringValue = if(hasError) {"failed"} else {"complete"},
     lsState = metadataState,
-    lsTransaction = lsTransaction)
+    lsTransaction = lsTransaction,
+    testMode = testMode)
   
-  tryCatch({
-    lapply(valuesToDelete, deleteExperimentValue)
-    saveExperimentValues(list(htmlValue,statusValue))
-  }, error = function(e) {
-    htmlSummary <- paste(htmlSummary, "<p>Could not save the experiment status</p>")
-  })
-  return (htmlSummary)
+  if(testMode) {
+    return(list(htmlValue,statusValue))
+  } else {
+    tryCatch({
+      lapply(valuesToDelete, deleteExperimentValue)
+      saveExperimentValues(list(htmlValue,statusValue))
+    }, error = function(e) {
+      htmlSummary <- paste(htmlSummary, "<p>Could not save the experiment status</p>")
+    })
+    return (htmlSummary)
+  }
 }
