@@ -365,7 +365,7 @@ createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="
 	)
 	return(protocolState)
 }
-createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL){
+createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE){
 	experimentState = list(
 	  experiment=experiment, #This will fail if not given an id and version (but the version does not matter)
 	  lsValues=experimentValues,
@@ -375,12 +375,12 @@ createExperimentState <- function(experimentValues=NULL, recordedBy="userName", 
 	  comments=comments,
 		lsTransaction=lsTransaction,
 		ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+	  recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
 	)
 	return(experimentState)
 }
 
-createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
+createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, testMode=FALSE){
   analysisGroupState = list(
     analysisGroup=analysisGroup, #This will fail if not given an id and version (but the version does not matter)
     lsValues=analysisGroupValues,
@@ -390,7 +390,7 @@ createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=N
     comments=comments,
     lsTransaction=lsTransaction,
     ignored=FALSE,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
   )
   return(analysisGroupState)
 }
@@ -495,6 +495,7 @@ createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="use
 #'@param codeValue
 #'@param recordedBy
 #'@param lsState
+#'@param testMode used for testing
 #'
 #'@details Use either in a nested object or alone
 #'
@@ -506,7 +507,7 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
                              sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
                              lsTransaction=NULL, codeValue=NULL, recordedBy="username",
-                             lsState=NULL){
+                             lsState=NULL, testMode=FALSE){
   #TODO: use unitType and operatorType
   stateValue = list(
     lsState=lsState,
@@ -531,7 +532,7 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
     publicData=publicData,
     codeValue=codeValue,
     recordedBy=recordedBy,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
+    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000,
     lsTransaction=lsTransaction		
   )
   return(stateValue)
@@ -581,9 +582,13 @@ createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsK
 
 
 createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default", lsKind="default", lsTransaction=NULL, recordedBy="userName",
-									treatmentGroups=NULL, analysisGroupStates=NULL){
+									treatmentGroups=NULL, analysisGroupStates=NULL, testMode=FALSE){
 	if (is.null(codeName) ) {
-		codeName <- getAutoLabels(thingTypeAndKind="document_analysis group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+	  if(testMode) {
+	    codeName <- "AG-TEST"
+	  } else {
+      codeName <- getAutoLabels(thingTypeAndKind="document_analysis group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]
+	  }
 	}
 	analysisGroup <- list(
 		codeName=codeName,
@@ -594,7 +599,7 @@ createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default"
 		lsTransaction=lsTransaction,
 		treatmentGroups=treatmentGroups,
 		lsStates=analysisGroupStates,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+		recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
 	)
 
 	return(analysisGroup)	

@@ -4,7 +4,8 @@
 \usage{
   addFileLink(batchCodeList, recordedBy, experiment,
     lsTransaction, reportFileSummary = NULL,
-    reportFilePath = NULL, fileType = NULL, url = NULL)
+    reportFilePath = NULL, fileType = NULL, url = NULL,
+    testMode = FALSE)
 }
 \arguments{
   \item{batchCodeList}{A list or vector of batch codes}
@@ -27,6 +28,8 @@
 
   \item{fileType}{The type of the annotation, used by some
   custom services}
+
+  \item{testMode}{a boolean used for testing}
 }
 \value{
   NULL

@@ -4,3 +4,4 @@ library(testthat)
 # Needed before testing the package:
 # Sys.setenv("_R_CHECK_FORCE_SUGGESTS_" = FALSE)
 test_package("racas")
+#test_package("racas", reporter="minimal")

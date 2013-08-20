@@ -12,7 +12,7 @@
     numberOfReplicates = NULL, valueUnit = NULL,
     unitType = NULL, comments = NULL, lsTransaction = NULL,
     codeValue = NULL, recordedBy = "username",
-    lsState = NULL)
+    lsState = NULL, testMode = FALSE)
 }
 \arguments{
   \item{lsType}{}
@@ -62,6 +62,8 @@
   \item{recordedBy}{}
 
   \item{lsState}{}
+
+  \item{testMode}{used for testing}
 }
 \value{
   list, a value object
