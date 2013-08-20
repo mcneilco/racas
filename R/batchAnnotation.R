@@ -10,13 +10,14 @@
 #'@param reportFilePath The path to the report file (may be relative)
 #'@param url A url (e.g. http://google.com)
 #'@param fileType The type of the annotation, used by some custom services
+#'@param testMode a boolean used for testing
 #'
 #'@details Must have either a reportFilePath or a url, but having both will result in the url being ignored.
 #'
 #'@return NULL
 #'@export
 addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction, 
-                            reportFileSummary = NULL, reportFilePath = NULL, fileType=NULL, url=NULL) {
+                            reportFileSummary = NULL, reportFilePath = NULL, fileType=NULL, url=NULL, testMode=FALSE) {
   
   if (!is.null(reportFilePath)) {
     fileName <- basename(reportFilePath)
@@ -25,13 +26,15 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     
     if (racas::applicationSettings$fileServiceType == "blueimp") {
       experimentFolderLocation <- file.path(dirname(reportFilePath),"experiments")
-      dir.create(experimentFolderLocation, showWarnings = FALSE)
-      
-      fullFolderLocation <- file.path(experimentFolderLocation, experimentCodeName)
-      dir.create(fullFolderLocation, showWarnings = FALSE)
-      
-      # Move the file
-      file.rename(from=reportFilePath, to=file.path(fullFolderLocation, fileName))
+      if(!testMode) {
+        dir.create(experimentFolderLocation, showWarnings = FALSE)
+        
+        fullFolderLocation <- file.path(experimentFolderLocation, experimentCodeName)
+        dir.create(fullFolderLocation, showWarnings = FALSE)
+        
+        # Move the file
+        file.rename(from=reportFilePath, to=file.path(fullFolderLocation, fileName))
+      }
       
       serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
     } else {
@@ -51,7 +54,8 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         lsKind = "report file",
         fileValue = serverFileLocation,
         comments = reportFileSummary,
-        lsTransaction=lsTransaction
+        lsTransaction=lsTransaction,
+        testMode=testMode
       )
     } else if (!is.null(url)) {
       analysisGroupValues[[length(analysisGroupValues)+1]] <- createStateValue(
@@ -59,7 +63,8 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         lsKind = "report url",
         urlValue = url,
         comments = summary,
-        lsTransaction=lsTransaction
+        lsTransaction=lsTransaction,
+        testMode=testMode
       )
     } else {
       stop("Must supply either a reportFilePath or a url")
@@ -69,26 +74,33 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       lsType = "codeValue",
       lsKind = "batch code",
       codeValue = batchCode,
-      lsTransaction = lsTransaction
+      lsTransaction = lsTransaction,
+      testMode=testMode
     )    
     
     analysisGroupStates[[length(analysisGroupStates)+1]] <- createAnalysisGroupState( lsTransaction=lsTransaction, 
                                                                                       recordedBy=recordedBy,
                                                                                       lsType="metadata",
                                                                                       lsKind="report locations",
-                                                                                      analysisGroupValues=analysisGroupValues)
+                                                                                      analysisGroupValues=analysisGroupValues,
+                                                                                      testMode=testMode)
     
     analysisGroups[[length(analysisGroups)+1]] <- createAnalysisGroup(lsTransaction=lsTransaction,
                                                                        recordedBy=recordedBy,
                                                                        analysisGroupStates=analysisGroupStates,
-                                                                       experiment=experiment)
+                                                                       experiment=experiment,
+                                                                      testMode=testMode)
   }
   
-  tryCatch({
-    response <- saveAnalysisGroups(analysisGroups) 
-  }, error = function(e) {
-    stop(paste0("Could not save the report ", if (!is.null(reportFilePath)) "file" else "url"))
-  })
+  if(testMode) {
+    output <- list(analysisGroups = analysisGroups)
+  } else {
+    tryCatch({
+      response <- saveAnalysisGroups(analysisGroups) 
+    }, error = function(e) {
+      stop(paste0("Could not save the report ", if (!is.null(reportFilePath)) "file" else "url"))
+    })
+  }
   
   locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="report locations"]
   
@@ -101,9 +113,14 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       experiment = experiment,
       lsType="metadata",
       lsKind="report locations",
-      lsTransaction=lsTransaction)
+      lsTransaction=lsTransaction,
+      testMode=testMode)
     
-    locationState <- saveExperimentState(locationState)
+    if(testMode) {
+      output$locationState <- locationState
+    } else {
+      locationState <- saveExperimentState(locationState)
+    }
   }
   if (racas::applicationSettings$fileServiceType == "blueimp") {
     if (!is.null(reportFilePath)) {
@@ -112,24 +129,31 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
                                       lsKind = "annotation file",
                                       fileValue = serverFileLocation,
                                       lsState = locationState,
-                                      lsTransaction = lsTransaction)
+                                      lsTransaction = lsTransaction,
+                                      testMode=testMode)
     } else {
       locationValue <- createStateValue(recordedBy = recordedBy,
                                         lsType = "urlValue",
                                         lsKind = "annotation url",
                                         urlValue = url,
                                         lsState = locationState,
-                                        lsTransaction = lsTransaction)
+                                        lsTransaction = lsTransaction,
+                                        testMode=testMode)
     }
   } else {
     stop("Need to set up separate service R code for this annotation")
   }
+  if(testMode) {
+    output$locationValue <- locationValue
+    return(output)
+  } else {
     tryCatch({
-    saveExperimentValues(list(locationValue))
-  }, error = function(e) {
-    stop("Could not save the annotation location")
-  })
-  return(NULL)
+      saveExperimentValues(list(locationValue))
+    }, error = function(e) {
+      stop("Could not save the annotation location")
+    })
+    return(NULL)
+  }
 }
 
 #'Deletes a file that shows up as a link
@@ -137,10 +161,11 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
 #'Deletes the file referenced as an annotation file in the experiment (in stateKind: "report locations").
 #'
 #'@param experiment A list that is an experiment object; needs to have values for id, version, and codeName
+#'@param testMode boolean used for testing
 #'
 #'@details Will delete all annotation files associated with the experiment
 #'@export
-deleteLinkFile <- function(experiment) {
+deleteLinkFile <- function(experiment, testMode=FALSE) {
   if (racas::applicationSettings$fileServiceType == "blueimp") {
     locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="report locations"]
     
@@ -154,11 +179,15 @@ deleteLinkFile <- function(experiment) {
       
       if (length(valuesToDelete) > 0) {
         filesToDelete <- sapply(valuesToDelete,getElement, "fileValue")
-        tryCatch({
-          file.remove(paste0("serverOnlyModules/blueimp-file-upload-node/public/files/", filesToDelete))
-        }, error = function(e) {
-          stop("There was an error deleting the old report file. Please contact your system adminstrator.")
-        })
+        if(testMode) {
+          return(filesToDelete)
+        } else {
+          tryCatch({
+            file.remove(paste0("serverOnlyModules/blueimp-file-upload-node/public/files/", filesToDelete))
+          }, error = function(e) {
+            stop("There was an error deleting the old report file. Please contact your system adminstrator.")
+          })
+        }
       }
     }
   } else {
