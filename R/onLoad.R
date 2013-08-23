@@ -9,7 +9,7 @@
   } else {
     tryCatch({
         configFileLocation <- paste0(appHome,"/public/src/conf/configurationNode.js")
-        output <- suppressWarnings(readConfigFile(configFileLocation))
+        output <- readConfigFile(configFileLocation)
       },error = function(ex) {
         #error <- capture.output(print(ex))
         warning(paste0("Could not load configuration file at:\n\t",

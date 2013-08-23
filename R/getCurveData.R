@@ -21,10 +21,12 @@ getCurveData <- function(curveids, ...) {
   #There are cases where getParametersByRenderingHint return curveids (See PK), in this case we call getParametersByRenderingHint again with those curveids 3_AG-00000040
   if(class(renderingHintParameters)=="list") {
     points <- getPoints(curveids, renderingHint = renderingHintParameters$renderingHint, ...)
+    points$oldcurveid <- points$curveid
     points$curveid <- paste0(points$curveid,"_s_id_",points$s_id)
     renderingHintParameters <- renderingHintParameters$parameters
-    renderingHintParameters <- merge(renderingHintParameters, unique(points$s_id))
-    renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$y)
+    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id, curveid=points$oldcurveid)))
+    renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$s_id)
+    renderingHintParameters$name <- renderingHintParameters$name
   } else {
     points <- getPoints(curveids, ...)
   }
@@ -88,27 +90,46 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                  GROUP by s.id, ss.id, api_agsvb.string_value)
                  where response is not null
                  order by tg_id asc")
-  poIVQU <- paste("select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
-				api_agsvb.string_value as curveid,
-  			max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
-  			'Time' as dosetype,
-				max(CASE WHEN tv.ls_kind in ('time') then tv.unit_kind else null end) as doseunits,
-  			max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.numeric_value else null end) as response,
-  			'Conc' as responsetype,
-				max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.unit_kind else null end) as responseunits,
-				max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as Flag,
-				max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.treatment_state_id else null end) as response_ss_id,
-				max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as tg_id,
-				max(api_agsvb.AG_ID) AS ag_id,
-				 max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation
-				FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
-					JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
-					JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
-				WHERE api_agsvb.ls_kind like 'PO IV pk curve id'
-				 AND tv.ls_kind in ('time', 'PO - PK_Concentration', 'IV - PK_Concentration')
-				 AND api_agsvb.string_value in (",sqliz(curveids)," )
-					GROUP by tg.id, ts.id, api_agsvb.string_value
-          order by tg_id asc"
+  poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose as Name
+FROM (
+select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
+                  api_agsvb.string_value as curveid,
+                  max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
+                  'Time' as dosetype,
+                  max(CASE WHEN tv.ls_kind in ('time') then tv.unit_kind else null end) as doseunits,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.numeric_value else null end) as response,
+                  'Conc' as responsetype,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.unit_kind else null end) as responseunits,
+                  max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as Flag,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.treatment_state_id else null end) as response_ss_id,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as tg_id,
+                  max(api_agsvb.AG_ID) AS ag_id,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation,
+                  max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration') then 'PO' WHEN tv.ls_kind in ('IV - PK_Concentration') then 'IV' else null end) as Route
+                  FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
+                  JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
+                  JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
+                  WHERE api_agsvb.ls_kind like 'PO IV pk curve id'
+                  AND tv.ls_kind in ('time', 'PO - PK_Concentration', 'IV - PK_Concentration')
+                  AND api_agsvb.string_value in (",sqliz(curveids),")
+                  GROUP by tg.id, ts.id, api_agsvb.string_value
+                  ) a
+                  LEFT OUTER JOIN (
+                  SELECT tv.numeric_value || tv.unit_kind as Dose,
+                  tg.id AS s_id
+                  FROM api_analysis_group_results api_agsvb
+                  JOIN treatment_GROUP tg
+                  ON api_agsvb.ag_id=tg.analysis_GROUP_id
+                  JOIN treatment_group_state ts
+                  ON ts.treatment_group_id = tg.id
+                  JOIN treatment_group_value tv
+                  ON tv.treatment_state_id = ts.id
+                  WHERE api_agsvb.ls_kind LIKE 'PO IV pk curve id'
+                  AND tv.ls_kind             IN ('Dose')
+                  AND api_agsvb.string_value IN (",sqliz(curveids),")
+                  ) b
+                  ON a.s_id = b.s_id
+                  order by tg_id asc"
   )
   
   qu <- switch(renderingHint,
@@ -128,6 +149,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = as.factor(points$name),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -144,6 +166,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                    },
                    "IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = paste0(as.factor("IV"),"_",as.factor(points$curveid)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -159,6 +182,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                    },
                    "PO pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
+                                  name = paste0(as.factor("PO"),"_",as.factor(points$curveid)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -173,6 +197,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                      )
                    },
                      data.frame(  curveid = as.factor(points$curveid),
+                                   name = as.factor(points$curveid),
                                    dose = as.numeric(points$dose), 
                                    doseUnits = as.factor(points$doseunits), 
                                    response = as.numeric(points$response),
