@@ -46,6 +46,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
   analysisGroups <- list()
   
   for (batchCode in batchCodeList) {
+    analysisGroupStates <- list()
     analysisGroupValues <- list()
     # File or url value
     if (!is.null(reportFilePath)) {
