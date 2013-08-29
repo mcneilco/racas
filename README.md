@@ -25,3 +25,7 @@
 ...for a branch (change username/password to your git username/password)...
 
     install_url(url = "https://bitbucket.org/mcneilco/racas/get/dns.zip", config = authenticate(user = "username", password = "password", type = "basic"))
+
+##Notes:
+
+You must restart apache if you are looking for changes in curve rendering through rapche.

@@ -354,7 +354,7 @@ createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="
 									lsKind="lsKind", comments="", lsTransaction=NULL){
 	protocolState = list(
     protocol=protocol,
-		protocolValues=protocolValues,
+		lsValues=protocolValues,
 	  	recordedBy=recordedBy,
 	    lsType=lsType,
 		lsKind=lsKind,
