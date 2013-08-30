@@ -51,7 +51,7 @@ createSELExperimentMetaData <- function(format = "Generic", protocolName = "", e
 #' cars2$Sample <- paste0("CORP",1:nrow(cars))
 #' createSELCalculatedResults(cars2, corporateIDColumn = "Sample")
 #' 
-#' #This gives warning that "Corporte ID" not found
+#' #This gives warning that "Corporte Batch ID" not found
 #' createSELCalculatedResults(cars)
 #' 
 #' #Additional Features
@@ -63,7 +63,7 @@ createSELExperimentMetaData <- function(format = "Generic", protocolName = "", e
 #' #Error handling
 #' createSELCalculatedResults(cars2, corporateIDColumn = "Some Garbage")
 #' createSELCalculatedResults(cars2, corporateIDColumn = "Sample", dataTypes = "Some Garbage")
-createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "Corporate ID", dataTypes = NULL, ls_kinds = NULL, unit_kinds = NULL) {
+createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "Corporate Batch ID", dataTypes = NULL, ls_kinds = NULL, unit_kinds = NULL) {
   allowedResultClasses <- c("data.table", "data.frame")
   if(!class(calculatedResults) %in% allowedResultClasses) {
     stop(paste0("calculatedResults must be a ", paste(allowedResultClasses, collapse = " or ")))
@@ -72,11 +72,11 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
     if(corporateIDColumn %in% names(calculatedResults)) {
       corpIDX <- grep(corporateIDColumn, names(calculatedResults))
       calcResults <- calculatedResults[,c(-corpIDX)]
-      corporateIDCol <- data.frame("Datatype" = c("Corporate ID",calculatedResults[,corpIDX]), check.names = FALSE)
+      corporateIDCol <- data.frame("Datatype" = c("Corporate Batch ID",calculatedResults[,corpIDX]), check.names = FALSE)
     } else {
-      warning(paste0("\'",corporateIDColumn,"\' not found so \'Corporate ID\' column being added implicitely"))
+      warning(paste0("\'",corporateIDColumn,"\' not found so \'Corporate Batch ID\' column being added implicitely"))
       calcResults <- calculatedResults
-      corporateIDCol <- data.frame("Datatype" = c("Corporate ID",rep("", nrow(calcResults))), check.names = FALSE)
+      corporateIDCol <- data.frame("Datatype" = c("Corporate Batch ID",rep("", nrow(calcResults))), check.names = FALSE)
     }
   }
   
