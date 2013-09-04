@@ -46,6 +46,8 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
   drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
   poQU <- paste("select * from (
                  select s.id AS S_ID,
+                 e.label_text as experiment_name,
+                 'Animal-' || cl.label_text as name,
                  api_agsvb.string_value as curveid,
                  max(CASE WHEN sv.ls_kind in ('time') then sv.numeric_value else null end) as dose,
                  'Time' as dosetype,
@@ -58,17 +60,23 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                  max(CASE sv.ls_kind WHEN 'PO - PK_Concentration' then s.treatment_group_id else null end) as tg_id,
    	             max(api_agsvb.AG_ID) AS ag_id
                  FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
-                 JOIN subject s on tg.id=s.treatment_GROUP_id
+                   JOIN api_experiment e on api_agsvb.experiment_id=e.id
+                JOIN subject s on tg.id=s.treatment_GROUP_id
                  JOIN subject_state ss ON ss.subject_id = s.id
                  JOIN subject_value sv ON sv.subject_state_id = ss.id
+                 JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
+                 JOIN container c on c.id=itxsc.container_id
+                 JOIN container_label cl on cl.container_id=c.id
                  WHERE api_agsvb.ls_kind like 'PO pk curve id'
                  AND sv.ls_kind in ('time', 'PO - PK_Concentration')
                  AND api_agsvb.string_value in (",sqliz(curveids)," )
-                 GROUP by s.id, ss.id, api_agsvb.string_value)
+                 GROUP by s.id, ss.id, api_agsvb.string_value, cl.label_text, e.label_text)
                  where response is not null
                  order by tg_id asc")
   ivQU <- paste("select * from (
                  select s.id AS S_ID,
+                 e.label_text as experiment_name,
+                 'Animal-' || cl.label_text as name,
                  api_agsvb.string_value as curveid,
                  max(CASE WHEN sv.ls_kind in ('time') then sv.numeric_value else null end) as dose,
       	         'Time' as dosetype,
@@ -81,19 +89,25 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                  max(CASE sv.ls_kind WHEN 'IV - PK_Concentration' then s.treatment_group_id else null end) as tg_id,
                   max(api_agsvb.AG_ID) AS ag_id
                  FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
+                  JOIN api_experiment e on api_agsvb.experiment_id=e.id
                  JOIN subject s on tg.id=s.treatment_GROUP_id
                  JOIN subject_state ss ON ss.subject_id = s.id
                  JOIN subject_value sv ON sv.subject_state_id = ss.id
+                 JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
+                 JOIN container c on c.id=itxsc.container_id
+                 JOIN container_label cl on cl.container_id=c.id
                  WHERE api_agsvb.ls_kind like 'IV pk curve id'
                  AND sv.ls_kind in ('time', 'IV - PK_Concentration')
                  AND api_agsvb.string_value in (",sqliz(curveids)," )
-                 GROUP by s.id, ss.id, api_agsvb.string_value)
+                 GROUP by s.id, ss.id, api_agsvb.string_value, cl.label_text, e.label_text)
                  where response is not null
                  order by tg_id asc")
-  poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose as Name
+  poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose || '-Animal-' || animal as name
 FROM (
 select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
                   api_agsvb.string_value as curveid,
+                  cl.label_text as animal,
+                  e.label_text as experiment_name,
                   max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
                   'Time' as dosetype,
                   max(CASE WHEN tv.ls_kind in ('time') then tv.unit_kind else null end) as doseunits,
@@ -107,12 +121,19 @@ select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentrat
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration') then 'PO' WHEN tv.ls_kind in ('IV - PK_Concentration') then 'IV' else null end) as Route
                   FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
+                  JOIN api_experiment e on api_agsvb.experiment_id=e.id
                   JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
                   JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
+                 JOIN subject s on tg.id=s.treatment_GROUP_id
+                 JOIN subject_state ss ON ss.subject_id = s.id
+                 JOIN subject_value sv ON sv.subject_state_id = ss.id
+                 JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
+                 JOIN container c on c.id=itxsc.container_id
+                 JOIN container_label cl on cl.container_id=c.id
                   WHERE api_agsvb.ls_kind like 'PO IV pk curve id'
                   AND tv.ls_kind in ('time', 'PO - PK_Concentration', 'IV - PK_Concentration')
                   AND api_agsvb.string_value in (",sqliz(curveids),")
-                  GROUP by tg.id, ts.id, api_agsvb.string_value
+                  GROUP by tg.id, ts.id, api_agsvb.string_value, cl.label_text, e.label_text
                   ) a
                   LEFT OUTER JOIN (
                   SELECT tv.numeric_value || tv.unit_kind as Dose,
@@ -149,7 +170,7 @@ select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentrat
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
-                                  name = as.factor(points$name),
+                                  name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.factor(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -166,7 +187,7 @@ select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentrat
                    },
                    "IV pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
-                                  name = paste0(as.factor("IV"),"_",as.factor(points$curveid)),
+                                  name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.factor(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
@@ -182,7 +203,7 @@ select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentrat
                    },
                    "PO pk curve id" = {
                      data.frame(  curveid = as.factor(points$curveid),
-                                  name = paste0(as.factor("PO"),"_",as.factor(points$curveid)),
+                                  name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.factor(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.factor(points$dosetype), 
                                   doseUnits = as.factor(points$doseunits), 
