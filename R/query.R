@@ -70,16 +70,6 @@ query <- function(qu, globalConnect=FALSE, ...) {
   return(result)
 }
 getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
-  getDBString <- function(driverString) {
-    supportedDBs <- c("oracle", "postgres", "mysql")
-    db <- supportedDBs[unlist(lapply(supportedDBs, grep, x = driverString))[1]]
-    dbString <- switch(db,
-                       "oracle" = "jdbc:oracle:thin:@",
-                       "postgres" = "jdbc:postgresql://",
-                       "mysql" = "jdbc:mysql://"
-    )
-    return(dbString)
-  }
   driver <- eval(parse(text = applicationSettings$db_driver))
   conn <- switch(class(driver),
                  "OraDriver" = DBI::dbConnect(driver, dbname=paste0(applicationSettings$db_host,":",applicationSettings$db_port,"/",applicationSettings$db_name), user=applicationSettings$db_user, pass=applicationSettings$db_password),
@@ -100,4 +90,36 @@ errorHandler <- function(ex, conn, driver) {
     print(ex)
     return(list(success = FALSE, error = ex))
   }
+}
+
+getDBType <- function(db_driver = racas::applicationSettings$db_driver) {
+  
+  driver <- eval(parse(text = db_driver))
+  dbType <- switch(class(driver),
+                   "OraDriver" = "Oracle",
+                   "PostgreSQLDriver" = "Postgres",
+                   "MySQLDriver" = "MySQL",
+                   "JDBCDriver" = "JDBC",
+  )
+  if(!is.null(dbType)){
+    if(dbType=="JDBC") {
+      supportedDBs <- c("oracle", "postgres", "mysql")
+      db <- supportedDBs[unlist(lapply(supportedDBs, grepl, x = driver, ignore.case = TRUE))][1]
+      grep(supportedDB)
+      dbType <- switch(db,
+                       "oracle" = "Oracle",
+                       "postgres" = "Postgres",
+                       "mysql" = "MySQL"
+      )
+    }
+  }
+  return(dbType)
+}
+getDBString <- function(driverString) {
+  dbString <- switch(getDBType(driverString),
+                     "Oracle" = "jdbc:oracle:thin:@",
+                     "Postgres" = "jdbc:postgresql://",
+                     "MySQ" = "jdbc:mysql://"
+  )
+  return(dbString)
 }
