@@ -116,10 +116,9 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   if(is.na(ymin)) {
     if(logResponse) {
       ymin <- 10^(log10(min(curveData$response[curveData$response>0])) - 0.5)
-      curveData$response[curveData$response <= 0] <- ymin
     } else {
       ymin <- (minResponse - 0.01*responseRange)
-    } 
+    }
   }
   if(is.na(ymax)) {
     if(logResponse) {
