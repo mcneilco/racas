@@ -104,8 +104,7 @@ getDBType <- function(db_driver = racas::applicationSettings$db_driver) {
   if(!is.null(dbType)){
     if(dbType=="JDBC") {
       supportedDBs <- c("oracle", "postgres", "mysql")
-      db <- supportedDBs[unlist(lapply(supportedDBs, grepl, x = driver, ignore.case = TRUE))][1]
-      grep(supportedDB)
+      db <- supportedDBs[unlist(lapply(supportedDBs, grepl, x = paste(unlist(capture.output(driver)), collapse = " "), ignore.case = TRUE))][1]
       dbType <- switch(db,
                        "oracle" = "Oracle",
                        "postgres" = "Postgres",
