@@ -1,0 +1,28 @@
+\name{getEntity}
+\alias{getEntity}
+\title{Retrieves a list of entities by type}
+\usage{
+  getEntity(x,
+    type = c("protocolName", "experimentName", "protocolCodeName", "experimentCodeName"))
+}
+\arguments{
+  \item{x}{entity names or code names of the same type}
+
+  \item{type}{entity type of x (protocolName,
+  experimentCodeName...etc.)}
+}
+\value{
+  a list of the entities returned from the server
+}
+\description{
+  This function checks to see if a given entity exists
+}
+\examples{
+getEntity("ADME_Human Liver Microsome Stability", "protocolName")
+getEntity(c("ADME_Human Liver Microsome Stability","some other protocol name"), "protocolName")
+getEntity("PROT-00000001", "protocolCodeName")
+getEntity("EXPT-00000001", "experimentCodeName")
+}
+\keyword{entity}
+\keyword{get,}
+

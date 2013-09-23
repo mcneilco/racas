@@ -17,13 +17,22 @@
   \item{warningList}{A list of warnings}
 
   \item{summaryInfo}{A list of information to return to the
-  user}
+  user (see details)}
 
   \item{dryRun}{A boolean marking if information should be
   saved to the server}
 }
+\value{
+  a string of HTML
+}
 \description{
   Takes a list of summary information and turns it into
   HTML that can be displayed in a web interface.
+}
+\details{
+  summaryInfo can have named elements "info": a list of
+  information where names are used as titles, and
+  "viewerLink": a URL link to the program used to view the
+  results
 }
 

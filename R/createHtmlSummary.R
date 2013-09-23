@@ -7,23 +7,16 @@
 #' @param errorList A list of errors
 #' @param hasWarning A boolean marking if the function had warnings
 #' @param warningList A list of warnings
-#' @param summaryInfo A list of information to return to the user
+#' @param summaryInfo A list of information to return to the user (see details)
 #' @param dryRun A boolean marking if information should be saved to the server
+#' 
+#' @details summaryInfo can have named elements "info": a list of information where names are used as titles,
+#' and "viewerLink": a URL link to the program used to view the results
+#' 
+#' @return a string of HTML
+#' 
 #' @export
 createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryInfo,dryRun) {
-  # Turns the output information into html
-  # 
-  # Args:
-  #   hasError:             A boolean marking that there are errors
-  #   errorList:            A list of errors
-  #   hasWarning:           A boolean marking that there are warnings
-  #   warningList:          A list of warnings
-  #   summaryInfo:          A list of information to return to the user
-  #   dryRun:               A boolean that marks if information should be saved to the server
-  #
-  # Returns:
-  #  A character vector of html code
-  
   require('brew')
   
   # Create a brew to load opening messages, errors, and warnings
@@ -33,12 +26,18 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
   
   # If there is summmaryInfo, add it to the brew
   if(!is.null(summaryInfo)) {
-    htmlOutputFormat <- paste0(htmlOutputFormat,
-                               "<h4>Summary</h4>
-                               <p>Information:</p>
+    htmlOutputFormat <- paste0(htmlOutputFormat, "<h4>Summary</h4>")
+  }
+  if(!is.null(summaryInfo$info)) {
+    htmlOutputFormat <- paste0(htmlOutputFormat, "<p>Information:</p>
                                <ul>
                                <li><%=paste(paste0(names(summaryInfo$info),': ',summaryInfo$info),collapse='</li><li>')%></li>
                                </ul>")
+  }
+  if(!is.null(summaryInfo$viewerLink)) {
+    htmlOutputFormat <- paste0(htmlOutputFormat,"<%=paste0('<a href=\"', summaryInfo$viewerLink, '\" target=\"_blank\" class=\"btn\">Open Seurat Report*</a>
+<a href=\"mailto:?subject=Seurat Live Report for ', summaryInfo$info$\"Protocol\", ': ', summaryInfo$info$\"Experiment\" , '&body=Click the following link to run Live Report: ', URLencode(summaryInfo$viewerLink, reserved = TRUE), '\" class=\"btn\">Email Link to Seurat Report</a>
+<p>*Note: there may be a delay before data is visible in Seurat</p>')%>")
   }
   
   # Create a header based on whether this is a dryRun and if there are warnings and errors
