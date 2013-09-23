@@ -1,18 +1,18 @@
-#' Check for entity existance
+#' Check for entity existence
 #'
 #' This function checks to see if a given entity or list of entities exists
 #'
 #' @param x entity names or code names of the same type
 #' @param type entity type of x (protocolName, experimentCodeName...etc.)
 #' @return boolean list with names that match x
-#' @keywords check, existance, exists
+#' @keywords check, existence, exists
 #' @export
 #' @examples
-#' checkExistance("ADME_Human Liver Microsome Stability", "protocolName")
-#' checkExistance(c("ADME_Human Liver Microsome Stability","some other protocol name"), "protocolName")
-#' checkExistance("PROT-00000001", "protocolCodeName")
-#' checkExistance("EXPT-00000001", "experimentCodeName")
-checkExistance <- function(x, type = c("protocolName", "experimentName", "protocolCodeName", "experimentCodeName")) {
+#' checkExistence("ADME_Human Liver Microsome Stability", "protocolName")
+#' checkExistence(c("ADME_Human Liver Microsome Stability","some other protocol name"), "protocolName")
+#' checkExistence("PROT-00000001", "protocolCodeName")
+#' checkExistence("EXPT-00000001", "experimentCodeName")
+checkExistence <- function(x, type = c("protocolName", "experimentName", "protocolCodeName", "experimentCodeName")) {
   entities <- getEntity(x, type)
   entityExists <- lapply(entities, function(x) length(x)>0)
   return(entityExists)
