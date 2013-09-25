@@ -299,10 +299,10 @@ createInteraction <- function(firstThing, secondThing, recordedBy, interactionTy
 	)
 	return(interaction)
 }
-createInteractionState <- function(interaction=NULL, interactionValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
-  interactionState = list(
-    interaction=interaction,
-    interactionValues=interactionValues,
+createContainerContainerInteractionState <- function(itxContainerContainer=NULL, lsValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
+  containerContainerInteractionState = list(
+    itxContainerContainer=itxContainerContainer,
+    lsValues=lsValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
@@ -311,20 +311,22 @@ createInteractionState <- function(interaction=NULL, interactionValues=NULL, rec
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
-  return(interactionState)
+  return(containerContainerInteractionState)
 }
 
-saveInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
-	response <- getURL(
-	  paste(lsServerURL, "interactions/jsonArray", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(lsInteractions))
-	if (grepl("^<",response)) {
-	  stop (paste("The loader was unable to save your interactions. Instead, it got this response:", response))
-	}
-  response <- fromJSON(response)
-	return(response)
+createSubjectContainerInteractionState <- function(itxSubjectContainer=NULL, lsValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
+  containerSubjectInteractionState = list(
+    itxSubjectContainer=itxSubjectContainer,
+    lsValues=lsValues,
+    recordedBy=recordedBy,
+    lsType=lsType,
+    lsKind=lsKind,
+    comments=comments,
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(containerSubjectInteractionState)
 }
 
 saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$serverPath){
@@ -708,22 +710,6 @@ createContainerContainerInteraction <- function(codeName=NULL, ignored = FALSE, 
   
   return(containerContainerInteraction)	
 }			
-
-createContainerContainerItxState <- function(container=NULL, interactionValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
-                                 comments="", lsTransaction=NULL){
-  interactionState = list(
-    container=container,
-    lsValues=interactionValues,
-    recordedBy=recordedBy,
-    lsType=lsType,
-    lsKind=lsKind,
-    comments=comments,
-    lsTransaction=lsTransaction,
-    ignored=FALSE,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-  )
-  return(interactionState)
-}
 
 createSubjectContainerInteraction <- function(subject, container, lsType, lsKind="interaction", codeName=NULL, ignored = FALSE,
                                               lsTransaction=NULL, recordedBy="userName", interactionStates=NULL){

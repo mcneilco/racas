@@ -57,11 +57,19 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                           recordedBy=recordedBy,
                                           lsTransaction=lsTransaction)
       },
-      interaction = {createInteractionState(interaction = list(id=entityData$interactionID[1], version = 0),
-                                            lsType=lsType,
-                                            lsKind=lsKind,
-                                            recordedBy=recordedBy,
-                                            lsTransaction=lsTransaction)
+      itxcontainercontainer = {createContainerContainerInteractionState(
+        itxContainerContainer = list(id=entityData$itxContainerContainerID[1], version = 0),
+        lsType=lsType,
+        lsKind=lsKind,
+        recordedBy=recordedBy,
+        lsTransaction=lsTransaction)
+      },
+      itxsubjectcontainer = {createSubjectContainerInteractionState(
+        itxSubjectContainer = list(id=entityData$itxSubjectContainerID[1], version = 0),
+        lsType=lsType,
+        lsKind=lsKind,
+        recordedBy=recordedBy,
+        lsTransaction=lsTransaction)
       },
       stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     
@@ -336,7 +344,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   }
   
   entityData$rowID <- 1:(nrow(entityData))
-  createLocalStateValue <- function(entityData, lsTransaction) {
+  createLocalStateValue <- function(entityData, lsTransaction, recordedBy) {
     if (!is.null(entityData$dateValue)) {
       dateValue <- as.numeric(format(as.Date(entityData$dateValue,origin="1970-01-01"), "%s"))*1000
     } else {
@@ -370,7 +378,8 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   entityValues <- dlply(.data = entityData[entityData$stateGroupIndex %in% stateGroupIndices, ], 
                         .variables = .(rowID), 
                         .fun = createLocalStateValue, 
-                        lsTransaction = lsTransaction)
+                        lsTransaction = lsTransaction,
+                        recordedBy = recordedBy)
   
   names(entityValues) <- NULL
 
