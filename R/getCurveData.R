@@ -102,7 +102,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                  GROUP by s.id, ss.id, api_agsvb.string_value, cl.label_text, e.label_text)
                  where response is not null
                  order by tg_id asc")
-  poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose || '-Animal-' || animal as name
+  poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose as name
 FROM (
 select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
                   api_agsvb.string_value as curveid,
