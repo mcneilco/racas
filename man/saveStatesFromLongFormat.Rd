@@ -4,7 +4,7 @@
 \usage{
   saveStatesFromLongFormat(entityData, entityKind,
     stateGroups, idColumn, recordedBy, lsTransaction,
-    stateGroupIndices = NULL)
+    stateGroupIndices = NULL, testMode = FALSE)
 }
 \arguments{
   \item{entityData}{a data.frame, including one column
@@ -31,6 +31,9 @@
 
   \item{lsTransaction}{an integer, the id of the
   lsTransaction}
+
+  \item{testMode}{A boolean marking if the function should
+  return JSON instead of saving values}
 }
 \value{
   A data.frame with columns "entityStateId" and
