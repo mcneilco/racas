@@ -194,11 +194,16 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL) {
   require('plyr')
   
+  neededColumns <- c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")
+  optionalColumns <- c("treatmentGroupID", "analysisGroupID")
+  
+  usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
+  
   # It will run once, mostly. So it is a for loop
   output <- data.frame()
   for (index in batchCodeStateIndices) {
 #     if(is.null(replacedFakeBatchCode)) {
-      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
+      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, usedColumns])
 #       fakeBatchCodeValues <- data.frame()
 #     } else {
       #batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData", "originalBatchCode")])
