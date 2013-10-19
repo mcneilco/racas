@@ -347,6 +347,9 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   
   require(plyr)
   
+  factorColumns <- vapply(entityData, is.factor, c(TRUE))
+  entityData[factorColumns] <- lapply(entityData[factorColumns], as.character)
+  
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
     
@@ -371,7 +374,10 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
       stringValue = if (is.character(entityData$stringValue) && !is.na(entityData$stringValue)) {entityData$stringValue} else {NULL},
       dateValue = if(!is.na(dateValue)) {dateValue} else {NULL},
       clobValue = if(is.character(entityData$clobValue) && !is.na(entityData$clobValue)) {entityData$clobValue} else {NULL},
+      blobValue = if(!is.null(entityData$blobValue) && !is.na(entityData$blobValue)) {entityData$blobValue} else {NULL},
       codeValue = if(is.character(entityData$codeValue) && !is.na(entityData$codeValue)) {entityData$codeValue} else {NULL},
+      fileValue = if(is.character(entityData$fileValue) && !is.na(entityData$fileValue)) {entityData$fileValue} else {NULL},
+      urlValue = if(is.character(entityData$urlValue) && !is.na(entityData$urlValue)) {entityData$urlValue} else {NULL},
       valueOperator = if(is.character(entityData$valueOperator) && !is.na(entityData$valueOperator)) {entityData$valueOperator} else {NULL},
       operatorType = if(is.character(entityData$operatorType) && !is.na(entityData$operatorType)) {entityData$operatorType} else {NULL},
       numericValue = if(is.numeric(entityData$numericValue) && !is.na(entityData$numericValue)) {entityData$numericValue} else {NULL},
