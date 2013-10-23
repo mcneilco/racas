@@ -15,7 +15,9 @@ Imports:
     drc,
     plyr,
     plotrix,
-    brew
+    brew,
+    logging,
+    evaluate
 Suggests:
   RPostgreSQL,
   ROracle,
