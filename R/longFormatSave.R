@@ -10,12 +10,13 @@
 #' @param idColumn a string, the name of the column used to separate states (often stateID)
 #' @param recordedBy a string, the name of the person recording the data
 #' @param lsTransaction an integer, the id of the lsTransaction
+#' @param  testMode A boolean marking if the function should return JSON instead of saving values
 #' @return A data.frame with columns "entityStateId" and "entityStateVersion", which are often added back to the original data.frame
 #' @keywords save, format, stateGroups
 #' @export
 
 
-saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL) {
+saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL, testMode=FALSE) {
   
   require(plyr)
 
@@ -25,6 +26,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     # This exists because labels were added, it removes indices for labels
     realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
+    if (length(stateGroupIndices)==0) stop("No valid stateGroups")
   }
   
   createRawOnlyLsState <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction) {
@@ -79,7 +81,12 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                         stateGroups=stateGroups, entityKind=entityKind, recordedBy=recordedBy, lsTransaction=lsTransaction)
   originalStateIds <- names(lsStates)
   names(lsStates) <- NULL
-  savedLsStates <- saveAcasEntities(lsStates, paste0(entityKind, "states"))
+  if (testMode) {
+    lsStates <- lapply(lsStates, function(x) {x$recordedDate <- 1381939115000; return (x)})
+    return(toJSON(lsStates))
+  } else {
+    savedLsStates <- saveAcasEntities(lsStates, paste0(entityKind, "states"))
+  }
   
   lsStateIds <- sapply(savedLsStates, getElement, "id")
   lsStateVersions <- sapply(savedLsStates, getElement, "version")
@@ -194,11 +201,16 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL) {
   require('plyr')
   
+  neededColumns <- c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")
+  optionalColumns <- c("treatmentGroupID", "analysisGroupID")
+  
+  usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
+  
   # It will run once, mostly. So it is a for loop
   output <- data.frame()
   for (index in batchCodeStateIndices) {
 #     if(is.null(replacedFakeBatchCode)) {
-      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")])
+      batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, usedColumns])
 #       fakeBatchCodeValues <- data.frame()
 #     } else {
       #batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData", "originalBatchCode")])
@@ -335,6 +347,9 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   
   require(plyr)
   
+  factorColumns <- vapply(entityData, is.factor, c(TRUE))
+  entityData[factorColumns] <- lapply(entityData[factorColumns], as.character)
+  
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
     
@@ -352,15 +367,17 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     }
     stateValue <- createStateValue(
       lsState = list(id=entityData$stateID, version = entityData$stateVersion),
-      lsType = if (entityData$valueType=="stringValue") {"stringValue"}  
-      else if (entityData$valueType=="dateValue") {"dateValue"}
-      else if (entityData$valueType == "codeValue") {"codeValue"}
-      else {"numericValue"},
+      lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue")) {
+        entityData$valueType
+      } else {"numericValue"},
       lsKind = entityData$valueKind,
       stringValue = if (is.character(entityData$stringValue) && !is.na(entityData$stringValue)) {entityData$stringValue} else {NULL},
       dateValue = if(!is.na(dateValue)) {dateValue} else {NULL},
       clobValue = if(is.character(entityData$clobValue) && !is.na(entityData$clobValue)) {entityData$clobValue} else {NULL},
+      blobValue = if(!is.null(entityData$blobValue) && !is.na(entityData$blobValue)) {entityData$blobValue} else {NULL},
       codeValue = if(is.character(entityData$codeValue) && !is.na(entityData$codeValue)) {entityData$codeValue} else {NULL},
+      fileValue = if(is.character(entityData$fileValue) && !is.na(entityData$fileValue)) {entityData$fileValue} else {NULL},
+      urlValue = if(is.character(entityData$urlValue) && !is.na(entityData$urlValue)) {entityData$urlValue} else {NULL},
       valueOperator = if(is.character(entityData$valueOperator) && !is.na(entityData$valueOperator)) {entityData$valueOperator} else {NULL},
       operatorType = if(is.character(entityData$operatorType) && !is.na(entityData$operatorType)) {entityData$operatorType} else {NULL},
       numericValue = if(is.numeric(entityData$numericValue) && !is.na(entityData$numericValue)) {entityData$numericValue} else {NULL},
