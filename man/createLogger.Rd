@@ -1,11 +1,12 @@
 \name{createLogger}
 \alias{createLogger}
-\title{Check if protocol exists}
+\title{Creates a new logger}
 \usage{
   createLogger(logName = "com.default.logger",
     logFileName = "output.log",
     logDir = racas::applicationSettings$logDir,
-    logLevel = racas::applicationSettings$logLevel)
+    logLevel = racas::applicationSettings$logLevel,
+    envir = environment(), ...)
 }
 \arguments{
   \item{logName}{Name for the logger output line within the
@@ -20,12 +21,14 @@
   \item{logLevel}{the level at which to write logs
   (default: racas::applicationSettings$logLevel, see
   names(logging::loglevels))}
+
+  \item{envir}{an environment to attach to the object}
 }
 \value{
   object of class logger
 }
 \description{
-  Checks to see if a protocol exists
+  Creates a new logger
 }
 \examples{
 #Creating a logger with logLevel = "WARN"

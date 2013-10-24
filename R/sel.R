@@ -90,7 +90,7 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
         stop("Length of dataTypes must equal number of columns in calculatedResults excluding the corporateIDColumn column")
       }
     }
-   } else {
+  } else {
     dataTypes <- rep(defaultDataType, ncol(calcResults))
   }
   
@@ -141,7 +141,7 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
 #' 
 #' Not implemented yet
 createSELRawResults <- function(rawResults, curveIDColumn = "curve id", ls_kinds = NULL, unit_kinds = NULL) {
- return("NOT IMPLEMENTED YET")
+  return("NOT IMPLEMENTED YET")
 }
 #' Creates an SEL formatted file
 #' 
