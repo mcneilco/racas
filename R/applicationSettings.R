@@ -49,35 +49,51 @@ applicationSettings <- data.frame(
 #' @export
 readConfigFile <- function(configLocation) {
   #This function reads a config file and sets the applicationSettings
-  configFile <- readLines(configLocation)
-  configurations <- configFile[grepl("^\t\texports\\.serverConfigurationParams\\.configuration\\.",configFile)]
-  configList <- gsub(".*exports\\.serverConfigurationParams\\.configuration\\.(.*) = (.*)", "\\2", configurations)
-  configList <- gsub(";$", "", configList)
-  applicationSettings <- as.data.frame(as.list(gsub("\"","",configList)), stringsAsFactors=FALSE)
-  names(applicationSettings) <- gsub(".*exports\\.serverConfigurationParams\\.configuration\\.(.*) = (.*)", "\\1", configurations)
-  if (!is.null(applicationSettings$db_driver_package)) {
-    eval(parse(text = applicationSettings$db_driver_package))
+  replacement <- "\t"
+  l <-readLines(file.path(configLocation))
+  l <- lapply(l, sub, pattern = "=", replacement = replacement)
+  t <- tempfile()
+  writeLines(unlist(l), t)
+  applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE)
+  applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
+  
+  #Convert "true", "false" to logicals
+  logicals <- suppressWarnings(unlist(lapply(applicationSettings, as.logical)))
+  applicationSettings[!is.na(logicals)] <- logicals[!is.na(logicals)]
+  
+  #Convert coercible "8080" values to integers
+  integers <- suppressWarnings(unlist(lapply(applicationSettings, as.integer)))
+  applicationSettings[!is.na(integers) & is.na(logicals)] <- integers[!is.na(integers) & is.na(logicals)]
+  
+  #Convert "null" to ""
+  nulls <- applicationSettings=="null"
+  applicationSettings[nulls] <- ""
+  
+  row.names(applicationSettings) <- 1
+  
+  if (!is.null(applicationSettings$server.database.r.package)) {
+    require(applicationSettings$server.database.r.package, character.only=TRUE)
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
   assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 }
 
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
-  #LogDir validation
+  #server.log.path validation
   #Check if set
-  if(is.null(applicationSettings$logDir)) {
-    warning("applicationSettings$logDir is null. Setting to /tmp")
-    applicationSettings$logDir <- "/tmp"
+  if(is.null(applicationSettings$server.log.path)) {
+    warning("applicationSettings$server.log.path is null. Setting to /tmp")
+    applicationSettings$server.log.path <- "/tmp"
   }
   #Check if exits
-  if(!file.exists(applicationSettings$logDir)) {
-    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' does not exist.  Setting applicationSettings$logDir to \'/tmp\'"))
-    applicationSettings$logDir <- "/tmp"
+  if(!file.exists(applicationSettings$server.log.path)) {
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting applicationSettings$server.log.path to \'/tmp\'"))
+    applicationSettings$server.log.path <- "/tmp"
   }
   #Check writeable
-  if(file.access(applicationSettings$logDir, mode = 2) != 0) {
-    warning(paste0("applicationSettings$logDir: \'",applicationSettings$logDir, "\' is not writeable.  Setting applicationSettings$logDir to \'/tmp\'"))
-    applicationSettings$logDir <- "/tmp"
+  if(file.access(applicationSettings$server.log.path, mode = 2) != 0) {
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting applicationSettings$server.log.path to \'/tmp\'"))
+    applicationSettings$server.log.path <- "/tmp"
   }
   return(applicationSettings)
 }

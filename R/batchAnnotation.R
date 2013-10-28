@@ -24,7 +24,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     
     experimentCodeName <- experiment$codeName
     
-    if (racas::applicationSettings$fileServiceType == "blueimp") {
+    if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
       experimentFolderLocation <- file.path(dirname(reportFilePath),"experiments")
       if(!testMode) {
         dir.create(experimentFolderLocation, showWarnings = FALSE)
@@ -38,7 +38,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       
       serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
     } else {
-      stop("A file service custom code for", racas::applicationSettings$fileServiceType, "should be added in the configuration file")
+      stop("A file service custom code for", racas::applicationSettings$server.service.external.file.type, "should be added in the configuration file")
     }
   }
   
@@ -123,7 +123,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       locationState <- saveExperimentState(locationState)
     }
   }
-  if (racas::applicationSettings$fileServiceType == "blueimp") {
+  if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
     if (!is.null(reportFilePath)) {
     locationValue <- createStateValue(recordedBy = recordedBy,
                                       lsType = "fileValue",
@@ -167,7 +167,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
 #'@details Will delete all annotation files associated with the experiment
 #'@export
 deleteLinkFile <- function(experiment, testMode=FALSE) {
-  if (racas::applicationSettings$fileServiceType == "blueimp") {
+  if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
     locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="report locations"]
     
     # Get the location

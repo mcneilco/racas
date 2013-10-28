@@ -21,8 +21,8 @@ Logger <- setRefClass(
 #'
 #'@param logName  Name for the logger output line within the log file (default: "com.default.logger)
 #'@param logFileName name of the log file to write to (default: "output.log")
-#'@param logDir name directory to write to (default: racas::applicationSettings$logDir)
-#'@param logLevel the level at which to write logs (default: racas::applicationSettings$logLevel, see names(logging::loglevels))
+#'@param logDir name directory to write to (default: racas::applicationSettings$server.log.path)
+#'@param logLevel the level at which to write logs (default: racas::applicationSettings$server.log.level, see names(logging::loglevels))
 #'@param envir an environment to attach to the object
 #'@return object of class logger
 #'
@@ -49,7 +49,7 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "output.log", logDir = racas::applicationSettings$logDir, logLevel = racas::applicationSettings$logLevel, envir = environment(), ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "output.log", logDir = racas::applicationSettings$server.log.path, logLevel = racas::applicationSettings$server.log.level, envir = environment(), ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
   basicConfig(level = logLevel)
   if(is.na(logDir)) {

@@ -70,12 +70,12 @@ query <- function(qu, globalConnect=FALSE, ...) {
   return(result)
 }
 getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
-  driver <- eval(parse(text = applicationSettings$db_driver))
+  driver <- eval(parse(text = applicationSettings$server.database.r.driver))
   conn <- switch(class(driver),
-                 "OraDriver" = DBI::dbConnect(driver, dbname=paste0(applicationSettings$db_host,":",applicationSettings$db_port,"/",applicationSettings$db_name), user=applicationSettings$db_user, pass=applicationSettings$db_password),
-                 "PostgreSQLDriver" = DBI::dbConnect(driver , user= applicationSettings$db_user, password=applicationSettings$db_password, dbname=applicationSettings$db_name, host=applicationSettings$db_host, port=applicationSettings$db_port),
-                 "MySQLDriver" = DBI::dbConnect(driver , user= applicationSettings$db_user, password=applicationSettings$db_password, dbname=applicationSettings$db_name, host=applicationSettings$db_host, port=applicationSettings$db_port),
-                 "JDBCDriver" = DBI::dbConnect(driver, paste0(getDBString(applicationSettings$db_driver),applicationSettings$db_host,":",applicationSettings$db_port,":",applicationSettings$db_name), user=applicationSettings$db_user, pass=applicationSettings$db_password),
+                 "OraDriver" = DBI::dbConnect(driver, dbname=paste0(applicationSettings$server.database.host,":",applicationSettings$server.database.port,"/",applicationSettings$server.database.name), user=applicationSettings$server.database.username, pass=applicationSettings$server.database.password),
+                 "PostgreSQLDriver" = DBI::dbConnect(driver , user= applicationSettings$server.database.username, password=applicationSettings$server.database.password, dbname=applicationSettings$server.database.name, host=applicationSettings$server.database.host, port=applicationSettings$server.database.port),
+                 "MySQLDriver" = DBI::dbConnect(driver , user= applicationSettings$server.database.username, password=applicationSettings$server.database.password, dbname=applicationSettings$server.database.name, host=applicationSettings$server.database.host, port=applicationSettings$server.database.port),
+                 "JDBCDriver" = DBI::dbConnect(driver, paste0(getDBString(applicationSettings$server.database.r.driver),applicationSettings$server.database.host,":",applicationSettings$server.database.port,":",applicationSettings$server.database.name), user=applicationSettings$server.database.username, pass=applicationSettings$server.database.password),
                  class(driver)
   )
   return(conn)
@@ -83,7 +83,7 @@ getDatabaseConnection <- function(applicationSettings = racas::applicationSettin
 errorHandler <- function(ex, conn, driver) {
   if(class(conn)=="character") {
     if(conn==class(driver)) {
-      print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$db_driver '",parse(text = racas::applicationSettings$db_driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
+      print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$server.database.r.driver '",parse(text = racas::applicationSettings$server.database.r.driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
       return(list(success = FALSE, error = ex))
     }
   } else{
@@ -92,9 +92,9 @@ errorHandler <- function(ex, conn, driver) {
   }
 }
 
-getDBType <- function(db_driver = racas::applicationSettings$db_driver) {
+getDBType <- function(server.database.r.driver = racas::applicationSettings$server.database.r.driver) {
   
-  driver <- eval(parse(text = db_driver))
+  driver <- eval(parse(text = server.database.r.driver))
   dbType <- switch(class(driver),
                    "OraDriver" = "Oracle",
                    "PostgreSQLDriver" = "Postgres",

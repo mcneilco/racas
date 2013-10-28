@@ -1,3 +1,30 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #' Extract the parameters of a given set of curveids (of the same type of rendering hint)
 #'
 #' Given a list of curveids, this function queries the acas databse specified in the variable \code{\link{applicationSettings}} and
@@ -704,10 +731,34 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   }
 }
 
-require(drc)
 LL4 <- 'min + (max - min)/((1 + exp(-hill * (log(x/ec50))))^1)'
-KiFCT <- 'Bottom + (Top-Bottom)/(1+10^(x-log10((10^Log10Ki)*(1+HotNM/HotKDNM))))'
+OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 
+kiNames <- c("Top", "Bottom", "logKi")
+oneSiteKi <- function(kd, ligandConc, fixed = c(NA, NA, NA), names = c("c", "d", "e")) {
+  
+  ki.fct3 <- param[,2] + (param[,1]-param[,2])/(1+10^(x-log10(10^param[,3]*(1+ligandConc/kd))))
+  ki.fct3 <- param[,2] + (param[,1]-param[,2])/(1+10^(x-log10(10^param[,3]*(1+ligandConc/kd))))
+  
+  return(c(ki.fct, ki.ssft, ki.names))
+}
+oneSiteKi.ssf <- function(data) {
+  Top <- max(data[,2])
+  Bottom <- min(data[,2])
+  logKi <- -8.0
+  #print(data)
+  return(c(Top, Bottom, logKi))
+}
+#fitModelNormalized <- drm(NORMALIZEDRESULT ~ CONCENTRATION, data = points, fct = list(kifct, kissfct, kiNames), curveid=PTODWELLLITERAL, robust = "mean")
+#fitModelEfficacy <- drm(EFFICACY ~ CONCENTRATION, data = points, fct = list(kifct, kissfct, kiNames), curveid=PTODWELLLITERAL, robust = "mean")
+
+
+kissfctFree <- function(data) {
+  Top <- max(data[,2])
+  KiuM <- 0.1
+  Bottom <- min(data[,2])
+  return(c(Bottom, KiuM, Top))
+}
 getFitModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixedValues = eval(formals(drcFunction)$fixed), robust = "mean") {
   fct <- drcFunction(fixed=fixedValues, names=paramNames)
   drcObj <- NULL
@@ -899,7 +950,7 @@ updateDoseResponseCurve <- function (analysisGroupData, subjectData) {
   require(rjson)
   require(plyr)
   
-  lsServerURL <<- racas::applicationSettings$serverPath
+  lsServerURL <<- racas::applicationSettings$client.service.persistance.fullpath
   
   lsTransaction <- createLsTransaction()
   
@@ -1126,5 +1177,3 @@ getValuesFromSubject <- function(subject) {
   require('plyr')
   return(ldply(subject$subjectStates, getValuesFromState))
 }
-
-

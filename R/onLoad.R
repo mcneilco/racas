@@ -13,7 +13,7 @@
   } else {
     tryCatch({
       if(appHome!="") {
-        configFileLocation <- file.path(appHome,"/public/src/conf/configurationNode.js")
+        configFileLocation <- file.path(appHome,"conf/compiled/conf.properties")
         output <- readConfigFile(configFileLocation)
       } else {
         configFileLocation <- file.path(appConf)

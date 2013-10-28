@@ -13,7 +13,7 @@
 getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) {
   
   if (is.null(preferredIdService)) {
-    preferredIdService <- racas::applicationSettings$preferredBatchIdService
+    preferredIdService <- paste(racas::applicationSettings$preferredBatchIdService)
   }
   
   # Put the batchIds in the correct format
