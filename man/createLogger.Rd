@@ -4,8 +4,8 @@
 \usage{
   createLogger(logName = "com.default.logger",
     logFileName = "output.log",
-    logDir = racas::applicationSettings$logDir,
-    logLevel = racas::applicationSettings$logLevel,
+    logDir = racas::applicationSettings$server.log.path,
+    logLevel = racas::applicationSettings$server.log.level,
     envir = environment(), ...)
 }
 \arguments{
@@ -16,11 +16,11 @@
   (default: "output.log")}
 
   \item{logDir}{name directory to write to (default:
-  racas::applicationSettings$logDir)}
+  racas::applicationSettings$server.log.path)}
 
   \item{logLevel}{the level at which to write logs
-  (default: racas::applicationSettings$logLevel, see
-  names(logging::loglevels))}
+  (default: racas::applicationSettings$server.log.level,
+  see names(logging::loglevels))}
 
   \item{envir}{an environment to attach to the object}
 }

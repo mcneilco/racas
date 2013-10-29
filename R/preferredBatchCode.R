@@ -13,7 +13,8 @@
 getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) {
   
   if (is.null(preferredIdService)) {
-    preferredIdService <- paste(racas::applicationSettings$preferredBatchIdService)
+    preferredIdService <- paste0(racas::applicationSettings$client.host, ":", racas::applicationSettings$client.port, 
+                                racas::applicationSettings$client.service.preferred.batchid.path)
   }
   
   # Put the batchIds in the correct format
@@ -33,7 +34,7 @@ getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) 
       httpheader=c('Content-Type'='application/json'),
       postfields=toJSON(requestIds))
   }, error = function(e) {
-    errorList <<- c(errorList,paste("Error in contacting the preferred ID service:", e$message))
+    stop(paste("Error in contacting the preferred ID service:", e$message))
   })
   if (substring(response,1,1)!="{") {
     stop("Error in contacting the preferred ID service: ", response)
