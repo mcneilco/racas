@@ -105,7 +105,7 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
                         experimentName = "experiments?FindByExperimentName&experimentName=",
                         experimentCodeName = "experiments?FindByCodeName&codeName="
   )
-  urls <- paste0(applicationSettings$client.service.persistance.fullpath, servicePath, lapply(x, URLencode, reserved = TRUE))
+  urls <- paste0(applicationSettings$client.service.persistence.fullpath, servicePath, lapply(x, URLencode, reserved = TRUE))
   entitiesJSON <- lapply(urls, getURL)
   entitiesList <- lapply(entitiesJSON, fromJSON)
   names(entitiesList) <- x
