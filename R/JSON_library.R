@@ -986,9 +986,8 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
-  message <- gsub('""', 'null', message)
   response <- getURL(
-    paste(lsServerURL, acasCategory, "/jsonArrayParse", sep=""),
+    paste(lsServerURL, acasCategory, "/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
