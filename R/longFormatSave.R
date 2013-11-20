@@ -198,11 +198,10 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' 
 #' @return A data frame with rows for all code values
 #' 
-meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL) {
+meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID")) {
   require('plyr')
   
   neededColumns <- c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")
-  optionalColumns <- c("treatmentGroupID", "analysisGroupID")
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
   
