@@ -992,7 +992,9 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
   if (grepl("^<",response)) {
-    stop (paste0("The loader was unable to save your ", acasCategory ,". Instead, it got this response: ", response))
+    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    myLogger$error(response)
+    stop (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
   }
   response <- fromJSON(response)
   return(response)
