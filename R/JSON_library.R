@@ -1315,3 +1315,56 @@ interpretJSONBoolean <- function(JSONBoolean) {
     return(JSONBoolean)
   }
 }
+
+#' Get Containers by label text
+#' 
+#' Allows searching for containers by their label, multiple labels are supported but order is not maintained
+#' 
+#'@param searchText a character vector of labelText(s) to find
+#'@param ignored not yet implemented, now gets non-ignored labels
+#'@param lsServerURL the url to the server
+#'@return full container objects (nested list of lists)
+getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  searchText <- unique(searchText)
+  labelList <- lapply(searchText, function(x) {list(labelText=x)})
+  tryCatch({
+    response <- getURLcheckStatus(
+      paste(lsServerURL, "containers/findByLabels/jsonArray", sep=""),
+      customrequest='POST',
+      httpheader=c('Content-Type'='application/json'),
+      postfields=toJSON(labelList))
+    response <- fromJSON(response)
+  }, error = function(e) {
+    stop (paste0("Internal Error: The loader was unable to get container labels by text. Check the logs at ", Sys.time()))
+  })
+#     response <- getURLstatusCheck(paste0(lsServerURL,
+#                                          "containerlabels?find=ByLabelTextEqualsAndIgnoredNot&labelText=", searchText,
+#                                          "&ignored=", ifelse(ignored, "on", "off")))
+#     response <- fromJSON(response)
+#     }, error = function(e) {
+#       stop (paste0("Internal Error: The loader was unable to get container labels. Check the logs at ", Sys.time()))
+#     })
+  return(response)
+}
+
+#' Get URL and check status
+#'
+#' This is a wrapper for getURL that throws an error when the HTTP status is 400 or greater
+#' 
+#'@param url the url to get/post
+#'@param ... optional parameters passed to getURL
+#'
+#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater
+getURLcheckStatus <- function(url, ...) {
+  logName = "com.acas.sel"
+  logFileName = "racas.log"
+  h = basicTextGatherer()
+  response = getURL(url=url, ..., headerfunction = h$update)
+  status <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
+  if (status >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    myLogger$error(response)
+    stop (paste("Server Error, see logs at", Sys.time()))
+  }
+  return(response)
+}

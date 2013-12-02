@@ -123,7 +123,7 @@ getDBString <- function(driverString) {
   return(dbString)
 }
 sqliz <- function(vector) {
-  if (class(set)=="numeric") {
+  if (class(vector)=="numeric") {
     sql <- paste(vector, collapse = ',')
     return(sql)
   }  else {

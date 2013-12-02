@@ -1,0 +1,24 @@
+\name{getContainerByLabelText}
+\alias{getContainerByLabelText}
+\title{Get Containers by label text}
+\usage{
+  getContainerByLabelText(searchText, ignored = F,
+    lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+}
+\arguments{
+  \item{searchText}{a character vector of labelText(s) to
+  find}
+
+  \item{ignored}{not yet implemented, now gets non-ignored
+  labels}
+
+  \item{lsServerURL}{the url to the server}
+}
+\value{
+  full container objects (nested list of lists)
+}
+\description{
+  Allows searching for containers by their label, multiple
+  labels are supported but order is not maintained
+}
+
