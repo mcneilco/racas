@@ -411,13 +411,20 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 
 #' Links new subjects to old containers
 #' 
+#' Tests for both containers created by other experiments and for ones created by an experiment of the same name (reloads)
+#' 
 #' @param entityData data.frame: must have columns stringValue, stateGroupIndices, numericValue
 #' @param stateGroups a list of state (and label) groups
-#' @param labelPrefix a string, often the experiment name
+#' @param labelPrefix a string, often the experiment name. If NULL (default), only exact matches are checked
 #' @param stateGroupIndices numeric vector, use to list indices rather than having them automatically be found
-#' @return a list of two data frames, one with new data and one with old
-linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, stateGroupIndices = NULL) {
+#' @param testModeData a data frame of test data, testMode happends when not null
+#' @return a list of two data frames, one with new data and one with old- the old only has subjectID and containerID
+#' 
+#' @details If there are both prefixed and unprefixed labels that match, the prefixed labels will have precedence
+linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, stateGroupIndices = NULL, testModeData = NULL) {
   require(plyr)
+  
+  # Get stateGroupIndices if not provided
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == "container")
     
@@ -425,20 +432,49 @@ linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, state
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% labelStateGroups]
   }
   
+  # Get labels
   labelData <- entityData[entityData$stateGroupIndex %in% stateGroupIndices, ]
   labelVector <- pmax(labelData$stringValue, labelData$numericValue, na.rm=T)
   
-  # This only checks for the prefixed version, not the unprefixed
+  # Handle empty data
+  if (nrow(labelData) == 0) {
+    return(list(entityData=entityData, matchingLabelData=data.frame(containerID=numeric(), subjectID=numeric())))
+  }
+  
+  # Add prefix
   if(!is.null(labelPrefix)) {
     prefixedLabelVector <- paste0(labelPrefix, "_", labelVector)
-    labelData$stringValue <- prefixedLabelVector
-    oldLabels <- query(paste0("select label_text, container_id from container_label where label_text in ('",
-                              paste(prefixedLabelVector, collapse = "','"), "')"))
-    matchingLabelData <- labelData[labelData$stringValue %in% oldLabels$LABEL_TEXT, ]
-    matchingLabelData$containerID <- oldLabels$CONTAINER_ID[match(matchingLabelData$stringValue, oldLabels$LABEL_TEXT)]
-    
-    entityData <- entityData[!(entityData$subjectID %in% matchingLabelData$subjectID), ]
-    matchingLabelData <- matchingLabelData[, c("subjectID", "containerID")]
-    return(list(entityData=entityData, matchingLabelData=matchingLabelData))
+  } else {
+    prefixedLabelVector <- labelVector
   }
+  labelData$prefixedStringValue <- prefixedLabelVector
+  
+  # Get data or accept testModeData
+  if (is.null(testModeData)) {
+    noPrefixLabels <- getContainerByLabelText(labelVector)
+    prefixLabels <- getContainerByLabelText(prefixedLabelVector)
+    oldLabelsList <- c(noPrefixLabels, prefixLabels)
+    oldLabels <- ldply(oldLabelsList, function(x) {
+      return(data.frame(containerID=x$id, labelText = x$lsLabels[[1]]$labelText, stringsAsFactors=F))
+    })
+  } else {
+    oldLabels <- testModeData
+  }
+  
+  matchingLabelData <- labelData[labelData$stringValue %in% oldLabels$labelText | labelData$prefixedStringValue %in% oldLabels$labelText, ]
+  
+  #Note: order matters: the prefixLabels will have precedence
+  matchingLabelData$containerID <- oldLabels$containerID[match(matchingLabelData$stringValue, oldLabels$labelText)]
+  if (nrow(matchingLabelData) > 0) {
+    matchingLabelData$containerID[is.na(matchingLabelData$containerID)] <- oldLabels$containerID[match(matchingLabelData$prefixedStringValue, oldLabels$labelText)]
+  }
+  
+  entityData <- entityData[!(entityData$subjectID %in% matchingLabelData$subjectID), ]
+  if (is.null(matchingLabelData$containerID)) {
+    matchingLabelData$containerID <- numeric()
+  }
+  
+  #simplify to needed columns
+  matchingLabelData <- matchingLabelData[, c("subjectID", "containerID")]
+  return(list(entityData=entityData, matchingLabelData=matchingLabelData))
 }

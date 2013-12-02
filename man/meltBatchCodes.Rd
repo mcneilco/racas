@@ -3,7 +3,8 @@
 \title{Turns a batchCode column into rows in a long format}
 \usage{
   meltBatchCodes(entityData, batchCodeStateIndices,
-    replacedFakeBatchCode = NULL)
+    replacedFakeBatchCode = NULL,
+    optionalColumns = c("treatmentGroupID", "analysisGroupID"))
 }
 \arguments{
   \item{entityData}{a data frame with data}
