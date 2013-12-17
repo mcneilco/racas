@@ -1,0 +1,29 @@
+\name{createNamedExperiment}
+\alias{createNamedExperiment}
+\title{Create experiment with name}
+\usage{
+  createNamedExperiment(labelText, protocol, recordedBy,
+    lsTransaction, shortDescription, lsType = "default",
+    lsKind = "default")
+}
+\arguments{
+  \item{labelText}{name of the experiment}
+
+  \item{protocol}{protocol object (list with id and
+  version) for attached protocol}
+
+  \item{recordedBy}{username of the person saving}
+
+  \item{lsTransaction}{integer of the lsTransaction}
+
+  \item{shortDescription}{short description < 255
+  characters}
+
+  \item{lsType}{experiment type}
+
+  \item{lsKind}{experiment kind}
+}
+\description{
+  Create an experiment with a label already built in
+}
+

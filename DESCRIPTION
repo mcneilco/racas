@@ -12,12 +12,14 @@ Imports:
     data.table, 
     rjson, 
     RCurl,
-    drc,
     plyr,
     plotrix,
     brew,
     logging,
-    evaluate
+    evaluate,
+    XLConnect,
+    gdata,
+    reshape
 Suggests:
   RPostgreSQL,
   ROracle,

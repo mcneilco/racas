@@ -238,6 +238,31 @@ createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="author
 	return(experimentLabel)
 }
 
+#' Create experiment with name
+#' 
+#' Create an experiment with a label already built in
+#' 
+#' @param labelText name of the experiment
+#' @param protocol protocol object (list with id and version) for attached protocol
+#' @param recordedBy username of the person saving
+#' @param lsTransaction integer of the lsTransaction
+#' @param shortDescription short description < 255 characters
+#' @param lsType experiment type
+#' @param lsKind experiment kind 
+createNamedExperiment <- function(labelText, protocol, recordedBy, lsTransaction, shortDescription, lsType="default", lsKind="default") {
+  experiment <- createExperiment(
+    protocol=protocol, 
+    lsType=lsType,
+    lsKind=lsKind,
+    shortDescription=shortDescription,
+    recordedBy=recordedBy,
+    lsTransaction=lsTranscation,
+    experimentLabels = createExperimentLabel(
+      labelText=labelText, 
+      recordedBy=recordedBy,
+      lsTransaction=lsTransaction))
+}
+
 createAnalysisGroupLabel <- function(analysisGroup=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="analysis group name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
 	analysisGroupLabel = list(
     analysisGroup=analysisGroup,
