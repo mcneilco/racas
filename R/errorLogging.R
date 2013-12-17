@@ -16,3 +16,26 @@ tryCatch.W.E <- function(expr) {
                                           warning = w.handler),
               warningList = W))
 }
+
+#'Non-fatal error tracking
+#'
+#'Add errors to a list of errors to show a user
+#'
+#'@param errorMessage The message for the user
+#'@param errorEnv
+#'
+#'If the errorEnv is not provided, the search path is used to find an errorList. 
+#'Providing an errorEnv is the preferred method to avoid name collsions.
+addError <- function(errorMessage, errorEnv = NULL) {
+  if (is.null(errorEnv)) {
+    if (!exists("errorList")) {
+      stop("ErrorList has not been defined on the search path")
+    }
+    errorList <<- c(errorList, errorMessage)
+  } else {
+    if (!exists("errorList", where = errorEnv)) {
+      stop("ErrorList has not been defined in the given environment")
+    }
+    assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)
+  }
+}

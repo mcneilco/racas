@@ -1,0 +1,30 @@
+\name{validateSharedMetaData}
+\alias{validateSharedMetaData}
+\title{Meta data validation}
+\usage{
+  validateSharedMetaData(metaData,
+    expectedDataFormat = NULL, errorEnv = NULL)
+}
+\arguments{
+  \item{metaData}{A "data.frame" of two columns containing
+  the Meta data for the experiment}
+
+  \item{expectedDataFormat}{A "data.frame" of three columns
+  and the same number of rows as metaData describing the
+  Meta data data frame and its expected classes. Columns:
+  \describe{ \item{headers}{tring values of the experiment
+  meta data to extract} \item{class}{String value of the
+  expected class of the given value}
+  \item{isNullable}{Boolean containing whether the field
+  can be empty} }}
+
+  \item{errorEnv}{An environment to send error messages to}
+}
+\description{
+  Valides the meta data using services from configuration
+}
+\details{
+  Example expectedDataFormat can be found in
+  generic_data_parser.R
+}
+
