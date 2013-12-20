@@ -1,0 +1,67 @@
+{
+   "fixedParameters":{
+      "min":{
+         "parameter":"min",
+         "value":0
+      },
+      "max":{
+         "parameter":"max",
+         "value":100
+      },
+      "slope":{
+         "parameter":"slope",
+         "value":null
+      },
+      "ec50":{
+         "parameter":"ec50",
+         "value":null
+      }
+   },
+   "inactiveRule":{
+      "type":"threshold",
+      "value":20,
+      "activeDoses":1
+   },
+   "parameterRules":{
+      "goodnessOfFits": {
+  	  "maxUncertaintyRule":{
+			 "parameter":"max",
+			 "type":"stdErr",
+			 "value":16,
+			 "operator":">",
+			 "displayName":"Max uncertainty exceeded"
+		  },
+		  "ec50PValue":{
+			 "parameter":"ec50",
+			 "type":"pValue",
+			 "value":2.5,
+			 "operator":">",
+			 "displayName":"EC50 p-value exceeded"
+		  }
+      },
+      "limits": {
+		  "maxThreshold":{
+			 "parameter":"max",
+			 "type":"threshold",
+			 "value":100,
+			 "operator":">",
+			 "displayName":"Max threshold exceeded"
+		  },
+  	  "minThreshold":{
+			 "parameter":"min",
+			 "type":"threshold",
+			 "value":0,
+			 "operator":"<",
+			 "displayName":"Min threshold exceeded"
+		  },
+		  "ec50Threshold":{
+			 "parameter":"ec50",
+			 "type":"logAboveReference",
+			 "reference":"dose.max",
+			 "value":0.5,
+			 "operator":">",
+			 "displayName":"EC50 threshold exceeded"
+		  }
+      }
+   }
+}
