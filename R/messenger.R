@@ -1,8 +1,12 @@
+
+#o <- objectUtilities$new(test = "me", this = as.integer(10))
+#o <- objectUtilities$new()$fromJSON(toJSON(list(test = "me", this = as.integer(10))))
 Messenger <- setRefClass(Class = "Messenger", 
                          fields = list(errors = "character",
                                        warnings = "character",
                                        infos = "character",
                                        envir = "environment"),
+                         contains = list("objectUtilities"),
                          methods = list(
                            addError = function(x) {
                              errors <<- c(errors,as.character(x))
@@ -37,7 +41,6 @@ Messenger <- setRefClass(Class = "Messenger",
                            }
                          )
 )
-setMethod ("toJSON", signature="Messenger", definition= function (x) x$toJSON() )
 
 racasMessenger <- Messenger$new(envir = environment())
 messenger <- function(racas = TRUE, envir = parent.frame(), ...) {

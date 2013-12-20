@@ -165,11 +165,16 @@ ContainerRemaps <- setRefClass("ContainerRemaps",
                                methods = list(
                                  fromJSON = function(json) {
                                    containerRemapsList <- rjson::fromJSON(json)
-                                   containerRemaps <<- lapply(containerRemapsList$containerRemaps, function(x) ContainerRemap$new(originContainerCode = x$originContainerCode,
+                                   user <- containerRemapsList$user
+                                   direction <- containerRemapsList$direction
+                                   containerRemaps <<- lapply(containerRemapsList$containerRemaps, function(x, user, direction) ContainerRemap$new(originContainerCode = x$originContainerCode,
                                                                                                                                   destinationContainerCode = x$destinationContainerCode,
-                                                                                                                                  direction = x$direction,
-                                                                                                                                  user = x$user,
-                                                                                                                                  quadrant = as.integer(x$quadrant))
+                                                                                                                                  direction = ifelse(is.null(x$direction), direction, x$direction),
+                                                                                                                                  user = ifelse(is.null(x$user), user, x$user),
+                                                                                                                                  quadrant = as.integer(x$quadrant)
+                                                                                                                                        ),
+                                                              direction = direction,
+                                                              user = user
                                    )
                                    dryRun <<- as.logical(containerRemapsList$dryRun)
                                    

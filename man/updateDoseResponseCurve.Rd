@@ -11,7 +11,7 @@
   Format: \itemize{ \item analysisGroupdID The
   analysisGroupID of the flag \item valueKind A string that
   says "Flag" \item valueType A string that says
-  "stringValue" \item subjectID The subjedtID of the flag
+  "stringValue" \item subjectID The subject id of the flag
   \item subjectStateID The subjectStateID of the flag \item
   treatmentGroupID The treatmentGroupdID of the flag \item
   stringValue A string value for the flag (E.G. "User" or
