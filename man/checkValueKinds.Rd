@@ -1,0 +1,21 @@
+\name{checkValueKinds}
+\alias{checkValueKinds}
+\title{Check valueKinds}
+\usage{
+  checkValueKinds(neededValueKinds, neededValueKindTypes)
+}
+\arguments{
+  \item{neededValueKinds}{character vector of valueKinds}
+
+  \item{neededValueKindTypes}{character vector of
+  valueTypes, with order matching neededValueKinds}
+}
+\value{
+  a list of two vectors and a data.frame: new valueKinds,
+  old valueKinds, and a data.frame with corrected valueType
+  for valueKinds
+}
+\description{
+  Checks that entered valueKinds are valid valueKinds
+}
+

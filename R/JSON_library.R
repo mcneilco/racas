@@ -1393,3 +1393,100 @@ getURLcheckStatus <- function(url, ...) {
   }
   return(response)
 }
+#' Protocol search by name
+#' 
+#' Gets a protocol by name, also checking if a new version can be created
+#' 
+#' @param protocolName a string, the name of the experiment
+#' @param formFormat a string, the format of the sheet (used for checking if protocol creation is allowed)
+#' 
+#' @return a list that is a protocol object
+#' @export
+getProtocolByName <- function(protocolName, formFormat = NA, errorEnv = NULL) { 
+  forceProtocolCreation <- grepl("CREATETHISPROTOCOL", protocolName)
+  if(forceProtocolCreation) {
+    protocolName <- trim(gsub("CREATETHISPROTOCOL", "", protocolName))
+  }
+  
+  tryCatch({
+    protocolList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols?FindByProtocolName&protocolName=", URLencode(protocolName, reserved = TRUE))))
+  }, error = function(e) {
+    stop("There was an error in accessing the protocol. Please contact your system administrator.")
+  })
+  
+  # If no protocol with the given name exists, warn the user
+  if (length(protocolList) == 0) {
+    allowedCreationFormats <- racas::applicationSettings$server.allow.protocol.creation.formats
+    allowedCreationFormats <- unlist(strsplit(allowedCreationFormats, ","))
+    if (formFormat %in% allowedCreationFormats || forceProtocolCreation) {
+      warning(paste0("Protocol '", protocolName, "' does not exist, so it will be created. No user action is needed if you intend to create a new protocol."))
+    } else {
+      addError(paste0("Protocol '", protocolName, 
+                      "' does not exist. Please enter a protocol name that exists. Contact your system administrator if you would like to create a new protocol."), 
+               errorEnv)
+    }
+    # A flag for when the protocol will be created new
+    protocol <- NA
+  } else {
+    # If the protocol does exist, get the full version
+    protocol <- fromJSON(getURL(URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols/", protocolList[[1]]$id))))
+  }
+  return(protocol)
+}
+#' Check valueKinds
+#' 
+#' Checks that entered valueKinds are valid valueKinds
+#' 
+#' @param neededValueKinds character vector of valueKinds
+#' @param neededValueKindTypes character vector of valueTypes, with order matching neededValueKinds
+#' 
+#' @return a list of two vectors and a data.frame: new valueKinds, old valueKinds, and a data.frame with corrected valueType for valueKinds
+#' @export
+checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
+  currentValueKindsList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds")))
+  if (length(currentValueKindsList)==0) stop ("Setup error: valueKinds are missing")
+  currentValueKinds <- sapply(currentValueKindsList, getElement, "kindName")
+  matchingValueTypes <- sapply(currentValueKindsList, function(x) x$lsType$typeName)
+  
+  newValueKinds <- setdiff(neededValueKinds, currentValueKinds)
+  oldValueKinds <- intersect(neededValueKinds, currentValueKinds)
+  
+  # Check that the value kinds that have been entered before have the correct Datatype (valueType)
+  oldValueKindTypes <- neededValueKindTypes[match(oldValueKinds, neededValueKinds)]
+  currentValueKindTypeFrame <- data.frame(currentValueKinds,  matchingValueTypes, stringsAsFactors=FALSE)
+  oldValueKindTypeFrame <- data.frame(oldValueKinds, oldValueKindTypes, stringsAsFactors=FALSE)
+  
+  comparisonFrame <- merge(oldValueKindTypeFrame, currentValueKindTypeFrame, by.x = "oldValueKinds", by.y = "currentValueKinds")
+  wrongValueTypes <- comparisonFrame$oldValueKindTypes != comparisonFrame$matchingValueTypes
+  
+  wrongTypeKindFrame <- comparisonFrame[wrongValueTypes, ]
+  names(wrongTypeKindFrame)[names(wrongTypeKindFrame) == "matchingValueTypes"] <- "enteredValueTypes"
+  
+  goodValueKinds <- comparisonFrame$oldValueKinds[!wrongValueTypes]
+  return(list(newValueKinds=newValueKinds, goodValueKinds=goodValueKinds, wrongTypeKindFrame=wrongTypeKindFrame))
+}
+
+#' Saves value kinds
+#' 
+#' Saves value kinds with matching value types
+#' @param valueKinds character vector of new valueKinds
+#' @param valueTypes character vector of valueTypes (e.g. c("stringValue", "numericValue"))
+#' @details valueKinds must be new, and valueTypes must exist
+#' @export
+saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL) {
+  valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
+  allowedValueTypes <- sapply(valueTypesList, getElement, "typeName")
+  
+  newValueTypesList <- valueTypesList[match(valueTypes, allowedValueTypes)]
+  newValueKindsUpload <- mapply(function(x, y) list(kindName=x, lsType=y), valueKinds, newValueTypesList,
+                                SIMPLIFY = F, USE.NAMES = F)
+  tryCatch({
+    response <- getURL(
+      paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/jsonArray"),
+      customrequest='POST',
+      httpheader=c('Content-Type'='application/json'),
+      postfields=toJSON(newValueKindsUpload))
+  }, error = function(e) {
+    addError(paste("Internal error in saving new valueKinds:", e$message), errorEnv=errorEnv)
+  })
+}
