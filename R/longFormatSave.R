@@ -344,8 +344,6 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     stop("Internal error: No stateID can be NA")
   }
   
-  require(plyr)
-  
   factorColumns <- vapply(entityData, is.factor, c(TRUE))
   entityData[factorColumns] <- lapply(entityData[factorColumns], as.character)
   
@@ -391,7 +389,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     )
     return(stateValue)
   }
-  entityValues <- dlply(.data = entityData[entityData$stateGroupIndex %in% stateGroupIndices, ], 
+  entityValues <- plyr::dlply(.data = entityData[entityData$stateGroupIndex %in% stateGroupIndices, ], 
                         .variables = .(rowID), 
                         .fun = createLocalStateValue, 
                         lsTransaction = lsTransaction,

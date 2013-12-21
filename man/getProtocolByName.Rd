@@ -1,0 +1,21 @@
+\name{getProtocolByName}
+\alias{getProtocolByName}
+\title{Protocol search by name}
+\usage{
+  getProtocolByName(protocolName, formFormat = NA,
+    errorEnv = NULL)
+}
+\arguments{
+  \item{protocolName}{a string, the name of the experiment}
+
+  \item{formFormat}{a string, the format of the sheet (used
+  for checking if protocol creation is allowed)}
+}
+\value{
+  a list that is a protocol object
+}
+\description{
+  Gets a protocol by name, also checking if a new version
+  can be created
+}
+

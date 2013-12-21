@@ -2,10 +2,14 @@
 \alias{readExcelOrCsv}
 \title{Reading of Excel or CSV}
 \usage{
-  readExcelOrCsv(filePath)
+  readExcelOrCsv(filePath, sheet = 1, header = FALSE)
 }
 \arguments{
   \item{filePath}{The path the the file to read}
+
+  \item{sheet}{Sheet number of an Excel sheet}
+
+  \item{header}{Boolean to treat first row as column names}
 }
 \value{
   a data.frame of the file

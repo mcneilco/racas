@@ -1,0 +1,36 @@
+\name{moveFileToExperimentFolder}
+\alias{moveFileToExperimentFolder}
+\title{File Saving}
+\usage{
+  moveFileToExperimentFolder(fileStartLocation, experiment,
+    recordedBy, lsTransaction,
+    fileServiceType = racas::applicationSettings$server.service.external.file.type,
+    fileService = racas::applicationSettings$server.service.external.file.service.url)
+}
+\arguments{
+  \item{fileStartLocation}{Path to location to find the
+  source file}
+
+  \item{experiment}{experiment object to save file to}
+
+  \item{recordedBy}{username of person saving}
+
+  \item{lsTransaction}{integer of transaction}
+
+  \item{fileServiceType}{"blueimp" or "custom"}
+
+  \item{fileService}{url path to custom file service (will
+  be passed to customSourceFileMove, which should be
+  defined in customFunctions)}
+}
+\value{
+  New file location (or code)
+}
+\description{
+  Moves a file to the location for files and saves a
+  reference to that location in the experiment
+}
+\details{
+  fileRead.R
+}
+
