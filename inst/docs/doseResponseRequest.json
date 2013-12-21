@@ -27,16 +27,16 @@
   	  "maxUncertaintyRule":{
 			 "parameter":"max",
 			 "type":"stdErr",
-			 "value":16,
+			 "value":5,
 			 "operator":">",
 			 "displayName":"Max uncertainty exceeded"
 		  },
 		  "ec50PValue":{
 			 "parameter":"ec50",
 			 "type":"pValue",
-			 "value":2.5,
+			 "value":1,
 			 "operator":">",
-			 "displayName":"EC50 p-value exceeded"
+			 "displayName":"EC50 uncertainty exceeded"
 		  }
       },
       "limits": {
