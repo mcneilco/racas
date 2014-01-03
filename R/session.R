@@ -1,9 +1,23 @@
 
 saveSession <- function(id = NA) {
   if(is.na(id)) {
-    id <- tempfile(pattern = "rSe-")
+    id <- basename(tempfile(pattern = "rSe-"))
+    temps <- lapply(c('TMPDIR', 'TMP', 'TEMP'), Sys.getenv)
+    for(t in temps) { 
+      if( t != "")
+        id <- file.path(t, id)
+        break()
+    }
+    
   }
-  save.image(file = id)
+  if(!is.null(dev.list()))
+    warning("Open graphics devices will not be saved or restored.")
+  
+  .save.session.search <- search()
+  .save.session.packages <- .packages()
+  assign(".save.session.search", .save.session.search, envir = parent.frame())
+  assign(".save.session.packages", .save.session.packages, envir = parent.frame())
+  save(list=ls(envir = parent.frame(), all.names = TRUE), envir = parent.frame(), file=id)
   return(id)
 }
 
@@ -20,8 +34,29 @@ loadSession <- function(id, envir = parent.frame()) {
     stop(paste0("\'", id , "\' is not writeable"))
   }
   load(id, envir)
+  sapply( rev(get(".save.session.packages", envir=envir)), library, character.only=TRUE )
+  pad <- function(x,n) c( rep(NA,n-length(x)), x )
+  current.search <- search()[-1]
+  saved.search <- get(".save.session.search", envir=envir)[-1]
+  identical <- pad(current.search, length(saved.search)) == saved.search
+  for( i in saved.search[!identical] )
+  {
+    if( charmatch( "file:", i, nomatch=FALSE) )
+      attach(sub( "file:", "", i ) )
+    else if (charmatch( "package:", i, nomatch=FALSE)  )
+      stop(paste("Somehow we missed loading package",i))
+    else
+    {
+      do.call("attach",list(as.name(i)))
+    }
+    
+  }
+  
+  rm(list=c(".save.session.packages",
+            ".save.session.search"), envir = envir)
   return(id)
 }
+
 
 deleteSession <- function(id) {
   if(is.null(id)) {

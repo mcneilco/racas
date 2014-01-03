@@ -1,15 +1,26 @@
 
-LL4 <- 'min + (max - min)/((1 + exp(-hill * (log(x/ec50))))^1)'
+LL4 <- 'min + (max - min)/((1 + exp(slope * (log(x/ec50))))^1)'
 OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
 
 myFit <- function(fitData, fitSettingsJSON) {
   fitData <- copy(fitData)
   request <- fromJSON(fitSettingsJSON)
-  fixedParameters <- lapply(request$fixedParameters, function(x) if(is.null(x$value)) {return(NA)} else {return(x$value)})
+  updateFlags <- as.data.frame(request$updateFlags, stringsAsFactors = FALSE) 
+  updFlags <- function(crv,i,fl) {
+    sel <- updateFlags[updateFlags$id %in% i & updateFlags$curveid == unique(crv),]
+    flags <- sel[match(i, sel$id),]$flag
+    noMatch <- which(is.na(flags))
+    flags[noMatch] <- fl[noMatch]
+    return(flags)
+  }
+  
+  fitData[, points := list(list(points[[1]][, flag := updFlags(curveid,id,flag)])) , by = curveid]
+  myFixedParameters <- as.data.frame(lapply(request$fixedParameters, function(x) if(is.null(x$value)) {return(NA)} else {return(x$value)}))
   myParameterRules <- request$parameterRules
   myInactiveRule <- request$inactiveRule
   
+  fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
   fitData[ , inactiveRule := list(list(myInactiveRule))]
   
@@ -26,7 +37,7 @@ myFit <- function(fitData, fitSettingsJSON) {
   }
   #While refit is true, keep refitting using fixed parameters
   while(any(refit())) {
-  fitData[refit(), c("model.sync","fixedParameters") := {
+  fitData[refit(), c("model.synced","fixedParameters") := {
     if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
       fixedMax <- fixedParameters[[1]]$max
     } else {
@@ -60,7 +71,7 @@ myFit <- function(fitData, fitSettingsJSON) {
     } else {
       fixedSlope <- ifelse("Slope threshold exceeded" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$slopeThreshold$value, NA)
     }
-    list(model.sync = FALSE,
+    list(model.synced = FALSE,
             list(myfixedParameters = list(max = fixedMax, min = fixedMin, slope = fixedSlope, ec50 = NA)))
     }
           , by = curveid]
@@ -70,10 +81,115 @@ myFit <- function(fitData, fitSettingsJSON) {
   
   fitData[ , category := categorizeFitData(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
   
-  fitData[5, fitConverged := FALSE]
   fitData[ , reportedParameters := list(list(getReportedParameters(results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]]))), by = curveid]
   
   return(fitData)  
+}
+
+fitCall <- function(fitSettingsJSON, curveid = NA, sessionID = NA, fitData = NA) {
+  if(!is.na(curveid)) {
+    fitData <- getFitData(curveid)
+  }
+  if(!is.na(sessionID)) {
+    fitSettingsJSON_new <- fitSettingsJSON
+    sessionID_new <- sessionID
+    loadSession(sessionID)
+    fitSettingsJSON <- fitSettingsJSON_new
+    sessionID <- sessionID_new
+    rm(fitSettingsJSON_new,sessionID_new)
+    fitData[, model.synced := FALSE]
+  }
+  fitData <- myFit(fitData, fitSettingsJSON)
+  if(is.na(sessionID)) {
+    sessionID <- saveSession()
+  } else {
+    sessionID <- saveSession(sessionID)
+  }
+  response <- fitToJSONReponse(fitData, sessionID = sessionID)
+  return(response)
+}
+
+fitToJSONReponse <- function(fitData, ...) {
+  reportedValues <- objToHTMLTableString(fitData[1]$reportedParameters[[1]])
+  fitSummary <- captureOutput(summary(fitData[1]$model[[1]]))
+  parameterStdErrors <- objToHTMLTableString(fitData[1]$goodnessOfFit.parameters[[1]])
+  curveErrors <- objToHTMLTableString(fitData[1]$goodnessOfFit.model[[1]])
+  category <- fitData[1]$category[[1]]
+  acceptReject <- "FALSE"
+  approved = fitData[1]$approved[[1]]
+  plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
+                   points  = fitData[1]$points[[1]],
+                   curve = predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
+  )
+  return(toJSON(list(reportedValues = reportedValues,
+         fitSummary = fitSummary,
+         parameterStdErrors = parameterStdErrors,
+         curveErrors = curveErrors,
+         category = category,
+         acceptReject = acceptReject,
+         plotData = plotData,
+         approved = approved,
+         ...     
+  )))   
+}
+
+predictPoints <- function(pts, drcObj) {
+  if(nrow(pts)==0 || is.null(drcObj)) {
+    return(NULL)
+  }
+  x <- unique(pts$dose)
+  valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=8*length(x)) ))
+  curveData <- data.frame(dose = valuesToPredict$x, response = predict(drcObj, newdata = valuesToPredict))
+  return(curveData)
+}
+
+
+plotWindow <- function(pts){
+  if(nrow(pts)==0) {
+    return(NULL)
+  } else {
+    maxDose <- max(pts$dose)
+    minDose <- min(pts$dose)
+    maxResponse <- max(pts$response)
+    minResponse <- min(pts$response)
+    range <- abs(maxResponse-minResponse)
+    xmin <- minDose - minDose/2
+    ymax <- (maxResponse + 0.04*range)
+    xmax <- maxDose + maxDose/2
+    ymin <- (minResponse - 0.04*range)
+    return(c(log(xmin),ymax,log(xmax),ymin))
+  }
+}
+captureOutput <- function(obj) {
+  return(paste(capture.output({
+    result <- withVisible(obj)
+    if (result$visible)
+      print(result$value)
+  }), collapse="\n"))
+}
+
+
+objToHTMLTableString <- function(obj) {
+  htmlTableString <- ""
+  if(is.null(obj)) {return(htmlTableString)}
+  if(class(obj) == "list") {
+   #obj <- as.data.frame(lapply(obj, function(x) if(is.null(x)){return(NA)} else {return(x)}))
+    obj <- as.data.frame(obj)
+  }
+  if(nrow(obj) == 0) {
+    return(htmlTableString)
+  }
+  t <- tempfile()
+  htmlTableString <- print(xtable(obj), 
+                           type = "html", 
+                           include.rownames = FALSE, 
+                           comment = FALSE, 
+                           timestamp = FALSE, 
+                           rotate.rownames = TRUE, 
+                           file = t,
+                           html.table.attributes = "")
+  unlink(t)
+  return(htmlTableString)
 }
 
 getReportedParameters <- function(results, inactive, fitConverged, insufficientRange, fixedParameters, fittedParameters, pointStats) {
@@ -146,14 +262,14 @@ getFitData <- function(curveids) {
   fitData[ , c("parameterRules", "inactiveRule", "fixedParameters") := list(list(myParameterRules),
                                                                             list(myInactiveRule),
                                                                             list(myFixedParameters))]
-  fitData[ , model.sync := FALSE]
+  fitData[ , model.synced := FALSE]
   return(fitData)
 }
 
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   ###Fit
-  fitData[model.sync == FALSE, model := list(model = list(switch(renderingHint,
+  fitData[model.synced == FALSE, model := list(model = list(switch(renderingHint,
                                                                  "4 parameter D-R" = getDRCModel(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
                                                                  "3 parameter Michaelis Menten" = getDRCModel(points[[1]], drcFunction = MM.3, paramNames = c("slope","max", "kd"), fixed = fixedParameters[[1]]),
                                                                  "2 parameter Michaelis Menten" = getDRCModel(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
@@ -162,21 +278,22 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   
   setkey(fitData, "curveid")
   ###Collect Stats
-  fitData[ model.sync == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveid]
-  fitData[ model.sync == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := list(pointStats = list(getPointStats(points[[1]])), 
+  fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveid]
+  fitData[ model.synced == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := list(pointStats = list(getPointStats(points[[1]])), 
                                                                                                                               fittedParameters = list(drcObject.getParameters(model[[1]])),
                                                                                                                               goodnessOfFit.model = list(drcObject.getDRCFitStats(model[[1]], points[[1]])),
                                                                                                                               goodnessOfFit.parameters = list(drcObject.getGoodnessOfFitParameters(model[[1]]))
   ), by = curveid]
   #Fail Heuristics  
-  fitData[ model.sync == FALSE, results.parameterRules := list(list(list(goodnessOfFits = applyParameterRules.goodnessOfFits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
+  fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = applyParameterRules.goodnessOfFits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                          limits = applyParameterRules.limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveid]
   
-  fitData[ model.sync == FALSE, c("inactive", "insufficientRange") := applyInactiveRule(pointStats[[1]],points[[1]], inactiveRule[[1]]), by = curveid]
+  fitData[ model.synced == FALSE, c("inactive", "insufficientRange") := applyInactiveRule(pointStats[[1]],points[[1]], inactiveRule[[1]]), by = curveid]
+  fitData[ model.synced == FALSE, "approved" := fitConverged | insufficientRange, by = curveid]
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange"))
   
-  fitData[ model.sync == FALSE, model.sync := TRUE]
+  fitData[ model.synced == FALSE, model.synced := TRUE]
   return(fitData[, returnCols, with = FALSE])
 }
 
@@ -291,16 +408,12 @@ getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
 getPointStats <- function(pts) {
   pts <- copy(pts)
   pts[ flag == FALSE, meanByDose := mean(response), by = dose ]
-  response.empiricalMax <- max(pts$meanByDose)
-  response.empiricalMin <- min(pts$meanByDose)
+  response.empiricalMax <- pts[flag == FALSE, max(meanByDose)]
+  response.empiricalMin <- pts[flag == FALSE, min(meanByDose)]
   dose.min <- min(pts[flag==FALSE, ]$dose)
   dose.max <- max(pts[flag==FALSE, ]$dose)
   return(list(response.empiricalMax = response.empiricalMax, response.empiricalMin = response.empiricalMin, dose.min = dose.min, dose.max = dose.max))
 }
-#curveids <- query("select curveid from api_curve_params")$CURVEID
-#fitData <- getFitData(curveids)
-#fitData[ , model := list(model = list(switch(renderingHint,
-#                                             "4 parameter D-R" = getDRCModel(points, drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"))))), by = curveid]
 
 
 
@@ -314,7 +427,6 @@ oneSiteKi.ssf <- function(data) {
   Top <- max(data[,2])
   Bottom <- min(data[,2])
   logKi <- -8.0
-  #print(data)
   return(c(Top, Bottom, logKi))
 }
 #fitModelNormalized <- drm(NORMALIZEDRESULT ~ CONCENTRATION, data = points, fct = list(kifct, kissfct, kiNames), curveid=PTODWELLLITERAL, robust = "mean")
@@ -737,7 +849,6 @@ replaceNullWithNA <- function(inputList) {
   return(inputList)
 }
 addSubjectState <- function(subjectValue, subjectStateId) {
-  print(i)
   subjectValue$stateID <- subjectStateId
   subjectValue$lsTransaction <- subjectValue$lsTransaction$id
   subjectValue <- replaceNullWithNA(subjectValue)

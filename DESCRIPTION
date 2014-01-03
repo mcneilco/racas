@@ -19,7 +19,8 @@ Imports:
     evaluate,
     XLConnect,
     gdata,
-    reshape
+    reshape,
+    xtable
 Suggests:
   RPostgreSQL,
   ROracle,

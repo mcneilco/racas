@@ -17,8 +17,9 @@ library(racas)
 library(data.table)
 library(gdata)
 library(drc)
-curveids <- as.character(query("select curveid from api_curve_params")[[1]])
-fitData <- getFitData(curveids)
+library(xtable)
+#curveids <- as.character(query("select curveid from api_curve_params")[[1]])
+#fitData <- getFitData(curveids)
 #save(fitData,file = "data/exampleFitData.rda")
 
 data("exampleFitData", package = "racas")
@@ -32,10 +33,31 @@ data("exampleFitData", package = "racas")
 # }
 # fitData <- fitDat
 # fitData <- fitData[1:300]
-
+data("exampleFitData", package = "racas")
 file <- system.file("docs", "doseResponseRequest.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-fitData <- myFit(fitData, fitSettingsJSON)
+response <- fitCall(fitSettingsJSON, curveid = "90820_AG-00242847")
+response <- fitCall(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
+n <- fitCall(fitSettingsJSON, fitData = fitData)
+
+system.time(response <- fitCall(fitSettingsJSON, curveid = "126218_AG-00242848"))
+parsedResponse <- fromJSON(response)
+session <- parsedResponse$sessionID
+loadSession(session)
+parsedResponse$fitSummary
+system.time(response <- fitCall(fitSettingsJSON, sessionID = sessionID))
+system.time(response <- fitCall(fitSettingsJSON, sessionID = "/var/folders/gy/w31n6hjx1fn5n3lhdpk697q80000gn/T//Rtmp6bIh3f/rSe-206b1dd613d4"))
+
+fitData[fitConverged == TRUE, { fittedParams <- fittedParameters[[1]]
+                                names(fittedParams) <- paste0("fitted",names(fittedParams))
+                                plotData(points[[1]], as.data.frame(c(curveid = curveid, name = curveid,fittedParams,fixedParameters[[1]])), LL4, paramNames = c("slope", "min", "max", "ec50"), logDose = TRUE, drawIntercept = "ec50", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
+
+
+
+loadSession("/var/folders/gy/w31n6hjx1fn5n3lhdpk697q80000gn/T//RtmpjqSdaF/rSe-ab612d08d53")
+
+
+
 
 
 me <- print(xtable(as.data.frame(fitData[1]$reportedParameters[[1]]), display = rep("E", 6), caption = fitData[1]$category), 

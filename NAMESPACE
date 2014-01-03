@@ -1,6 +1,7 @@
 exportPattern("^[[:alpha:]]+")
 import(data.table)
 import(rjson)
+import(xtable)
 import(plotrix)
 import(brew)
 import(RCurl)
