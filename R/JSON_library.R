@@ -207,8 +207,25 @@ saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSetting
 	return(response)
 }
 
+#' Creates a tag
+#' 
+#' Creates a tag
+#' 
+#' @param tagText the text of the tag
+#' @param id used to link to old tags
+#' @param version the version of the tag (only used with an id)
+createTag <- function(tagText, id=NULL, version=NULL){
+  lsTag = list(
+    tagText = tagText,
+    id = id,
+    version = version,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+	)
+	return(lsTag)
+}
+
 createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorName", lsType="name", lsKind="protocol name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
-	# The protocol must include at least an id and version
+  # The protocol must include at least an id and version
   protocolLabel = list(
     protocol=protocol,
     labelText=labelText,
@@ -219,8 +236,8 @@ createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorNa
     ignored=ignored,
     lsTransaction=lsTransaction,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(protocolLabel)
+  )
+  return(protocolLabel)
 }
 
 createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="experiment name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
@@ -587,7 +604,7 @@ createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", sh
 
 
 createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsKind="default", shortDescription="Experiment Short Description text limit 255", 
-								lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list()){
+								lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list()){
 	if (is.null(codeName) ) {
 		codeName <- getAutoLabels(thingTypeAndKind="document_experiment", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
 	}
@@ -601,6 +618,7 @@ createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsK
 		lsTransaction=lsTransaction,
 		lsLabels=experimentLabels,
 		lsStates=experimentStates,
+		lsTags=lsTags,
 		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
 		)
 
@@ -1002,7 +1020,9 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
   if (grepl("^<",response)) {
-    stop (paste0("The loader was unable to save your ", acasCategory ,". Instead, it got this response: ", response))
+    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    myLogger$error(response)
+    stop (paste0("The loader was unable to save your ", acasCategory ,". Check the logs at ", Sys.time()))
   }
   response <- fromJSON(response)
   return(response)
