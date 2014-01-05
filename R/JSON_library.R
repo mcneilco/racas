@@ -1028,6 +1028,15 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
   return(response)
 }
 
+#' Save ACAS entities to the server
+#' 
+#' Save protocols, labels, experiments, etc.
+#' 
+#' @param entities a list of entities
+#' @param acasCategory e.g. "experiments", "subjectlabels", etc.
+#' @param lsServerURL url of ACAS server
+#' @return a list, sometimes empty
+#' @export
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
@@ -1040,6 +1049,9 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
     myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
     myLogger$error(response)
     stop (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
+  }
+  if (grepl("^\\s*$", response)) {
+    return(list())
   }
   response <- fromJSON(response)
   return(response)
