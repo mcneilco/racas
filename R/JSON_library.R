@@ -1522,3 +1522,166 @@ saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL) {
     addError(paste("Internal error in saving new valueKinds:", e$message), errorEnv=errorEnv)
   })
 }
+
+#' Flattens Nested ACAS Entities
+#' 
+#' Gets values within nested ACAS entities
+#' 
+#' @param entity an ACAS entity such as a protocol or subject
+#' @param desiredAcasCategory acasCategory where the desired values are stored
+#' @param currentAcasCategory acasCategory of the entity provided
+#' @param includeFromState a character vector of column names to include from the state
+#' @param includeFromEntity a character vector of column names to include from the state
+#' 
+#' @details \code{flattenDeepEntity} pulls values out of nested objects. This can be used
+#' on any ACAS object that has lsStates that have lsValues. If no information is
+#' needed from the state or entity, \code{includeFromState} and
+#' \code{includeFromEntity}, respectively, can be set to an empty list,
+#' \code{c()}. columns in \code{includeFromState} will have "state" prepended
+#' and the first letter capitalized, while  columns in \code{includeFromEntity} 
+#' will have \code{acasCategory} prepended and the first letter capitalized. The
+#' list of ACAS categories can be found in \code{racas::acasEntityHierarchy}
+#' (\link{acasEntityHierarchy})
+#' 
+#' @examples
+#' \dontrun{
+#' experiment <- getExperimentByCodeName("EXPT-00012398", include = "fullobject")
+#' x <- flattenDeepEntity(experiment, "subject", "experiment")
+#' }
+flattenDeepEntity <- function(entity, desiredAcasCategory, currentAcasCategory="experiment", includeFromState = c("id", "lsType", "lsKind"), includeFromEntity = c("id")) {
+  currentAcasCategoryIndex <- which(racas::acasEntityHierarchy == currentAcasCategory)
+  if (desiredAcasCategory == currentAcasCategory) {
+    output <- flattenEntity(entity, desiredAcasCategory, includeFromState, includeFromEntity)
+  } else {
+    lowerCategory <- racas::acasEntityHierarchy[currentAcasCategoryIndex + 1]
+    lowerCategoryCamel <- racas::acasEntityHierarchyCamel[currentAcasCategoryIndex + 1]
+    lowerCategoryCamelPlural <- paste0(lowerCategoryCamel, "s")
+    if (length(entity[[lowerCategoryCamelPlural]]) == 0) {
+      return(data.frame(stringsAsFactors=F))
+    }
+    output <- plyr::ldply(entity[[lowerCategoryCamelPlural]], flattenDeepEntity, 
+                    desiredAcasCategory=desiredAcasCategory, currentAcasCategory=lowerCategory, 
+                    includeFromState=includeFromState, includeFromEntity=includeFromEntity)
+    if (nrow(output) > 0) {
+      output[, paste0(lowerCategoryCamel, "Id")] <- entity$id
+    }
+  }
+  return(output)
+}
+
+#' Flattens ACAS Entities
+#' 
+#' Gets values from a given entity
+#' 
+#' @param entity an ACAS entity such as a protocol or subject
+#' @param acasCategory one of the following: "protocol", "experiment", "analysisgroup", "treatmentgroup", "subject"
+#' @param includeFromState a character vector of column names to include from the state
+#' @param includeFromEntity a character vector of column names to include from the state
+#' 
+#' \code{flattenEntity} changes the json objects that were good for Java into an
+#' R data frame. This can be used on any ACAS object that has lsStates that have
+#' lsValues. If no information is needed from the state or entity, 
+#' \code{includeFromState} and \code{includeFromEntity}, respectively, can be 
+#' set to an empty list, \code{c()}. columns in \code{includeFromState} will 
+#' have "state" prepended and the first letter capitalized, while  columns in 
+#' \code{includeFromEntity} will have \code{acasCategory} prepended and the
+#' first letter capitalized.
+#' 
+#' @export
+#' 
+flattenEntity <- function(entity, acasCategory=NULL, includeFromState = c("id", "lsType", "lsKind"), includeFromEntity = c("id")) {
+  output <- plyr::ldply(entity$lsStates, flattenState, includeFromState=includeFromState)
+  entityColumnNames <- paste0(acasCategory, toupper(substring(includeFromEntity, 1, 1)), substring(includeFromEntity, 2))
+  output[, entityColumnNames] <- entity[includeFromEntity]
+  return(output)
+}
+
+#' Flattens an lsState
+#' 
+#' Gets values into a data.frame
+#' 
+#' @param lsState an lsState that has lsValues
+#' @param includeFromState a character vector of column names to include from the state
+#' 
+#' Will return an empty data frame if there are no lsValues
+#' 
+flattenState <- function(lsState, includeFromState) {
+  if (!is.list(lsState$lsValues) || length(lsState$lsValues) == 0) {
+    return(data.frame(stringsAsFactors=F))
+  }
+  output <- plyr::ldply(lsState$lsValues, flattenValue)
+  stateColumnNames <- paste0("state", toupper(substring(includeFromState, 1, 1)), substring(includeFromState, 2))
+  output[, stateColumnNames] <- lsState[includeFromState]
+  #names(output)[names(output) == "id"] <- "valueId"
+  return(output)
+}
+
+#' Flattens an lsValue
+#' 
+#' @param lsValue an lsValue
+#' 
+#' Just turns a list into a data frame, not meant to be exported
+flattenValue <- function(lsValue) {
+  output <- as.data.frame(lsValue, stringsAsFactors=FALSE)
+  return(output)
+}
+
+#' Gets an experiment
+#' 
+#' Gets an experiment by id or codename, with options of what to get
+#' 
+#' @param experimentId the id of the experiment
+#' @param experimentCodeName the codename of an experiment
+#' @param include a character string describing what to include
+#' @param errorEnv the environment where errors will be stored to
+#' @param lsServerURL the url for the roo server
+#'   
+#' @details \code{include} can be in the list: \itemize{ \item{analysisgroups:
+#'   returns the experiment stub with analysis group stubs} \item{fullobject:
+#'   returns the full experiment object (warning: this may be slow if there is a
+#'   lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
+#'   json format} \item{prettyjsons: returns the full experiment in pretty json
+#'   format} } If left blank, an experiment stub (with states and values) is
+#'   returned. The codeName will do the same as include=analysisgroups.
+#'   
+#' @return the experiment object, or if it does not exist, \code{addError} is
+#'   run and NULL is returned
+#' 
+#' @export
+#' 
+getExperimentById <- function(experimentId, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  experiment <- NULL
+  tryCatch({
+    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, "?with=", include))
+    experiment <- fromJSON(experiment)
+  }, error = function(e) {
+    addError(paste0("Could not get experiment ", experimentId, " from the server"), errorEnv)
+  })
+  return(experiment)
+}
+
+#' @rdname getExperimentById
+#' @export
+getExperimentByCodeName <- function(experimentCodeName, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  experiment <- NULL
+  tryCatch({
+    experiments <- getURL(paste0(lsServerURL, "experiments/codename/", experimentCodeName, "?with=", include))
+    experiment <- fromJSON(experiments)[[1]]
+  }, error = function(e) {
+    addError(paste0("Could not get experiment ", experimentCodeName, " from the server"), errorEnv)
+  })
+  if (include != "") {
+    experiment <- getExperimentById(experiment$id, include, errorEnv, lsServerURL)
+  }
+  return(experiment)
+}
+
+#' The hierarcy of ACAS entities
+#' 
+#' Each category of entity contains the level below. Both a lowercase version
+#' (for URLs) and a camelCase verison (for JSON) exist. Can be found in
+#' racas::acasEntityHierarchy and racas::acasEntityHierarchyCamel
+acasEntityHierarchy <- c("protocol", "experiment", "analysisgroup", "treatmentgroup", "subject")
+
+#' @rdname acasEntityHierarchy
+acasEntityHierarchyCamel <- c("protocol", "experiment", "analysisGroup", "treatmentGroup", "subject")
