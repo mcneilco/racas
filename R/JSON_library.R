@@ -1038,6 +1038,16 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
 #' @return a list, sometimes empty
 #' @export
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  if (length(entities) > 1000) {
+    output <- saveAcasEntitiesInternal(entities[1:1000], acasCategory, lsServerURL)
+    otherSaves <- saveAcasEntities(entities[1001:length(entities)], acasCategory, lsServerURL)
+    return(c(output, otherSaves))
+  } else {
+    return(saveAcasEntitiesInternal(entities, acasCategory, lsServerURL))
+  }
+}
+
+saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
   response <- getURL(
