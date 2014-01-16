@@ -1015,7 +1015,7 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
   response <- getURL(
-    paste(lsServerURL, acasCategory, sep=""),
+    paste0(lsServerURL, acasCategory, "/"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
@@ -1624,6 +1624,64 @@ flattenState <- function(lsState, includeFromState) {
   output[, stateColumnNames] <- lsState[includeFromState]
   #names(output)[names(output) == "id"] <- "valueId"
   return(output)
+}
+
+#' Updates an entity
+#' 
+#' Replaces the entity that is at the URL with the one sent. Sub-entities (label, state, value) must have a parent object
+#' 
+#' @param entity the entity to place
+#' @param acasCategory the category (e.g. "experiments", "containervalues")
+#' @param lsServerURL the URL of the persistence server
+updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  response <- getURL(
+    paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
+    customrequest='PUT',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(entity))
+  if (grepl("^<",response)) {
+    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    myLogger$error(response)
+    stop (paste0("Internal Error: The loader was unable to update your ", acasCategory, ". Check the logs at ", Sys.time()))
+  }
+}
+
+#' Change container names
+#' 
+#' Appends a value to a container name, ignoring the old label and replacing
+#' with the new
+#' 
+#' @param containerName the name of the container (labelText)
+#' @param appendText text to append
+#' 
+#' @return the container without the changes (so an id is accessible)
+#' 
+#' @examples
+#' \dontrun{
+#' container <- appendToContainerName("AP0001", "_fail")
+#' container$ignored <- TRUE
+#' container$lsStates <- NULL
+#' container$lsLabels <- NULL
+#' updateAcasEntity(container, "containers")
+#' }
+appendToContainerName <- function(containerName, appendText) {
+  containers <- getContainerByLabelText(containerName)
+  if (length(containers) > 1) {
+    warning("More than one container has the given name, will change the first one")
+  }
+  container <- containers[[1]]
+  containerLabels <- container$lsLabels
+  oldPreferredLabel <- containerLabels[vapply(containerLabels, getElement, c(TRUE), "preferred")][[1]]
+  newLabel <- oldPreferredLabel
+  newLabel$container <- container
+  newLabel$labelText <- paste0(newLabel$labelText, appendText)
+  newLabel$id <- NULL
+  oldPreferredLabel$ignored <- TRUE
+  oldPreferredLabel$preferred <- FALSE
+  oldPreferredLabel$container <- container
+  updateAcasEntity(oldPreferredLabel, "containerlabels")
+  saveAcasEntity(newLabel, "containerlabels")
+  return(container)
 }
 
 #' Flattens an lsValue
