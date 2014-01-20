@@ -1485,7 +1485,7 @@ getProtocolByName <- function(protocolName, formFormat = NA, errorEnv = NULL) {
 #' @return a list of two vectors and a data.frame: new valueKinds, old valueKinds, and a data.frame with corrected valueType for valueKinds
 #' @export
 checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
-  currentValueKindsList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds")))
+  currentValueKindsList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/")))
   if (length(currentValueKindsList)==0) stop ("Setup error: valueKinds are missing")
   currentValueKinds <- sapply(currentValueKindsList, getElement, "kindName")
   matchingValueTypes <- sapply(currentValueKindsList, function(x) x$lsType$typeName)
