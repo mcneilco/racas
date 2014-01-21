@@ -6,7 +6,7 @@
 #' @param preferredIdService the url of the preferred id service. Defaults to \code{racas::applicationSettings$preferredBatchIdService}
 #' @param testMode deprecated, was used for a test mode
 
-#' @return a list of pairs of requested IDs and preferred IDs. On error, NULL
+#' @return a list of pairs of requested IDs and preferred IDs. On error, empty list
 #' @keywords batchCode, preferred
 #' @export
 
@@ -17,6 +17,24 @@ getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) 
                                 racas::applicationSettings$client.service.preferred.batchid.path)
   }
   
+  if (length(batchIds) > 500) {
+    return(c(getPreferredIdInternal(batchIds[1:500], preferredIdService, testMode), 
+             getPreferredId(batchIds[501:length(batchIds)], preferredIdService, testMode)))
+  } else {
+    return(getPreferredIdInternal(batchIds, preferredIdService))
+  }
+}
+
+#' Gets preferred ids
+#'
+#' Internal code for \link{getPreferredId} (before chunking)
+#' 
+#' @param batchIds a character vector of batch codes
+#' @param preferredIdService the url of the preferred id service. Defaults to \code{racas::applicationSettings$preferredBatchIdService}
+#' @param testMode deprecated, was used for a test mode
+
+#' @return a list of pairs of requested IDs and preferred IDs. On error, empty list
+getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMode=FALSE) {
   # Put the batchIds in the correct format
   requestIds <- list()
   if (testMode) {
@@ -49,7 +67,7 @@ getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) 
   # Error handling
   if (grepl("^Error:",response[1])) {
     errorList <<- c(errorList, paste("The preferred ID service is having a problem:", response))
-    return(NULL)
+    return(list())
   } else if (response$error) {
     errorList <<- c(errorList, paste("The preferred ID service is having a problem:", response$errorMessages))
   }

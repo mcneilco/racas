@@ -1,9 +1,9 @@
-\name{getPreferredId}
-\alias{getPreferredId}
+\name{getPreferredIdInternal}
+\alias{getPreferredIdInternal}
 \title{Gets preferred ids}
 \usage{
-  getPreferredId(batchIds, preferredIdService = NULL,
-    testMode = FALSE)
+  getPreferredIdInternal(batchIds,
+    preferredIdService = NULL, testMode = FALSE)
 }
 \arguments{
   \item{batchIds}{a character vector of batch codes}
@@ -19,9 +19,6 @@
   error, empty list
 }
 \description{
-  Entered batch codes (ids) are checked against a preferred
-  id service
+  Internal code for \link{getPreferredId} (before chunking)
 }
-\keyword{batchCode,}
-\keyword{preferred}
 
