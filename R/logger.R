@@ -20,7 +20,7 @@ Logger <- setRefClass(
 #'Creates a new logger
 #'
 #'@param logName  Name for the logger output line within the log file (default: "com.default.logger)
-#'@param logFileName name of the log file to write to (default: "output.log")
+#'@param logFileName name of the log file to write to (default: "acas.log")
 #'@param logDir name directory to write to (default: racas::applicationSettings$server.log.path)
 #'@param logLevel the level at which to write logs (default: racas::applicationSettings$server.log.level, see names(logging::loglevels))
 #'@param envir an environment to attach to the object
@@ -49,7 +49,7 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "output.log", logDir = racas::applicationSettings$server.log.path, logLevel = racas::applicationSettings$server.log.level, envir = environment(), ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas::applicationSettings$server.log.path, logLevel = racas::applicationSettings$server.log.level, envir = environment(), ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
   basicConfig(level = logLevel)
   if(is.na(logDir)) {
@@ -71,7 +71,7 @@ bubbleLogger <- Logger$new()
 #'If the environment in the bubbleLogger matches one of the environments in the current call stack, then the bubbleLogger is returned.
 #'
 #'@param bubble  Name for the logger output line within the log file (default: "com.default.logger)
-#'@param envir name of the log file to write to (default: "output.log")
+#'@param envir name of the log file to write to (default: "acas.log")
 #'@param ... further arguments to be passed to \code{\link{createLogger}}
 #'@return object of class \code{\link{Logger}}
 #'
