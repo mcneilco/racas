@@ -2,11 +2,11 @@
    "fixedParameters":{
       "min":{
          "parameter":"min",
-         "value":0
+         "value":null
       },
       "max":{
          "parameter":"max",
-         "value":100
+         "value":null
       },
       "slope":{
          "parameter":"slope",
@@ -43,7 +43,7 @@
 		  "maxThreshold":{
 			 "parameter":"max",
 			 "type":"threshold",
-			 "value":100,
+			 "value":80,
 			 "operator":">",
 			 "displayName":"Max threshold exceeded"
 		  },

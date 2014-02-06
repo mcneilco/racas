@@ -1,17 +1,15 @@
 
 #Read In Data/Format
-# library(racas)
 # library(data.table)
 # library(gdata)
-# library(drc)
-# dat <- read.xls("/Users/bbolt/Documents/clients/dns/biacore/09-17-13\ PDE2\ Affinity\ E0019632\ Rmax\ free.xls", sheet = 8, skip = 2, stringsAsFactors = FALSE)
+# dat <- read.xls("/Users/bbolt/Documents/dns/kd-biacore/Data Samples/09-17-13\ PDE2\ Affinity\ E0019632\ Rmax\ free.xls", sheet = 8, skip = 2, stringsAsFactors = FALSE)
 # dat <- data.table(subset(dat, dat$Fc=="4-3 corr" & dat$Report.Point == "binding" & AssayStep == "Sample", select = c("Sample_1_Sample", "Sample_1_Conc", "RelResp")))
 # setnames(dat, c("curveid", "dose", "response"))
 # dat[ , c("dose", "response", "flag") := list(dose = as.numeric(dose), response = as.numeric(response), flag = FALSE)]
 # setkey(dat, "curveid")
-# fitData <- data.table(curveid = unique(dat$curveid), renderingHint = "2 parameter Michaelis Menten", points = split(dat, dat$curveid), key = "curveid")
-# fitData[ , model.sync := FALSE]
-# 
+# fitData1 <- data.table(curveid = unique(dat$curveid), renderingHint = "2 parameter Michaelis Menten", points = split(dat, dat$curveid), key = "curveid")
+# fitData[ , model.synced := FALSE]
+
 # 
 library(racas)
 library(data.table)
@@ -33,28 +31,61 @@ data("exampleFitData", package = "racas")
 # }
 # fitData <- fitDat
 # fitData <- fitData[1:300]
+file <- system.file("docs", "doseResponseRequest.json", package = "racas")
+fitSettingsJSON <- readChar(file, file.info(file)$size)
+curveids <- as.character(query("select curveid from api_curve_params")[[1]])
+system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+response <- doseResponse(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
+
+##Profiling
+system.time(blah <- profr(blah <- getPointStats(fitData[1]$points[[1]]), interval=.0001))
+plot(blah)
+
+#4 Parameter Dose Response from fitData
 data("exampleFitData", package = "racas")
 file <- system.file("docs", "doseResponseRequest.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-response <- fitCall(fitSettingsJSON, curveid = "90820_AG-00242847")
-response <- fitCall(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
-n <- fitCall(fitSettingsJSON, fitData = fitData)
-
-system.time(response <- fitCall(fitSettingsJSON, curveid = "126218_AG-00242848"))
+response <- doseResponse(fitSettingsJSON, fitData = fitData)
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
-parsedResponse$fitSummary
-system.time(response <- fitCall(fitSettingsJSON, sessionID = sessionID))
-system.time(response <- fitCall(fitSettingsJSON, sessionID = "/var/folders/gy/w31n6hjx1fn5n3lhdpk697q80000gn/T//Rtmp6bIh3f/rSe-206b1dd613d4"))
+fitData[1]$reportedParameters[[1]]
+
+#2 Parameter Michaelis Menton
+load("/Users/bbolt/Library/Containers/com.apple.mail/Data/Library/Mail Downloads/A14981AA-144F-45B7-AD7F-9918D21D3305/fitData.rda")
+fitData[, fixedParameters := list(list())]
+fitData[, points := list(list(points[[1]][,flag := FALSE])), by = curveid]
+file <- system.file("docs", "doseResponseRequest-kd.json", package = "racas")
+fitSettingsJSON <- readChar(file, file.info(file)$size)
+doseResponse(fitSettingsJSON, fitData = fitData)
+
+
+##Profiling
+Rprof()
+response <- doseResponse(fitSettingsJSON, curveids = curveids)
+Rprof(NULL)
+prof <- parse_rprof("Rprof.out")
+plot(prof)
+
+
+
+
+
+
 
 fitData[fitConverged == TRUE, { fittedParams <- fittedParameters[[1]]
                                 names(fittedParams) <- paste0("fitted",names(fittedParams))
-                                plotData(points[[1]], as.data.frame(c(curveid = curveid, name = curveid,fittedParams,fixedParameters[[1]])), LL4, paramNames = c("slope", "min", "max", "ec50"), logDose = TRUE, drawIntercept = "ec50", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
+                                plotData(points[[1]], as.data.frame(c(c    currentTime <- as.numeric(format(Sys.time(), "%s%S3"))
+urveid = curveid, name = curveid,fittedParams,fixedParameters[[1]])), LL4, paramNames = c("slope", "min", "max", "ec50"), logDose = TRUE, drawIntercept = "ec50", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
 
 
 
-loadSession("/var/folders/gy/w31n6hjx1fn5n3lhdpk697q80000gn/T//RtmpjqSdaF/rSe-ab612d08d53")
+
+options(digits.secs = 4)
+as.character(format(Sys.time(), "%OS3"))
+currentTime <- paste0(as.character(format(Sys.time(), "%s")),strsplit(as.character(format(Sys.time(), "%OS3")),"\\.")[[1]][2])
+as.numeric(format(Sys.time(), "%Y"))
+
 
 
 
@@ -120,3 +151,18 @@ me <- print(xtable(as.data.frame(fitData[1]$reportedParameters[[1]]), display = 
 #                                dev.off()}, by = curveid]
 # 
 # fitData[fitConverged == TRUE, plotData(points[[1]], as.data.frame(c(curveid = curveid, name = curveid,fittedParameters[[1]])), MM2, paramNames = c("kd","max"), logDose = TRUE, drawIntercept = "kd", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = 1, ymin = 0, ymax = 40), by = curveid]
+
+
+lettersToRow <- function(wellRefs) {
+  letts <- strsplit(wellRefs,"", perl = TRUE)
+  row <- which(toupper(letters) == let) + 26*(pos-1)
+}
+
+
+
+finalData <- unique(fitdata[, c("exptno", "curveid"), with = FALSE])
+setnames(finalData, c("curveid", "tested_lot"))
+finalData[,renderingHint := "2 parameter Michaelis Menten"]
+points <- split(fitdata, fitdata$exptno)
+points <- data.table(curveid = names(points), points = points)
+finalData <- merge(finalData, points, by = "curveid")
