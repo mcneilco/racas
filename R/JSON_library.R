@@ -207,8 +207,25 @@ saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSetting
 	return(response)
 }
 
+#' Creates a tag
+#' 
+#' Creates a tag
+#' 
+#' @param tagText the text of the tag
+#' @param id used to link to old tags
+#' @param version the version of the tag (only used with an id)
+createTag <- function(tagText, id=NULL, version=NULL){
+  lsTag = list(
+    tagText = tagText,
+    id = id,
+    version = version,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+	)
+	return(lsTag)
+}
+
 createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorName", lsType="name", lsKind="protocol name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
-	# The protocol must include at least an id and version
+  # The protocol must include at least an id and version
   protocolLabel = list(
     protocol=protocol,
     labelText=labelText,
@@ -219,8 +236,8 @@ createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorNa
     ignored=ignored,
     lsTransaction=lsTransaction,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(protocolLabel)
+  )
+  return(protocolLabel)
 }
 
 createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="experiment name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
@@ -587,7 +604,7 @@ createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", sh
 
 
 createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsKind="default", shortDescription="Experiment Short Description text limit 255", 
-								lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list()){
+								lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list()){
 	if (is.null(codeName) ) {
 		codeName <- getAutoLabels(thingTypeAndKind="document_experiment", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
 	}
@@ -601,6 +618,7 @@ createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsK
 		lsTransaction=lsTransaction,
 		lsLabels=experimentLabels,
 		lsStates=experimentStates,
+		lsTags=lsTags,
 		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
 		)
 
@@ -997,18 +1015,39 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
   response <- getURL(
-    paste(lsServerURL, acasCategory, sep=""),
+    paste0(lsServerURL, acasCategory, "/"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=message)
   if (grepl("^<",response)) {
-    stop (paste0("The loader was unable to save your ", acasCategory ,". Instead, it got this response: ", response))
+    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    myLogger$error(response)
+    stop (paste0("The loader was unable to save your ", acasCategory ,". Check the logs at ", Sys.time()))
   }
   response <- fromJSON(response)
   return(response)
 }
 
+#' Save ACAS entities to the server
+#' 
+#' Save protocols, labels, experiments, etc.
+#' 
+#' @param entities a list of entities
+#' @param acasCategory e.g. "experiments", "subjectlabels", etc.
+#' @param lsServerURL url of ACAS server
+#' @return a list, sometimes empty
+#' @export
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  if (length(entities) > 1000) {
+    output <- saveAcasEntitiesInternal(entities[1:1000], acasCategory, lsServerURL)
+    otherSaves <- saveAcasEntities(entities[1001:length(entities)], acasCategory, lsServerURL)
+    return(c(output, otherSaves))
+  } else {
+    return(saveAcasEntitiesInternal(entities, acasCategory, lsServerURL))
+  }
+}
+
+saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entities)
   response <- getURL(
@@ -1020,6 +1059,9 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
     myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
     myLogger$error(response)
     stop (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
+  }
+  if (grepl("^\\s*$", response)) {
+    return(list())
   }
   response <- fromJSON(response)
   return(response)
@@ -1393,3 +1435,321 @@ getURLcheckStatus <- function(url, ...) {
   }
   return(response)
 }
+#' Protocol search by name
+#' 
+#' Gets a protocol by name, also checking if a new version can be created
+#' 
+#' @param protocolName a string, the name of the experiment
+#' @param formFormat a string, the format of the sheet (used for checking if protocol creation is allowed)
+#' 
+#' @return a list that is a protocol object
+#' @export
+getProtocolByName <- function(protocolName, formFormat = NA, errorEnv = NULL) { 
+  forceProtocolCreation <- grepl("CREATETHISPROTOCOL", protocolName)
+  if(forceProtocolCreation) {
+    protocolName <- trim(gsub("CREATETHISPROTOCOL", "", protocolName))
+  }
+  
+  tryCatch({
+    protocolList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols?FindByProtocolName&protocolName=", URLencode(protocolName, reserved = TRUE))))
+  }, error = function(e) {
+    stop("There was an error in accessing the protocol. Please contact your system administrator.")
+  })
+  
+  # If no protocol with the given name exists, warn the user
+  if (length(protocolList) == 0) {
+    allowedCreationFormats <- racas::applicationSettings$server.allow.protocol.creation.formats
+    allowedCreationFormats <- unlist(strsplit(allowedCreationFormats, ","))
+    if (formFormat %in% allowedCreationFormats || forceProtocolCreation) {
+      warning(paste0("Protocol '", protocolName, "' does not exist, so it will be created. No user action is needed if you intend to create a new protocol."))
+    } else {
+      addError(paste0("Protocol '", protocolName, 
+                      "' does not exist. Please enter a protocol name that exists. Contact your system administrator if you would like to create a new protocol."), 
+               errorEnv)
+    }
+    # A flag for when the protocol will be created new
+    protocol <- NA
+  } else {
+    # If the protocol does exist, get the full version
+    protocol <- fromJSON(getURL(URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols/", protocolList[[1]]$id))))
+  }
+  return(protocol)
+}
+#' Check valueKinds
+#' 
+#' Checks that entered valueKinds are valid valueKinds
+#' 
+#' @param neededValueKinds character vector of valueKinds
+#' @param neededValueKindTypes character vector of valueTypes, with order matching neededValueKinds
+#' 
+#' @return a list of two vectors and a data.frame: new valueKinds, old valueKinds, and a data.frame with corrected valueType for valueKinds
+#' @export
+checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
+  currentValueKindsList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/")))
+  if (length(currentValueKindsList)==0) stop ("Setup error: valueKinds are missing")
+  currentValueKinds <- sapply(currentValueKindsList, getElement, "kindName")
+  matchingValueTypes <- sapply(currentValueKindsList, function(x) x$lsType$typeName)
+  
+  newValueKinds <- setdiff(neededValueKinds, currentValueKinds)
+  oldValueKinds <- intersect(neededValueKinds, currentValueKinds)
+  
+  # Check that the value kinds that have been entered before have the correct Datatype (valueType)
+  oldValueKindTypes <- neededValueKindTypes[match(oldValueKinds, neededValueKinds)]
+  currentValueKindTypeFrame <- data.frame(currentValueKinds,  matchingValueTypes, stringsAsFactors=FALSE)
+  oldValueKindTypeFrame <- data.frame(oldValueKinds, oldValueKindTypes, stringsAsFactors=FALSE)
+  
+  comparisonFrame <- merge(oldValueKindTypeFrame, currentValueKindTypeFrame, by.x = "oldValueKinds", by.y = "currentValueKinds")
+  wrongValueTypes <- comparisonFrame$oldValueKindTypes != comparisonFrame$matchingValueTypes
+  
+  wrongTypeKindFrame <- comparisonFrame[wrongValueTypes, ]
+  names(wrongTypeKindFrame)[names(wrongTypeKindFrame) == "matchingValueTypes"] <- "enteredValueTypes"
+  
+  goodValueKinds <- comparisonFrame$oldValueKinds[!wrongValueTypes]
+  return(list(newValueKinds=newValueKinds, goodValueKinds=goodValueKinds, wrongTypeKindFrame=wrongTypeKindFrame))
+}
+
+#' Saves value kinds
+#' 
+#' Saves value kinds with matching value types
+#' @param valueKinds character vector of new valueKinds
+#' @param valueTypes character vector of valueTypes (e.g. c("stringValue", "numericValue"))
+#' @details valueKinds must be new, and valueTypes must exist
+#' @export
+saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL) {
+  valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
+  allowedValueTypes <- sapply(valueTypesList, getElement, "typeName")
+  
+  newValueTypesList <- valueTypesList[match(valueTypes, allowedValueTypes)]
+  newValueKindsUpload <- mapply(function(x, y) list(kindName=x, lsType=y), valueKinds, newValueTypesList,
+                                SIMPLIFY = F, USE.NAMES = F)
+  tryCatch({
+    response <- getURL(
+      paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/jsonArray"),
+      customrequest='POST',
+      httpheader=c('Content-Type'='application/json'),
+      postfields=toJSON(newValueKindsUpload))
+  }, error = function(e) {
+    addError(paste("Internal error in saving new valueKinds:", e$message), errorEnv=errorEnv)
+  })
+}
+
+#' Flattens Nested ACAS Entities
+#' 
+#' Gets values within nested ACAS entities
+#' 
+#' @param entity an ACAS entity such as a protocol or subject
+#' @param desiredAcasCategory acasCategory where the desired values are stored
+#' @param currentAcasCategory acasCategory of the entity provided
+#' @param includeFromState a character vector of column names to include from the state
+#' @param includeFromEntity a character vector of column names to include from the state
+#' 
+#' @details \code{flattenDeepEntity} pulls values out of nested objects. This can be used
+#' on any ACAS object that has lsStates that have lsValues. If no information is
+#' needed from the state or entity, \code{includeFromState} and
+#' \code{includeFromEntity}, respectively, can be set to an empty list,
+#' \code{c()}. columns in \code{includeFromState} will have "state" prepended
+#' and the first letter capitalized, while  columns in \code{includeFromEntity} 
+#' will have \code{acasCategory} prepended and the first letter capitalized. The
+#' list of ACAS categories can be found in \code{racas::acasEntityHierarchy}
+#' (\link{acasEntityHierarchy})
+#' 
+#' @examples
+#' \dontrun{
+#' experiment <- getExperimentByCodeName("EXPT-00012398", include = "fullobject")
+#' x <- flattenDeepEntity(experiment, "subject", "experiment")
+#' }
+flattenDeepEntity <- function(entity, desiredAcasCategory, currentAcasCategory="experiment", includeFromState = c("id", "lsType", "lsKind"), includeFromEntity = c("id")) {
+  currentAcasCategoryIndex <- which(racas::acasEntityHierarchy == currentAcasCategory)
+  if (desiredAcasCategory == currentAcasCategory) {
+    output <- flattenEntity(entity, desiredAcasCategory, includeFromState, includeFromEntity)
+  } else {
+    lowerCategory <- racas::acasEntityHierarchy[currentAcasCategoryIndex + 1]
+    lowerCategoryCamel <- racas::acasEntityHierarchyCamel[currentAcasCategoryIndex + 1]
+    lowerCategoryCamelPlural <- paste0(lowerCategoryCamel, "s")
+    if (length(entity[[lowerCategoryCamelPlural]]) == 0) {
+      return(data.frame(stringsAsFactors=F))
+    }
+    output <- plyr::ldply(entity[[lowerCategoryCamelPlural]], flattenDeepEntity, 
+                    desiredAcasCategory=desiredAcasCategory, currentAcasCategory=lowerCategory, 
+                    includeFromState=includeFromState, includeFromEntity=includeFromEntity)
+    if (nrow(output) > 0) {
+      output[, paste0(lowerCategoryCamel, "Id")] <- entity$id
+    }
+  }
+  return(output)
+}
+
+#' Flattens ACAS Entities
+#' 
+#' Gets values from a given entity
+#' 
+#' @param entity an ACAS entity such as a protocol or subject
+#' @param acasCategory one of the following: "protocol", "experiment", "analysisgroup", "treatmentgroup", "subject"
+#' @param includeFromState a character vector of column names to include from the state
+#' @param includeFromEntity a character vector of column names to include from the state
+#' 
+#' \code{flattenEntity} changes the json objects that were good for Java into an
+#' R data frame. This can be used on any ACAS object that has lsStates that have
+#' lsValues. If no information is needed from the state or entity, 
+#' \code{includeFromState} and \code{includeFromEntity}, respectively, can be 
+#' set to an empty list, \code{c()}. columns in \code{includeFromState} will 
+#' have "state" prepended and the first letter capitalized, while  columns in 
+#' \code{includeFromEntity} will have \code{acasCategory} prepended and the
+#' first letter capitalized.
+#' 
+#' @export
+#' 
+flattenEntity <- function(entity, acasCategory=NULL, includeFromState = c("id", "lsType", "lsKind"), includeFromEntity = c("id")) {
+  output <- plyr::ldply(entity$lsStates, flattenState, includeFromState=includeFromState)
+  entityColumnNames <- paste0(acasCategory, toupper(substring(includeFromEntity, 1, 1)), substring(includeFromEntity, 2))
+  output[, entityColumnNames] <- entity[includeFromEntity]
+  return(output)
+}
+
+#' Flattens an lsState
+#' 
+#' Gets values into a data.frame
+#' 
+#' @param lsState an lsState that has lsValues
+#' @param includeFromState a character vector of column names to include from the state
+#' 
+#' Will return an empty data frame if there are no lsValues
+#' 
+flattenState <- function(lsState, includeFromState) {
+  if (!is.list(lsState$lsValues) || length(lsState$lsValues) == 0) {
+    return(data.frame(stringsAsFactors=F))
+  }
+  output <- plyr::ldply(lsState$lsValues, flattenValue)
+  stateColumnNames <- paste0("state", toupper(substring(includeFromState, 1, 1)), substring(includeFromState, 2))
+  output[, stateColumnNames] <- lsState[includeFromState]
+  #names(output)[names(output) == "id"] <- "valueId"
+  return(output)
+}
+
+#' Updates an entity
+#' 
+#' Replaces the entity that is at the URL with the one sent. Sub-entities (label, state, value) must have a parent object
+#' 
+#' @param entity the entity to place
+#' @param acasCategory the category (e.g. "experiments", "containervalues")
+#' @param lsServerURL the URL of the persistence server
+updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  response <- getURL(
+    paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
+    customrequest='PUT',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(entity))
+  if (grepl("^<",response)) {
+    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    myLogger$error(response)
+    stop (paste0("Internal Error: The loader was unable to update your ", acasCategory, ". Check the logs at ", Sys.time()))
+  }
+}
+
+#' Change container names
+#' 
+#' Appends a value to a container name, ignoring the old label and replacing
+#' with the new
+#' 
+#' @param containerName the name of the container (labelText)
+#' @param appendText text to append
+#' 
+#' @return the container without the changes (so an id is accessible)
+#' 
+#' @examples
+#' \dontrun{
+#' container <- appendToContainerName("AP0001", "_fail")
+#' container$ignored <- TRUE
+#' container$lsStates <- NULL
+#' container$lsLabels <- NULL
+#' updateAcasEntity(container, "containers")
+#' }
+appendToContainerName <- function(containerName, appendText) {
+  containers <- getContainerByLabelText(containerName)
+  if (length(containers) > 1) {
+    warning("More than one container has the given name, will change the first one")
+  }
+  container <- containers[[1]]
+  containerLabels <- container$lsLabels
+  oldPreferredLabel <- containerLabels[vapply(containerLabels, getElement, c(TRUE), "preferred")][[1]]
+  newLabel <- oldPreferredLabel
+  newLabel$container <- container
+  newLabel$labelText <- paste0(newLabel$labelText, appendText)
+  newLabel$id <- NULL
+  oldPreferredLabel$ignored <- TRUE
+  oldPreferredLabel$preferred <- FALSE
+  oldPreferredLabel$container <- container
+  updateAcasEntity(oldPreferredLabel, "containerlabels")
+  saveAcasEntity(newLabel, "containerlabels")
+  return(container)
+}
+
+#' Flattens an lsValue
+#' 
+#' @param lsValue an lsValue
+#' 
+#' Just turns a list into a data frame, not meant to be exported
+flattenValue <- function(lsValue) {
+  output <- as.data.frame(lsValue, stringsAsFactors=FALSE)
+  return(output)
+}
+
+#' Gets an experiment
+#' 
+#' Gets an experiment by id or codename, with options of what to get
+#' 
+#' @param experimentId the id of the experiment
+#' @param experimentCodeName the codename of an experiment
+#' @param include a character string describing what to include
+#' @param errorEnv the environment where errors will be stored to
+#' @param lsServerURL the url for the roo server
+#'   
+#' @details \code{include} can be in the list: \itemize{ \item{analysisgroups:
+#'   returns the experiment stub with analysis group stubs} \item{fullobject:
+#'   returns the full experiment object (warning: this may be slow if there is a
+#'   lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
+#'   json format} \item{prettyjsons: returns the full experiment in pretty json
+#'   format} } If left blank, an experiment stub (with states and values) is
+#'   returned. The codeName will do the same as include=analysisgroups.
+#'   
+#' @return the experiment object, or if it does not exist, \code{addError} is
+#'   run and NULL is returned
+#' 
+#' @export
+#' 
+getExperimentById <- function(experimentId, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  experiment <- NULL
+  tryCatch({
+    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, "?with=", include))
+    experiment <- fromJSON(experiment)
+  }, error = function(e) {
+    addError(paste0("Could not get experiment ", experimentId, " from the server"), errorEnv)
+  })
+  return(experiment)
+}
+
+#' @rdname getExperimentById
+#' @export
+getExperimentByCodeName <- function(experimentCodeName, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  experiment <- NULL
+  tryCatch({
+    experiments <- getURL(paste0(lsServerURL, "experiments/codename/", experimentCodeName, "?with=", include))
+    experiment <- fromJSON(experiments)[[1]]
+  }, error = function(e) {
+    addError(paste0("Could not get experiment ", experimentCodeName, " from the server"), errorEnv)
+  })
+  if (include != "") {
+    experiment <- getExperimentById(experiment$id, include, errorEnv, lsServerURL)
+  }
+  return(experiment)
+}
+
+#' The hierarcy of ACAS entities
+#' 
+#' Each category of entity contains the level below. Both a lowercase version
+#' (for URLs) and a camelCase verison (for JSON) exist. Can be found in
+#' racas::acasEntityHierarchy and racas::acasEntityHierarchyCamel
+acasEntityHierarchy <- c("protocol", "experiment", "analysisgroup", "treatmentgroup", "subject")
+
+#' @rdname acasEntityHierarchy
+acasEntityHierarchyCamel <- c("protocol", "experiment", "analysisGroup", "treatmentGroup", "subject")

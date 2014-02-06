@@ -2,8 +2,8 @@
 \alias{meltWideData}
 \title{Melt our data sets}
 \usage{
-  meltWideData(wideData, resultTypes, splitColumn = NULL,
-    splitFunction = NULL)
+  meltWideData(wideData, resultTypes, stateGroups = list(),
+    splitColumn = NULL, splitFunction = NULL)
 }
 \arguments{
   \item{wideData}{a data.frame with columns of the same
@@ -15,9 +15,13 @@
   \item{splitFunction}{a function to use in secondary
   splitting of rows}
 
+  \item{stateGroups}{definitions for how to group states
+  (see genericDataParserConfiguration.R), passed to
+  splitFunction}
+
   \item{resultTypes}{a data.frame with columns: \describe{
   \item{DataColumn}{the string that will match column names
-  of wideData} \item{Type}{the valueKind of each row}
+  of wideData} \item{Kind}{the valueKind of each row}
   \item{Units}{the unit of that row} \item{Conc}{the tested
   concentration of that row} \item{ConcUnits}{the tested
   concenration unit of that row} }}

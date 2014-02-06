@@ -1,0 +1,30 @@
+\name{appendToContainerName}
+\alias{appendToContainerName}
+\title{Change container names}
+\usage{
+  appendToContainerName(containerName, appendText)
+}
+\arguments{
+  \item{containerName}{the name of the container
+  (labelText)}
+
+  \item{appendText}{text to append}
+}
+\value{
+  the container without the changes (so an id is
+  accessible)
+}
+\description{
+  Appends a value to a container name, ignoring the old
+  label and replacing with the new
+}
+\examples{
+\dontrun{
+container <- appendToContainerName("AP0001", "_fail")
+container$ignored <- TRUE
+container$lsStates <- NULL
+container$lsLabels <- NULL
+updateAcasEntity(container, "containers")
+}
+}
+
