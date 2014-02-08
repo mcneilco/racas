@@ -72,7 +72,17 @@ readConfigFile <- function(configLocation) {
   row.names(applicationSettings) <- 1
   
   if (!is.null(applicationSettings$server.database.r.package)) {
-    require(applicationSettings$server.database.r.package, character.only=TRUE)
+    if(!require(applicationSettings$server.database.r.package, character.only=TRUE)) {
+      warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed",
+                     ifelse(options("racasInstallDep"), 
+                            paste0("\nAttempting to install ",applicationSettings$server.database.r.package),
+                            paste0("Query functionality may not work properly\nEither racas again by running install.R located in the conf directory\nor\nrestart R and run this line options(racasInstallDep = TRUE) before loading the racas package")
+                     )))
+      repos <- "http://cran.rstudio.com/"
+      options(repos = "http://cran.rstudio.com/")
+      try(install.packages(applicationSettings$server.database.r.package, repos = repos))
+      try(require(applicationSettings$server.database.r.package))
+    }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
   assignInNamespace("applicationSettings",applicationSettings, ns="racas")
