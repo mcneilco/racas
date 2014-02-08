@@ -73,8 +73,13 @@ readConfigFile <- function(configLocation) {
   
   if (!is.null(applicationSettings$server.database.r.package)) {
     if(!require(applicationSettings$server.database.r.package, character.only=TRUE)) {
+      if(is.null(options("racasInstallDep")) {
+        installDep <- FALSE
+      } else {
+        installDep <- as.logical(options("racasInstallDep")[[1]])
+      }
       warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed",
-                     ifelse(options("racasInstallDep"), 
+                     ifelse(installDep, 
                             paste0("\nAttempting to install ",applicationSettings$server.database.r.package),
                             paste0("Query functionality may not work properly\nEither racas again by running install.R located in the conf directory\nor\nrestart R and run this line options(racasInstallDep = TRUE) before loading the racas package")
                      )))
