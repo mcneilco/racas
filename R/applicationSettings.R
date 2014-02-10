@@ -98,9 +98,9 @@ readConfigFile <- function(configLocation) {
   }
   if(!is.null(applicationSettings$server.r.dependencies)) {
     rDependencies <- strsplit(applicationSettings$server.r.dependencies,",")[[1]]
-    missing <- !sapply(rDependencies, function(x) suppressWarnings(require(x, character.only=TRUE, quietly = TRUE)))
+    missing <- !sapply(rDependencies, function(x) x %in% row.names(installed.packages()))
     if(any(missing)) {
-      warning(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality :", paste0(names(missing)[missing == TRUE], collapse = ", ")))
+      warning(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
     }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
