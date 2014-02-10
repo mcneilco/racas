@@ -21,10 +21,15 @@
 ...for installing master (change username/password to your git username/password)...
 
     install_url(url = "https://bitbucket.org/mcneilco/racas/get/master.zip", config = authenticate(user = "username", password = "password", type = "basic"))
+        or
+    install_bitbucket(repo = "racas", username = "mcneilco", ref = "master", auth_user = "username", password = "password")
 
 ...for a branch (change username/password to your git username/password)...
 
     install_url(url = "https://bitbucket.org/mcneilco/racas/get/dns.zip", config = authenticate(user = "username", password = "password", type = "basic"))
+        or
+    install_bitbucket(repo = "racas", username = "mcneilco", ref = "dns", auth_user = "username", password = "password")
+
 
 ##Notes:
 
