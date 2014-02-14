@@ -5,13 +5,19 @@
   appConf <- Sys.getenv(appConfName)
   appHome <- Sys.getenv(appHomeName)
   if(appHome == ""  && appConf == "" && !file.exists(relativeConf)) {
-    warning(paste0("Relative to racas install config file location: ",relativeConf,"does not exist,\nand",
-                    appHomeName," and ",appConfName," environment variables not set, not reading application settings.\n\n",
-                   "You can set this prior to loading this package by running:\n",
+    warning(paste0("Config file does not exist relative to package: ",relativeConf,"\n",
+                    appHomeName," not set\n",
+                    appConfName," not set\n\n",
+                    "Not reading configuration file.\n\n",
+                   "Install the racas package in a directory one level below the base ",applicationSettings$appName," install \n",
+                   "OR\n",
+                    "set one of the following environment variables prior to loading this package by adding them to your shell or by running:\n",
                    "\tSys.setenv(",appHomeName," = \"/path/to/",applicationSettings$appName,"\")\n",
-                   "Or\n",
                    "\tSys.setenv(",appConfName," = \"/path/to/",applicationSettings$appName,"_config_file\")\n\n",
-                   "Or, you can set either of these in your system environment before loading R. The config file location will take priority over home"),call.=FALSE)
+                   "The priority of these setings are:\n",
+                   "1) ACAS_CONFIG environment variable\n",
+                   "2) ACAS_HOME environment variable\n",
+                   "3) relative path to the config file ",relativeConf),call.=FALSE)
   } else {
     tryCatch({
       if(appHome!="") {
