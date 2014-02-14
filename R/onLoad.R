@@ -1,7 +1,7 @@
 .onLoad <- function(libname, pkgname) {
   appConfName <- paste0(applicationSettings$appName,"_CONFIG")
   appHomeName <- paste0(applicationSettings$appName,"_HOME")
-  relativeConf <- file.path(normalizePath(file.path(libname,"..","..")),"acas","conf","config.properties")
+  relativeConf <- file.path(normalizePath(file.path(libname,"..","..")),"acas","conf","compiled","conf.properties")
   appConf <- Sys.getenv(appConfName)
   appHome <- Sys.getenv(appHomeName)
   if(appHome == ""  && appConf == "" && !file.exists(relativeConf)) {
