@@ -1,9 +1,4 @@
-#'Logger class (subclass of Logger in logging package)
-#'
-#'Logger class (subclass of Logger in logging package)
-#'
-#'
-#'
+
 Logger <- setRefClass( 
   Class="racasLogger", 
   fields=list( 

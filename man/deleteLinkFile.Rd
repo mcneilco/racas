@@ -2,7 +2,7 @@
 \alias{deleteLinkFile}
 \title{Deletes a file that shows up as a link}
 \usage{
-  deleteLinkFile(experiment, testMode = FALSE)
+deleteLinkFile(experiment, testMode = FALSE)
 }
 \arguments{
   \item{experiment}{A list that is an experiment object;
@@ -11,11 +11,11 @@
   \item{testMode}{boolean used for testing}
 }
 \description{
-  Deletes the file referenced as an annotation file in the
-  experiment (in stateKind: "report locations").
+Deletes the file referenced as an annotation file in the
+experiment (in stateKind: "report locations").
 }
 \details{
-  Will delete all annotation files associated with the
-  experiment
+Will delete all annotation files associated with the
+experiment
 }
 

@@ -2,8 +2,8 @@
 \alias{saveAcasEntities}
 \title{Save ACAS entities to the server}
 \usage{
-  saveAcasEntities(entities, acasCategory,
-    lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+saveAcasEntities(entities, acasCategory,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
   \item{entities}{a list of entities}
@@ -14,9 +14,9 @@
   \item{lsServerURL}{url of ACAS server}
 }
 \value{
-  a list, sometimes empty
+a list, sometimes empty
 }
 \description{
-  Save protocols, labels, experiments, etc.
+Save protocols, labels, experiments, etc.
 }
 

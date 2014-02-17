@@ -2,17 +2,14 @@
 \alias{createStateValue}
 \title{Creates a state value}
 \usage{
-  createStateValue(lsType = "lsType", lsKind = "lsKind",
-    stringValue = NULL, fileValue = NULL, urlValue = NULL,
-    publicData = TRUE, ignored = FALSE, dateValue = NULL,
-    clobValue = NULL, blobValue = NULL,
-    valueOperator = NULL, operatorType = NULL,
-    numericValue = NULL, sigFigs = NULL,
-    uncertainty = NULL, uncertaintyType = NULL,
-    numberOfReplicates = NULL, valueUnit = NULL,
-    unitType = NULL, comments = NULL, lsTransaction = NULL,
-    codeValue = NULL, recordedBy = "username",
-    lsState = NULL, testMode = FALSE)
+createStateValue(lsType = "lsType", lsKind = "lsKind", stringValue = NULL,
+  fileValue = NULL, urlValue = NULL, publicData = TRUE, ignored = FALSE,
+  dateValue = NULL, clobValue = NULL, blobValue = NULL,
+  valueOperator = NULL, operatorType = NULL, numericValue = NULL,
+  sigFigs = NULL, uncertainty = NULL, uncertaintyType = NULL,
+  numberOfReplicates = NULL, valueUnit = NULL, unitType = NULL,
+  comments = NULL, lsTransaction = NULL, codeValue = NULL,
+  recordedBy = "username", lsState = NULL, testMode = FALSE)
 }
 \arguments{
   \item{lsType}{}
@@ -66,12 +63,12 @@
   \item{testMode}{used for testing}
 }
 \value{
-  list, a value object
+list, a value object
 }
 \description{
-  Creates a state value, used either in all cases
+Creates a state value, used either in all cases
 }
 \details{
-  Use either in a nested object or alone
+Use either in a nested object or alone
 }
 

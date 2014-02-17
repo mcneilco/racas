@@ -1,0 +1,53 @@
+\name{pingPong}
+\alias{pingPong}
+\title{Ping-pong table generator}
+\usage{
+pingPong(originView, intermediateTablePrefix = list(schema =
+  racas::applicationSettings$server.database.username, name = originView$name,
+  tableSpace = NULL, options = NULL), destinationViewName, primaryKey = NULL,
+  indexes = NULL, applicationSettings = racas::applicationSettings)
+}
+\arguments{
+  \item{originView}{A list in the form list(schema =
+  "schemaName", name = "viewName")}
+
+  \item{intermediateTablePrefix}{A list with the desired
+  intermediate table prefix in the form list(schema =
+  "desintationSchema", name = "intermediateTableName")
+  (defaults to list(schema =
+  racas::applicationSettings$server.database.username, name
+  = originView$name)}
+
+  \item{destinationViewName}{A list with the desired final
+  view name in the form list(schema = "destinationSchema",
+  name = "destinationViewName", tableSpace, options)}
+
+  \item{primaryKey}{Optional character string of origin
+  view column in which to create primary key}
+
+  \item{indexes}{Optional character vector of column names
+  in which to create indexes}
+
+  \item{applicationSettings}{Optional applicationSettings
+  dataframe (defaults to racas::applicationSettings)}
+}
+\value{
+Returns a list of the created database objects dropped or
+created
+}
+\description{
+Takes a slow view and materializes it into an intermediate
+table and "final" fast view to use in queries
+}
+\examples{
+pingPong(
+  originView =  list(schema = "ACAS", name = "API_ALL_DATA"),
+  intermediateTablePrefix = list(schema = racas::applicationSettings$server.database.username, name = "API_ALL_DATA", tableSpace = "KALYPSYSADMIN_NOLOG", options = c("NOLOGGING")),
+  destinationViewName = list(schema = "acas", name = "PP_API_ALL_DATA"),
+  #indexes = lapply(list("AGV_ID", "AG_ID", "AG_PUBLIC_DATA", "AG_TESTED_LOT", "CV_ID", "C_ID", "C_PUBLIC_DATA", "C_STATE_ID", "PROJECT", "PROTOCOL_NAME", "SV_ID", "S_ID", "S_PUBLIC_DATA", "S_STATE_ID", "TGV_ID", "TG_ID", "TG_PUBLIC_DATA", "TG_STATE_ID", "TG_TESTED_LOT"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
+ indexes = lapply(list("AGV_ID"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
+}
+\keyword{ping-pong,}
+\keyword{pingPong}
+\keyword{pingpong,}
+

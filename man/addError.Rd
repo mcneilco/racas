@@ -2,7 +2,7 @@
 \alias{addError}
 \title{Non-fatal error tracking}
 \usage{
-  addError(errorMessage, errorEnv = NULL)
+addError(errorMessage, errorEnv = NULL)
 }
 \arguments{
   \item{errorMessage}{The message for the user}
@@ -13,6 +13,6 @@
   collsions.}
 }
 \description{
-  Add errors to a list of errors to show a user
+Add errors to a list of errors to show a user
 }
 

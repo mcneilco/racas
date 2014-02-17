@@ -2,9 +2,8 @@
 \alias{saveValuesFromLongFormat}
 \title{saves "raw only" values}
 \usage{
-  saveValuesFromLongFormat(entityData, entityKind,
-    stateGroups = NULL, lsTransaction, recordedBy,
-    stateGroupIndices = NULL, testMode = FALSE)
+saveValuesFromLongFormat(entityData, entityKind, stateGroups = NULL,
+  lsTransaction, recordedBy, stateGroupIndices = NULL, testMode = FALSE)
 }
 \arguments{
   \item{entityData}{A data frame that includes columns:
@@ -57,12 +56,12 @@
   data}
 }
 \value{
-  A list of value objects (lists)
+A list of value objects (lists)
 }
 \description{
-  Saves values from a specific format
+Saves values from a specific format
 }
 \details{
-  In longFormatSave.R
+In longFormatSave.R
 }
 

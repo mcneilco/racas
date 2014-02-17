@@ -2,10 +2,10 @@
 \alias{moveFileToExperimentFolder}
 \title{File Saving}
 \usage{
-  moveFileToExperimentFolder(fileStartLocation, experiment,
-    recordedBy, lsTransaction,
-    fileServiceType = racas::applicationSettings$server.service.external.file.type,
-    fileService = racas::applicationSettings$server.service.external.file.service.url)
+moveFileToExperimentFolder(fileStartLocation, experiment, recordedBy,
+  lsTransaction,
+  fileServiceType = racas::applicationSettings$server.service.external.file.type,
+  fileService = racas::applicationSettings$server.service.external.file.service.url)
 }
 \arguments{
   \item{fileStartLocation}{Path to location to find the
@@ -24,13 +24,13 @@
   defined in customFunctions)}
 }
 \value{
-  New file location (or code)
+New file location (or code)
 }
 \description{
-  Moves a file to the location for files and saves a
-  reference to that location in the experiment
+Moves a file to the location for files and saves a
+reference to that location in the experiment
 }
 \details{
-  fileRead.R
+fileRead.R
 }
 

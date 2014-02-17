@@ -3,13 +3,11 @@
 \alias{getExperimentById}
 \title{Gets an experiment}
 \usage{
-  getExperimentById(experimentId, include = "",
-    errorEnv = NULL,
-    lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+getExperimentById(experimentId, include = "", errorEnv = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 
-  getExperimentByCodeName(experimentCodeName, include = "",
-    errorEnv = NULL,
-    lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+getExperimentByCodeName(experimentCodeName, include = "", errorEnv = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
   \item{experimentId}{the id of the experiment}
@@ -25,23 +23,22 @@
   \item{lsServerURL}{the url for the roo server}
 }
 \value{
-  the experiment object, or if it does not exist,
-  \code{addError} is run and NULL is returned
+the experiment object, or if it does not exist,
+\code{addError} is run and NULL is returned
 }
 \description{
-  Gets an experiment by id or codename, with options of
-  what to get
+Gets an experiment by id or codename, with options of what
+to get
 }
 \details{
-  \code{include} can be in the list: \itemize{
-  \item{analysisgroups: returns the experiment stub with
-  analysis group stubs} \item{fullobject: returns the full
-  experiment object (warning: this may be slow if there is
-  a lot of data)} \item{prettyjsonstub: returns the
-  experiment stub in pretty json format} \item{prettyjsons:
-  returns the full experiment in pretty json format} } If
-  left blank, an experiment stub (with states and values)
-  is returned. The codeName will do the same as
-  include=analysisgroups.
+\code{include} can be in the list: \itemize{
+\item{analysisgroups: returns the experiment stub with
+analysis group stubs} \item{fullobject: returns the full
+experiment object (warning: this may be slow if there is a
+lot of data)} \item{prettyjsonstub: returns the experiment
+stub in pretty json format} \item{prettyjsons: returns the
+full experiment in pretty json format} } If left blank, an
+experiment stub (with states and values) is returned. The
+codeName will do the same as include=analysisgroups.
 }
 

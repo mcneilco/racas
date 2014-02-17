@@ -2,7 +2,7 @@
 \alias{appendToContainerName}
 \title{Change container names}
 \usage{
-  appendToContainerName(containerName, appendText)
+appendToContainerName(containerName, appendText)
 }
 \arguments{
   \item{containerName}{the name of the container
@@ -11,12 +11,11 @@
   \item{appendText}{text to append}
 }
 \value{
-  the container without the changes (so an id is
-  accessible)
+the container without the changes (so an id is accessible)
 }
 \description{
-  Appends a value to a container name, ignoring the old
-  label and replacing with the new
+Appends a value to a container name, ignoring the old label
+and replacing with the new
 }
 \examples{
 \dontrun{

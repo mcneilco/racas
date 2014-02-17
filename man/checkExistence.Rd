@@ -2,8 +2,8 @@
 \alias{checkExistence}
 \title{Check for protocol or experiment existence}
 \usage{
-  checkExistence(x,
-    type = c("protocolName", "experimentName", "protocolCodeName", "experimentCodeName"))
+checkExistence(x, type = c("protocolName", "experimentName",
+  "protocolCodeName", "experimentCodeName"))
 }
 \arguments{
   \item{x}{entity label or code names of the same type}
@@ -12,11 +12,11 @@
   protocolCodeName, experimentName or experimentCodeName)}
 }
 \value{
-  boolean list with names that match x
+boolean list with names that match x
 }
 \description{
-  This function checks to see if a given protocol or
-  experiment entity exists
+This function checks to see if a given protocol or
+experiment entity exists
 }
 \examples{
 checkExistence("ADME_Human Liver Microsome Stability", "protocolName")

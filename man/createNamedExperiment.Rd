@@ -2,9 +2,8 @@
 \alias{createNamedExperiment}
 \title{Create experiment with name}
 \usage{
-  createNamedExperiment(labelText, protocol, recordedBy,
-    lsTransaction, shortDescription, lsType = "default",
-    lsKind = "default")
+createNamedExperiment(labelText, protocol, recordedBy, lsTransaction,
+  shortDescription, lsType = "default", lsKind = "default")
 }
 \arguments{
   \item{labelText}{name of the experiment}
@@ -24,6 +23,6 @@
   \item{lsKind}{experiment kind}
 }
 \description{
-  Create an experiment with a label already built in
+Create an experiment with a label already built in
 }
 

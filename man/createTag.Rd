@@ -2,7 +2,7 @@
 \alias{createTag}
 \title{Creates a tag}
 \usage{
-  createTag(tagText, id = NULL, version = NULL)
+createTag(tagText, id = NULL, version = NULL)
 }
 \arguments{
   \item{tagText}{the text of the tag}
@@ -13,6 +13,6 @@
   id)}
 }
 \description{
-  Creates a tag
+Creates a tag
 }
 

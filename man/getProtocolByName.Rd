@@ -2,8 +2,7 @@
 \alias{getProtocolByName}
 \title{Protocol search by name}
 \usage{
-  getProtocolByName(protocolName, formFormat = NA,
-    errorEnv = NULL)
+getProtocolByName(protocolName, formFormat = NA, errorEnv = NULL)
 }
 \arguments{
   \item{protocolName}{a string, the name of the experiment}
@@ -12,10 +11,10 @@
   for checking if protocol creation is allowed)}
 }
 \value{
-  a list that is a protocol object
+a list that is a protocol object
 }
 \description{
-  Gets a protocol by name, also checking if a new version
-  can be created
+Gets a protocol by name, also checking if a new version can
+be created
 }
 

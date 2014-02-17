@@ -2,7 +2,7 @@
 \alias{saveValueKinds}
 \title{Saves value kinds}
 \usage{
-  saveValueKinds(valueKinds, valueTypes, errorEnv = NULL)
+saveValueKinds(valueKinds, valueTypes, errorEnv = NULL)
 }
 \arguments{
   \item{valueKinds}{character vector of new valueKinds}
@@ -11,9 +11,9 @@
   c("stringValue", "numericValue"))}
 }
 \description{
-  Saves value kinds with matching value types
+Saves value kinds with matching value types
 }
 \details{
-  valueKinds must be new, and valueTypes must exist
+valueKinds must be new, and valueTypes must exist
 }
 

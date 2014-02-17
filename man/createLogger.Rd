@@ -2,18 +2,17 @@
 \alias{createLogger}
 \title{Creates a new logger}
 \usage{
-  createLogger(logName = "com.default.logger",
-    logFileName = "output.log",
-    logDir = racas::applicationSettings$server.log.path,
-    logLevel = racas::applicationSettings$server.log.level,
-    envir = environment(), ...)
+createLogger(logName = "com.default.logger", logFileName = "racas.log",
+  logDir = racas::applicationSettings$server.log.path,
+  logLevel = racas::applicationSettings$server.log.level,
+  envir = environment(), ...)
 }
 \arguments{
   \item{logName}{Name for the logger output line within the
   log file (default: "com.default.logger)}
 
   \item{logFileName}{name of the log file to write to
-  (default: "output.log")}
+  (default: "acas.log")}
 
   \item{logDir}{name directory to write to (default:
   racas::applicationSettings$server.log.path)}
@@ -25,10 +24,10 @@
   \item{envir}{an environment to attach to the object}
 }
 \value{
-  object of class logger
+object of class logger
 }
 \description{
-  Creates a new logger
+Creates a new logger
 }
 \examples{
 #Creating a logger with logLevel = "WARN"

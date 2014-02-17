@@ -2,10 +2,9 @@
 \alias{addFileLink}
 \title{Saves a file that will show up as a link in Seurat}
 \usage{
-  addFileLink(batchCodeList, recordedBy, experiment,
-    lsTransaction, reportFileSummary = NULL,
-    reportFilePath = NULL, fileType = NULL, url = NULL,
-    testMode = FALSE)
+addFileLink(batchCodeList, recordedBy, experiment, lsTransaction,
+  reportFileSummary = NULL, reportFilePath = NULL, fileType = NULL,
+  url = NULL, testMode = FALSE)
 }
 \arguments{
   \item{batchCodeList}{A list or vector of batch codes}
@@ -31,16 +30,13 @@
 
   \item{testMode}{a boolean used for testing}
 }
-\value{
-  NULL
-}
 \description{
-  Saves an analysis group with states and values holding a
-  file or url. Each batchCode has a separate state with the
-  annotation.
+Saves an analysis group with states and values holding a
+file or url. Each batchCode has a separate state with the
+annotation.
 }
 \details{
-  Must have either a reportFilePath or a url, but having
-  both will result in the url being ignored.
+Must have either a reportFilePath or a url, but having both
+will result in the url being ignored.
 }
 

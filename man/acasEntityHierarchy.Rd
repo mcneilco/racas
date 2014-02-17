@@ -3,17 +3,18 @@
 \alias{acasEntityHierarchy}
 \alias{acasEntityHierarchyCamel}
 \title{The hierarcy of ACAS entities}
-\format{chr [1:5] "protocol" "experiment" "analysisgroup" "treatmentgroup" "subject"}
+\format{\preformatted{ chr [1:5] "protocol" "experiment" "analysisgroup" "treatmentgroup" "subject"
+}}
 \usage{
-  acasEntityHierarchy
+acasEntityHierarchy
 
-  acasEntityHierarchyCamel
+acasEntityHierarchyCamel
 }
 \description{
-  Each category of entity contains the level below. Both a
-  lowercase version (for URLs) and a camelCase verison (for
-  JSON) exist. Can be found in racas::acasEntityHierarchy
-  and racas::acasEntityHierarchyCamel
+Each category of entity contains the level below. Both a
+lowercase version (for URLs) and a camelCase verison (for
+JSON) exist. Can be found in racas::acasEntityHierarchy and
+racas::acasEntityHierarchyCamel
 }
 \keyword{datasets}
 

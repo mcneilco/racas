@@ -2,7 +2,7 @@
 \alias{flattenState}
 \title{Flattens an lsState}
 \usage{
-  flattenState(lsState, includeFromState)
+flattenState(lsState, includeFromState)
 }
 \arguments{
   \item{lsState}{an lsState that has lsValues}
@@ -13,6 +13,6 @@
   Will return an empty data frame if there are no lsValues}
 }
 \description{
-  Gets values into a data.frame
+Gets values into a data.frame
 }
 

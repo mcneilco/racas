@@ -4,28 +4,27 @@
 \title{Configuration settings for the applicaiton}
 \format{A data frame with a column for each setting}
 \usage{
-  applicationSettings
+applicationSettings
 }
 \description{
-  This data frame is used throughout the applicaiton to
-  point to the database, to get the correct applicaiton
-  name...etc.
+This data frame is used throughout the applicaiton to point
+to the database, to get the correct applicaiton name...etc.
 }
 \details{
-  \itemize{ \item appName display name for the applicaiton
-  (ACAS) \item db_driver a character string that when
-  evaluated is an object that inherits from
-  \code{\link{dbDriver}} ('PostgreSQL()', 'Oracle()',
-  'MySQL()', 'JDBC("oracle.jdbc.driver.OracleDriver",
-  "/Users/bbolt/Documents/ojdbc6-11.2.0.2.jar")') \item
-  db_user a character string username for the database
-  connection \item db_password a character string password
-  for the database connection \item db_name a character
-  string SID/database name for the database connection
-  \item db_host a character string hostname of database
-  connection \item db_port a character string port of
-  database connection \item db_driver_package a character
-  string of the package to instantiate }
+\itemize{ \item appName display name for the applicaiton
+(ACAS) \item db_driver a character string that when
+evaluated is an object that inherits from
+\code{\link{dbDriver}} ('PostgreSQL()', 'Oracle()',
+'MySQL()', 'JDBC("oracle.jdbc.driver.OracleDriver",
+"/Users/bbolt/Documents/ojdbc6-11.2.0.2.jar")') \item
+db_user a character string username for the database
+connection \item db_password a character string password
+for the database connection \item db_name a character
+string SID/database name for the database connection \item
+db_host a character string hostname of database connection
+\item db_port a character string port of database
+connection \item db_driver_package a character string of
+the package to instantiate }
 }
 \examples{
 # Here is an example data frame

@@ -2,9 +2,8 @@
 \alias{createSELFile}
 \title{Creates an SEL formatted file}
 \usage{
-  createSELFile(selExperimentMetaData,
-    selCalculatedResults = NULL, selRawResults = NULL,
-    outputFilePath = NULL, format = "CSV")
+createSELFile(selExperimentMetaData, selCalculatedResults = NULL,
+  selRawResults = NULL, outputFilePath = NULL, format = "CSV")
 }
 \arguments{
   \item{selExperimentMetaData}{typically a data.frame
@@ -23,19 +22,18 @@
   outputFilePath is NULL, see details)}
 }
 \value{
-  character path of the written file or character of the
-  CSV results
+character path of the written file or character of the CSV
+results
 }
 \description{
-  Given data structures that represent the various pieces
-  of an SEL file, this function will write or return SEL
-  formatted files
+Given data structures that represent the various pieces of
+an SEL file, this function will write or return SEL
+formatted files
 }
 \details{
-  If the outputFilePath is NULL then the function will
-  write the CSV representation of the file to a character
-  and return, otherwise it returns the path to the written
-  file.
+If the outputFilePath is NULL then the function will write
+the CSV representation of the file to a character and
+return, otherwise it returns the path to the written file.
 }
 \examples{
 selExperimentMetaData <- createSELExperimentMetaData(protocolName = "Cytotox Assay",

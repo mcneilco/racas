@@ -2,9 +2,8 @@
 \alias{flattenEntity}
 \title{Flattens ACAS Entities}
 \usage{
-  flattenEntity(entity, acasCategory = NULL,
-    includeFromState = c("id", "lsType", "lsKind"),
-    includeFromEntity = c("id"))
+flattenEntity(entity, acasCategory = NULL, includeFromState = c("id",
+  "lsType", "lsKind"), includeFromEntity = c("id"))
 }
 \arguments{
   \item{entity}{an ACAS entity such as a protocol or
@@ -32,6 +31,6 @@
   prepended and the first letter capitalized.}
 }
 \description{
-  Gets values from a given entity
+Gets values from a given entity
 }
 

@@ -2,8 +2,8 @@
 \alias{saveAnalysisResults}
 \title{Save the HTML summary into the experiment}
 \usage{
-  saveAnalysisResults(experiment, hasError, htmlSummary,
-    lsTransaction = NULL, testMode = FALSE)
+saveAnalysisResults(experiment, hasError, htmlSummary, lsTransaction = NULL,
+  testMode = FALSE)
 }
 \arguments{
   \item{experiment}{An experiment list of lists}
@@ -18,6 +18,6 @@
   \item{testMode}{a boolean used for testing}
 }
 \description{
-  Saves a summary to the given experiment
+Saves a summary to the given experiment
 }
 

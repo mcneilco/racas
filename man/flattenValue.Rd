@@ -2,7 +2,7 @@
 \alias{flattenValue}
 \title{Flattens an lsValue}
 \usage{
-  flattenValue(lsValue)
+flattenValue(lsValue)
 }
 \arguments{
   \item{lsValue}{an lsValue
@@ -11,6 +11,6 @@
   exported}
 }
 \description{
-  Flattens an lsValue
+Flattens an lsValue
 }
 

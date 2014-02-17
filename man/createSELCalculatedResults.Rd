@@ -3,11 +3,9 @@
 \alias{createSELCalculatedResults}
 \title{Creates a data.frame that contains the elements of the Calculated Results section of SEL}
 \usage{
-  createSELCalculatedResults(calculatedResults,
-    corporateIDColumn = "Corporate Batch ID",
-    dataTypes = NULL, ls_kinds = NULL, unit_kinds = NULL)
-
-  createSELCalculatedResults
+createSELCalculatedResults(calculatedResults,
+  corporateIDColumn = "Corporate Batch ID", dataTypes = NULL,
+  ls_kinds = NULL, unit_kinds = NULL)
 }
 \arguments{
   \item{calculatedResultDataFrame}{a data.frame (or
@@ -26,12 +24,12 @@
   each column}
 }
 \value{
-  data.frame representing the most common inputs to the SEL
-  calculated results section
+data.frame representing the most common inputs to the SEL
+calculated results section
 }
 \description{
-  The return structure represents the standard inputs of
-  the "Calculated Results" section of SEL
+The return structure represents the standard inputs of the
+"Calculated Results" section of SEL
 }
 \examples{
 #Basic Example
@@ -52,5 +50,4 @@ createSELCalculatedResults(cars2, corporateIDColumn = "Sample", ls_kinds = c("IC
 createSELCalculatedResults(cars2, corporateIDColumn = "Some Garbage")
 createSELCalculatedResults(cars2, corporateIDColumn = "Sample", dataTypes = "Some Garbage")
 }
-\keyword{datasets}
 

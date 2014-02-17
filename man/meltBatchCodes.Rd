@@ -2,9 +2,9 @@
 \alias{meltBatchCodes}
 \title{Turns a batchCode column into rows in a long format}
 \usage{
-  meltBatchCodes(entityData, batchCodeStateIndices,
-    replacedFakeBatchCode = NULL,
-    optionalColumns = c("treatmentGroupID", "analysisGroupID"))
+meltBatchCodes(entityData, batchCodeStateIndices,
+  replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID",
+  "analysisGroupID"))
 }
 \arguments{
   \item{entityData}{a data frame with data}
@@ -18,12 +18,12 @@
   invalid batch codes}
 }
 \value{
-  A data frame with rows for all code values
+A data frame with rows for all code values
 }
 \description{
-  Turns a batchCode column into rows in a long format
+Turns a batchCode column into rows in a long format
 }
 \details{
-  Does not work with data.table
+Does not work with data.table
 }
 

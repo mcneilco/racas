@@ -2,8 +2,8 @@
 \alias{createHtmlSummary}
 \title{Create an HTML summary}
 \usage{
-  createHtmlSummary(hasError, errorList, hasWarning,
-    warningList, summaryInfo, dryRun)
+createHtmlSummary(hasError, errorList, hasWarning, warningList, summaryInfo,
+  dryRun)
 }
 \arguments{
   \item{hasError}{A boolean marking if the function
@@ -23,16 +23,16 @@
   saved to the server}
 }
 \value{
-  a string of HTML
+a string of HTML
 }
 \description{
-  Takes a list of summary information and turns it into
-  HTML that can be displayed in a web interface.
+Takes a list of summary information and turns it into HTML
+that can be displayed in a web interface.
 }
 \details{
-  summaryInfo can have named elements "info": a list of
-  information where names are used as titles, and
-  "viewerLink": a URL link to the program used to view the
-  results
+summaryInfo can have named elements "info": a list of
+information where names are used as titles, and
+"viewerLink": a URL link to the program used to view the
+results
 }
 

@@ -2,8 +2,8 @@
 \alias{updateAcasEntity}
 \title{Updates an entity}
 \usage{
-  updateAcasEntity(entity, acasCategory,
-    lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+updateAcasEntity(entity, acasCategory,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
   \item{entity}{the entity to place}
@@ -14,8 +14,8 @@
   \item{lsServerURL}{the URL of the persistence server}
 }
 \description{
-  Replaces the entity that is at the URL with the one sent.
-  Sub-entities (label, state, value) must have a parent
-  object
+Replaces the entity that is at the URL with the one sent.
+Sub-entities (label, state, value) must have a parent
+object
 }
 

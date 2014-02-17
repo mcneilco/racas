@@ -2,8 +2,8 @@
 \alias{getPreferredIdInternal}
 \title{Gets preferred ids}
 \usage{
-  getPreferredIdInternal(batchIds,
-    preferredIdService = NULL, testMode = FALSE)
+getPreferredIdInternal(batchIds, preferredIdService = NULL,
+  testMode = FALSE)
 }
 \arguments{
   \item{batchIds}{a character vector of batch codes}
@@ -15,10 +15,10 @@
   \item{testMode}{deprecated, was used for a test mode}
 }
 \value{
-  a list of pairs of requested IDs and preferred IDs. On
-  error, empty list
+a list of pairs of requested IDs and preferred IDs. On
+error, empty list
 }
 \description{
-  Internal code for \link{getPreferredId} (before chunking)
+Internal code for \link{getPreferredId} (before chunking)
 }
 

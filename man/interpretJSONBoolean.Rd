@@ -2,7 +2,7 @@
 \alias{interpretJSONBoolean}
 \title{Turns 'true' and 'false' into TRUE and FALSE}
 \usage{
-  interpretJSONBoolean(JSONBoolean)
+interpretJSONBoolean(JSONBoolean)
 }
 \arguments{
   \item{JSONBoolean}{a string of "true" or "false"
@@ -10,6 +10,6 @@
   Other inputs not affected}
 }
 \description{
-  Turns 'true' and 'false' into TRUE and FALSE
+Turns 'true' and 'false' into TRUE and FALSE
 }
 

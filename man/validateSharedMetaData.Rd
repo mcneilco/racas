@@ -2,8 +2,7 @@
 \alias{validateSharedMetaData}
 \title{Meta data validation}
 \usage{
-  validateSharedMetaData(metaData,
-    expectedDataFormat = NULL, errorEnv = NULL)
+validateSharedMetaData(metaData, expectedDataFormat = NULL, errorEnv = NULL)
 }
 \arguments{
   \item{metaData}{A "data.frame" of two columns containing
@@ -21,10 +20,10 @@
   \item{errorEnv}{An environment to send error messages to}
 }
 \description{
-  Valides the meta data using services from configuration
+Valides the meta data using services from configuration
 }
 \details{
-  Example expectedDataFormat can be found in
-  generic_data_parser.R
+Example expectedDataFormat can be found in
+generic_data_parser.R
 }
 

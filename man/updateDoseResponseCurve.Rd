@@ -2,7 +2,7 @@
 \alias{updateDoseResponseCurve}
 \title{Function to save dose response curve data}
 \usage{
-  updateDoseResponseCurve(analysisGroupData, subjectData)
+updateDoseResponseCurve(analysisGroupData, subjectData)
 }
 \arguments{
   \item{subjectData}{A data frame of the changed flag ids
@@ -25,8 +25,8 @@
   numericValue \item StringValue }}
 }
 \description{
-  This function takes in changes to an already saved curve
-  and updates the flags and fitted parameters
+This function takes in changes to an already saved curve
+and updates the flags and fitted parameters
 }
 \keyword{curve}
 \keyword{dose,}

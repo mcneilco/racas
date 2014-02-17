@@ -2,8 +2,8 @@
 \alias{meltWideData}
 \title{Melt our data sets}
 \usage{
-  meltWideData(wideData, resultTypes, stateGroups = list(),
-    splitColumn = NULL, splitFunction = NULL)
+meltWideData(wideData, resultTypes, stateGroups = list(),
+  splitColumn = NULL, splitFunction = NULL)
 }
 \arguments{
   \item{wideData}{a data.frame with columns of the same
@@ -27,10 +27,10 @@
   concenration unit of that row} }}
 }
 \description{
-  melts our specific format
+melts our specific format
 }
 \details{
-  resultTypes should not have a factor in DataColumn- order
-  breaks
+resultTypes should not have a factor in DataColumn- order
+breaks
 }
 
