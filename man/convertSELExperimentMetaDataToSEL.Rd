@@ -2,19 +2,19 @@
 \alias{convertSELExperimentMetaDataToSEL}
 \title{Converts an Experiment Meta Data data.frame to a pivoted version}
 \usage{
-  convertSELExperimentMetaDataToSEL(experimentMetaData)
+convertSELExperimentMetaDataToSEL(experimentMetaData)
 }
 \arguments{
   \item{experimentMetaData}{typically a data.frame created
   by \code{\link{createSELExperimentMetaData}}}
 }
 \value{
-  data.frame pivoted version of the experimentMetaData
+data.frame pivoted version of the experimentMetaData
 }
 \description{
-  Pivotes a data.frame like that returned by
-  \code{\link{createSELExperimentMetaData}} to a pivoted
-  data.frame
+Pivotes a data.frame like that returned by
+\code{\link{createSELExperimentMetaData}} to a pivoted
+data.frame
 }
 \examples{
 experimentMetaData <- createSELExperimentMetaData(protocolName = "Cytotox Assay",

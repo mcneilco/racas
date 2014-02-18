@@ -28,12 +28,23 @@
 #' # user  system elapsed 
 #' # 0.007   0.001   0.468 
 #' 
-query <- function(qu, globalConnect=FALSE, ...) {
+query <- function(qu, globalConnect=FALSE, conn = NULL, ...) {
   isSend <- grepl("^UPDATE|^CREATE|^DELETE|^DROP|^INSERT|^ALTER",toupper(sub("^\\s+", "", qu)))
-  if(!globalConnect) {
-    conn <- getDatabaseConnection(...)
-    jdbcConn <- class(conn)=="JDBCConnection"
+  closeConnectionOnWaytOut <- !globalConnect & is.null(conn)
+  on.exit({if(closeConnectionOnWaytOut) {DBI::dbDisconnect(conn)}})
+  if(is.null(conn)) {
+    if(!globalConnect) {
+      conn <- getDatabaseConnection(...)
+    } else {
+      conn <- try(get("conn",envir = .GlobalEnv), silent = TRUE)
+      isAliveConnection <- try(dbGetInfo(conn),silent = TRUE)
+      if(class(isAliveConnection) == "try-error") {
+        conn <- getDatabaseConnection()
+        conn <<- conn
+      }
+    }
   }
+  jdbcConn <- class(conn)=="JDBCConnection"
   result <- tryCatch({
     if(isSend && jdbcConn) {
       result <- RJDBC::dbSendUpdate(conn, qu)
@@ -44,31 +55,11 @@ query <- function(qu, globalConnect=FALSE, ...) {
     }
   },
   error = function(ex) {
-    if(globalConnect) {
-      conn <<- getDatabaseConnection(...)
-      jdbcConn <- class(conn)=="JDBCConnection"
-      tryCatch({
-        if(isSend && jdbcConn) {
-          result <- RJDBC::dbSendUpdate(conn, qu)
-          return(TRUE)
-        } else {
-         result <- DBI::dbGetQuery(conn,qu)
-         return(result)
-        }
-      },
-      error = function(ex) {
-        errorHandler(ex, conn, driver)
-      })
-    } else {
-      errorHandler(ex, conn, driver)
-    }
-  }, finally = {
-    if(!globalConnect) {
-      DBI::dbDisconnect(conn, ...)
-    }
+    return(list(success = FALSE, error = ex))
   })
   return(result)
 }
+
 getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
   driver <- eval(parse(text = applicationSettings$server.database.r.driver))
   conn <- switch(class(driver),
@@ -79,17 +70,6 @@ getDatabaseConnection <- function(applicationSettings = racas::applicationSettin
                  class(driver)
   )
   return(conn)
-}
-errorHandler <- function(ex, conn, driver) {
-  if(class(conn)=="character") {
-    if(conn==class(driver)) {
-      print("Unrecognized driver class '",class(driver),"', racas::applicationSettings$server.database.r.driver '",parse(text = racas::applicationSettings$server.database.r.driver), "' evals to class ", class(driver),", must evaluate to a known driver class\n see ?racas:::query")
-      return(list(success = FALSE, error = ex))
-    }
-  } else{
-    print(ex)
-    return(list(success = FALSE, error = ex))
-  }
 }
 
 getDBType <- function(server.database.r.driver = racas::applicationSettings$server.database.r.driver) {

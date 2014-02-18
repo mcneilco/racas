@@ -318,13 +318,18 @@ meltTimes <- function(entityData) {
 #'     \item{stateVersion}{An integer that is the version of the state for each value}
 #'     \item{stringValue}{String: a string value (optional)}
 #'     \item{codeValue}{String: a code, such as a batch code (optional)}
+#'     \item{fileValue}{String: a code that refers to a file, or a path extension of the blueimp public folder (optional)}
+#'     \item{urlValue}{String: a url (optional)}
+#'     \item{numericValue}{Number: a number (optional)}
 #'     \item{dateValue}{A Date value (optional)}
 #'     \item{valueOperator}{String: The operator for each value (optional)}
 #'     \item{valueUnit}{String: The units for each value (optional)}
 #'     \item{clobValue}{String: for very long strings (optional)}
+#'     \item{blobValue}{Anything: no case that exists right now (optional)}
 #'     \item{numberOfReplicates}{Integer: The number of replicates (optional)}
 #'     \item{uncertainty}{Numeric: the uncertainty (optional)}
 #'     \item{uncertaintyType}{String: the type of uncertainty, such as standard deviation (optional)}
+#'     \item{comments}{String: mainly used for filenames (fileValue is filled with codes) (optional)}
 #'     }
 #' @param  entityKind          String: the kind of the state, allowed values are: "protocol", "experiment", "analysisgroup", 
 #' "subject", "treatmentgroup", "container", "itxcontainercontainer", "itxsubjectcontainer"
@@ -334,6 +339,7 @@ meltTimes <- function(entityData) {
 #' @param  testMode             A boolean marking if the function should return JSON instead of saving values
 #' @param recordedBy String: the username recording the data
 #' @return A list of value objects (lists)
+#' @details In longFormatSave.R
 saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL, lsTransaction, recordedBy, stateGroupIndices = NULL, testMode=FALSE) {
 
   
@@ -343,8 +349,6 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
     stop("Internal error: No stateID can be NA")
   }
-  
-  require(plyr)
   
   factorColumns <- vapply(entityData, is.factor, c(TRUE))
   entityData[factorColumns] <- lapply(entityData[factorColumns], as.character)
@@ -387,11 +391,12 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
       numberOfReplicates = if(is.numeric(entityData$numberOfReplicates) && !is.na(entityData$numberOfReplicates)) {entityData$numberOfReplicates} else {NULL},
       uncertainty = if(is.numeric(entityData$uncertainty) && !is.na(entityData$uncertainty)) {entityData$uncertainty} else {NULL},
       uncertaintyType = if(is.character(entityData$uncertaintyType) && !is.na(entityData$uncertaintyType)) {entityData$uncertaintyType} else {NULL},
-      recordedBy = recordedBy
+      recordedBy = recordedBy,
+      comments = if(is.character(entityData$comments) && !is.na(entityData$comments)) {entityData$comments} else {NULL}
     )
     return(stateValue)
   }
-  entityValues <- dlply(.data = entityData[entityData$stateGroupIndex %in% stateGroupIndices, ], 
+  entityValues <- plyr::dlply(.data = entityData[entityData$stateGroupIndex %in% stateGroupIndices, ], 
                         .variables = .(rowID), 
                         .fun = createLocalStateValue, 
                         lsTransaction = lsTransaction,

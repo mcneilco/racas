@@ -2,21 +2,25 @@
 \alias{readExcelOrCsv}
 \title{Reading of Excel or CSV}
 \usage{
-  readExcelOrCsv(filePath)
+readExcelOrCsv(filePath, sheet = 1, header = FALSE)
 }
 \arguments{
   \item{filePath}{The path the the file to read}
+
+  \item{sheet}{Sheet number of an Excel sheet}
+
+  \item{header}{Boolean to treat first row as column names}
 }
 \value{
-  a data.frame of the file
+a data.frame of the file
 }
 \description{
-  Read in xls, xlsx, or csv files and output a data frame
-  of the information
+Read in xls, xlsx, or csv files and output a data frame of
+the information
 }
 \details{
-  Right now, this turns dates into
-  "A_date_was_in_Excel_Date_format" and does not treat
-  headers as column names. in fileRead.R
+Right now, this turns dates into
+"A_date_was_in_Excel_Date_format" and does not treat
+headers as column names. in fileRead.R
 }
 

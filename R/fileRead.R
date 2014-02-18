@@ -3,6 +3,8 @@
 #' Read in xls, xlsx, or csv files and output a data frame of the information
 #' 
 #' @param filePath The path the the file to read
+#' @param sheet Sheet number of an Excel sheet
+#' @param header Boolean to treat first row as column names
 #' 
 #' @return a data.frame of the file
 #' 
@@ -10,7 +12,7 @@
 #' and does not treat headers as column names.
 #' in fileRead.R
 
-readExcelOrCsv <- function(filePath) {
+readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
     stop("Need Excel file path as input")
@@ -21,14 +23,14 @@ readExcelOrCsv <- function(filePath) {
   
   if (grepl("\\.xlsx?$",filePath)) {
     tryCatch({
-      wb <- loadWorkbook(filePath)
-      output <- readWorksheet(wb, sheet=1, header = FALSE, dateTimeFormat="A_date_was_in_Excel_Date_format")
+      wb <- XLConnect::loadWorkbook(filePath)
+      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
     }, error = function(e) {
       stop("Cannot read input excel file")
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
-      output <- read.csv(filePath, header = FALSE, stringsAsFactors=FALSE)
+      output <- read.csv(filePath, header = header, stringsAsFactors=FALSE)
     }, error = function(e) {
       stop("Cannot read input csv file")
     })
@@ -102,7 +104,7 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     foundData <- as.data.frame(t(foundData), stringsAsFactors=FALSE)
   }
   
-  foundData <- as.data.frame(lapply(foundData, trim), optional=TRUE, stringsAsFactors=FALSE)
+  foundData <- as.data.frame(lapply(foundData, gdata::trim), optional=TRUE, stringsAsFactors=FALSE)
   
   return(foundData)
 }
@@ -197,17 +199,18 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
 #'@param wideData a data.frame with columns of the same valueKind
 #'@param splitColumn the column name in wideData to split groups on
 #'@param splitFunction a function to use in secondary splitting of rows
+#'@param stateGroups definitions for how to group states (see genericDataParserConfiguration.R), passed to splitFunction
 #'@param resultTypes a data.frame with columns:
 #'\describe{
 #'\item{DataColumn}{the string that will match column names of wideData}
-#'\item{Type}{the valueKind of each row}
+#'\item{Kind}{the valueKind of each row}
 #'\item{Units}{the unit of that row}
 #'\item{Conc}{the tested concentration of that row}
 #'\item{ConcUnits}{the tested concenration unit of that row}
 #'}
 #'
 #'@details resultTypes should not have a factor in DataColumn- order breaks
-meltWideData <- function(wideData, resultTypes, splitColumn=NULL, splitFunction=NULL) {
+meltWideData <- function(wideData, resultTypes, stateGroups=list(), splitColumn=NULL, splitFunction=NULL) {
   if(is.factor(resultTypes$DataColumn)) {
     stop("Column DataColumn in resultTypes should not be a factor")
   }
@@ -237,18 +240,19 @@ meltWideData <- function(wideData, resultTypes, splitColumn=NULL, splitFunction=
                          times=resultTypes$DataColumn, timevar="resultTypeAndUnit",
                          varying=list(resultTypes$DataColumn), direction="long", drop = names(wideData)[emptyColumns])
   
-  # Add the extract result types information to the long format
+  # Add the result types information to the long format
   resultTypeRows <- match(longResults$"resultTypeAndUnit", resultTypes$DataColumn)
   
   longResults$valueUnit <- resultTypes$Units[resultTypeRows]
   longResults$concentration <- resultTypes$Conc[resultTypeRows]
   longResults$concentrationUnit <- resultTypes$concUnits[resultTypeRows]
-  longResults$valueType <- resultTypes$Type[resultTypeRows]
+  longResults$valueType <- resultTypes$dataClass[resultTypeRows]
   longResults$publicData <- !resultTypes$hidden[resultTypeRows]
   longResults$time <- resultTypes$time[resultTypeRows]
   longResults$timeUnit <- resultTypes$timeUnit[resultTypeRows]
+  longResults$valueKind <- resultTypes$Kind[resultTypeRows]
   
-  longResults$"UnparsedValue" <- trim(as.character(longResults$"UnparsedValue"))
+  longResults$"UnparsedValue" <- gdata::trim(as.character(longResults$"UnparsedValue"))
   
   # Parse numeric data from the unparsed values
   matches <- is.na(suppressWarnings(as.numeric(gsub("^(>|<)(.*)", "\\2", gsub(",","",longResults$"UnparsedValue")))))
@@ -454,4 +458,79 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
     addError(paste0("An entry was expected to be a number but was: '", inputValue, "'. Please enter a number instead."), errorEnv)
   }
   return(suppressWarnings(as.numeric(gsub(",", "", as.character(inputValue)))))
+}
+#' File Saving
+#' 
+#' Moves a file to the location for files and saves a reference to that location in the experiment
+#' 
+#' @param fileStartLocation Path to location to find the source file
+#' @param experiment experiment object to save file to
+#' @param recordedBy username of person saving
+#' @param lsTransaction integer of transaction
+#' @param fileServiceType "blueimp" or "custom"
+#' @param fileService url path to custom file service (will be passed to customSourceFileMove, which should be defined in customFunctions)
+#' 
+#' @details fileRead.R
+#' 
+#' @return New file location (or code)
+moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
+                                       fileServiceType = racas::applicationSettings$server.service.external.file.type, 
+                                       fileService = racas::applicationSettings$server.service.external.file.service.url) {
+  
+  fileName <- basename(fileStartLocation)
+  
+  experimentCodeName <- experiment$codeName
+  
+  if (fileServiceType == "blueimp") {
+    experimentFolderLocation <- file.path(dirname(fileStartLocation), "experiments")
+    dir.create(experimentFolderLocation, showWarnings = FALSE)
+    
+    fullFolderLocation <- file.path(experimentFolderLocation, experimentCodeName)
+    dir.create(fullFolderLocation, showWarnings = FALSE)
+    
+    # Move the file
+    file.rename(from=fileStartLocation, to=file.path(fullFolderLocation, fileName))
+    
+    serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
+  } else if (fileServiceType == "custom") {
+    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
+  } else {
+    stop("Invalid file service type")
+  }
+  
+  locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="raw results locations"]
+  
+  # Record the location
+  if (length(locationState)> 0) {
+    locationState <- locationState[[1]]
+  } else {
+    locationState <- createExperimentState(
+      recordedBy=recordedBy,
+      experiment = experiment,
+      lsType="metadata",
+      lsKind="raw results locations",
+      lsTransaction=lsTransaction)
+    
+    tryCatch({
+      locationState <- saveExperimentState(locationState)
+    }, error = function(e) {
+      stop("Internal Error: Could not save the source file state")
+    })
+  }
+  
+  tryCatch({
+    locationValue <- createStateValue(
+      recordedBy = recordedBy,
+      lsType = "fileValue",
+      lsKind = "source file",
+      fileValue = serverFileLocation,
+      lsState = locationState,
+      lsTransaction = lsTransaction)
+    
+    saveExperimentValues(list(locationValue))
+  }, error = function(e) {
+    stop("Internal Error: Could not save the source file location")
+  })
+  
+  return(serverFileLocation)
 }

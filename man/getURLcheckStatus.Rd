@@ -2,7 +2,7 @@
 \alias{getURLcheckStatus}
 \title{Get URL and check status}
 \usage{
-  getURLcheckStatus(url, ...)
+getURLcheckStatus(url, ...)
 }
 \arguments{
   \item{url}{the url to get/post}
@@ -10,11 +10,11 @@
   \item{...}{optional parameters passed to getURL}
 }
 \description{
-  This is a wrapper for getURL that throws an error when
-  the HTTP status is 400 or greater
+This is a wrapper for getURL that throws an error when the
+HTTP status is 400 or greater
 }
 \details{
-  checks the HTTP status and logs to racas.log as
-  com.acas.sel if 400 or greater
+checks the HTTP status and logs to racas.log as
+com.acas.sel if 400 or greater
 }
 

@@ -1,0 +1,16 @@
+\name{flattenValue}
+\alias{flattenValue}
+\title{Flattens an lsValue}
+\usage{
+flattenValue(lsValue)
+}
+\arguments{
+  \item{lsValue}{an lsValue
+
+  Just turns a list into a data frame, not meant to be
+  exported}
+}
+\description{
+Flattens an lsValue
+}
+

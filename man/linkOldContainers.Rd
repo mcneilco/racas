@@ -2,9 +2,8 @@
 \alias{linkOldContainers}
 \title{Links new subjects to old containers}
 \usage{
-  linkOldContainers(entityData, stateGroups,
-    labelPrefix = NULL, stateGroupIndices = NULL,
-    testModeData = NULL)
+linkOldContainers(entityData, stateGroups, labelPrefix = NULL,
+  stateGroupIndices = NULL, testModeData = NULL)
 }
 \arguments{
   \item{entityData}{data.frame: must have columns
@@ -22,16 +21,16 @@
   happends when not null}
 }
 \value{
-  a list of two data frames, one with new data and one with
-  old- the old only has subjectID and containerID
+a list of two data frames, one with new data and one with
+old- the old only has subjectID and containerID
 }
 \description{
-  Tests for both containers created by other experiments
-  and for ones created by an experiment of the same name
-  (reloads)
+Tests for both containers created by other experiments and
+for ones created by an experiment of the same name
+(reloads)
 }
 \details{
-  If there are both prefixed and unprefixed labels that
-  match, the prefixed labels will have precedence
+If there are both prefixed and unprefixed labels that
+match, the prefixed labels will have precedence
 }
 

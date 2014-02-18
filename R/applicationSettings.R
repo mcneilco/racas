@@ -54,7 +54,7 @@ readConfigFile <- function(configLocation) {
   l <- lapply(l, sub, pattern = "=", replacement = replacement)
   t <- tempfile()
   writeLines(unlist(l), t)
-  applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE)
+  applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
   #Convert "true", "false" to logicals
@@ -72,7 +72,36 @@ readConfigFile <- function(configLocation) {
   row.names(applicationSettings) <- 1
   
   if (!is.null(applicationSettings$server.database.r.package)) {
-    require(applicationSettings$server.database.r.package, character.only=TRUE)
+    if(!suppressWarnings(require(applicationSettings$server.database.r.package, character.only=TRUE))) {
+      if(is.null(options("racasInstallDep")[[1]])) {
+        installDep <- FALSE
+      } else {
+        installDep <- as.logical(options("racasInstallDep")[[1]])
+      }
+      if(installDep) {
+        cat(paste0("Attempting to install ",applicationSettings$server.database.r.package))
+        repos <- "http://cran.rstudio.com/"
+        options(repos = "http://cran.rstudio.com/")
+        try(install.packages(applicationSettings$server.database.r.package, repos = repos))
+        try(require(applicationSettings$server.database.r.package, character.only=TRUE))
+      } else {
+        warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
+                      "The query functionality of racas may not work properly\n",
+                      "\n\nTo fix this, do one of the following:\n",
+                       "restart R and run this line \'options(racasInstallDep = TRUE)\' prior to loading the racas package and racas will attempt to install dependency\n",         
+                       "or\n",
+                       "install racas again by running install.R located in the conf directory\n",
+                        "or\n",
+                        "install the package yourself\n"))
+      }
+    }
+  }
+  if(!is.null(applicationSettings$server.r.dependencies)) {
+    rDependencies <- strsplit(applicationSettings$server.r.dependencies,",")[[1]]
+    missing <- !sapply(rDependencies, function(x) x %in% row.names(installed.packages()))
+    if(any(missing)) {
+      warning(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
+    }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
   assignInNamespace("applicationSettings",applicationSettings, ns="racas")

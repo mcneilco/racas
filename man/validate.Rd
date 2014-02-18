@@ -4,12 +4,12 @@
 \alias{validateDate}
 \title{Check that strings can be coerced to others}
 \usage{
-  validateDate(inputValue, expectedFormat = "\%Y-\%m-\%d",
-    secondaryFormat = "\%m/\%d/\%Y", errorEnv = NULL)
+validateDate(inputValue, expectedFormat = "\%Y-\%m-\%d",
+  secondaryFormat = "\%m/\%d/\%Y", errorEnv = NULL)
 
-  validateCharacter(inputValue, errorEnv = NULL)
+validateCharacter(inputValue, errorEnv = NULL)
 
-  validateNumeric(inputValue, errorEnv = NULL)
+validateNumeric(inputValue, errorEnv = NULL)
 }
 \arguments{
   \item{expectedFormat}{a \link{format.POSIXct} that dates
@@ -24,14 +24,14 @@
   \item{errorEnv}{environment where errorList is stored}
 }
 \value{
-  \code{validateDate} a string date in the format
-  expectedFormat
+\code{validateDate} a string date in the format
+expectedFormat
 
-  \code{validateCharacter} a string
+\code{validateCharacter} a string
 
-  \code{validateNumeric} a numeric
+\code{validateNumeric} a numeric
 }
 \description{
-  Tests whether a string can be interpreted as given type
+Tests whether a string can be interpreted as given type
 }
 

@@ -2,9 +2,8 @@
 \alias{saveLabelsFromLongFormat}
 \title{Save labels from a long format}
 \usage{
-  saveLabelsFromLongFormat(entityData, entityKind,
-    stateGroups, idColumn, recordedBy, lsTransaction,
-    stateGroupIndices = NULL, labelPrefix = NULL)
+saveLabelsFromLongFormat(entityData, entityKind, stateGroups, idColumn,
+  recordedBy, lsTransaction, stateGroupIndices = NULL, labelPrefix = NULL)
 }
 \arguments{
   \item{entityData}{a data.frame, including one column
@@ -34,12 +33,9 @@
 
   \item{labelPrefix}{a string, prefixed to all labels}
 }
-\value{
-  NULL
-}
 \description{
-  This function saves labels to the database specified in
-  \code{\link{applicationSettings}}
+This function saves labels to the database specified in
+\code{\link{applicationSettings}}
 }
 \keyword{format,}
 \keyword{label,}

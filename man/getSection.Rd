@@ -2,8 +2,7 @@
 \alias{getSection}
 \title{Get dataframe sections}
 \usage{
-  getSection(genericDataFileDataFrame, lookFor,
-    transpose = FALSE)
+getSection(genericDataFileDataFrame, lookFor, transpose = FALSE)
 }
 \arguments{
   \item{genericDataFileDataFrame}{A data frame of lines}
@@ -15,13 +14,13 @@
   transposed}
 }
 \value{
-  A dataframe of the of section in the generic excel file
+A dataframe of the of section in the generic excel file
 
-  Intended for data.frames that have been read directly
-  from a csv or xls and have sections with names
+Intended for data.frames that have been read directly from
+a csv or xls and have sections with names
 }
 \description{
-  Gets a section of a data.frame that is divided by NA's or
-  ""
+Gets a section of a data.frame that is divided by NA's or
+""
 }
 

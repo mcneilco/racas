@@ -2,7 +2,7 @@
 \alias{query}
 \title{Query the application data server.}
 \usage{
-  query(qu, globalConnect = FALSE, ...)
+query(qu, globalConnect = FALSE, conn = NULL, ...)
 }
 \arguments{
   \item{qu}{a sql query character string}
@@ -14,12 +14,12 @@
   \code{\link{dbDisconnect}}}
 }
 \value{
-  A data frame result from the query
+A data frame result from the query
 }
 \description{
-  This function queries the acas databse specified in the
-  variable \code{\link{applicationSettings}} and returns
-  the result as a data.frame
+This function queries the acas databse specified in the
+variable \code{\link{applicationSettings}} and returns the
+result as a data.frame
 }
 \examples{
 result <- query("select * from api_curve_params")

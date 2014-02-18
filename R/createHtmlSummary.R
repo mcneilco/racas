@@ -92,6 +92,10 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
   if (is.null(experiment)) {
     return (htmlSummary)
   }
+  
+  # Refresh the experiment from the server in case anything has changed
+  experiment <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/", experiment$id)))
+  
   metadataState <- experiment$lsStates[lapply(experiment$lsStates, getElement, "lsKind")=="experiment metadata"][[1]]
   
   valueKinds <- lapply(metadataState$lsValues, getElement, "lsKind")

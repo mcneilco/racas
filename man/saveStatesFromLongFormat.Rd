@@ -2,9 +2,8 @@
 \alias{saveStatesFromLongFormat}
 \title{Save states from a long format}
 \usage{
-  saveStatesFromLongFormat(entityData, entityKind,
-    stateGroups, idColumn, recordedBy, lsTransaction,
-    stateGroupIndices = NULL, testMode = FALSE)
+saveStatesFromLongFormat(entityData, entityKind, stateGroups, idColumn,
+  recordedBy, lsTransaction, stateGroupIndices = NULL, testMode = FALSE)
 }
 \arguments{
   \item{entityData}{a data.frame, including one column
@@ -36,13 +35,13 @@
   return JSON instead of saving values}
 }
 \value{
-  A data.frame with columns "entityStateId" and
-  "entityStateVersion", which are often added back to the
-  original data.frame
+A data.frame with columns "entityStateId" and
+"entityStateVersion", which are often added back to the
+original data.frame
 }
 \description{
-  This function saves states to the database specified in
-  \code{\link{applicationSettings}}
+This function saves states to the database specified in
+\code{\link{applicationSettings}}
 }
 \keyword{format,}
 \keyword{save,}
