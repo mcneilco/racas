@@ -31,11 +31,41 @@ data("exampleFitData", package = "racas")
 # }
 # fitData <- fitDat
 # fitData <- fitData[1:300]
-file <- system.file("docs", "doseResponseRequest.json", package = "racas")
+#file <- system.file("docs", "doseResponseRequest.json", package = "racas")
+file <- "inst/docs/doseResponseRequest.json"
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
+fitDataBefore <- getFitData(curveids)
+fitData <- fitDataBefore
 system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
-response <- doseResponse(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
+parsedResponse <- fromJSON(response)
+session <- parsedResponse$sessionID
+loadSession(session)
+#pointData <- fitData[1]$points[[1]][flagChanged==TRUE,]
+#pointData <- fitDataBefore[8]$points[[1]]
+#pointData <- rbindlist(fitData$points)[!is.na(flag),]
+pointData <- rbindlist(fitData$points)[flagChanged==TRUE,]
+changed <- merge(rbindlist(fitDataBefore$points),pointData, by = "response_sv_id")[, c("flag.x", "flag.y"), with = FALSE]
+updatePointFlags(pointData, "bbolt")
+
+#Knockout random sample/unkn
+updateFlags <- rbindlist(fitData$points)
+randomRows <- updateFlags[sample(nrow(updateFlags), 100), ]
+#randomRows <- updateFlags
+randomRows <- randomRows[, c("curveid","flag","response_sv_id"), with = FALSE]
+randomRows[sample(nrow(randomRows), 50), flag := "user"]
+randomRows[flag != "user", flag := as.character(NA)]
+#randomRows[, flag := as.character(NA)]
+setnames(randomRows, "response_sv_id", "id")
+file <- system.file("docs", "doseResponseRequest.json", package = "racas")
+fitSettingsJSON <- readChar(file, file.info(file)$size)
+fitSettingsJSON <- fromJSON(fitSettingsJSON)
+fitSettingsJSON$updateFlags <- randomRows
+#fitSettingsJSON$updateFlags <- randomRows[ , ifelse(is.na(flag), list(list(list(curveid=curveid,flag=NULL,id=id))), list(list(list(curveid=curveid,flag=flag,id=id)))) ,by = id]$V1
+writeLines(toJSON(fitSettingsJSON), con = "inst/docs/doseResponseRequest.json")
+#writeLines(gsub("\"NA\"","null",toJSON(fitSettingsJSON)), con = "inst/docs/doseResponseRequest.json")
+#response <- doseResponse(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
+
 
 ##Profiling
 system.time(blah <- profr(blah <- getPointStats(fitData[1]$points[[1]]), interval=.0001))
@@ -51,14 +81,23 @@ session <- parsedResponse$sessionID
 loadSession(session)
 fitData[1]$reportedParameters[[1]]
 
+
+
 #2 Parameter Michaelis Menton
 load("/Users/bbolt/Library/Containers/com.apple.mail/Data/Library/Mail Downloads/A14981AA-144F-45B7-AD7F-9918D21D3305/fitData.rda")
 fitData[, fixedParameters := list(list())]
 fitData[, points := list(list(points[[1]][,flag := FALSE])), by = curveid]
 file <- system.file("docs", "doseResponseRequest-kd.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-doseResponse(fitSettingsJSON, fitData = fitData)
+response <- doseResponse(fitSettingsJSON, fitData = fitData)
+parsedResponse <- fromJSON(response)
+session <- parsedResponse$sessionID
+loadSession(session)
+fitData[1]$reportedParameters[[1]]
 
+#Sam's Examples
+data("analysisGroupValues")
+data("pointData")
 
 ##Profiling
 Rprof()
