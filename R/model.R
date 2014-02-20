@@ -15,20 +15,25 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
   fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
   fitData[ , inactiveRule := list(list(myInactiveRule))]
-  updateFlags <- as.data.table(request$updateFlags) 
-  
-  #First update the flags in points
-  updFlags <- function(crv,i,fl, chng) {
-    sel <- updateFlags[updateFlags$id %in% i & updateFlags$curveid == unique(crv),]
-    matches <- match(i, sel$id)
-    newFlags <- sel[matches,]$flag
-    noMatch <- which(is.na(newFlags))
-    newFlags[noMatch] <- fl[noMatch]
-    changed <- chng | (fl != newFlags)
-    return(list(flag = newFlags, flagChanged = changed))
-  }
+  #The JSON really should have "NA" init should just be null or blank but the rjson package doesn't deal with this very well. For now, just convert "NA" to NA
+  #updateFlags <- rbindlist(lapply(request$updateFlags, function(x) {x$flag <- ifelse(is.null(x$flag),as.character(NA), x$flag); return(x) })) 
+  updateFlags <- as.data.table(request$updateFlags)
   if(nrow(updateFlags) > 0 ) {
-    fitData[, points := list(list(points[[1]][, c("flag","flagChanged") := updFlags(curveid,id,flag,flagChanged)])) , by = curveid]
+    updateFlags[flag=="NA", flag := as.character(NA)]
+    setnames(updateFlags, "id", "response_sv_id")
+    setkey(updateFlags,"response_sv_id" )
+    #First update the flags in points
+    updFlags <- function(pts) {
+      returnCols <- names(pts)
+      setkey(pts, "response_sv_id")
+      pts <- merge(pts,updateFlags, all.x = TRUE, by = "response_sv_id", suffixes = c("",".y"))
+      pts[, flag := as.character(flag)]
+      pts[ ,flagChanged := !identical(flag,flag.y) | flagChanged, by = "response_sv_id" ]
+      pts[flagChanged==TRUE ,flag := flag.y]
+      return(pts[, returnCols, with = FALSE])
+    }
+    #pts <- fitData[1]$points[[1]]
+    fitData[, points := list(list(updFlags(points[[1]]))) , by = curveid]
   }
   
   #Initial fit of the data
@@ -169,7 +174,7 @@ predictPoints <- function(pts, drcObj) {
     return(NULL)
   }
   x <- unique(pts$dose)
-  if(grepl("LOG",toupper(pts$dose_unit[1]))) {
+  if(grepl("LOG",toupper(pts$doseUnits[1]))) {
     valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=8*length(x)) ))
   } else {
     valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=8*length(x)))
@@ -279,7 +284,7 @@ getReportedParameters <- function(renderingHint, results, inactive, fitConverged
            }
            
            return(list(min = min, max = max, slope = slope, ec50 = ec50, ec50Operator = ec50Operator))
-   
+           
          },
          "2 parameter Michaelis Menten" = {
            if(inactive | insufficientRange) {
@@ -312,15 +317,10 @@ getReportedParameters <- function(renderingHint, results, inactive, fitConverged
            }
            return(list(max = max, kd = kd, kdOperator = kdOperator))
          },
-         {warning("Not implemented for ", renderingHint)
-          return(list())
-         }
-         )
+{warning("Not implemented for ", renderingHint)
+ return(list())
 }
-
-is.NULLorNA <- function(value) {
-  if(is.null(value)) return(TRUE)
-  return(is.na(value))
+  )
 }
 
 getCurveCuratorInfo <- function(experimentCode = NA) {
@@ -330,10 +330,9 @@ getCurveCuratorInfo <- function(experimentCode = NA) {
                 WHERE p.LS_KIND LIKE '%curve id'
                 and e.code_name = ",sqliz(experimentCode)))
   names(curveids) <- "curveid"
-  
 }
 getFitData <- function(curveids, ...) {
-  fitData <- getCurveData(curveids, ...)
+  fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
   fitData$points <- cbind(fitData$points, flagChanged = FALSE)
   fitData <- data.table(curveid = unique(as.character(fitData$points$curveid,fitData$parameters$curveid))[order(unique(as.character(fitData$points$curveid,fitData$parameters$curveid)))], 
                         renderingHint = fitData$parameters$renderingHint, 
@@ -465,7 +464,7 @@ applyInactiveRule <- function(pointStats, points, rule) {
       response.empiricalMax <- pointStats$response.empiricalMax
       threshold <- threshold * abs(min(response.empiricalMin) - max(response.empiricalMax))
     }
-    means <- points[ flag == FALSE ,list("dose" = dose, "mean.response" = mean(response)), by = dose]
+    means <- points[ is.na(flag), list("dose" = dose, "mean.response" = mean(response)), by = dose]
     inactive <- length(which(means$mean.response >= threshold)) < rule$activeDoses
     insufficientRange <- abs(pointStats$response.empiricalMax - pointStats$response.empiricalMin) < threshold
   } else {
@@ -481,11 +480,11 @@ getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
   fixed <- unlist(fixed[match(paramNames, names(fixed))])
   fct <- drcFunction(fixed=fixed, names=paramNames)
   if(class(dataSet$flag) == "NULL") {
-    dataSet$flag <- FALSE
+    dataSet$flag <- NA
   }
   drcObj <- NULL
   tryCatch({
-    drcObj <- drm(formula = response ~ dose, data = dataSet, subset = !dataSet$flag, robust=robust, fct = fct, control = drmc(errorm=TRUE))
+    drcObj <- drm(formula = response ~ dose, data = dataSet, subset = is.na(flag), robust=robust, fct = fct, control = drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)
@@ -495,11 +494,11 @@ getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
 
 getPointStats <- function(pts) {
   pts <- copy(pts)
-  pts[ flag == FALSE, meanByDose := mean(response), by = dose ]
-  response.empiricalMax <- pts[flag == FALSE, max(meanByDose)]
-  response.empiricalMin <- pts[flag == FALSE, min(meanByDose)]
-  dose.min <- min(pts[flag==FALSE, ]$dose)
-  dose.max <- max(pts[flag==FALSE, ]$dose)
+  pts[ is.na(flag), meanByDose := mean(response), by = dose ]
+  response.empiricalMax <- pts[is.na(flag), max(meanByDose)]
+  response.empiricalMin <- pts[is.na(flag), min(meanByDose)]
+  dose.min <- min(pts[is.na(flag), ]$dose)
+  dose.max <- max(pts[is.na(flag), ]$dose)
   return(list(response.empiricalMax = response.empiricalMax, response.empiricalMin = response.empiricalMin, dose.min = dose.min, dose.max = dose.max))
 }
 
@@ -680,328 +679,3 @@ fitParams.getAboveMaxTestedParams <- function(drData = data$rawPoints, curveID =
   return(fixedValues)
 }
 
-#' Function to save dose response curve data
-#' 
-#' This function takes in changes to an already saved curve and updates the flags and fitted parameters
-#'
-#' @param subjectData A data frame of the changed flag ids (see examples for more on format)
-#' 
-#' Format:
-#' \itemize{
-#'   \item analysisGroupdID  The analysisGroupID of the flag
-#'   \item valueKind A string that says "Flag"
-#'   \item valueType A string that says "stringValue"
-#'   \item subjectID The subject id of the flag
-#'   \item subjectStateID The subjectStateID of the flag
-#'   \item treatmentGroupID The treatmentGroupdID of the flag 
-#'   \item stringValue A string value for the flag (E.G. "User" or "Algorithm")
-#' }
-#' @param analysisGroupData A data frame of the parameters to be changed (see examples for more on format)
-#' 
-#' Format: 
-#' \itemize{
-#'   \item analysisGroupdID
-#'   \item batchCode
-#'   \item valueType
-#'   \item valueKind
-#'   \item resultUnits
-#'   \item numericValue
-#'   \item StringValue
-#' }
-#' @keywords save, update, dose, response, curve
-#' @export
-#' 
-#' 
-
-
-updateDoseResponseCurve <- function(exptCode, fitData) {
-  
-  
-}
-
-saveDoseResponseCurveSet <- function(experimentCode, fitData) {
-  
-  #Verify the experiment code given exists
-  experimentCode <- "EXPT-00012386"
-  experimentExists <- checkExistence(experimentCode, type = "experimentCode")
-  if(!experimentExists[[1]]) stop(paste0("experiment code \'",experimentCode,"\' not found"))
-  
-  #Update the subject data with any new flags
-  subjectIDs <- unique(rbindlist(fitData$points)$s_id)
-  subjects <- fromJSON(getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "subjects/stateTypeAndKind/data_results/jsonArray"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(lapply(unique(subjectIDs[[1]]), function(x) list(id = x))))
-  )
-  
-  lsTransaction <- createLsTransaction()
-  copyStates <- function(subject) {
-    # Args:
-    #   subject:    A list that is a subject
-    #
-    # Returns:
-    #   a list of new states that are copies of the old ones
-    
-    # Copy and update these states
-    lsTypeAndKind <- sapply(subject$lsStates, function(x) x$lsTypeAndKind)
-    nonIgnoredStates <- sapply(subject$lsStates, function(x) !x$ignored)
-    statesToChange <- subject$lsStates[lsTypeAndKind =="data_results" & nonIgnoredStates]
-    
-    setTransaction <- function(stateToChange, subjectId) {
-      stateToChange$lsTransaction_Id <- lsTransaction$id
-      stateToChange$subjectValues <- NULL
-      stateToChange$subject = list(id = subjectId, version = 0)
-      return(stateToChange)
-    }
-    statesToChange <- lapply(statesToChange, setTransaction, subject$id)
-    return (statesToChange)
-  }
-  
-  newStates <- unlist(lapply(subjects, copyStates), recursive = FALSE)
-  originalStateIds <- sapply(newStates, function(x) x$id)
-  newStates <- lapply(newStates, function(x) {x$id <- NULL; return(x)})
-  
-  savedSubjectStates <- saveAcasEntities(newStates, "subjectstates")
-  
-  subjectStateIds <- sapply(savedSubjectStates, function(x) x$id)
-  
-  stateIdsToIgnore <- unique(originalStateIds)
-  
-  subjectStateTranslation <- data.frame(subjectStateId=subjectStateIds, originalStateId=originalStateIds)
-  
-  
-}
-
-updateDoseResponseCurve <- function (analysisGroupData, subjectData) {
-  require(racas)
-  require(RCurl)
-  require(rjson)
-  require(plyr)
-  
-  lsServerURL <- racas::applicationSettings$client.service.persistence.fullpath
-  
-  lsTransaction <- createLsTransaction()
-  
-  ##### Subject States ====================================================================================
-  
-  updateFlags <- function (valueTable, newFlags) {
-    require(plyr)
-    
-    addFlags <- function(stateID, stringValue) {
-      newRow <- data.frame(ignored = FALSE, publicData = TRUE, stringValue = stringValue, valueKind = "flag", 
-                           valueType = "stringValue", stateID = stateID, stringsAsFactors=FALSE)
-    }
-    
-    valueTableWithoutFlags <- valueTable[valueTable$valueKind != "flag", ]
-    flagValueTable <- mdply(newFlags, .fun = addFlags)
-    
-    return(rbind.fill(valueTableWithoutFlags, flagValueTable))
-  }
-  
-  # This is a closure. Don't move it out without pulling lsTransaction through
-  copyStates <- function(subject) {
-    # Args:
-    #   subject:    A list that is a subject
-    #
-    # Returns:
-    #   a list of new states that are copies of the old ones
-    
-    
-    # Copy and update these states
-    lsTypeAndKind <- sapply(subject$lsStates, function(x) x$lsTypeAndKind)
-    nonIgnoredStates <- sapply(subject$lsStates, function(x) !x$ignored)
-    statesToChange <- subject$lsStates[lsTypeAndKind =="data_results" & nonIgnoredStates]
-    
-    setTransaction <- function(stateToChange, subjectId) {
-      stateToChange$lsTransaction <- lsTransaction
-      stateToChange$subjectValues <- NULL
-      stateToChange$subject = list(id = subjectId, version = 0)
-      return(stateToChange)
-    }
-    statesToChange <- lapply(statesToChange, setTransaction, subject$id)
-    return (statesToChange)
-  }
-  
-  subjects <- fromJSON(getURL(
-    paste0(lsServerURL, "subjects/stateTypeAndKind/data_results/jsonArray"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(lapply(unique(subjectData$subjectID), function(x) list(id = x))))
-  )
-  
-  newStates <- unlist(lapply(subjects, copyStates), recursive = FALSE)
-  originalStateIds <- sapply(newStates, function(x) x$id)
-  newStates <- lapply(newStates, function(x) {x$id <- NULL; return(x)})
-  
-  savedSubjectStates <- saveAcasEntities(newStates, "subjectstates")
-  subjectStateIds <- sapply(savedSubjectStates, function(x) x$id)
-  
-  stateIdsToIgnore <- unique(originalStateIds)
-  
-  subjectStateTranslation <- data.frame(subjectStateId=subjectStateIds, originalStateId=originalStateIds)
-  
-  ##### Subject Values ====================================================================================
-  
-  valuesWithStatesIncluded <- ldply(subjects, getValuesFromSubject)
-  
-  valuesToReplace <- valuesWithStatesIncluded[valuesWithStatesIncluded$stateID %in% subjectData$subjectStateID & 
-                                                !(valuesWithStatesIncluded$ignored), ]
-  
-  valueIdsToIgnore <- unique(valuesToReplace$id)
-  
-  # Not sure why this is here anymore...
-  valuesToReplace <- valuesToReplace[!(is.na(valuesToReplace$stateID)), ]
-  
-  valuesToReplace$id <- NULL
-  
-  newFlags <- subjectData[subjectData$valueKind == "flag", c("subjectStateID", "stringValue")]
-  names(newFlags) <- c("stateID","stringValue")
-  valuesToReplace <- updateFlags(valuesToReplace, newFlags)
-  
-  valuesToReplace$oldSubjectStateID <- valuesToReplace$stateID
-  valuesToReplace$stateID <- subjectStateTranslation$subjectStateId[match(valuesToReplace$stateID,
-                                                                          subjectStateTranslation$originalStateId)]
-  
-  valuesToReplace$stateVersion <- 0
-  valuesToReplace$stateGroupIndex <- 1
-  
-  savedSubjectValues <- saveValuesFromLongFormat(valuesToReplace, stateGroupIndices=1, entityKind="subject", lsTransaction=lsTransaction)
-  
-  # Ignore old subject states
-  query(paste0(
-    "UPDATE subject_state
-    SET ignored       = 1,
-    version                   = version+1
-    WHERE id          IN (", paste(stateIdsToIgnore, collapse=","), ")"))
-  # Ignore old subject values
-  query(paste0(
-    "UPDATE subject_value
-    SET ignored       = 1,
-    version                   = version+1
-    WHERE id          IN  (", paste(valueIdsToIgnore, collapse=","), ")"))
-  
-  
-  ##### Treatment Groups ======================================================
-  treatmentGroupStateGroups <- list(list(entityKind = "treatmentgroups",
-                                         stateType = "data", 
-                                         stateKind = "results",
-                                         includesOthers = TRUE,
-                                         includesCorpName = FALSE))
-  
-  treatmentGroupInput <- valuesToReplace[valuesToReplace$valueKind %in% c("Response", "flag"), 
-                                         c('numericValue', 'stringValue', 'valueKind', 'valueOperator', 'valueType', 'valueUnit','oldSubjectStateID')]
-  
-  treatmentGroupIdTranslation <- subjectData[,c('subjectStateID', 'treatmentGroupID')]
-  
-  treatmentGroupInput$treatmentGroupID <- treatmentGroupIdTranslation$treatmentGroupID[match(treatmentGroupInput$oldSubjectStateID, 
-                                                                                             treatmentGroupIdTranslation$subjectStateID)]
-  
-  createTreatmentGroupData <- function(inputData) {
-    flaggedStateIDs <- inputData$oldSubjectStateID[inputData$valueKind == "flag" & ((inputData$stringValue != "") | is.na(inputData$stringValue))]
-    dataToAverage <- inputData[!(inputData$oldSubjectStateID %in% flaggedStateIDs) & inputData$valueType=="numericValue", ]
-    return(data.frame(
-      valueKind = "Response", 
-      valueType = "numericValue",
-      # TODO: once there is more real data, add this back in and check
-      #valueUnit = inputData$valueUnit[1],
-      treatmentGroupID = inputData$treatmentGroupID[1],
-      numberOfReplicates = nrow(dataToAverage),
-      uncertainty = sd(dataToAverage$numericValue),
-      uncertaintyType = "standard deviation",
-      numericValue = if (is.numeric(dataToAverage$numericValue)) mean(dataToAverage$numericValue) else NA,
-      stringValue = if (!is.numeric(dataToAverage$numericValue)) "flagged" else NA
-    ))
-  }
-  treatmentGroupData <- ddply(treatmentGroupInput, .(treatmentGroupID), createTreatmentGroupData)
-  
-  treatmentGroupData$stateGroupIndex <- 1
-  treatmentGroupData$publicData <- TRUE
-  
-  query(paste0(
-    "UPDATE treatment_group_state
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE state_type_and_kind = 'data_results'
-    AND ignored               = 0
-    AND treatment_group_id    IN (", paste(treatmentGroupData$treatmentGroupID, collapse=","), ")"))
-  
-  query(paste0(
-    "UPDATE treatment_group_value
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE treatment_state_id    IN
-    (SELECT id
-    FROM treatment_group_state
-    WHERE state_type_and_kind = 'data_results'
-    AND ignored               = 0
-    AND treatment_group_id IN (", paste(treatmentGroupData$treatmentGroupID, collapse=","), "))"))
-  
-  treatmentGroupData$stateID <- saveStatesFromLongFormat(entityData = treatmentGroupData, entityKind = "treatmentgroup", 
-                                                         stateGroups=treatmentGroupStateGroups, stateGroupIndices = 1, 
-                                                         idColumn = "treatmentGroupID", recordedBy = "curveCuration", lsTransaction = lsTransaction)[['entityStateId']]
-  treatmentGroupData$stateVersion <- 0
-  savedTreatmentGroupValues <- saveValuesFromLongFormat(entityData = treatmentGroupData, entityKind = "treatmentgroup", 
-                                                        stateGroups = treatmentGroupStateGroups, stateGroupIndices = 1,
-                                                        lsTransaction = lsTransaction)
-  
-  #####  AnalysisGroups =======================================================
-  
-  analysisGroupStateGroups <- list(list(entityKind = "analysisgroups",
-                                        stateType = "data", 
-                                        stateKind = "Dose Response",
-                                        includesOthers = TRUE,
-                                        includesCorpName = TRUE))
-  
-  analysisGroupData$stateGroupIndex <- 1
-  analysisGroupData$publicData <- TRUE
-  
-  analysisGroupsToIgnore <- unique(analysisGroupData$analysisGroupID)
-  
-  sqlAnalysisGroupIds <- paste(analysisGroupData$analysisGroupID, collapse = ",")
-  query(paste0(
-    "UPDATE analysis_group_state
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE state_type_and_kind = 'data_Dose Response'
-    AND analysis_group_id     IN (", sqlAnalysisGroupIds, ")"))
-  query(paste0(
-    "UPDATE analysis_group_value
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE analysis_state_id    IN
-    (SELECT id
-    FROM analysis_group_state
-    WHERE state_type_and_kind = 'data_Dose Response'
-    AND analysis_group_id IN (", sqlAnalysisGroupIds, "))"))
-  
-  analysisGroupData$stateID <- saveStatesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
-                                                        stateGroups=analysisGroupStateGroups, stateGroupIndices = 1, 
-                                                        idColumn = "analysisGroupID", recordedBy = "curveCuration", lsTransaction = lsTransaction)[['entityStateId']]
-  analysisGroupData$stateVersion <- 0
-  analysisGroupData <- rbind.fill(analysisGroupData, meltBatchCodes(analysisGroupData, 1))
-  saveValuesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
-                           stateGroups = analysisGroupStateGroups, stateGroupIndices = 1,
-                           lsTransaction = lsTransaction)
-  return(TRUE)
-}
-
-replaceNullWithNA <- function(inputList) {
-  inputList[sapply(inputList,is.null)] <- NA
-  return(inputList)
-}
-addSubjectState <- function(subjectValue, subjectStateId) {
-  subjectValue$stateID <- subjectStateId
-  subjectValue$lsTransaction <- subjectValue$lsTransaction$id
-  subjectValue <- replaceNullWithNA(subjectValue)
-  return(as.data.frame(subjectValue, stringsAsFactors=FALSE))
-  i <<- i+1
-}
-getValuesFromState <- function(subjectState) {
-  require('plyr')
-  return(ldply(subjectState$subjectValues, addSubjectState, subjectStateId=subjectState$id))
-}
-getValuesFromSubject <- function(subject) {
-  require('plyr')
-  return(ldply(subject$lsStates, getValuesFromState))
-}
