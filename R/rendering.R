@@ -40,184 +40,51 @@ getCurveData <- function(curveids, ...) {
     parameters = renderingHintParameters
   ))
 }
-getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
+getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical = TRUE, ...) {
   
   
-  drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
-  poQU <- paste("SELECT *
-                FROM
-                (SELECT s.id    AS S_ID,
+  drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, response_ss_version, response_sv_id, flag_sv_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
+  ivPO <- function(type)  {
+    paste0("SELECT *
+  	FROM
+		  (SELECT s.id    AS S_ID,
                 el.label_text AS experiment_name,
-                'Animal-'
-                || cl.label_text AS name,
+                'Animal-' || cl.label_text AS name,
                 agv.string_value AS curveid,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'time'
-                THEN sv.numeric_value
-                ELSE NULL
-                END)   AS dose,
+                MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.numeric_value ELSE NULL END)   AS dose,
                 'Time' AS dosetype,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'time'
-                THEN sv.unit_kind
-                ELSE NULL
-                END) AS doseunits,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'PO - PK_Concentration'
-                THEN sv.numeric_value
-                ELSE NULL
-                END)   AS response,
+                MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.unit_kind ELSE NULL END) AS doseunits,
+                MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.numeric_value ELSE NULL END) AS response,
                 'Conc' AS responsetype,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'PO - PK_Concentration'
-                THEN sv.unit_kind
-                ELSE NULL
-                END) AS responseunits,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'flag'
-                THEN sv.string_value
-                ELSE NULL
-                END) AS Flag,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'PO - PK_Concentration'
-                THEN sv.subject_state_id
-                ELSE NULL
-                END) AS response_ss_id,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'PO - PK_Concentration'
-                THEN s.treatment_group_id
-                ELSE NULL
-                END)       AS tg_id,
+                MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.unit_kind ELSE NULL END) AS responseunits,
+                MAX(CASE sv.ls_kind WHEN 'flag' then sv.id else null end) as flag_sv_id,
+                MAX(CASE sv.ls_kind WHEN 'flag' THEN sv.string_value ELSE NULL END) AS Flag,
+                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.subject_state_id ELSE NULL END) AS response_ss_id,
+                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.id ELSE NULL END) AS response_sv_id,
+                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN ss.version ELSE NULL END) AS response_ss_version,
+                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN s.treatment_group_id ELSE NULL END) AS tg_id,
                 MAX(ag.id) AS ag_id
-                FROM analysis_GROUP ag
-                JOIN analysis_GROUP_state ags
-                ON ags.analysis_GROUP_id = ag.id
-                JOIN analysis_GROUP_value agv
-                ON agv.analysis_state_id = ags.id
-                JOIN treatment_GROUP tg
-                ON ag.id=tg.analysis_GROUP_id
-                JOIN experiment e
-                ON ag.experiment_id=e.id
-                JOIN experiment_label el
-                ON e.id=el.experiment_id
-                JOIN subject s
-                ON tg.id=s.treatment_GROUP_id
-                JOIN subject_state ss
-                ON ss.subject_id = s.id
-                JOIN subject_value sv
-                ON sv.subject_state_id = ss.id
-                JOIN itx_subject_container itxsc
-                ON s.id = itxsc.subject_id
-                JOIN container c
-                ON c.id=itxsc.container_id
-                JOIN container_label cl
-                ON cl.container_id=c.id
-                WHERE agv.ls_kind = 'PO pk curve id'
-                AND sv.ls_kind       IN ('time', 'PO - PK_Concentration')
-                AND agv.string_value IN ( ",sqliz(curveids)," )
-                GROUP BY s.id,
-                ss.id,
-                agv.string_value,
-                cl.label_text,
-                el.label_text
+                FROM
+                analysis_GROUP ag 
+                JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
+                JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
+                JOIN treatment_GROUP tg ON ag.id=tg.analysis_GROUP_id
+                JOIN experiment e ON ag.experiment_id=e.id
+                JOIN experiment_label el ON e.id=el.experiment_id
+                JOIN subject s ON tg.id=s.treatment_GROUP_id
+                JOIN subject_state ss ON ss.subject_id = s.id
+                JOIN subject_value sv ON sv.subject_state_id = ss.id
+                JOIN itx_subject_container itxsc ON s.id = itxsc.subject_id
+                JOIN container c ON c.id=itxsc.container_id
+                JOIN container_label cl ON cl.container_id    =c.id
+                WHERE agv.ls_kind     = '",type," pk curve id'
+                AND sv.ls_kind       IN ('time', '",type," - PK_Concentration')
+                AND agv.string_value IN (  ",sqliz(curveids)," )
+                GROUP BY s.id, ss.id, agv.string_value, cl.label_text, el.label_text
                 )
                 WHERE response IS NOT NULL
-                ORDER BY tg_id ASC
-                ")
-  ivQU <- paste("SELECT *
-                FROM
-                (SELECT s.id    AS S_ID,
-                el.label_text AS experiment_name,
-                'Animal-'
-                || cl.label_text AS name,
-                agv.string_value AS curveid,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'time'
-                THEN sv.numeric_value
-                ELSE NULL
-                END)   AS dose,
-                'Time' AS dosetype,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'time'
-                THEN sv.unit_kind
-                ELSE NULL
-                END) AS doseunits,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'IV - PK_Concentration'
-                THEN sv.numeric_value
-                ELSE NULL
-                END)   AS response,
-                'Conc' AS responsetype,
-                MAX(
-                CASE
-                WHEN sv.ls_kind = 'IV - PK_Concentration'
-                THEN sv.unit_kind
-                ELSE NULL
-                END) AS responseunits,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'flag'
-                THEN sv.string_value
-                ELSE NULL
-                END) AS Flag,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'IV - PK_Concentration'
-                THEN sv.subject_state_id
-                ELSE NULL
-                END) AS response_ss_id,
-                MAX(
-                CASE sv.ls_kind
-                WHEN 'IV - PK_Concentration'
-                THEN s.treatment_group_id
-                ELSE NULL
-                END)       AS tg_id,
-                MAX(ag.id) AS ag_id
-                FROM analysis_GROUP ag
-                JOIN analysis_GROUP_state ags
-                ON ags.analysis_GROUP_id = ag.id
-                JOIN analysis_GROUP_value agv
-                ON agv.analysis_state_id = ags.id
-                JOIN treatment_GROUP tg
-                ON ag.id=tg.analysis_GROUP_id
-                JOIN experiment e
-                ON ag.experiment_id=e.id
-                JOIN experiment_label el
-                ON e.id=el.experiment_id
-                JOIN subject s
-                ON tg.id=s.treatment_GROUP_id
-                JOIN subject_state ss
-                ON ss.subject_id = s.id
-                JOIN subject_value sv
-                ON sv.subject_state_id = ss.id
-                JOIN itx_subject_container itxsc
-                ON s.id = itxsc.subject_id
-                JOIN container c
-                ON c.id=itxsc.container_id
-                JOIN container_label cl
-                ON cl.container_id=c.id
-                WHERE agv.ls_kind = 'IV pk curve id'
-                AND sv.ls_kind       IN ('time', 'IV - PK_Concentration')
-                AND agv.string_value IN ( ",sqliz(curveids)," )
-                GROUP BY s.id,
-                ss.id,
-                agv.string_value,
-                cl.label_text,
-                el.label_text
-                )
-                WHERE response IS NOT NULL
-                ORDER BY tg_id ASC
-                ")
+                ORDER BY tg_id ASC ")
+  }
   poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose as name
                   FROM (
                   select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
@@ -268,11 +135,10 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                   ON a.s_id = b.s_id
                   order by tg_id asc"
   )
-  
   qu <- switch(renderingHint,
                "PO IV pk curve id" = poIVQU,
-               "PO pk curve id" = poQU,
-               "IV pk curve id" = ivQU
+               "PO pk curve id" = ivPO("PO"),
+               "IV pk curve id" = ivPO("IV")
   )
   if(is.null(qu)) {
     qu <- drQU
@@ -312,6 +178,9 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                                   responseUnits = as.character(points$responseunits),
                                   flag = as.character(points$flag),
                                   response_ss_id = as.integer(points$response_ss_id),
+                                  response_sv_id = as.integer(points$response_sv_id),
+                                  response_ss_version = as.integer(points$response_ss_version),
+                                  flag_sv_id = as.integer(points$flag_sv_id),
                                   s_id = as.integer(points$s_id),
                                   tg_id = as.integer(points$tg_id),
                                   ag_id = as.integer(points$ag_id)
@@ -328,6 +197,9 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                                   responseUnits = as.character(points$responseunits),
                                   flag = as.character(points$flag),
                                   response_ss_id = as.integer(points$response_ss_id),
+                                  response_ss_version = as.integer(points$response_ss_version),
+                                  response_sv_id = as.integer(points$response_sv_id),
+                                  flag_sv_id = as.integer(points$flag_sv_id),
                                   s_id = as.integer(points$s_id),
                                   tg_id = as.integer(points$tg_id),
                                   ag_id = as.integer(points$ag_id)
@@ -341,15 +213,19 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
                                 responseUnits = as.character(points$responseunits),
                                 flag = as.character(points$flag),
                                 response_ss_id = as.integer(points$response_ss_id),
+                                response_sv_id = as.integer(points$response_sv_id),
+                                response_ss_version = as.integer(points$response_ss_version),
+                                flag_sv_id = as.integer(points$flag_sv_id),
                                 s_id = as.integer(points$s_id),
                                 tg_id = as.integer(points$tg_id),
                                 ag_id = as.integer(points$ag_id)
                    )
   )
   if(nrow(points) > 0) {
-    points$flag <- factor(points$flag, levels = c(levels(points$flag), TRUE, FALSE))
-    points$flag <- !is.na(points$flag)
-    points$id <- 1:nrow(points)
+    if(flagsAsLogical) {
+      points$flag <- factor(points$flag, levels = c(levels(points$flag), TRUE, FALSE))
+      points$flag <- !is.na(points$flag)
+    }
   }
   return(points)
 }
