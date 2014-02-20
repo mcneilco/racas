@@ -1,0 +1,41 @@
+{
+   "fixedParameters":{
+      "min":null,
+      "max":null,
+      "slope":null,
+      "ec50":null
+   },
+   "inactiveRule":{
+      "type":"threshold",
+      "value":20,
+      "activeDoses":2
+   },
+   "parameterRules":{
+      "goodnessOfFits":{
+         "maxUncertaintyRule":{
+            "parameter":"max",
+            "type":"stdErr",
+            "value":5,
+            "operator":">",
+            "displayName":"Max uncertainty exceeded"
+         },
+         "ec50PValue":{
+            "parameter":"ec50",
+            "type":"pValue",
+            "value":1,
+            "operator":">",
+            "displayName":"EC50 uncertainty exceeded"
+         }
+      },
+      "limits":{
+         "ec50Threshold":{
+            "parameter":"ec50",
+            "type":"logAboveReference",
+            "reference":"dose.max",
+            "value":0.5,
+            "operator":">",
+            "displayName":"EC50 threshold exceeded"
+         }
+      }
+   }
+}
