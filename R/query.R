@@ -39,7 +39,7 @@ query <- function(qu, globalConnect=FALSE, conn = NULL, ...) {
       conn <- try(get("conn",envir = .GlobalEnv), silent = TRUE)
       isAliveConnection <- try(dbGetInfo(conn),silent = TRUE)
       if(class(isAliveConnection) == "try-error") {
-        conn <- getDatabaseConnection()
+        conn <- getDatabaseConnection(...)
         conn <<- conn
       }
     }
