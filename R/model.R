@@ -41,7 +41,9 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
   
   #While refit is true, keep refitting using fixed parameters
   refit <- checkRefit(fitData)
-  while(any(refit)) {
+  iterations <- 20
+  i <- 1
+  while(any(refit) & i < iterations) {
     fitData[refit, model.synced := FALSE]
     fitData[refit, fixedParameters := switch(renderingHint,
                                              "4 parameter D-R" = {
@@ -86,11 +88,12 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
             by = curveid]
     fitData <- doseResponseFit(fitData)
     refit <- checkRefit(fitData)
+    i <- i + 1
   }
   
   #Categorize the fit data
   fitData[ , category := categorizeFitData(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
-  fitData[ , getDNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
+  fitData[ , DNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
   #Extract the reported Parameters
   fitData[ , reportedParameters := list(list(getReportedParameters(renderingHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]]))), by = curveid]
   fitData[ , analysisGroupParameters := list(list(getAnalysisGroupParameters(reportedParameters[[1]], fixedParameters[[1]], fittedParameters[[1]], goodnessOfFit.model[[1]], goodnessOfFit.parameters[[1]], category, approved))), by = curveid]
@@ -151,8 +154,8 @@ checkRefit <- function(fitData) {
                              "4 parameter D-R" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
                                                     minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
                                                     slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
-                                                    exceeded <- (maxExceeded | minExceeded | slopeExceeded)
-                                                    refit <-  exceeded | inactive & !fitConverged & insufficientRange
+                                                    exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
+                                                    refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange)
                                                     refit
                              },{
                                warning(paste0("Refit rule not implemented for ", renderingHint))

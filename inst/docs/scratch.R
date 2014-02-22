@@ -23,8 +23,10 @@ session <- parsedResponse$sessionID
 loadSession(session)
 
 source("inst/docs/scratchPrivate.R")
-fitData <- getRandomDNETCurves(10)
+system.time(fitData <- getRandomDNETCurves(100))
 fitDataBackup <- fitData
+
+
 fitData <- fitDataBackup
 file <- "inst/docs/simpleBulkDoseResponseFitRequest.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
@@ -34,7 +36,8 @@ system.time(response <- doseResponse(fitSettingsJSON, fitData = fitData))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
-
+fitData[,actualDNETCategory:=rbindlist(fitData$parameters)$resultcomment]
+View(fitData[, c("category","DNETCategory","actualDNETCategory"), with = FALSE])
 
 getRandomDNETCurves <- function(howMany) {
   applicationSettings <- racas::applicationSettings
