@@ -55,6 +55,7 @@ readConfigFile <- function(configLocation) {
   t <- tempfile()
   writeLines(unlist(l), t)
   applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
+  unlink(t)
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
   #Convert "true", "false" to logicals
