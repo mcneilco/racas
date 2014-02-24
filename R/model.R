@@ -3,7 +3,30 @@ LL4 <- 'min + (max - min)/((1 + exp(slope * (log(x/ec50))))^1)'
 OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
 
-defaultDoseResponse <- function(fitData, fitSettingsJSON) {
+#' Fit dose response data
+#'
+#' Converts a fitData object to a fitted fitData object
+#' 
+#' 
+#' @param fitSettingsJSON a fit settings json object (see examples)
+#' @param curveids a character list of curveids
+#' @param sessionID a path to a curve fit session
+#' @param fitData a fidData object to refit
+#' @return A json object with the sessionid among a number of html divs to display back to the user
+#' @export
+#' @examples
+#' #Fit all the curveids in the database:
+#' 
+#' #get fitData
+#' data("example-ec50-fitData")
+#' 
+#' #fitSettingsJSON
+#' file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
+#' fitSettingsJSON <- readChar(file, file.info(file)$size)
+#' 
+#' #fit the data
+#' fitData <- doseResponse.fitData(fitData, fitSettingsJSON)
+doseResponse.fitData <- function(fitData, fitSettingsJSON) {
   #Need to copy fitData so we are working with our own copy (data.table does objects by reference)
   fitData <- copy(fitData)
   
@@ -15,8 +38,8 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
   fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
   fitData[ , inactiveRule := list(list(myInactiveRule))]
-  #The JSON really should have "NA" init should just be null or blank but the rjson package doesn't deal with this very well. For now, just convert "NA" to NA
-  #updateFlags <- rbindlist(lapply(request$updateFlags, function(x) {x$flag <- ifelse(is.null(x$flag),as.character(NA), x$flag); return(x) })) 
+
+  #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(request$updateFlags)
   if(nrow(updateFlags) > 0 ) {
     updateFlags[flag=="NA", flag := as.character(NA)]
@@ -36,7 +59,7 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
     fitData[, points := list(list(updFlags(points[[1]]))) , by = curveid]
   }
   
-  #Initial fit of the data
+  #Fit the data
   fitData <- doseResponseFit(fitData)
   
   #While refit is true, keep refitting using fixed parameters
@@ -45,8 +68,8 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
   i <- 1
   while(any(refit) & i < iterations) {
     fitData[refit, model.synced := FALSE]
-    fitData[refit, fixedParameters := switch(renderingHint,
-                                             "4 parameter D-R" = {
+    fitData[refit, fixedParameters := switch(modelHint,
+                                             "LL.4" = {
                                                if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
                                                  fixedMax <- fixedParameters[[1]]$max
                                                } else {
@@ -82,7 +105,7 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
                                                }
                                                list(list(myfixedParameters = list(max = fixedMax,min = fixedMin,slope = fixedSlope, ec50 = NA)))
                                              },
-                                             "2 parameter Michaelis Menten" = {
+                                             "MM.2" = {
                                                list(list(myfixedParameters = list(kd = NA, max = NA)))
                                              }),
             by = curveid]
@@ -93,9 +116,8 @@ defaultDoseResponse <- function(fitData, fitSettingsJSON) {
   
   #Categorize the fit data
   fitData[ , category := categorizeFitData(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
-  fitData[ , DNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
   #Extract the reported Parameters
-  fitData[ , reportedParameters := list(list(getReportedParameters(renderingHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]]))), by = curveid]
+  fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]]))), by = curveid]
   fitData[ , analysisGroupParameters := list(list(getAnalysisGroupParameters(reportedParameters[[1]], fixedParameters[[1]], fittedParameters[[1]], goodnessOfFit.model[[1]], goodnessOfFit.parameters[[1]], category, approved))), by = curveid]
   
   return(fitData)  
@@ -105,66 +127,119 @@ getAnalysisGroupParameters <- function(reportedParameters, fixedParameters, fitt
   fitParameters <- c(fixedParameters,fittedParameters)
   names(fitParameters) <- paste0("fitted",names(fitParameters))
   analysisGroupParameters <- c(reportedParameters,fitParameters, goodnessOfFit.model, goodnessOfFit.parameters, category = category, algorithmApproved = approved)
-  analysisGroupParameters[unlist(lapply(analysisGroupParameters, is.na))] <- NULL
+  analysisGroupParameters[unlist(lapply(analysisGroupParameters, is.NULLorNA))] <- NULL
   return(analysisGroupParameters)
 }
-simpleToAdvancedBulkFitRequest <- function(simpleRequest) {
-  simpleRequest <- simpleBulkDoseResponseFitRequest
-  file <- system.file("docs", "default-ec50-bulkFitRequest.json", package = "racas")
-  defaultEC50RequestJSON <- readChar(file, file.info(file)$size)
-  defaultRequest <- fromJSON(defaultEC50RequestJSON)
-  
-  updateDefaultRequest <- function(name, simpleRequestParameter, defaultRequest) {
-    #simpleRequestParameter <- simpleRequest$min
-    #name <- "min"
-    if(simpleRequestParameter$limitType=="none") {
-      defaultRequest$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-      defaultRequest$fixedParameters[[name]] <- NULL
-    }
-    if(simpleRequestParameter$limitType=="pin") {
-      defaultRequest$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-      defaultRequest$fixedParameters[[name]] <- ifelse(name=="slope",-simpleRequestParameter$value,simpleRequestParameter$value)
-    }
-    if(simpleRequestParameter$limitType=="limit") {
-      defaultRequest$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
-                                                                               type = "threshold",
-                                                                               operator = switch(name,
-                                                                                                 max = ">",
-                                                                                                 min = "<",
-                                                                                                 ec50 = ">",
-                                                                                                 slope = "<"),
-                                                                               value = ifelse(name=="slope",-simpleRequestParameter$value,simpleRequestParameter$value),
-                                                                               displayName = paste0(name," threshold exceeded")
+#' Convert a simple dose response request to an advanced dose response request
+#'
+#' Reads the default fit settings for the given model hint and updates it based on the simple request
+#' 
+#' @param simpleSettings a list object of simple fit settings
+#' @param modelHint a character string to identify the dose response model to fit
+#' @return an advanced fit settings list object
+#' @export
+#' @examples
+#' file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas")
+#' simpleSettingsJSON <- readChar(file, file.info(file)$size)
+#' simpleSettings <- fromJSON(simpleSettingsJSON)
+#' simpleToAdvancedFitSettings(simpleSettings)
+simpleToAdvancedFitSettings <- function(simpleSettings, modelHint = "LL.4") {
+  #simpleRequest <- simpleBulkDoseResponseFitRequest
+  defaultSettings <- getDefaultFitSettings(modelHint)
+  updateFitSettings.LL4 <- function(fitSettings, simpleFitSettings) {
+    update.fitSetting.parameter.LL4 <- function(fitSettings, name, simpleSettingsParameter) {   
+      if(simpleSettingsParameter$limitType=="none") {
+        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+        fitSettings$fixedParameters[[name]] <- NULL
+      }
+      if(simpleSettingsParameter$limitType=="pin") {
+        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+        fitSettings$fixedParameters[[name]] <- ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value)
+      }
+      if(simpleSettingsParameter$limitType=="limit") {
+        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
+                                                                              type = "threshold",
+                                                                              operator = switch(name,
+                                                                                                max = ">",
+                                                                                                min = "<",
+                                                                                                ec50 = ">",
+                                                                                                slope = "<",
+                                                                                                stop(paste0("Unknown parameter:",name))),
+                                                                              value = ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value),
+                                                                              displayName = paste0(name," threshold exceeded")
         )
-      defaultRequest$fixedParameters[[name]] <- NULL
+        fitSettings$fixedParameters[[name]] <- NULL
+      }
+      return(fitSettings)
     }
-    return(defaultRequest)
+    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "min", simpleSettingsParameter = simpleSettings$min)
+    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
+    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "slope", simpleSettingsParameter = simpleSettings$slope) 
+    return(fitSettings)
   }
-  modifiedRequest <- defaultRequest
-  modifiedRequest$inactiveRule$value <- simpleRequest$inactiveThreshold
-  modifiedRequest$inverseAgonistMode <- simpleRequest$inverseAgonistMode
-  modifiedRequest <- updateDefaultRequest("min",simpleRequest$min, modifiedRequest)
-  modifiedRequest <- updateDefaultRequest(name = "max", simpleRequestParameter = simpleRequest$max, modifiedRequest)
-  modifiedRequest <- updateDefaultRequest("slope", simpleRequest$slope, modifiedRequest)
-  return(modifiedRequest)
+  modifiedSettings <- defaultSettings
+  modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold
+  modifiedSettings$inverseAgonistMode <- simpleSettings$inverseAgonistMode
+  modifiedSettings <- switch(modelHint,
+                             "LL.4" = updateFitSettings.LL4(modifiedSettings,simpleSettings),
+                             warning(paste0("Simple to Advanced fit settings not implemented for modelHint: ",modelHint))
+  )
+  return(modifiedSettings)
+}
+
+getDefaultFitSettings <- function(modelHint) {
+  file <- system.file("docs", switch(modelHint,
+                                     "LL.4" = "default-ec50-fitSettings.json",
+                                     stop("modelHint \'", modelHint,"\' does not have a default fit settings json object")), package = "racas")
+  defaultRequest <- readChar(file, file.info(file)$size)
+  defaultRequest <- fromJSON(defaultRequest)
+  return(defaultRequest)
 }
 #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
 checkRefit <- function(fitData) {
-  refit <- fitData[ , switch(renderingHint,
-                             "4 parameter D-R" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
+  refit <- fitData[ , switch(modelHint,
+                             "LL.4" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
                                                     minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
                                                     slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
                                                     exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
                                                     refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange)
                                                     refit
                              },{
-                               warning(paste0("Refit rule not implemented for ", renderingHint))
+                               warning(paste0("Refit rule not implemented for ", modelHint))
                                FALSE
                              }),
                    by = curveid]$V1
   return(refit)
 }
 
+#' Fit dose response data
+#'
+#' Converts a character vector of curveids, sessionsID or fitData object to a fitted fitData object, saves the fitData object to either a new session or back to the session provided and then returns a json representation of the fitted fitData object
+#' 
+#' @param fitSettingsJSON a fit settings json object (see examples)
+#' @param curveids a character list of curveids
+#' @param sessionID a path to a curve fit session
+#' @param fitData a fidData object to refit
+#' @return A json object with the sessionid among a number of html divs to display back to the user
+#' @export
+#' @examples
+#' #Fit all the curveids in the database:
+#' 
+#' #get curveids
+#' curveids <- as.character(query("select curveid from api_curve_params")[[1]])
+#' 
+#' #fitSettingsJSON
+#' file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
+#' fitSettingsJSON <- readChar(file, file.info(file)$size)
+#' 
+#' #fit the data
+#' system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+#' 
+#' #Inspect the saved fit session
+#' parsedResponse <- fromJSON(response)
+#' session <- parsedResponse$sessionID
+#' loadSession(session)
+#' head(fitData)
 doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData = NA) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
@@ -184,7 +259,7 @@ doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData
     }
   }
   if(any(class(fitData) == "data.table")) {
-    fitData <- defaultDoseResponse(fitData, fitSettingsJSON) 
+    fitData <- doseResponse.fitData(fitData, fitSettingsJSON) 
   } else {
     stop("fitData not a data.table")
   }
@@ -196,7 +271,19 @@ doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData
   response <- fitToJSONReponse(fitData, sessionID = sessionID)
   return(response)
 }
-
+#' fitData object to json response
+#'
+#' Converts a fitData object to a json response to return to the GUI
+#' 
+#' @param a fitData object
+#' @param ... addition arguments to be passed to \code{\link{toJSON}}
+#' @return A json object of the fitData and any other objects coerced to json by ... \code{\link{toJSON}}
+#' @export
+#' @examples
+#' #Load and example fitData object
+#' data("example-ec50-fitData-fitted")
+#' #FitData object plus the "cars" data to a json string
+#' fitToJSONReponse(fitData, cars)
 fitToJSONReponse <- function(fitData, ...) {
   reportedValues <- objToHTMLTableString(fitData[1]$reportedParameters[[1]])
   fitSummary <- captureOutput(summary(fitData[1]$model[[1]]))
@@ -284,9 +371,9 @@ objToHTMLTableString <- function(obj) {
   return(htmlTableString)
 }
 
-getReportedParameters <- function(renderingHint, results, inactive, fitConverged, insufficientRange, fixedParameters, fittedParameters, pointStats) {
-  switch(renderingHint,
-         "4 parameter D-R" = {
+getReportedParameters <- function(modelHint, results, inactive, fitConverged, insufficientRange, fixedParameters, fittedParameters, pointStats) {
+  switch(modelHint,
+         "LL.4" = {
            if(inactive | insufficientRange) {
              max <- pointStats$response.empiricalMax
              min <- pointStats$empiricalMin
@@ -335,7 +422,7 @@ getReportedParameters <- function(renderingHint, results, inactive, fitConverged
            reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
            return(reportedValues)
          },
-         "2 parameter Michaelis Menten" = {
+         "MM.2" = {
            if(inactive | insufficientRange) {
              max <- pointStats$response.empiricalMax
              kd <- pointStats$dose.max
@@ -367,7 +454,7 @@ getReportedParameters <- function(renderingHint, results, inactive, fitConverged
            reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
            return(reportedValues)
          },
-{warning("Not implemented for ", renderingHint)
+{warning("Not implemented for ", modelHint)
  return(list())
 }
   )
@@ -385,7 +472,13 @@ getFitData <- function(curveids, ...) {
   fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
   fitData$points <- cbind(fitData$points, flagChanged = FALSE)
   fitData <- data.table(curveid = unique(as.character(fitData$points$curveid,fitData$parameters$curveid))[order(unique(as.character(fitData$points$curveid,fitData$parameters$curveid)))], 
-                        renderingHint = fitData$parameters$renderingHint, 
+                        modelHint = unlist(lapply(fitData$parameters$renderingHint, 
+                                           function(x) {
+                                             ans <- switch(x,
+                                                           "4 parameter D-R" = "LL.4",
+                                                           "2 parameter Michaelis Menten" = "MM.2")
+                                             return(ans)
+                                           })),
                         points = split(as.data.table(fitData$points), fitData$points$curveid),
                         parameters = split(as.data.table(fitData$parameters), fitData$parameters$curveid),
                         key = "curveid")
@@ -402,10 +495,10 @@ getFitData <- function(curveids, ...) {
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   ###Fit
-  fitData[model.synced == FALSE, model := list(model = list(switch(renderingHint,
-                                                                   "4 parameter D-R" = getDRCModel(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
-                                                                   "3 parameter Michaelis Menten" = getDRCModel(points[[1]], drcFunction = MM.3, paramNames = c("slope","max", "kd"), fixed = fixedParameters[[1]]),
-                                                                   "2 parameter Michaelis Menten" = getDRCModel(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
+  fitData[model.synced == FALSE, model := list(model = list(switch(modelHint,
+                                                                   "LL.4" = getDRCModel(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
+                                                                   "MM.3" = getDRCModel(points[[1]], drcFunction = MM.3, paramNames = c("slope","max", "kd"), fixed = fixedParameters[[1]]),
+                                                                   "MM.2" = getDRCModel(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
   ))
   ), by = curveid]
   
@@ -430,9 +523,6 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   return(fitData[, returnCols, with = FALSE])
 }
 
-
-
-
 categorizeFitData <- function(results.parameterRules, inactive, converged, insufficientRange) {
   category <- "Good Fit"
   resultList <- unlist(results.parameterRules)
@@ -477,14 +567,15 @@ categorizeFitData <- function(results.parameterRules, inactive, converged, insuf
   }
   return(category)
 }
+
 getDNETCategory <- function(results.parameterRules, inactive, converged, insufficientRange) {
-#   -weak tested potency
-#   strong tested potency
-#   -inactive
-#   Low Quality Fit - failed PValue Test
-#   hockey stick
-#   sigmoid 
-#   -lack of fit - fit did not converge
+  #   -weak tested potency
+  #   strong tested potency
+  #   -inactive
+  #   Low Quality Fit - failed PValue Test
+  #   hockey stick
+  #   sigmoid 
+  #   -lack of fit - fit did not converge
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   if("maxUncertaintyRule" %in% resultList | "ec50Threshold" %in% resultList) {
@@ -527,6 +618,7 @@ applyParameterRules.limits <- function(fittedParameters, pointStats, rules) {
   }  )
   return(unlist(answer))
 }
+
 applyParameterRules.goodnessOfFits <- function(goodnessOfFit.parameters, rules) {
   if(is.null(goodnessOfFit.parameters)) return(NULL)
   answer <- lapply(seq_along(rules), function(x) {
@@ -603,9 +695,6 @@ getPointStats <- function(pts) {
   return(list(response.empiricalMax = response.empiricalMax, response.empiricalMin = response.empiricalMin, dose.min = dose.min, dose.max = dose.max))
 }
 
-
-
-
 kiNames <- c("Top", "Bottom", "logKi")
 oneSiteKi <- function(kd, ligandConc, fixed = c(NA, NA, NA), names = c("c", "d", "e")) {
   ki.fct3 <- param[,2] + (param[,1]-param[,2])/(1+10^(x-log10(10^param[,3]*(1+ligandConc/kd))))
@@ -617,9 +706,6 @@ oneSiteKi.ssf <- function(data) {
   logKi <- -8.0
   return(c(Top, Bottom, logKi))
 }
-#fitModelNormalized <- drm(NORMALIZEDRESULT ~ CONCENTRATION, data = points, fct = list(kifct, kissfct, kiNames), curveid=PTODWELLLITERAL, robust = "mean")
-#fitModelEfficacy <- drm(EFFICACY ~ CONCENTRATION, data = points, fct = list(kifct, kissfct, kiNames),curveid=PTODWELLLITERAL, robust = "mean")
-
 
 kissfctFree <- function(data) {
   Top <- max(data[,2])

@@ -8,7 +8,7 @@
    "inactiveRule":{
       "type":"threshold",
       "value":20,
-      "activeDoses":2
+      "activeDoses":1
    },
    "parameterRules":{
       "goodnessOfFits":{

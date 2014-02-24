@@ -11,10 +11,10 @@ library(xtable)
 #curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 
 #file <- system.file("docs", "simpleBulkDoseResponseFitRequest.json", package = "racas")
-file <- "inst/docs/simpleBulkDoseResponseFitRequest.json"
+file <- "inst/docs/example-ec50-simple-fitSettings.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-fitSettingsJSON <- toJSON(simpleToAdvancedBulkFitRequest(simpleBulkDoseResponseFitRequest))
+fitSettingsJSON <- toJSON(simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest))
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 fitData <- getFitData(curveids)
 system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
@@ -22,10 +22,12 @@ parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
 
+
+
+#DNET sampling
 source("inst/docs/scratchPrivate.R")
 system.time(fitData <- getRandomDNETCurves(100))
 fitDataBackup <- fitData
-
 
 fitData <- fitDataBackup
 file <- "inst/docs/simpleBulkDoseResponseFitRequest.json"
@@ -36,18 +38,18 @@ system.time(response <- doseResponse(fitSettingsJSON, fitData = fitData))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
+fitData[ , DNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
 fitData[,actualDNETCategory:=rbindlist(fitData$parameters)$resultcomment]
-View(fitData[, c("category","DNETCategory","actualDNETCategory"), with = FALSE])
+blah <- fitData[, c("curveid","category","DNETCategory","actualDNETCategory"), with = FALSE][DNETCategory!=actualDNETCategory, ]
 
-getRandomDNETCurves <- function(howMany) {
-  applicationSettings <- racas::applicationSettings
-  applicationSettings$server.database.username <- "seurat"
-  applicationSettings$server.database.password <- "seurat"
-  howMany <- 10
-  randomCurveIDS <- query(paste0("SELECT * FROM   ( SELECT * FROM kalypsysadmin.facmpdfitparameters ORDER BY DBMS_RANDOM.RANDOM) WHERE  rownum < ",howMany), applicationSettings = applicationSettings)
-  
-  
+for(i in blah$curveid) {
+  cat(paste0("New Category: ", fitData[curveid==i,]$DNETCategory,"\n"))
+  cat(paste0("Old Category: ", fitData[curveid==i,]$actualDNETCategory,"\n"))
+  plot(fitData[curveid==i,]$model[[1]])
+  readline("next:")
 }
+
+
 
 #pointData <- fitData[1]$points[[1]][flagChanged==TRUE,]
 #pointData <- fitDataBefore[8]$points[[1]]

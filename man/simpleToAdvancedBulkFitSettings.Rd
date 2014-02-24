@@ -1,0 +1,27 @@
+\name{simpleToAdvancedBulkFitSettings}
+\alias{simpleToAdvancedBulkFitSettings}
+\title{Convert a simple dose response request to an advanced dose response request}
+\usage{
+simpleToAdvancedBulkFitSettings(simpleSettings, modelHint = "LL.4")
+}
+\arguments{
+  \item{simpleSettings}{a list object of simple fit
+  settings}
+
+  \item{modelHint}{a character string to identify the dose
+  response model to fit}
+}
+\value{
+an advanced fit settings list object
+}
+\description{
+Reads the default fit settings for the given model hint and
+updates it based on the simple request
+}
+\examples{
+file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas")
+simpleSettingsJSON <- readChar(file, file.info(file)$size)
+simpleSettings <- fromJSON(simpleSettingsJSON)
+simpleToAdvancedBulkFitSettings(simpleSettings)
+}
+
