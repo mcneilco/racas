@@ -72,7 +72,7 @@ readConfigFile <- function(configLocation) {
   
   row.names(applicationSettings) <- 1
   
-  if (!is.null(applicationSettings$server.database.r.package)) {
+  if (applicationSettings$server.database.r.package != "") {
     if(!suppressWarnings(require(applicationSettings$server.database.r.package, character.only=TRUE))) {
       if(is.null(options("racasInstallDep")[[1]])) {
         installDep <- FALSE
