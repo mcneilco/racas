@@ -55,6 +55,7 @@ readConfigFile <- function(configLocation) {
   t <- tempfile()
   writeLines(unlist(l), t)
   applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
+  unlink(t)
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
   #Convert "true", "false" to logicals
@@ -71,7 +72,7 @@ readConfigFile <- function(configLocation) {
   
   row.names(applicationSettings) <- 1
   
-  if (!is.null(applicationSettings$server.database.r.package)) {
+  if (applicationSettings$server.database.r.package != "") {
     if(!suppressWarnings(require(applicationSettings$server.database.r.package, character.only=TRUE))) {
       if(is.null(options("racasInstallDep")[[1]])) {
         installDep <- FALSE
