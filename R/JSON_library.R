@@ -1739,9 +1739,6 @@ getExperimentByCodeName <- function(experimentCodeName, include="", errorEnv=NUL
   }, error = function(e) {
     addError(paste0("Could not get experiment ", experimentCodeName, " from the server"), errorEnv)
   })
-  if (include != "") {
-    experiment <- getExperimentById(experiment$id, include, errorEnv, lsServerURL)
-  }
   return(experiment)
 }
 
