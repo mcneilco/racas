@@ -25,22 +25,21 @@ MM2 <- '(max*x)/(kd + x)'
 #' fitSettingsJSON <- readChar(file, file.info(file)$size)
 #' 
 #' #fit the data
-#' fitData <- doseResponse.fitData(fitData, fitSettingsJSON)
-doseResponse.fitData <- function(fitData, fitSettingsJSON) {
+#' fitData <- doseResponse.fitData(fitSettings, fitData)
+doseResponse.fitData <- function(fitSettings, fitData) {
   #Need to copy fitData so we are working with our own copy (data.table does objects by reference)
   fitData <- copy(fitData)
   
   #Extract the fit variables from json
-  request <- fromJSON(fitSettingsJSON)
-  myFixedParameters <- request$fixedParameters
-  myParameterRules <- request$parameterRules
-  myInactiveRule <- request$inactiveRule
+  myFixedParameters <- fitSettings$fixedParameters
+  myParameterRules <- fitSettings$parameterRules
+  myInactiveRule <- fitSettings$inactiveRule
   fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
   fitData[ , inactiveRule := list(list(myInactiveRule))]
   
   #Update all of the flags to those that are in the fitSettings json
-  updateFlags <- as.data.table(request$updateFlags)
+  updateFlags <- as.data.table(fitSettings$updateFlags)
   if(nrow(updateFlags) > 0 ) {
     updateFlags[flag=="NA", flag := as.character(NA)]
     setnames(updateFlags, "id", "response_sv_id")
@@ -218,7 +217,7 @@ checkRefit <- function(fitData) {
 #' saves the fitData object to either a new session or back to the session provided and then returns 
 #' a json representation of the fitted fitData object with the savedSessionID
 #' 
-#' @param fitSettingsJSON a fit settings json object (see examples)
+#' @param fitSettings a fit settings list object (see examples)
 #' @param curveids a character list of curveids
 #' @param sessionID a path to a curve fit session
 #' @param fitData a fidData object to refit
@@ -230,30 +229,30 @@ checkRefit <- function(fitData) {
 #' #get curveids
 #' curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 #' 
-#' #fitSettingsJSON
+#' #fitSettings
 #' file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
 #' fitSettingsJSON <- readChar(file, file.info(file)$size)
-#' 
+#' fitSettings <- fromJSON(fitSettingsJSON)
 #' #fit the data
-#' system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+#' system.time(response <- doseResponse(fitSettings, curveids = curveids))
 #' 
 #' #Inspect the saved fit session
 #' parsedResponse <- fromJSON(response)
 #' session <- parsedResponse$sessionID
 #' loadSession(session)
 #' head(fitData)
-doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData = NA) {
+doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
     fitData <- getFitData.curve(curveids)
   }
   if(!is.na(sessionID)) {
-    fitSettingsJSON_new <- fitSettingsJSON
+    fitSettings_new <- fitSettings
     sessionID_new <- sessionID
     loadSession(sessionID)
-    fitSettingsJSON <- fitSettingsJSON_new
+    fitSettings <- fitSettings_new
     sessionID <- sessionID_new
-    rm(fitSettingsJSON_new,sessionID_new)
+    rm(fitSettings_new,sessionID_new)
     if(exists("fitData")) {
       fitData[, model.synced := FALSE]      
     } else {
@@ -261,7 +260,7 @@ doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData
     }
   }
   if(any(class(fitData) == "data.table")) {
-    fitData <- doseResponse.fitData(fitData, fitSettingsJSON) 
+    fitData <- doseResponse.fitData(fitSettings, fitData) 
   } else {
     stop("fitData not a data.table")
   }
@@ -270,7 +269,7 @@ doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData
   } else {
     sessionID <- saveSession(sessionID)
   }
-  response <- fitToJSONReponse(fitData, sessionID = sessionID)
+  response <- fitDataToResponse.curation(fitData, sessionID = sessionID)
   return(response)
 }
 #' fitData object to json response
@@ -285,8 +284,8 @@ doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData
 #' #Load and example fitData object
 #' data("example-ec50-fitData-fitted")
 #' #FitData object plus the "cars" data to a json string
-#' fitToJSONReponse(fitData, cars)
-fitToJSONReponse <- function(fitData, ...) {
+#' fitDataToResponse.curation(fitData, cars)
+fitDataToResponse.curation <- function(fitData, ...) {
   reportedValues <- objToHTMLTableString(fitData[1]$reportedParameters[[1]])
   fitSummary <- captureOutput(summary(fitData[1]$model[[1]]))
   parameterStdErrors <- objToHTMLTableString(fitData[1]$goodnessOfFit.parameters[[1]])
@@ -308,6 +307,34 @@ fitToJSONReponse <- function(fitData, ...) {
                      approved = approved,
                      ...     
   )))   
+}
+#' fitData object to json response
+#'
+#' Converts a fitData object to a json response to return to the GUI
+#' 
+#' @param a fitData object
+#' @param ... addition arguments to be passed to \code{\link{toJSON}}
+#' @return A json object of the fitData and any other objects coerced to json by ... \code{\link{toJSON}}
+#' @export
+#' @examples
+#' #Load and example fitData object
+#' data("example-ec50-fitData-fitted")
+#' #FitData object plus the "cars" data to a json string
+#' fitDataToResponse.acas(fitData, cars)
+fitDataToResponse.acas <- function(fitData, ...) {
+  #rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
+  rmd <- "inst/rmd/fitDataToResponse_acas.rmd"
+  html <- knit2html.bugFix(input = rmd, fragment.only = FALSE, quiet = TRUE)
+  return(html)
+}
+
+knit2html.bugFix <- function (input, output = NULL, ..., envir = parent.frame(), text = NULL, quiet = FALSE, encoding = getOption("encoding")) {
+  out = knit(input, output, text = text, envir = envir, encoding = encoding, quiet = quiet)
+  if (is.null(text)) {
+    output <- markdown::markdownToHTML(out, ...)
+    invisible(output)
+  }
+  else markdown::markdownToHTML(text = out, ...)
 }
 
 predictPoints <- function(pts, drcObj) {
@@ -353,7 +380,7 @@ captureOutput <- function(obj) {
 objToHTMLTableString <- function(obj) {
   htmlTableString <- ""
   if(is.null(obj)) {return(htmlTableString)}
-  if(class(obj) == "list") {
+  if(class(obj)[[1]] == "list") {
     obj <- as.data.frame(lapply(obj, function(x) if(is.null(x)){return(NA)} else {return(x)}))
     #obj <- as.data.frame(obj)
   }
@@ -470,7 +497,7 @@ getCurveCuratorInfo <- function(experimentCode = NA) {
                 and e.code_name = ",sqliz(experimentCode)))
   names(curveids) <- "curveid"
 }
-getFitData.curveids <- function(curveids, ...) {
+getFitData.curve <- function(curveids, ...) {
   fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
   fitData$points <- cbind(fitData$points, flagChanged = FALSE)
   fitData <- data.table(curveid = unique(as.character(fitData$points$curveid,fitData$parameters$curveid))[order(unique(as.character(fitData$points$curveid,fitData$parameters$curveid)))], 
@@ -495,8 +522,12 @@ getFitData.curveids <- function(curveids, ...) {
 }
 getFitData.experimentCode <- function(experimentCode, ...) {
   experiment <- getExperimentByCodeName(experimentCode, include = "analysisgroupvalues")
-  
-
+  experiment <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCodeName, "?with=", include))
+  experiment <- fromJSON(experiment)[[1]]
+  experiment <- flattenDeepEntity(experiment, "analysisgroup", "experiment" )
+  curves <- experiment[experiment$lsKind == "curve id",]$stringValue
+  fitData <- getFitData.curve(curves)
+  return(fitData)
 }
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
@@ -759,15 +790,8 @@ doseResponse.experiment <- function(experimentCode, user, simpleFitSettings) {
   experimentCode <- "EXPT-00000096"
   
   advancedFitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
-  
-  
   fitData <- getFitData.experimentCode(experimentCode)
-  
-  system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
-  parsedResponse <- fromJSON(response)
-  session <- parsedResponse$sessionID
-  loadSession(session)
-  
-  
+  fitData <- doseResponse.fitData(advancedFitSettings, fitData)
+  html <- fitDataToResponse.acas(fitData, options = c('skip_images'))
+  writeLines(html, con = "~/Desktop/untitled.html")
 }
-  

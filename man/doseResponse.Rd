@@ -2,10 +2,10 @@
 \alias{doseResponse}
 \title{Fit dose response data}
 \usage{
-doseResponse(fitSettingsJSON, curveids = NA, sessionID = NA, fitData = NA)
+doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA)
 }
 \arguments{
-  \item{fitSettingsJSON}{a fit settings json object (see
+  \item{fitSettings}{a fit settings list object (see
   examples)}
 
   \item{curveids}{a character list of curveids}
@@ -32,12 +32,12 @@ savedSessionID
 #get curveids
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 
-#fitSettingsJSON
+#fitSettings
 file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-
+fitSettings <- fromJSON(fitSettingsJSON)
 #fit the data
-system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+system.time(response <- doseResponse(fitSettings, curveids = curveids))
 
 #Inspect the saved fit session
 parsedResponse <- fromJSON(response)

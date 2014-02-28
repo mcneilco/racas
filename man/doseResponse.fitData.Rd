@@ -2,7 +2,7 @@
 \alias{doseResponse.fitData}
 \title{Fit dose response data}
 \usage{
-doseResponse.fitData(fitData, fitSettingsJSON)
+doseResponse.fitData(fitSettings, fitData)
 }
 \arguments{
   \item{fitSettingsJSON}{a fit settings json object (see
@@ -32,6 +32,6 @@ file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 
 #fit the data
-fitData <- doseResponse.fitData(fitData, fitSettingsJSON)
+fitData <- doseResponse.fitData(fitSettings, fitData)
 }
 

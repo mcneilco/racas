@@ -1,0 +1,13 @@
+Curve Fit Summary
+========================================================
+
+* Attempted Fits: `r nrow(fitData)`
+* Successful Fits: `r nrow(fitData[approved==TRUE,])`
+* Failed Fits: `r nrow(fitData[approved==FALSE,])`
+
+```{r categories, results='asis', echo=FALSE}
+categories <- fitData[ , length(curveid), by = category]
+setnames(categories, c("Categories", " "))
+table <- paste0(kable(categories, output = FALSE), collapse = "\n")
+cat(table)
+```
