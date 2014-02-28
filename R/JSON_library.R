@@ -1690,7 +1690,7 @@ appendToContainerName <- function(containerName, appendText) {
 #' 
 #' Just turns a list into a data frame, not meant to be exported
 flattenValue <- function(lsValue) {
-  lsValue <- lapply(lsValue, function(x) {ifelse(is.null(x), NA, x)})
+  lsValue[vapply(lsValue, is.null, c(TRUE))] <- NA
   output <- as.data.frame(lsValue, stringsAsFactors=FALSE)
   return(output)
 }

@@ -34,7 +34,8 @@ addError <- function(errorMessage, errorEnv = NULL) {
     errorList <<- c(errorList, errorMessage)
   } else {
     if (!exists("errorList", where = errorEnv)) {
-      stop("ErrorList has not been defined in the given environment")
+      stop(paste0(errorMessage, 
+                  "; and internal error in use of addError function: errorList has not been defined in the given environment"))
     }
     assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)
   }

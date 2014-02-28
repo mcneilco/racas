@@ -215,6 +215,10 @@ meltWideData <- function(wideData, resultTypes, stateGroups=list(), splitColumn=
     stop("Column DataColumn in resultTypes should not be a factor")
   }
   
+  if (!all(resultTypes$DataColumn %in% names(wideData))) {
+    stop("All resultTypes$DataColumn must be included in wideData")
+  }
+  
   # Add a temporary rowID to keep track of how rows match up
   wideData$rowID <- seq(1,length(wideData[[1]]))
   
