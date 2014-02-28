@@ -16,7 +16,7 @@ simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettingsJSON <- toJSON(simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest))
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
-fitData <- getFitData(curveids)
+fitData <- getFitData.curve(curveids)
 system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID

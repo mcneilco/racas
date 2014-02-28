@@ -37,6 +37,71 @@ updateDoseResponseCurve <- function(fitData) {
   fitData[, saveNewAnalysisGroupData(parameters[[1]])]
 }
 
+getLSStateFromEntity <- function(entities, ...) {
+  lsStates <- lapply(entities, function(x) x$lsStates)
+  matchListCriteria <- function(lsState, listCriteria) {
+    #lsState <- lsStates[[1]]
+    unlistedLSState <- unlist(lsState)
+    matchCriteria <- function(unlistedLSState, criteria) {
+      any(names(unlistedLSState) == names(criteria) & unlistedLSState == criteria[[1]])
+    }
+    return(all(unlist(lapply(1:length(listCriteria), function(x) matchCriteria(unlistedLSState,listCriteria[x])))))
+  }
+  matches <- unlist(lapply(lsStates, matchListCriteria, listCriteria = list(...)))
+  #matches <- unlist(lapply(lsStates, matchListCriteria, listCriteria = listCriteria))
+  lsStates[!matches] <- NULL
+  return(lsStates)
+}
+
+saveNewAnalysisGroupData <- function(parameters) {
+  parameters <- cbind(rbindlist(fitData$analysisGroupParameters),ag_id = rbindlist(fitData$parameters)$ag_id)
+  
+  lsTransaction <- createLsTransaction()$id
+  analysisGroups <- lapply(parameters$ag_id, getEntityById, "analysisgroups")
+  analysisGroupStatesToIgnore <- getLSStateFromEntity(analysisGroups, lsType = "data", lsKind = "Dose Response", ignored = "FALSE")
+  ignoredAnalysisGroupStates <- lapply(analysisGroupStatesToIgnore, function(x) {
+    x$ignored <- TRUE
+    updateAcasEntity(x, "analysisgroupstates")
+  })
+  #analysisGroupsStates lapply(analysisGroups, function(x) x$)
+  analysisGroupStateGroups <- list(list(entityKind = "analysisgroups",
+                                        stateType = "data", 
+                                        stateKind = "Dose Response",
+                                        includesOthers = TRUE,
+                                        includesCorpName = TRUE))
+  
+  analysisGroupData$stateGroupIndex <- 1
+  analysisGroupData$publicData <- TRUE
+  
+  analysisGroupsToIgnore <- unique(analysisGroupData$analysisGroupID)
+  
+  sqlAnalysisGroupIds <- paste(analysisGroupData$analysisGroupID, collapse = ",")
+  query(paste0(
+    "UPDATE analysis_group_state
+    SET ignored               = 1,
+    version                   = version+1
+    WHERE state_type_and_kind = 'data_Dose Response'
+    AND analysis_group_id     IN (", sqlAnalysisGroupIds, ")"))
+  query(paste0(
+    "UPDATE analysis_group_value
+    SET ignored               = 1,
+    version                   = version+1
+    WHERE analysis_state_id    IN
+    (SELECT id
+    FROM analysis_group_state
+    WHERE state_type_and_kind = 'data_Dose Response'
+    AND analysis_group_id IN (", sqlAnalysisGroupIds, "))"))
+  
+  analysisGroupData$stateID <- saveStatesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
+                                                        stateGroups=analysisGroupStateGroups, stateGroupIndices = 1, 
+                                                        idColumn = "analysisGroupID", recordedBy = "curveCuration", lsTransaction = lsTransaction)[['entityStateId']]
+  analysisGroupData$stateVersion <- 0
+  analysisGroupData <- rbind.fill(analysisGroupData, meltBatchCodes(analysisGroupData, 1))
+  saveValuesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
+                           stateGroups = analysisGroupStateGroups, stateGroupIndices = 1,
+                           lsTransaction = lsTransaction)
+  
+}
 updatePointFlags <- function(pointData, recordedBy) {
   library(RCurl)
   library(rjson)

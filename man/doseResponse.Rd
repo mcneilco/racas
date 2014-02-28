@@ -19,11 +19,12 @@ A json object with the sessionid among a number of html
 divs to display back to the user
 }
 \description{
-Converts a character vector of curveids, sessionsID or
-fitData object to a fitted fitData object, saves the
-fitData object to either a new session or back to the
-session provided and then returns a json representation of
-the fitted fitData object
+Converts a character vector of curveids, character
+sessionsID or data.table fitData object to a fitted fitData
+object, saves the fitData object to either a new session or
+back to the session provided and then returns a json
+representation of the fitted fitData object with the
+savedSessionID
 }
 \examples{
 #Fit all the curveids in the database:

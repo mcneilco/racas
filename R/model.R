@@ -38,7 +38,7 @@ doseResponse.fitData <- function(fitData, fitSettingsJSON) {
   fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
   fitData[ , inactiveRule := list(list(myInactiveRule))]
-
+  
   #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(request$updateFlags)
   if(nrow(updateFlags) > 0 ) {
@@ -199,11 +199,11 @@ getDefaultFitSettings <- function(modelHint) {
 checkRefit <- function(fitData) {
   refit <- fitData[ , switch(modelHint,
                              "LL.4" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
-                                                    minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
-                                                    slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
-                                                    exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
-                                                    refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange)
-                                                    refit
+                                         minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
+                                         slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
+                                         exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
+                                         refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange)
+                                         refit
                              },{
                                warning(paste0("Refit rule not implemented for ", modelHint))
                                FALSE
@@ -214,7 +214,9 @@ checkRefit <- function(fitData) {
 
 #' Fit dose response data
 #'
-#' Converts a character vector of curveids, sessionsID or fitData object to a fitted fitData object, saves the fitData object to either a new session or back to the session provided and then returns a json representation of the fitted fitData object
+#' Converts a character vector of curveids, character sessionsID or data.table fitData object to a fitted fitData object, 
+#' saves the fitData object to either a new session or back to the session provided and then returns 
+#' a json representation of the fitted fitData object with the savedSessionID
 #' 
 #' @param fitSettingsJSON a fit settings json object (see examples)
 #' @param curveids a character list of curveids
@@ -243,7 +245,7 @@ checkRefit <- function(fitData) {
 doseResponse <- function(fitSettingsJSON, curveids = NA, sessionID = NA, fitData = NA) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
-    fitData <- getFitData(curveids)
+    fitData <- getFitData.curve(curveids)
   }
   if(!is.na(sessionID)) {
     fitSettingsJSON_new <- fitSettingsJSON
@@ -468,17 +470,17 @@ getCurveCuratorInfo <- function(experimentCode = NA) {
                 and e.code_name = ",sqliz(experimentCode)))
   names(curveids) <- "curveid"
 }
-getFitData <- function(curveids, ...) {
+getFitData.curveids <- function(curveids, ...) {
   fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
   fitData$points <- cbind(fitData$points, flagChanged = FALSE)
   fitData <- data.table(curveid = unique(as.character(fitData$points$curveid,fitData$parameters$curveid))[order(unique(as.character(fitData$points$curveid,fitData$parameters$curveid)))], 
                         modelHint = unlist(lapply(fitData$parameters$renderingHint, 
-                                           function(x) {
-                                             ans <- switch(x,
-                                                           "4 parameter D-R" = "LL.4",
-                                                           "2 parameter Michaelis Menten" = "MM.2")
-                                             return(ans)
-                                           })),
+                                                  function(x) {
+                                                    ans <- switch(x,
+                                                                  "4 parameter D-R" = "LL.4",
+                                                                  "2 parameter Michaelis Menten" = "MM.2")
+                                                    return(ans)
+                                                  })),
                         points = split(as.data.table(fitData$points), fitData$points$curveid),
                         parameters = split(as.data.table(fitData$parameters), fitData$parameters$curveid),
                         key = "curveid")
@@ -491,7 +493,11 @@ getFitData <- function(curveids, ...) {
   fitData[ , model.synced := FALSE]
   return(fitData)
 }
+getFitData.experimentCode <- function(experimentCode, ...) {
+  experiment <- getExperimentByCodeName(experimentCode, include = "analysisgroupvalues")
+  
 
+}
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   ###Fit
@@ -724,51 +730,6 @@ drcObject.getParameters <- function(drcObj = drcObject) {
   return(myList)
 }
 
-drcObject.getKeyValues.as.dataFrame <- function(drcObj = drcObject) {
-  #Get calculated values (non fixed parameters)
-  fitValues <- as.data.frame(drcObj$parmMat)
-  row.names(fitValues) <- drcObj$fct$names
-  fixedValues <- as.data.frame(drcObj$fct$fixed)
-  fixedValues <- subset(fixedValues, row.names(fixedValues) <= length(drcObj$paramNames))
-  row.names(fixedValues) <- drcObj$paramNames
-  names(fixedValues) <- drcObj$name
-  fixedValues <- subset(fixedValues, !is.na(fixedValues))	
-  keyValues <- rbind(fitValues,fixedValues)
-  keyValues <- as.data.frame(t(keyValues))
-  return(keyValues)
-}
-
-drcList.getKeyValues.as.dataFrame <- function(drcList = drcObjectList) {
-  keyValueMatrix <- t(sapply(drcList, drcObject.getKeyValues.as.dataFrame))
-  mode(keyValueMatrix) <- "numeric"
-  keyValueDataFrame <- as.data.frame(keyValueMatrix)
-  return(keyValueDataFrame)
-}
-
-drcObject.getMaxDose.as.numeric <- function(drcObj = drObject) {
-  name <- drcObj$dataList$names$dName
-  value <- max(drcObj$data[,name])
-  return(value)
-}
-
-drcObject.getMinDose.as.numeric <- function(drcObj = drObject) {
-  name <- drcObj$dataList$names$dName
-  value <- min(drcObj$data[,name])
-  return(value)
-}
-
-drcObject.getMaxActivity.as.numeric <- function(drcObj = drObject) {
-  name <- drcObj$dataList$names$orName
-  dose <- max(drcObj$data[,name])
-  return(dose)
-}
-
-drcObject.getMinActivity.as.numeric <- function(drcObj = drObject) {
-  name <- drcObj$dataList$names$orName
-  value <- min(drcObj$data[,name])
-  return(value)
-}
-
 drcObject.getDRCFitStats <- function(drcObject, points) {
   if(is.null(drcObject)) return(NULL)
   SSE <- sum(residuals(drcObject)^2)
@@ -790,79 +751,23 @@ drcObject.getGoodnessOfFitParameters <- function(drcObj) {
   names(pValues) <- paste0(rownames(myMatrix),".pValue")
   return(c(stdErrors,tValues, pValues))
 }
-drcObject.getEC50Intercept.as.numeric <- function(drcObj = drcObject) {
-  ed50 <- as.data.frame(ED(drcObj, respLev = 50, display = FALSE))[1]
-  value <- predict(drcObj,data.frame(conc=ed50))[[1]]
-  return(value)
-}
 
-drcObject.getPredictedResponseFromDose.as.numeric <- function(drcObj = drcObject, responseLevel = numericValue) {
-  value <- predict(drcObj,data.frame(conc=responseLevel))[[1]]
-  return(value)
+doseResponse.experiment <- function(experimentCode, user, simpleFitSettings) {
+  file <- "inst/docs/example-ec50-simple-fitSettings.json"
+  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+  simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+  experimentCode <- "EXPT-00000096"
+  
+  advancedFitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
+  
+  
+  fitData <- getFitData.experimentCode(experimentCode)
+  
+  system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+  parsedResponse <- fromJSON(response)
+  session <- parsedResponse$sessionID
+  loadSession(session)
+  
+  
 }
-
-fitParams.getOperatorParams <- function(fixedValues) {
-  #Removed fixed values with operators
-  fixedValues <- subset(fixedValues,!is.na(fixedValues$resultoperator))
-  return(fixedValues)
-}
-
-fitParams.getAboveMaxTestedParams <- function(drData = data$rawPoints, curveID = "curve_id", fixedValues = data$fitParams) {
-  #Function to remove IC50 if above the max concentration tested
-  IC50AboveMaxTested <- function(id) {
-    returnValues <- subset(fixedValues,FALSE)
-    if(length(fixedValues$resultvalue[fixedValues$curveid==id]) > 0) {
-      maxTestedConc <- max(drData$dose[drData$TREATMENTGROUP==id])
-      fixedIC50 <- fixedValues$resultvalue[fixedValues$curveid==id]
-      if(fixedIC50 > maxTestedConc) {
-        returnValues <- subset(fixedValues,fixedValues$curveid==id)
-      }
-      
-    }
-    return(returnValues)
-  }
-  treatmentGroups <- split(drData, drData[,curveID])
-  drData$TREATMENTGROUP <- factor(drData[,curveID])
-  fixedValuesList <- sapply(levels(drData$TREATMENTGROUP), simplify = FALSE, USE.NAMES = TRUE, FUN = IC50AboveMaxTested)
-  fixedValues <- do.call("rbind", lapply(fixedValuesList, data.frame, stringsAsFactors = FALSE))
-  row.names(fixedValues) <- NULL
-  return(fixedValues)
-}
-
-setdiff.data.frame <- function(A,B) {
-  if(nrow(B) == 0) {
-    ans <- A
-  } else {
-    ans <- A[!duplicated( rbind(B,A) )[ -seq_len(nrow(B))] , ]
-  }
-  return(ans)
-}
-
-fitParams.getOperatorParams <- function(fixedValues) {
-  #Removed fixed values with operators
-  fixedValues <- subset(fixedValues,!is.na(fixedValues$resultoperator))
-  return(fixedValues)
-}
-
-fitParams.getAboveMaxTestedParams <- function(drData = data$rawPoints, curveID = "curve_id", fixedValues = data$fitParams) {
-  #Function to remove IC50 if above the max concentration tested
-  IC50AboveMaxTested <- function(id) {
-    returnValues <- subset(fixedValues,FALSE)
-    if(length(fixedValues$resultvalue[fixedValues$curveid==id]) > 0) {
-      maxTestedConc <- max(drData$dose[drData$TREATMENTGROUP==id])
-      fixedIC50 <- fixedValues$resultvalue[fixedValues$curveid==id]
-      if(fixedIC50 > maxTestedConc) {
-        returnValues <- subset(fixedValues,fixedValues$curveid==id)
-      }
-      
-    }
-    return(returnValues)
-  }
-  treatmentGroups <- split(drData, drData[,curveID])
-  drData$TREATMENTGROUP <- factor(drData[,curveID])
-  fixedValuesList <- sapply(levels(drData$TREATMENTGROUP), simplify = FALSE, USE.NAMES = TRUE, FUN = IC50AboveMaxTested)
-  fixedValues <- do.call("rbind", lapply(fixedValuesList, data.frame, stringsAsFactors = FALSE))
-  row.names(fixedValues) <- NULL
-  return(fixedValues)
-}
-
+  
