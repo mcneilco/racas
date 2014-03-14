@@ -2,7 +2,8 @@
 \alias{fitDataToResponse.acas}
 \title{fitData object to json response}
 \usage{
-fitDataToResponse.acas(fitData, ...)
+fitDataToResponse.acas(fitData, transactionId = -1, status, hasWarning,
+  errorMessages = as.character(), ...)
 }
 \arguments{
   \item{a}{fitData object}

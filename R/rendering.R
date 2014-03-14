@@ -232,6 +232,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
 getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
   parameters <- query(paste("SELECT TESTED_LOT,
                             AG_ID,
+                            AG_CODE_NAME,
                             AGV_ID,
                             LS_KIND,
                             OPERATOR_KIND,
@@ -253,10 +254,10 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
   longFormat <- parametersDataFrame
   row.names(longFormat) <- parametersDataFrame$agv_id
-  longFormat <- longFormat[,c("ag_id","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "operator_kind")]
+  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "operator_kind")]
   wideFormat <- reshape(longFormat,
                         timevar="ls_kind",
-                        idvar=c("ag_id","tested_lot"),direction="wide")
+                        idvar=c("ag_id","ag_code_name","tested_lot"),direction="wide")
   
   renderingHint <- wideFormat$"string_value.Rendering Hint"[[1]]
   #If the rendering hint is null, we will use the ls_kind
@@ -282,20 +283,20 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
 }
 
 getLL4ParametersFromWideFormat <- function(wideFormat) {
-  wideName = c("tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
-               "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
+  wideName = c("ag_code_name","tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
+               "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", 
                "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50")
-  newName = c("tested_lot", "curveid", "renderingHint", "min", "fittedmin",
-              "max", "fittedmax", "hill", "fittedhillslope",
-              "ec50", "fittedec50", "operator")
+  newName = c("ag_code_name","tested_lot", "curveid", "renderingHint", "min", "fitted_min",
+              "max", "fitted_max", "slope", "fitted_slope",
+              "ec50", "fitted_ec50", "operator")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   return(extractParametersFromWideFormat(valuesToGet, wideFormat))
 }
 
 getPKParametersFromWideFormat <- function(wideFormat, renderingHint) {
   parameters <- list(renderingHint = renderingHint)
-  wideName = c("tested_lot", paste0("string_value.",renderingHint))
-  newName = c("tested_lot", "curveid")
+  wideName = c("ag_code_name","tested_lot", paste0("string_value.",renderingHint))
+  newName = c("ag_code_name", "tested_lot", "curveid")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
   return(parameters)
@@ -305,14 +306,14 @@ getPOIVPKParametersFromLongFormat <- function(longFormat) {
   curveIDList <- c('PO pk curve id','IV pk curve id')
   parameters <- list(curveids = longFormat$string_value[longFormat$ls_kind %in% curveIDList])
   parameters$parameters <- subset(longFormat, ls_kind %in% curveIDList, select = c("ag_id", "tested_lot", "string_value") )
-  names(parameters$parameters) <- c("ag_id", "tested_lot", "curveid")
+  names(parameters$parameters) <- c("ag_id","ag_code_name", "tested_lot", "curveid")
   return(parameters)  
 }
 
 getPOIVPKParametersFromWideFormat <- function(wideFormat) {
   parameters <- list(curveids = c(longFormat$"string_value.PO pk curve id",wideFormat$"string_value.IV pk curve id"))
-  wideName = c("tested_lot", "string_value.PO IV pk curve id", "string_value.PO pk curve id", "string_value.IV pk curve id")
-  newName = c("tested_lot", "curveid", "poPKCurveID", "ivPKCurveID")
+  wideName = c("ag_code_name", "tested_lot", "string_value.PO IV pk curve id", "string_value.PO pk curve id", "string_value.IV pk curve id")
+  newName = c("ag_code_name", "tested_lot", "curveid", "poPKCurveID", "ivPKCurveID")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
   return(parameters)  
@@ -417,7 +418,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotData <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+plotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
   
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
@@ -607,7 +608,7 @@ plotData <-  function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     names(tmp) <- paramNames
     tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
     
-    fittedColumnNames <- paste0("fitted",paramNames)
+    fittedColumnNames <- paste0("fitted_",paramNames)
     fittedValueColumns <- match(fittedColumnNames,names(params))
     fittedValueColumns <- fittedValueColumns[!is.na(fittedValueColumns)]
     

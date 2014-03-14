@@ -116,19 +116,11 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   #Categorize the fit data
   fitData[ , category := categorizeFitData(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
   #Extract the reported Parameters
-  fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]]))), by = curveid]
-  fitData[ , analysisGroupParameters := list(list(getAnalysisGroupParameters(reportedParameters[[1]], fixedParameters[[1]], fittedParameters[[1]], goodnessOfFit.model[[1]], goodnessOfFit.parameters[[1]], category, approved))), by = curveid]
+  fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]]))), by = curveid]
   
   return(fitData)  
 }
 
-getAnalysisGroupParameters <- function(reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, goodnessOfFit.parameters, category, approved) {
-  fitParameters <- c(fixedParameters,fittedParameters)
-  names(fitParameters) <- paste0("fitted",names(fitParameters))
-  analysisGroupParameters <- c(reportedParameters,fitParameters, goodnessOfFit.model, goodnessOfFit.parameters, category = category, algorithmApproved = approved)
-  analysisGroupParameters[unlist(lapply(analysisGroupParameters, is.NULLorNA))] <- NULL
-  return(analysisGroupParameters)
-}
 #' Convert a simple dose response request to an advanced dose response request
 #'
 #' Reads the default fit settings for the given model hint and updates it based on the simple request
@@ -308,34 +300,6 @@ fitDataToResponse.curation <- function(fitData, ...) {
                      ...     
   )))   
 }
-#' fitData object to json response
-#'
-#' Converts a fitData object to a json response to return to the GUI
-#' 
-#' @param a fitData object
-#' @param ... addition arguments to be passed to \code{\link{toJSON}}
-#' @return A json object of the fitData and any other objects coerced to json by ... \code{\link{toJSON}}
-#' @export
-#' @examples
-#' #Load and example fitData object
-#' data("example-ec50-fitData-fitted")
-#' #FitData object plus the "cars" data to a json string
-#' fitDataToResponse.acas(fitData, cars)
-fitDataToResponse.acas <- function(fitData, ...) {
-  #rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
-  rmd <- "inst/rmd/fitDataToResponse_acas.rmd"
-  html <- knit2html.bugFix(input = rmd, fragment.only = FALSE, quiet = TRUE)
-  return(html)
-}
-
-knit2html.bugFix <- function (input, output = NULL, ..., envir = parent.frame(), text = NULL, quiet = FALSE, encoding = getOption("encoding")) {
-  out = knit(input, output, text = text, envir = envir, encoding = encoding, quiet = quiet)
-  if (is.null(text)) {
-    output <- markdown::markdownToHTML(out, ...)
-    invisible(output)
-  }
-  else markdown::markdownToHTML(text = out, ...)
-}
 
 predictPoints <- function(pts, drcObj) {
   if(nrow(pts)==0 || is.null(drcObj)) {
@@ -400,17 +364,14 @@ objToHTMLTableString <- function(obj) {
   return(htmlTableString)
 }
 
-getReportedParameters <- function(modelHint, results, inactive, fitConverged, insufficientRange, fixedParameters, fittedParameters, pointStats) {
+getReportedParameters <- function(modelHint, results, inactive, fitConverged, insufficientRange, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model) {
   switch(modelHint,
          "LL.4" = {
            if(inactive | insufficientRange) {
-             max <- pointStats$response.empiricalMax
-             min <- pointStats$empiricalMin
-             slope <- NULL
-             ec50 <- pointStats$dose.max
-             ec50Operator <- ">"
-             reportedValues <- list(min = min,max = max, slope = slope, ec50 = ec50, ec50Operator = ec50Operator)
-             reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
+             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+             min <- list(value = pointStats$empiricalMin, operator = NULL, stdErr = NULL)
+             ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+             reportedValues <- list(Min = min, max = max, ec50 = ec50)
              return(reportedValues)
              
            }
@@ -418,69 +379,64 @@ getReportedParameters <- function(modelHint, results, inactive, fitConverged, in
              return(NULL)
            }
            if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-             max <- pointStats$response.empiricalMax
+             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
            } else {
              if(is.NULLorNA(fixedParameters$max)) {
-               max <- fittedParameters$max
+               max <- list(value = fittedParameters$max, operator = NULL, stdErr = goodnessOfFit.parameters$max.stdErr)
              } else {
-               max <- fixedParameters$max
+               max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
              }
            }
            if("minUncertaintyRule" %in% results$goodnessOfFits) {
-             min <- pointStats$empiricalMin
+             min <- list(value = pointStats$empiricalMin, operator = NULL, stdErr = NULL)
            } else {
              if(is.NULLorNA(fixedParameters$min)) {
-               min <- fittedParameters$min
+               min <- list(value = fittedParameters$min, operator = NULL, stdErr = goodnessOfFit.parameters$min.stdErr)
              } else {
-               min <- fixedParameters$min
+               min <- list(value = fixedParameters$min, operator = NULL, stdErr = NULL)
              }
            }
            if(is.NULLorNA(fixedParameters$slope)) {
-             slope <- -fittedParameters$slope
+             slope <- list(value = -fittedParameters$slope, operator = NULL, stdErr = goodnessOfFit.parameters$slope.stdErr)
            } else {
-             slope <- -fixedParameters$slope
+             slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
            }
            if("ec50Threshold" %in% results$limits) {
-             ec50 <- pointStats$dose.max
-             ec50Operator <- ">"
+             ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
            } else {
-             ec50 <- fittedParameters$ec50
-             ec50Operator <- ""
+             ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = goodnessOfFit.parameters$ec50.stdErr)
            }
-           reportedValues <- list(min = min,max = max, slope = slope, ec50 = ec50, ec50Operator = ec50Operator)
-           reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
+           reportedValues <- list(min = min,max = max, slope = slope, ec50 = ec50)
            return(reportedValues)
          },
          "MM.2" = {
            if(inactive | insufficientRange) {
-             max <- pointStats$response.empiricalMax
-             kd <- pointStats$dose.max
+             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+             kd <- list(value = pointStats$dose.max, operator = NULL, stdErr = NULL)
              kdOperator <- ">"
-             reportedValues <- list(max = max, kd = kd, kdOperator = kdOperator)
-             reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
+             reportedValues <- list(max = max, kd = kd)
              return(reportedValues)
            }
            if(!fitConverged) {
              return(list())
            }
            if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-             max <- pointStats$response.empiricalMax
+             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
            } else {
              if(is.NULLorNA(fixedParameters$max)) {
-               max <- fittedParameters$max
+               max <- list(value = fittedParameters$max, operator = NULL, stdErr = goodnessOfFit.parameters$max.stdErr)
              } else {
-               max <- fixedParameters$max
+               max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
              }
            }
            if("kdThreshold" %in% results$limits) {
-             kd <- pointStats$dose.max
+             kd <- list(value = pointStats$dose.max, operator = NULL, stdErr = NULL)
              kdOperator <- ">"
            } else {
-             kd <- fittedParameters$kd
+             kd <- list(value = fittedParameters$kd, operator = NULL, stdErr = goodnessOfFit.parameters$kd.stdErr)
              kdOperator <- ""
            }
-           reportedValues <- list(max = max, kd = kd, kdOperator = kdOperator)
-           reportedValues[which(unlist(lapply(reportedValues, is.null)))] <- NULL
+           reportedValues <- list(max = max, kd = kd)
            return(reportedValues)
          },
 {warning("Not implemented for ", modelHint)
@@ -489,14 +445,6 @@ getReportedParameters <- function(modelHint, results, inactive, fitConverged, in
   )
 }
 
-getCurveCuratorInfo <- function(experimentCode = NA) {
-  experimentCode <- "EXPT-00012386"
-  curveids <- query(paste0("SELECT p.string_value as curveid
-                FROM p_api_analysis_group_results p join experiment e on p.EXPERIMENT_ID=e.id
-                WHERE p.LS_KIND LIKE '%curve id'
-                and e.code_name = ",sqliz(experimentCode)))
-  names(curveids) <- "curveid"
-}
 getFitData.curve <- function(curveids, ...) {
   fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
   fitData$points <- cbind(fitData$points, flagChanged = FALSE)
@@ -511,6 +459,7 @@ getFitData.curve <- function(curveids, ...) {
                         points = split(as.data.table(fitData$points), fitData$points$curveid),
                         parameters = split(as.data.table(fitData$parameters), fitData$parameters$curveid),
                         key = "curveid")
+  fitData[ , tested_lot := as.character(rbindlist(fitData$parameters)$tested_lot)]
   myParameterRules <- list(goodnessOfFits = list(), limits = list())
   myInactiveRule <- list()
   myFixedParameters <- list()
@@ -521,12 +470,26 @@ getFitData.curve <- function(curveids, ...) {
   return(fitData)
 }
 getFitData.experimentCode <- function(experimentCode, ...) {
-  experiment <- getExperimentByCodeName(experimentCode, include = "analysisgroupvalues")
-  experiment <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCodeName, "?with=", include))
-  experiment <- fromJSON(experiment)[[1]]
+  experimentJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=fullobject"))
+  experiment <- jsonlite::fromJSON(experimentJSON[[1]])
+  nonIgnoredAnalysisGroups <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
+  nonIgnoredAnalysisGroups[ , drAGValues := list(list(
+    rbindlist(rbindlist(lsStates)[ignored == FALSE & lsKind=="Dose Response"][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)
+    )), by = id]
+  nonIgnoredAnalysisGroups[ ,  drSValues:= list(list(
+    rbindlist(rbindlist(rbindlist(treatmentGroups)[ignored == FALSE]$subjects)$lsStates)[lsKind=="results"]
+  )), by = id]
+  nonIgnoredAnalysisGroups[ , rbindlist(drSValues[[1]]$lsValues), by = id]
+   nonIgnoredAnalysisGroups[ , list(list(data.table(treatmentGroups[[1]]$subjects[[1]]$lsStates[[1]])[lsKind=="results"])), by = id]
+
+  resultSubjectStates <- rbindlist(rbindlist(rbindlist(nonIgnoredAnalysisGroups$treatmentGroups)$subjects)$lsStates)[lsKind=="results"]
+  rbindlist(resultSubjectStates[ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id])
+  
+  lsValues <- rbindlist(states[ignored==FALSE & lsKind=="Dose Response",]$lsValues)
+  lsValues[lsKind=="curve id", ]
   experiment <- flattenDeepEntity(experiment, "analysisgroup", "experiment" )
-  curves <- experiment[experiment$lsKind == "curve id",]$stringValue
-  fitData <- getFitData.curve(curves)
+  curveids <- experiment[experiment$lsKind == "curve id" & experiment$ignored == FALSE,]$stringValue
+  fitData <- getFitData.curve(curveids)
   return(fitData)
 }
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
@@ -692,7 +655,8 @@ applyInactiveRule <- function(pointStats, points, rule) {
       threshold <- threshold * abs(min(response.empiricalMin) - max(response.empiricalMax))
     }
     means <- points[ is.na(flag), list("dose" = dose, "mean.response" = mean(response)), by = dose]
-    inactive <- length(which(means$mean.response >= threshold)) < rule$activeDoses
+    dosesAboveThreshold <- length(which(means$mean.response >= threshold))
+    inactive <- dosesAboveThreshold < rule$activeDoses
     insufficientRange <- abs(pointStats$response.empiricalMax - pointStats$response.empiricalMin) < threshold
   } else {
     inactive <- FALSE
@@ -760,11 +724,10 @@ drcObject.getParameters <- function(drcObj = drcObject) {
   names(myList) <- gsub("\\:\\(Intercept\\)","", names(myList))
   return(myList)
 }
-
 drcObject.getDRCFitStats <- function(drcObject, points) {
   if(is.null(drcObject)) return(NULL)
-  SSE <- sum(residuals(drcObject)^2)
-  SST <- sum(points$response-mean(points$response)^2)
+  SSE <- sum((residuals(drcObject))^2)
+  SST <- sum((points$response-mean(points$response))^2)
   rSquared <- 1-(SSE/SST)
   return(list(SSE = SSE, SST = SST, rSquared = rSquared))
 }
@@ -783,15 +746,121 @@ drcObject.getGoodnessOfFitParameters <- function(drcObj) {
   return(c(stdErrors,tValues, pValues))
 }
 
-doseResponse.experiment <- function(experimentCode, user, simpleFitSettings) {
-  file <- "inst/docs/example-ec50-simple-fitSettings.json"
-  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-  simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-  experimentCode <- "EXPT-00000096"
+api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode) {
+#   cat("Using fake data")
+#   file <- "inst/docs/example-ec50-simple-fitSettings.json"
+#   file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#   recordedBy <- "bbolt"
   
-  advancedFitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
-  fitData <- getFitData.experimentCode(experimentCode)
-  fitData <- doseResponse.fitData(advancedFitSettings, fitData)
-  html <- fitDataToResponse.acas(fitData, options = c('skip_images'))
-  writeLines(html, con = "~/Desktop/untitled.html")
+  #experimentCode <- loadDoseResponseTestData()
+  experimentCode <- "EXPT-00000434"
+  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.fit.doseresponse.experiment")
+
+  myMessenger$logger$debug("Converting simple fit settings to advanced settings")
+  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", continueOnError = "Fit settings error")
+  
+  myMessenger$logger$debug("Getting the fit data from the experiment code")
+  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  
+  myMessenger$logger$debug("Fitting the data")
+  myMessenger$captureOutput("fitData <- doseResponse.fitData(fitSettings, fitData)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
+  
+  myMessenger$logger$debug("Saving the curve data")
+  myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy, experimentCode = experimentCode)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
+  
+  #Convert the fit data to a response for acas
+  if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
+    response <- fitDataToResponse.acas(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+  } else {
+    myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
+    myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
+    response <- fitDataToResponse.acas(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+  }
+  return(response)
+}
+
+#' fitData object to json response
+#'
+#' Converts a fitData object to a json response to return to the GUI
+#' 
+#' @param a fitData object
+#' @param ... addition arguments to be passed to \code{\link{toJSON}}
+#' @return A json object of the fitData and any other objects coerced to json by ... \code{\link{toJSON}}
+#' @export
+#' @examples
+#' #Load and example fitData object
+#' data("example-ec50-fitData-fitted")
+#' #FitData object plus the "cars" data to a json string
+#' fitDataToResponse.acas(fitData, cars)
+fitDataToResponse.acas <- function(fitData, transactionId = -1, status, hasWarning, errorMessages = as.character(), ...) {
+  #   response <- list(
+  #     transactionId= transactionId,
+  #     results= list(
+  #       htmlSummary= capture.output(blah()),
+  #       status= status
+  #     ),
+  #     hasError= hasError,
+  #     hasWarning = FALSE,
+  #     errorMessages= errorMessages
+  #   )
+  #rmd <- "inst/rmd/fitDataToResponse_acas.rmd"
+  hasError <- length(errorMessages) > 0
+  if(!hasError) {
+    rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
+    htmlSummary <- knit2html.bugFix(input = rmd, 
+                                    options = c("base64_images", "mathjax"),
+                                    template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
+                                    stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+  } else {
+    rmd <- system.file("rmd", "fitDataToResponse_error.rmd", package="racas")
+    htmlSummary <- knit2html.bugFix(input = rmd, 
+                                    options = c("base64_images", "mathjax"),
+                                    template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
+                                    stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+  }
+  response <- list(
+    transactionId = transactionId,
+    results = list(htmlSummary = htmlSummary,
+                   status = status),
+    hasError = hasError,
+    hasWarning = hasWarning,
+    errorMessages = errorMessages
+  )  
+  return(response)
+}
+
+knit2html.bugFix <- function (input, output = NULL, text = NULL, template = template, stylesheet = stylesheet, options = c()) {
+  originalWD <- getwd()
+  t <- tempdir()
+  dir.create(t)
+  setwd(t)
+  tfile <- tempfile(tmpdir=t)
+  out <- knitr::knit(input, output = tfile, text = NULL, envir = parent.frame(), encoding = getOption("encoding"), quiet = TRUE)
+  output <- markdown::markdownToHTML(out, template = template, stylesheet = stylesheet, options = options, fragment.only = FALSE)
+  setwd(originalWD)
+  unlink(t, recursive = TRUE)
+  return(output)
+}
+
+loadDoseResponseTestData <- function() {
+  doseResponseSELFile <- system.file("docs", "Example-Dose-Response-SEL.xls", package="racas")
+  t <- tempfile(fileext = ".xls")
+  file.copy(doseResponseSELFile,t)
+  originalWD <- getwd()
+  acasHome <- normalizePath(file.path(path.package("racas"),"..",".."))
+  selCode <- file.path(acasHome,"public","src","modules","GenericDataParser","src","server","generic_data_parser.R")
+  setwd(acasHome)
+  source(selCode, local = TRUE)
+  request <- list(fileToParse=t, dryRunMode = "false", user="bbolt")
+  response <- parseGenericData(request)
+  if(response$hasError) {
+    cat(response$errorMessages[[1]]$message)
+  }
+  setwd(originalWD)
+  return(response$results$experimentCode)
 }

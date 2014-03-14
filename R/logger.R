@@ -57,15 +57,15 @@ createLogger <- function(logName = "com.default.logger", logFileName = "racas.lo
   return(logger)
 }
 
-bubbleLogger <- Logger$new()
+racasLogger <- Logger$new()
 
-#'Creates a new logger object or returns the "bubbleLogger"
+#'Creates a new logger object or returns the "racasLogger"
 #'
 #'Optionally creates a new logger or returns a logger stored in the racas namespace.
-#'The default call 'logger()' will compare the field racas::bubbleLogger$envir with the current list of frames in the call stack.
-#'If the environment in the bubbleLogger matches one of the environments in the current call stack, then the bubbleLogger is returned.
+#'The default call 'logger()' will compare the field racas::racasLogger$envir with the current list of frames in the call stack.
+#'If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
 #'
-#'@param bubble  Name for the logger output line within the log file (default: "com.default.logger)
+#'@param racas  Name for the logger output line within the log file (default: "com.default.logger)
 #'@param envir name of the log file to write to (default: "acas.log")
 #'@param ... further arguments to be passed to \code{\link{createLogger}}
 #'@return object of class \code{\link{Logger}}
@@ -90,23 +90,24 @@ bubbleLogger <- Logger$new()
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-logger <- function(bubble = TRUE, envir = parent.frame(), ...) {
-  if(!bubble) {
+logger <- function(racas = TRUE, envir = parent.frame(), ...) {
+  if(!racas) {
     return(createLogger(envir = envir, ...))
   } else {
     allEnvironments <- as.list(sys.frames())
-    bubbleLoggerObj <- Filter( function(x) 'Logger' %in% class( get(x) ), ls(pattern = "bubbleLogger", envir = as.environment("package:racas")) )    
-    if(length(bubbleLoggerObj) > 0) {
+    racasLoggerObj <- Filter( function(x) 'Logger' %in% class( get(x) ), ls(pattern = "racasLogger", envir = as.environment("package:racas")) )    
+    if(length(racasLoggerObj) > 0) {
       allEnvironments <- as.list(c(sys.frames(),globalenv()))
-      loggerObject <- get("bubbleLogger", envir = as.environment("package:racas"))
+      loggerObject <- get("racasLogger", envir = as.environment("package:racas"))
       if(any(unlist(lapply(allEnvironments, identical, loggerObject$envir)))) {
         return(loggerObject)
       }
     }
-    unlockBinding( "bubbleLogger", as.environment("package:racas") ) 
-    assign("bubbleLogger", createLogger(envir = envir, ...), as.environment("package:racas"))
-    lockBinding( "bubbleLogger", as.environment("package:racas") ) 
-    return(get("bubbleLogger", envir = as.environment("package:racas")))
+    unlockBinding( "racasLogger", as.environment("package:racas") ) 
+    assign("racasLogger", createLogger(envir = envir, ...), as.environment("package:racas"))
+    lockBinding( "racasLogger", as.environment("package:racas") ) 
+    return(get("racasLogger", envir = as.environment("package:racas")))
   }
   return()
 }
+
