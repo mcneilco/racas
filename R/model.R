@@ -470,26 +470,76 @@ getFitData.curve <- function(curveids, ...) {
   return(fitData)
 }
 getFitData.experimentCode <- function(experimentCode, ...) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("Calling experiment service")
   experimentJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=fullobject"))
+  
+  myMessenger$logger$debug("Parsing experiment json")
   experiment <- jsonlite::fromJSON(experimentJSON[[1]])
-  nonIgnoredAnalysisGroups <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
-  nonIgnoredAnalysisGroups[ , drAGValues := list(list(
+  fitData <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
+  
+  myMessenger$logger$debug("Extracting curve parameters")
+  fitData[ , parameters := list(list(
     rbindlist(rbindlist(lsStates)[ignored == FALSE & lsKind=="Dose Response"][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)
     )), by = id]
-  nonIgnoredAnalysisGroups[ ,  drSValues:= list(list(
-    rbindlist(rbindlist(rbindlist(treatmentGroups)[ignored == FALSE]$subjects)$lsStates)[lsKind=="results"]
-  )), by = id]
-  nonIgnoredAnalysisGroups[ , rbindlist(drSValues[[1]]$lsValues), by = id]
-   nonIgnoredAnalysisGroups[ , list(list(data.table(treatmentGroups[[1]]$subjects[[1]]$lsStates[[1]])[lsKind=="results"])), by = id]
-
-  resultSubjectStates <- rbindlist(rbindlist(rbindlist(nonIgnoredAnalysisGroups$treatmentGroups)$subjects)$lsStates)[lsKind=="results"]
-  rbindlist(resultSubjectStates[ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id])
   
-  lsValues <- rbindlist(states[ignored==FALSE & lsKind=="Dose Response",]$lsValues)
-  lsValues[lsKind=="curve id", ]
-  experiment <- flattenDeepEntity(experiment, "analysisgroup", "experiment" )
-  curveids <- experiment[experiment$lsKind == "curve id" & experiment$ignored == FALSE,]$stringValue
-  fitData <- getFitData.curve(curveids)
+  myMessenger$logger$debug("Extracting curve points")
+#   fitData[ ,  points:= list(list(
+#     Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(rbindlist(rbindlist(rbindlist(treatmentGroups)[ignored == FALSE]$subjects)$lsStates)[ , subj_id:=id]$lsValues, as.data.table))
+#   )), by = id]
+#   
+  fitData[ ,  points:= list(list({
+    treatmentGroups <- rbindlist(treatmentGroups)[ignored == FALSE]
+    subjects <- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
+    subjectStates <- subjects[ , rbindlist(lsStates)[ , subj_id:= subj_id], by = subj_id]
+    points <- subjectStates[ , {
+      lsValues <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(lsValues, as.data.table))
+      list(list(lsValues[ , subj_id:=subj_id]))
+    }, by = subj_id]
+    Reduce(function(x,y) rbind(x,y,fill = TRUE), points$V1)
+  }
+  )), by = id]
+  myMessenger$logger$debug("Pivoting the curve points")
+  fitData[ , points := list(list({ 
+    dr <- data.table::dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "numericValue")[ , id:=points[[1]][lsKind=="Response"]$id]    
+    drUnits <- dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "unitKind")
+    setnames(drUnits, "Dose", "doseUnits")
+    setnames(drUnits, "Response", "responseUnits")
+    dr <- dr[drUnits]
+    setnames(dr, "id", "response_sv_id")
+    if(nrow(points[[1]][lsKind=="flag"]) > 0) {
+      fl <- dcast.data.table(points[[1]][lsKind=="flag"], subj_id ~ lsKind, value.var = "stringValue")
+    } else {
+      fl <- data.table(subj_id = as.integer(),flag = as.character())
+      setkey(fl, subj_id)
+    }
+    bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
+    pts <- fl[bc][dr]
+    setnames(pts, names(pts), tolower(names(pts)))
+  })), by = id]
+  myMessenger$logger$debug("Filling out the rest of the fit data object")
+  
+  fitData[ , curveid := codeName]
+  myParameterRules <- list(goodnessOfFits = list(), limits = list())
+  myInactiveRule <- list()
+  myFixedParameters <- list()
+  fitData[ , c("parameterRules", "inactiveRule", "fixedParameters") := list(list(myParameterRules),
+                                                                            list(myInactiveRule),
+                                                                            list(myFixedParameters))]  
+  fitData[ , modelHint := unlist(lapply(rbindlist(parameters)[lsKind == "Rendering Hint"]$stringValue, 
+                            function(x) {
+                              ans <- switch(x,
+                                            "4 parameter D-R" = "LL.4",
+                                            "2 parameter Michaelis Menten" = "MM.2")
+                              return(ans)
+                            }))
+  ]  
+  if(is.null(fitData$modelHint)) {
+    myMessenger$addUserError(paste0("No Rendering Hint found for ", experimentCode))
+    myMessenger$logger$error(paste0("Attempted to fit an expt code with no rendering hint stored in analysis group parameters"))
+  }
+  fitData[ , model.synced := FALSE]
+  myMessenger$logger$debug(paste0("Returning from getting experiment curve data with ", nrow(fitData), " curves"))
   return(fitData)
 }
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
@@ -502,7 +552,6 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   ))
   ), by = curveid]
   
-  setkey(fitData, "curveid")
   ###Collect Stats
   fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveid]
   fitData[ model.synced == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := list(pointStats = list(getPointStats(points[[1]])), 
@@ -755,16 +804,16 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #   recordedBy <- "bbolt"
   
   #experimentCode <- loadDoseResponseTestData()
-  experimentCode <- "EXPT-00000434"
+  experimentCode <- "EXPT-00000441"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.acas.fit.doseresponse.experiment")
 
   myMessenger$logger$debug("Converting simple fit settings to advanced settings")
-  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", continueOnError = "Fit settings error")
-  
-  myMessenger$logger$debug("Getting the fit data from the experiment code")
+  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", userError = "Fit settings error")
+
+  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
   myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   
   myMessenger$logger$debug("Fitting the data")
@@ -774,6 +823,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy, experimentCode = experimentCode)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
   
   #Convert the fit data to a response for acas
+  myMessenger$logger$debug("Responding to ACAS")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
     response <- fitDataToResponse.acas(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   } else {

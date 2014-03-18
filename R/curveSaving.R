@@ -60,32 +60,32 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
   return(list(analysisGroupCode = analysisGroupCode, analysisGroupValues = analysisGroupValues))
 }
 
-saveDoseResponseData <- function(fitData, recordedBy, experimentCode = NULL) {
+saveDoseResponseData <- function(fitData, recorded_by, experimentCode = NULL) {
   
-  lsTransaction <- createLsTransaction()$id
+  transactionID <- createLsTransaction()$id
   fitData[ , analysisGroupValues := list(list(getAnalysisGroupValues(reportedParameters[[1]],
                                                                                  fixedParameters[[1]],
                                                                                  fittedParameters[[1]],
                                                                                  goodnessOfFit.model[[1]],
                                                                                  category,
                                                                                  approved,
-                                                                                 tested_lot,
-                                                                                 recordedBy,
-                                                                                 lsTransaction,
-                                                                                 doseUnits = as.character(points[[1]][1]$doseUnits), 
-                                                                                 responseUnits = as.character(points[[1]][1]$responseUnits), 
-                                                                                 analysisGroupCode = as.character(parameters[[1]]$ag_code_name), 
-                                                                                 as.character(parameters[[1]]$renderingHint)))), by = curveid]
+                                                                                 tested_lot = parameters[[1]][lsKind=="batch code",]$codeValue,
+                                                                                 recorded_by,
+                                                                                 transactionID,
+                                                                                 doseUnits = as.character(points[[1]][1]$doseunits), 
+                                                                                 responseUnits = as.character(points[[1]][1]$responseunits), 
+                                                                                 analysisGroupCode = codeName, 
+                                                                                 as.character(parameters[[1]][lsKind=="Rendering Hint"]$stringValue)))), by = curveid]
   if(!is.null(experimentCode)) {
-    savedStates <- fitData[,  list(saveDoseResponseCurve(recordedBy, analysisGroupValues, points = points, lsTransaction, experimentCode = experimentCode))][[1]]
+    savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points = points, transactionID, experimentCode = experimentCode))][[1]]
   } else {
     if("parameters" %in% names(fitData)) {
-      savedStates <- fitData[,  list(saveDoseResponseCurve(recordedBy, analysisGroupValues, points, lsTransaction, ignoreDoseResponseState.analysisGroupIds = rbindlist(fitData$parameters)$ag_id))]
+      savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points, transactionID))]
     } else {
-      savedStates <- fitData[,  list(saveDoseResponseCurve(recordedBy, analysisGroupValues, points, lsTransaction))]
+      savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points, transactionID))]
     }
   }
-  return(list(lsStates = savedStates, lsTransaction = lsTransaction))
+  return(list(lsStates = savedStates, lsTransaction = transactionID))
   
 } # model.R in curve branch has data.table examples
 
@@ -94,7 +94,7 @@ saveDoseResponseCurve <- function(recordedBy, analysisGroupValues, points, lsTra
   #points <- fitData$points
   #experimentCode <- experimentCode
   #recordedBy <- "bbolt"
-  
+
   #First ignore the analysis group states for the analysis group values we are going to update
   #If experimentCode is provided, we are ignoring all Dose Response states and then adding new ones
   if(!is.null(experimentCode)) {
@@ -106,7 +106,7 @@ saveDoseResponseCurve <- function(recordedBy, analysisGroupValues, points, lsTra
     if(is.null(ignoreDoseResponseState.analysisGroupIds)) {
       analysisGroups <- list()
     } else {
-      analysisGroups <- lapply(ignoreDoseResponseState.analysisGroupIds, getEntityById, "analysisgroups")
+      analysisGroups <- lapply(fitData$id, getEntityById, "analysisgroups")
     }
   }
   analysisGroupStatesToIgnore <- getLSStateFromEntity(analysisGroups, lsType = "data", lsKind = "Dose Response", ignored = "FALSE")
@@ -115,7 +115,7 @@ saveDoseResponseCurve <- function(recordedBy, analysisGroupValues, points, lsTra
     updateAcasEntity(x, "analysisgroupstates")
   })
   #need to add an analysis group value curve id!
-  matches <- match(unlist(lapply(analysisGroupValues, function(x) x$analysisGroupCode)),unlist(lapply(analysisGroups,function(x) x$codeName)))
+  matches <- match(unlist(lapply(analysisGroups,function(x) x$codeName)), unlist(lapply(analysisGroupValues, function(x) x$analysisGroupCode)))
   analysisGroupStates <- lapply(1:length(analysisGroups),
                                     function(x) {
                                       state <- createAnalysisGroupState(
@@ -130,6 +130,7 @@ saveDoseResponseCurve <- function(recordedBy, analysisGroupValues, points, lsTra
                                     }
                                     
   )
+  writeLines(toJSON(analysisGroupStates), con = "~/Desktop/blah.json")
   savedAnalysisGroupStates <- saveAcasEntities(analysisGroupStates, "analysisgroupstates")
   return(savedAnalysisGroupStates)
 }
