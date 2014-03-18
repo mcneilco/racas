@@ -45,34 +45,38 @@ Messenger <- setRefClass(Class = "Messenger",
                            },
                            captureOutput = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
                              
-                             if(continueOnError == TRUE | length(errors)==0) {
+                             if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                
                                if(!devMode) {
                                  outputHandler <- new_output_handler(error = function(x) {addError(x$message)
                                                                                           logger$error(x$message)
-                                                                                          },
-                                                                     warning = function(x) {addWarning(x$message)
-                                                                                            logger$warn(x$message)
-                                                                                            },
-                                                                     message = function(x) {addInfo(x$message)
-                                                                                            logger$info(x$message)
-                                                                                            },
-                                                                     )
+                                 },
+                                 warning = function(x) {addWarning(x$message)
+                                                        logger$warn(x$message)
+                                 },
+                                 message = function(x) {addInfo(x$message)
+                                                        logger$info(x$message)
+                                 },
+                                 value = function(x) {logger$error(names(x))
+                                 },
+                                 )
                                  if(!is.null(userError)) addUserError(userError); errorPos <- length(userErrors)
-                                 if(!is.null(userWarning)) addUserError(userWarning); warningPos <- length(userWarnings)
-                                 if(!is.null(userInfo)) addUserError(userInfo); infoPos <- length(userInfos)
+                                 if(!is.null(userWarning)) addUserWarning(userWarning); warningPos <- length(userWarnings)
+                                 if(!is.null(userInfo)) addUserInfo(userInfo); infoPos <- length(userInfos)
                                  evaledExpr <<- evaluate(expr, envir = envir, output_handler = outputHandler, new_device = FALSE, ...)
-                                 if(!is.null(userError)) {
-                                   if(length(userErrors) <= errorPos) {
-                                     userErrors <<- userErrors[-errorPos]
+                                   if(any(!c("simpleError","error") %in% unlist(lapply(evaledExpr, class)))) {
+                                     if(!is.null(userError)) {
+                                       if(length(userErrors) <= errorPos) {
+                                         userErrors <<- userErrors[-errorPos]
+                                       }
+                                     }
                                    }
-                                 }
-                                 
                                } else {
                                  eval(parse(text = expr), envir = envir)
                                }
                              } else {
                                #Do nothing
+                               logger$error(paste0("Not running command because of previous errors: ", expr))
                                invisible(NULL)
                              }
                            },

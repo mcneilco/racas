@@ -22,6 +22,7 @@ Logger <- setRefClass(
 #'@return object of class logger
 #'
 #'@examples
+#'
 #' #Creating a logger with logLevel = "WARN"
 #' myLogger <- createLogger(logName = "com.mycompany.newprocessor", 
 #'                          logFileName = "newprocessor.log", 
