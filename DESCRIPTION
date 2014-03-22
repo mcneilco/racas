@@ -20,7 +20,11 @@ Imports:
     XLConnect,
     gdata,
     reshape,
-    xtable
+    xtable,
+    knitr,
+    reshape2,
+    ggplot2,
+    grid
 Suggests:
   RPostgreSQL,
   ROracle,

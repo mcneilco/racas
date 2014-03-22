@@ -34,7 +34,8 @@ file <- "inst/docs/simpleBulkDoseResponseFitRequest.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettingsJSON <- toJSON(simpleToAdvancedBulkFitRequest(simpleBulkDoseResponseFitRequest))
-system.time(response <- doseResponse(fitSettingsJSON, fitData = fitData))
+fitSettings <- fromJSON(fitSettingsJSON)
+system.time(response <- doseResponse(fitSettings, fitData = fitData))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -85,7 +86,8 @@ plot(blah)
 data("exampleFitData", package = "racas")
 file <- system.file("docs", "doseResponseRequest.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-response <- doseResponse(fitSettingsJSON, fitData = fitData)
+fitSettings <- fromJSON(fitSettingsJSON)
+response <- doseResponse(fitSettings, fitData = fitData)
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -99,7 +101,8 @@ fitData[, fixedParameters := list(list())]
 fitData[, points := list(list(points[[1]][,flag := FALSE])), by = curveid]
 file <- system.file("docs", "doseResponseRequest-kd.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
-response <- doseResponse(fitSettingsJSON, fitData = fitData)
+fitSettings <- fromJSON(fitSettingsJSON)
+response <- doseResponse(fitSettings, fitData = fitData)
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)

@@ -3,9 +3,14 @@
 #o <- objectUtilities$new()$fromJSON(toJSON(list(test = "me", this = as.integer(10))))
 Messenger <- setRefClass(Class = "Messenger", 
                          fields = list(errors = "character",
+                                       userErrors = "character",
                                        warnings = "character",
+                                       userWarnings = "character",
                                        infos = "character",
-                                       envir = "environment"),
+                                       userInfos = "character",
+                                       logger = "Logger",
+                                       envir = "environment",
+                                       devMode = "logical"),
                          contains = list("objectUtilities"),
                          methods = list(
                            addError = function(x) {
@@ -17,19 +22,63 @@ Messenger <- setRefClass(Class = "Messenger",
                            addInfo = function(x) {
                              infos <<- c(infos,as.character(x))
                            },
+                           addUserError = function(x) {
+                             userErrors <<- c(userErrors,as.character(x))
+                           },
+                           addUserWarning = function(x) {
+                             userWarnings <<- c(userWarnings,as.character(x))
+                           },
+                           addUserInfo = function(x) {
+                             userInfos <<- c(userInfos,as.character(x))
+                           },
                            reset = function() {
                              errors <<- as.character()
                              infos <<- as.character()
                              warnings <<- as.character()
+                             userErrors <<- as.character()
+                             userInfos <<- as.character()
+                             userWarnings <<- as.character()
                              envir <<- parent.frame()
+                             logger <<- Logger$new()
+                             devMode <<- FALSE
                              return(.self)
                            },
-                           captureOutput = function(expr, envir = parent.frame(), ...) {
-                             outputHandler <- new_output_handler(error = function(x) addError(x$message),
-                                                                 warning = function(x) addWarning(x$message),
-                                                                 message = function(x) addInfo(x$message),
-                             )
-                             evaledExpr <- evaluate(expr, envir = envir, output_handler = outputHandler)
+                           captureOutput = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
+                             
+                             if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
+                               
+                               if(!devMode) {
+                                 outputHandler <- new_output_handler(error = function(x) {addError(x$message)
+                                                                                          logger$error(x$message)
+                                 },
+                                 warning = function(x) {addWarning(x$message)
+                                                        logger$warn(x$message)
+                                 },
+                                 message = function(x) {addInfo(x$message)
+                                                        logger$info(x$message)
+                                 },
+                                 value = function(x) {logger$error(names(x))
+                                 },
+                                 )
+                                 if(!is.null(userError)) addUserError(userError); errorPos <- length(userErrors)
+                                 if(!is.null(userWarning)) addUserWarning(userWarning); warningPos <- length(userWarnings)
+                                 if(!is.null(userInfo)) addUserInfo(userInfo); infoPos <- length(userInfos)
+                                 evaledExpr <<- evaluate(expr, envir = envir, output_handler = outputHandler, new_device = FALSE, ...)
+                                   if(any(!c("simpleError","error") %in% unlist(lapply(evaledExpr, class)))) {
+                                     if(!is.null(userError)) {
+                                       if(length(userErrors) <= errorPos) {
+                                         userErrors <<- userErrors[-errorPos]
+                                       }
+                                     }
+                                   }
+                               } else {
+                                 eval(parse(text = expr), envir = envir)
+                               }
+                             } else {
+                               #Do nothing
+                               logger$error(paste0("Not running command because of previous errors: ", expr))
+                               invisible(NULL)
+                             }
                            },
                            toJSON = function() {
                              return(rjson::toJSON(list("error" = length(errors)!=0,
@@ -37,7 +86,13 @@ Messenger <- setRefClass(Class = "Messenger",
                                                        info = length(infos)!=0,
                                                        errors = errors, 
                                                        warnings = warnings,
-                                                       infos = infos)))
+                                                       infos = infos,
+                                                       userError = length(userErrors)!=0,
+                                                       userWarning = length(userWarnings)!=0,
+                                                       userInfo = length(userInfos)!=0,
+                                                       userErrors = userErrors, 
+                                                       userWarnings = userWarnings,
+                                                       userInfos = userInfos)))
                            }
                          )
 )

@@ -125,12 +125,11 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
 }
 
 system.time(
-  pingPong(
+  racas::pingPong(
     originView =  list(schema = "ACAS", name = "API_ALL_DATA"),
-    intermediateTablePrefix = list(schema = racas::applicationSettings$server.database.username, name = originView$name, tableSpace = "KALYPSYSADMIN_NOLOG", options = c("NOLOGGING")),
+    intermediateTablePrefix = list(schema = racas::applicationSettings$server.database.username, name = "API_ALL_DATA", tableSpace = "ACAS_NOLOG", options = c("NOLOGGING")),
     destinationViewName = list(schema = "acas", name = "PP_API_ALL_DATA"),
-    #indexes = lapply(list("AGV_ID", "AG_ID", "AG_PUBLIC_DATA", "AG_TESTED_LOT", "CV_ID", "C_ID", "C_PUBLIC_DATA", "C_STATE_ID", "PROJECT", "PROTOCOL_NAME", "SV_ID", "S_ID", "S_PUBLIC_DATA", "S_STATE_ID", "TGV_ID", "TG_ID", "TG_PUBLIC_DATA", "TG_STATE_ID", "TG_TESTED_LOT"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
-    indexes = lapply(list("AGV_ID"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
+    indexes = lapply(list("AGV_ID"), function(x) list(name = x, tableSpace = "ACAS_NOLOG", options = "NOLOGGING", "compute statistics"))
   )
 )
 

@@ -1,11 +1,11 @@
 \name{logger}
 \alias{logger}
-\title{Creates a new logger object or returns the "bubbleLogger"}
+\title{Creates a new logger object or returns the "racasLogger"}
 \usage{
-logger(bubble = TRUE, envir = parent.frame(), ...)
+logger(racas = TRUE, envir = parent.frame(), ...)
 }
 \arguments{
-  \item{bubble}{Name for the logger output line within the
+  \item{racas}{Name for the logger output line within the
   log file (default: "com.default.logger)}
 
   \item{envir}{name of the log file to write to (default:
@@ -20,11 +20,10 @@ object of class \code{\link{Logger}}
 \description{
 Optionally creates a new logger or returns a logger stored
 in the racas namespace. The default call 'logger()' will
-compare the field racas::bubbleLogger$envir with the
-current list of frames in the call stack. If the
-environment in the bubbleLogger matches one of the
-environments in the current call stack, then the
-bubbleLogger is returned.
+compare the field racas::racasLogger$envir with the current
+list of frames in the call stack. If the environment in the
+racasLogger matches one of the environments in the current
+call stack, then the racasLogger is returned.
 }
 \examples{
 #From a fres
