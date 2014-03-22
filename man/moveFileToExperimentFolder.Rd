@@ -5,7 +5,8 @@
 moveFileToExperimentFolder(fileStartLocation, experiment, recordedBy,
   lsTransaction,
   fileServiceType = racas::applicationSettings$server.service.external.file.type,
-  fileService = racas::applicationSettings$server.service.external.file.service.url)
+  fileService = racas::applicationSettings$server.service.external.file.service.url,
+  deleteOldFile = TRUE)
 }
 \arguments{
   \item{fileStartLocation}{Path to location to find the

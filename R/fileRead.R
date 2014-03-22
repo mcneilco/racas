@@ -479,7 +479,8 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
 #' @return New file location (or code)
 moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
                                        fileServiceType = racas::applicationSettings$server.service.external.file.type, 
-                                       fileService = racas::applicationSettings$server.service.external.file.service.url) {
+                                       fileService = racas::applicationSettings$server.service.external.file.service.url,
+                                       deleteOldFile = TRUE) {
   
   fileName <- basename(fileStartLocation)
   
@@ -497,6 +498,9 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
   } else if (fileServiceType == "custom") {
+    if(!exists(customSourceFileMove)) {
+      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+    }
     serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
   } else {
     stop("Invalid file service type")

@@ -1339,7 +1339,28 @@ deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicat
     stop (paste("The loader was unable to delete the experiment values. Instead, it got this response:", response))
   }
   return(response)
-  
+}
+
+#' Delete analysis groups by experiment
+#' 
+#' Deletes all analysis groups within an experiment
+#' 
+#' @param experiment a list that has an element id for the experiment
+#' @param lsServerURL the URL of the persistence server
+#' 
+#' @return empty string
+#' @export
+deleteAnalysisGroupByExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  tryCatch({
+    response <- getURLcheckStatus(
+    paste0(lsServerURL, "experiments/", experiment$id, "?with=analysisgroups"),
+    customrequest='DELETE',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(experiment))
+  }, error = function(e) {
+    stop(paste0("The loader was unable to delete the experiment's analysis groups. Check the logs at ", Sys.time()))
+  })
+  return(response)
 }
 
 deleteAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
@@ -1437,43 +1458,24 @@ getURLcheckStatus <- function(url, ...) {
 }
 #' Protocol search by name
 #' 
-#' Gets a protocol by name, also checking if a new version can be created
+#' Gets protocols by name
 #' 
-#' @param protocolName a string, the name of the experiment
-#' @param formFormat a string, the format of the sheet (used for checking if protocol creation is allowed)
+#' @param protocolName a string, the name of the protocol
 #' 
-#' @return a list that is a protocol object
+#' @return a list of protocols
+#' 
+#' @details returns a list as uniqueness is not always enforced
 #' @export
-getProtocolByName <- function(protocolName, formFormat = NA, errorEnv = NULL) { 
-  forceProtocolCreation <- grepl("CREATETHISPROTOCOL", protocolName)
-  if(forceProtocolCreation) {
-    protocolName <- trim(gsub("CREATETHISPROTOCOL", "", protocolName))
-  }
-  
+getProtocolsByName <- function(protocolName) { 
   tryCatch({
-    protocolList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols?FindByProtocolName&protocolName=", URLencode(protocolName, reserved = TRUE))))
+    protocolList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, 
+                                           "protocols?FindByProtocolName&protocolName=", 
+                                           URLencode(protocolName, reserved = TRUE))))
   }, error = function(e) {
     stop("There was an error in accessing the protocol. Please contact your system administrator.")
   })
-  
-  # If no protocol with the given name exists, warn the user
-  if (length(protocolList) == 0) {
-    allowedCreationFormats <- racas::applicationSettings$server.allow.protocol.creation.formats
-    allowedCreationFormats <- unlist(strsplit(allowedCreationFormats, ","))
-    if (formFormat %in% allowedCreationFormats || forceProtocolCreation) {
-      warning(paste0("Protocol '", protocolName, "' does not exist, so it will be created. No user action is needed if you intend to create a new protocol."))
-    } else {
-      addError(paste0("Protocol '", protocolName, 
-                      "' does not exist. Please enter a protocol name that exists. Contact your system administrator if you would like to create a new protocol."), 
-               errorEnv)
-    }
-    # A flag for when the protocol will be created new
-    protocol <- NA
-  } else {
-    # If the protocol does exist, get the full version
-    protocol <- fromJSON(getURL(URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "protocols/", protocolList[[1]]$id))))
-  }
-  return(protocol)
+    
+  return(protocols)
 }
 #' Check valueKinds
 #' 
@@ -1695,6 +1697,26 @@ flattenValue <- function(lsValue) {
   return(output)
 }
 
+#' Flattens an lsLabel
+#' 
+#' @param lsLabel an lsLabel
+#' 
+#' Just turns a list into a data frame, not meant to be exported
+flattenLabel <- function(lsLabel) {
+  lsLabel[vapply(lsLabel, is.null, c(TRUE))] <- NA
+  output <- as.data.frame(lsLabel, stringsAsFactors=FALSE)
+  return(output)
+}
+
+#' Flattens a list of lsLabels
+#' 
+#' @param lsLabels a list os lsLabels
+#' 
+#' Just turns a list into a data frame, not meant to be exported
+flattenLabels <- function(lsLabels) {
+  ldply(lsLabels, flattenLabel)
+}
+
 #' Gets an experiment
 #' 
 #' Gets an experiment by id or codename, with options of what to get
@@ -1709,19 +1731,26 @@ flattenValue <- function(lsValue) {
 #'   returns the experiment stub with analysis group stubs} \item{fullobject:
 #'   returns the full experiment object (warning: this may be slow if there is a
 #'   lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
-#'   json format} \item{prettyjsons: returns the full experiment in pretty json
-#'   format} } If left blank, an experiment stub (with states and values) is
-#'   returned. The codeName will do the same as include=analysisgroups.
+#'   json format} \item{prettyjsons: returns the full experiment in pretty json 
+#'   format} \item{analysisgroupvalues: returns the experiment stub with full
+#'   analysis groups}} If left blank, an experiment stub (with states and
+#'   values) is returned. The codeName will do the same as
+#'   include=analysisgroups.
 #'   
 #' @return the experiment object, or if it does not exist, \code{addError} is
 #'   run and NULL is returned
 #' 
 #' @export
 #' 
-getExperimentById <- function(experimentId, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+getExperimentById <- function(experimentId, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   experiment <- NULL
+  if (is.null(include)) {
+    include = ""
+  } else {
+    include = paste0("?with=", include)
+  }
   tryCatch({
-    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, "?with=", include))
+    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, include))
     experiment <- fromJSON(experiment)
   }, error = function(e) {
     addError(paste0("Could not get experiment ", experimentId, " from the server"), errorEnv)
@@ -1731,10 +1760,15 @@ getExperimentById <- function(experimentId, include="", errorEnv=NULL, lsServerU
 
 #' @rdname getExperimentById
 #' @export
-getExperimentByCodeName <- function(experimentCodeName, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+getExperimentByCodeName <- function(experimentCodeName, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   experiment <- NULL
+  if (is.null(include)) {
+    include = ""
+  } else {
+    include = paste0("?with=", include)
+  }
   tryCatch({
-    experiments <- getURL(paste0(lsServerURL, "experiments/codename/", experimentCodeName, "?with=", include))
+    experiments <- getURL(paste0(lsServerURL, "experiments/codename/", experimentCodeName, include))
     experiment <- fromJSON(experiments)[[1]]
   }, error = function(e) {
     addError(paste0("Could not get experiment ", experimentCodeName, " from the server"), errorEnv)
@@ -1754,3 +1788,67 @@ acasEntityHierarchy <- c("protocol", "experiment", "analysisgroup", "treatmentgr
 
 #' @rdname acasEntityHierarchy
 acasEntityHierarchyCamel <- c("protocol", "experiment", "analysisGroup", "treatmentGroup", "subject")
+
+#' Gets Entity Name
+#' 
+#' Determines the preferred name of an entity (protocol, experiment, etc.)
+#' 
+#' @param entity an ACAS entity such as a protocol or subject
+#'   
+#' @details returns the name that has \code{preferred==TRUE},
+#'   \code{ignored==FALSE}. Ties are broken by the most recent
+#'   \code{recordedDate}.
+#'   
+#' @return a string name
+#' @export
+getPreferredName <- function(entity) {
+  labelList <- entity$lsLabels
+  labelFrame <- flattenLabels(labelList)
+  # limit to labels that are names and not ignored
+  labelFrame <- labelFrame[labelFrame$lsType == "name" & !labelFrame$ignored & labelFrame$preferred, ]
+  if (nrow(labelFrame) < 1) {
+    stop("No preferred label found")
+  }
+  bestIndex <- which.max(labelFrame$recordedDate)
+  if (length(bestIndex) == 0) {
+    bestName <- labelFrame$labelText[1]
+  } else {
+    bestName <- labelFrame$labelText[bestIndex]
+  }
+  return(bestName)
+}
+
+#' Gets a protocol
+#' 
+#' Gets a protocol by id or codename, with options of what to get
+#' 
+#' @param protocolId the id of the protocol
+#' @param protocolCodeName the codename of an protocol
+#' @param include a character string describing what to include
+#' @param errorEnv the environment where errors will be stored to
+#' @param lsServerURL the url for the roo server
+#' @details \code{include} not yet implemented by roo server
+#' @export
+getProtocolById <- function(id, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  protocol <- NULL
+  tryCatch({
+    protocol <- getURL(paste0(lsServerURL, "protocols/", id, "?with=", include))
+    protocol <- fromJSON(protocol)
+  }, error = function(e) {
+    addError(paste0("Could not get protocol ", id, " from the server"), errorEnv)
+  })
+  return(protocol)
+}
+
+#' @rdname getProtocolById
+#' @export
+getProtocolByCodeName <- function(protocolCodeName, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  protocol <- NULL
+  tryCatch({
+    protocols <- getURL(paste0(lsServerURL, "protocols/codename/", protocolCodeName, "?with=", include))
+    protocol <- fromJSON(protocols)[[1]]
+  }, error = function(e) {
+    addError(paste0("Could not get protocol ", protocolCodeName, " from the server"), errorEnv)
+  })
+  return(protocol)
+}

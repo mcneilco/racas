@@ -3,10 +3,10 @@
 \alias{getExperimentById}
 \title{Gets an experiment}
 \usage{
-getExperimentById(experimentId, include = "", errorEnv = NULL,
+getExperimentById(experimentId, include = NULL, errorEnv = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 
-getExperimentByCodeName(experimentCodeName, include = "", errorEnv = NULL,
+getExperimentByCodeName(experimentCodeName, include = NULL, errorEnv = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
@@ -37,8 +37,10 @@ analysis group stubs} \item{fullobject: returns the full
 experiment object (warning: this may be slow if there is a
 lot of data)} \item{prettyjsonstub: returns the experiment
 stub in pretty json format} \item{prettyjsons: returns the
-full experiment in pretty json format} } If left blank, an
-experiment stub (with states and values) is returned. The
-codeName will do the same as include=analysisgroups.
+full experiment in pretty json format}
+\item{analysisgroupvalues: returns the experiment stub with
+full analysis groups}} If left blank, an experiment stub
+(with states and values) is returned. The codeName will do
+the same as include=analysisgroups.
 }
 

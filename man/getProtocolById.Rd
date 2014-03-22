@@ -1,0 +1,32 @@
+\name{getProtocolById}
+\alias{getProtocolByCodeName}
+\alias{getProtocolById}
+\title{Gets a protocol}
+\usage{
+getProtocolById(id, include = "", errorEnv = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+
+getProtocolByCodeName(protocolCodeName, include = "", errorEnv = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+}
+\arguments{
+  \item{protocolId}{the id of the protocol}
+
+  \item{protocolCodeName}{the codename of an protocol}
+
+  \item{include}{a character string describing what to
+  include}
+
+  \item{errorEnv}{the environment where errors will be
+  stored to}
+
+  \item{lsServerURL}{the url for the roo server}
+}
+\description{
+Gets a protocol by id or codename, with options of what to
+get
+}
+\details{
+\code{include} not yet implemented by roo server
+}
+
