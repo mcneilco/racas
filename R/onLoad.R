@@ -41,4 +41,7 @@
                      "\t",ex),call.=FALSE)
     })
   }
+  racasMessenger <- Messenger$new(envir = environment())
+  assignInNamespace("racasMessenger",racasMessenger, ns="racas")
+  
 }

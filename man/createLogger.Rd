@@ -3,8 +3,8 @@
 \title{Creates a new logger}
 \usage{
 createLogger(logName = "com.default.logger", logFileName = "racas.log",
-  logDir = racas::applicationSettings$server.log.path,
-  logLevel = racas::applicationSettings$server.log.level,
+  logDir = racas:::applicationSettings$server.log.path,
+  logLevel = racas:::applicationSettings$server.log.level,
   envir = environment(), ...)
 }
 \arguments{

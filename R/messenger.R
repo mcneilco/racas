@@ -1,6 +1,66 @@
-
-#o <- objectUtilities$new(test = "me", this = as.integer(10))
-#o <- objectUtilities$new()$fromJSON(toJSON(list(test = "me", this = as.integer(10))))
+#' Messenger
+#'
+#' Reference class object to allow passing of messages
+#'
+#' @return A json object with the sessionid among a number of html divs to display back to the user
+#' @name Messenger
+#' @include logger.R
+#' @export
+#' @examples
+#' #Basic Messenger
+#' myMessenger <- Messenger$new(envir = environment())
+#' 
+#' #Racas Messenger
+#' #This special messenger is stored within the racas environment and can be passed in and out of functions
+#' #To retrieve the racas messenger
+#' racasMessenger <- messenger()
+#' #To reset the messenger
+#' racasMessenger <- messenger()$reset()
+#' 
+#' #Adding messages
+#' myMessenger <- Messenger$new(envir = environment())
+#' myMessenger$addError("myerror")
+#' myMessenger$addWarning("mywarning")
+#' myMessenger$addInfo("mywarning")
+#' myMessenger$addUserError("my user error")
+#' myMessenger$addUserWarning("my user warning")
+#' myMessenger$addUserInfo("my user info")
+#' 
+#' #Running and capture output using messenger
+#' myMessenger <- Messenger$new(envir = environment())
+#' 
+#' #This is run like normal
+#' myMessenger$captureOutput("test <- 1+1")
+#' test
+#' 
+#' #This captures the error
+#' myMessenger <- Messenger$new(envir = environment())
+#' test <- function() stop("there is an error!")
+#' myMessenger$captureOutput("test()")
+#' myMessenger$errors
+#' 
+#' #Capturing a user error on run
+#' myMessenger <- Messenger$new(envir = environment())
+#' test <- function() stop("there is an error!")
+#' myMessenger$captureOutput("test()", userError = "There was an error running test function")
+#' myMessenger$errors
+#' myMessenger$userErrors
+#' 
+#' #Adding a user error within a captureOutput Call (use racas messenger)
+#' racasMessenger <- messenger()$reset()
+#' test <- function() {
+#'  racasMessenger <- messenger()
+#'  e <- try(stop("there is an error!"), silent = TRUE)
+#'  if(class(e)=="try-error") { 
+#'    racasMessenger$addUserError("Inner error")
+#'    #note, you have to throw and error for the outer userError to be added
+#'    stop("some error")
+#'  }
+#'  return(1)
+#' }
+#' racasMessenger$captureOutput("answer <- test()", userError = "Outer error")
+#' racasMessenger$userErrors
+#' 
 Messenger <- setRefClass(Class = "Messenger", 
                          fields = list(errors = "character",
                                        userErrors = "character",
@@ -13,6 +73,10 @@ Messenger <- setRefClass(Class = "Messenger",
                                        devMode = "logical"),
                          contains = list("objectUtilities"),
                          methods = list(
+                           initialize = function(...) {
+                             devMode <<- FALSE
+                             logger <<- racas:::createLogger()
+                           },
                            addError = function(x) {
                              errors <<- c(errors,as.character(x))
                            },
@@ -63,7 +127,7 @@ Messenger <- setRefClass(Class = "Messenger",
                                  if(!is.null(userError)) addUserError(userError); errorPos <- length(userErrors)
                                  if(!is.null(userWarning)) addUserWarning(userWarning); warningPos <- length(userWarnings)
                                  if(!is.null(userInfo)) addUserInfo(userInfo); infoPos <- length(userInfos)
-                                 evaledExpr <<- evaluate(expr, envir = envir, output_handler = outputHandler, new_device = FALSE, ...)
+                                 evaledExpr <- evaluate(expr, envir = envir, output_handler = outputHandler, new_device = FALSE, ...)
                                    if(any(!c("simpleError","error") %in% unlist(lapply(evaledExpr, class)))) {
                                      if(!is.null(userError)) {
                                        if(length(userErrors) <= errorPos) {
@@ -96,8 +160,7 @@ Messenger <- setRefClass(Class = "Messenger",
                            }
                          )
 )
-
-racasMessenger <- Messenger$new(envir = environment())
+racasMessenger <- ""
 messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
   if(!racas) {
     return(Messenger$new(envir = envir, ...))

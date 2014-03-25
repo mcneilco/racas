@@ -1,7 +1,13 @@
 context("query")
 
-myTestConn <- try(getDatabaseConnection(), silent = TRUE)
-runTests <- class(myTestConn) != "try-error"
+testQuery <- ifelse(is.null(getOption("test_query")), FALSE, getOption("test_query"))
+if(testQuery) {
+  myTestConn <- try(getDatabaseConnection(), silent = TRUE)
+  runTests <- class(myTestConn) != "try-error"
+} else {
+  runTests <- FALSE
+}
+
 if(runTests) {
   dbDisconnect(myTestConn)
     

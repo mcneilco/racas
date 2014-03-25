@@ -278,26 +278,52 @@ doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = N
 #' #FitData object plus the "cars" data to a json string
 #' fitDataToResponse.curation(fitData, cars)
 fitDataToResponse.curation <- function(fitData, ...) {
-  reportedValues <- objToHTMLTableString(fitData[1]$reportedParameters[[1]])
+  listToDataTable <- function(l) {
+    dt <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(1:length(l), function(x) {dt <- as.data.table(l[[x]])
+                                                                                        dt[ , name := names(l)[[x]]]
+                                                                                        classes <- lapply(dt, class) 
+                                                                                        removeThese <- names(classes)[classes=="NULL"]
+                                                                                        if(length(removeThese) > 0) {
+                                                                                          dt[ , removeThese := NULL, with = FALSE]
+                                                                                        }
+                                                                                        return(dt)
+    }
+    )
+    )
+    return(dt)
+  }
+  reportedParameters <- listToDataTable(fitData[1]$reportedParameters[[1]])
+  reportedValues <- objToHTMLTableString(reportedParameters[ , c("name", "value"), with = FALSE], include.colnames = FALSE)
   fitSummary <- captureOutput(summary(fitData[1]$model[[1]]))
-  parameterStdErrors <- objToHTMLTableString(fitData[1]$goodnessOfFit.parameters[[1]])
-  curveErrors <- objToHTMLTableString(fitData[1]$goodnessOfFit.model[[1]])
+  goodnessOfFit.parameters <- listToDataTable(fitData[1]$goodnessOfFit.parameters[[1]])
+  goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
+                                                    list(name = sp[[1]], type = sp[[2]])
+  }, by = c("V1", "name")]
+  goodnessOfFit.parameters <- dcast.data.table(goodnessOfFit.parameters, name ~ type, value.var = "V1")
+  parameterStdErrors <- objToHTMLTableString(goodnessOfFit.parameters)
+  curveErrors <- objToHTMLTableString(listToDataTable(fitData[1]$goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE])
   category <- fitData[1]$category[[1]]
-  acceptReject <- "FALSE"
-  approved = fitData[1]$approved[[1]]
+  algorithmApproved = fitData[1]$approved[[1]]
   plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
-                   points  = fitData[1]$points[[1]],
+                   points  = fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseUnits", "response", "responseUnits", "flag"), with = FALSE],
                    curve = predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
+  )
+  curveAttributes <- list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
+                          Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
+                          SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+                          SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+                          rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                          compoundCode = fitData[1]$tested_lot
   )
   return(toJSON(list(reportedValues = reportedValues,
                      fitSummary = fitSummary,
                      parameterStdErrors = parameterStdErrors,
                      curveErrors = curveErrors,
                      category = category,
-                     acceptReject = acceptReject,
+                     algorithmApproved = approved,
+                     curveAttributes = curveAttributes,
                      plotData = plotData,
-                     approved = approved,
-                     ...     
+                     ...
   )))   
 }
 
@@ -337,30 +363,24 @@ captureOutput <- function(obj) {
     result <- withVisible(obj)
     if (result$visible)
       print(result$value)
-  }), collapse="\n"))
+  }), collapse=""))
 }
 
 
-objToHTMLTableString <- function(obj) {
+objToHTMLTableString <- function(dataTable, ...) {
   htmlTableString <- ""
   if(is.null(obj)) {return(htmlTableString)}
-  if(class(obj)[[1]] == "list") {
-    obj <- as.data.frame(lapply(obj, function(x) if(is.null(x)){return(NA)} else {return(x)}))
-    #obj <- as.data.frame(obj)
-  }
-  if(nrow(obj) == 0) {
+  if(nrow(dataTable) == 0) {
     return(htmlTableString)
   }
-  t <- tempfile()
-  htmlTableString <- print(xtable(obj), 
+  htmlTableString <- print(xtable(dataTable), 
                            type = "html", 
                            include.rownames = FALSE, 
                            comment = FALSE, 
                            timestamp = FALSE, 
                            rotate.rownames = TRUE, 
-                           file = t,
-                           html.table.attributes = "")
-  unlink(t)
+                           html.table.attributes = "",
+                           print.results = FALSE)
   return(htmlTableString)
 }
 
@@ -481,13 +501,9 @@ getFitData.experimentCode <- function(experimentCode, ...) {
   myMessenger$logger$debug("Extracting curve parameters")
   fitData[ , parameters := list(list(
     rbindlist(rbindlist(lsStates)[ignored == FALSE & lsKind=="Dose Response"][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)
-    )), by = id]
+  )), by = id]
   
   myMessenger$logger$debug("Extracting curve points")
-#   fitData[ ,  points:= list(list(
-#     Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(rbindlist(rbindlist(rbindlist(treatmentGroups)[ignored == FALSE]$subjects)$lsStates)[ , subj_id:=id]$lsValues, as.data.table))
-#   )), by = id]
-#   
   fitData[ ,  points:= list(list({
     treatmentGroups <- rbindlist(treatmentGroups)[ignored == FALSE]
     subjects <- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
@@ -514,12 +530,22 @@ getFitData.experimentCode <- function(experimentCode, ...) {
       setkey(fl, subj_id)
     }
     bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
-    pts <- fl[bc][dr]
+    setkey(fl, subj_id)
+    setkey(bc, subj_id)
+    setkey(dr, subj_id)
+    if(nrow(fl) == 0) {
+      pts <- bc[dr]
+    } else {
+      pts <- fl[bc][dr]
+    }
+    if(is.null(pts$flag)) {
+      pts[ , flag := as.character(NA)]
+    }
     setnames(pts, names(pts), tolower(names(pts)))
   })), by = id]
   myMessenger$logger$debug("Filling out the rest of the fit data object")
   
-  fitData[ , curveid := codeName]
+  fitData[ , curveid := parameters[[1]][grepl('.*curve id', lsKind)]$stringValue , by = id]
   myParameterRules <- list(goodnessOfFits = list(), limits = list())
   myInactiveRule <- list()
   myFixedParameters <- list()
@@ -527,13 +553,13 @@ getFitData.experimentCode <- function(experimentCode, ...) {
                                                                             list(myInactiveRule),
                                                                             list(myFixedParameters))]  
   fitData[ , modelHint := unlist(lapply(rbindlist(parameters)[lsKind == "Rendering Hint"]$stringValue, 
-                            function(x) {
-                              ans <- switch(x,
-                                            "4 parameter D-R" = "LL.4",
-                                            "2 parameter Michaelis Menten" = "MM.2")
-                              return(ans)
-                            }))
-  ]  
+                                        function(x) {
+                                          ans <- switch(x,
+                                                        "4 parameter D-R" = "LL.4",
+                                                        "2 parameter Michaelis Menten" = "MM.2")
+                                          return(ans)
+                                        }))
+          ]  
   if(is.null(fitData$modelHint)) {
     myMessenger$addUserError(paste0("No Rendering Hint found for ", experimentCode))
     myMessenger$logger$error(paste0("Attempted to fit an expt code with no rendering hint stored in analysis group parameters"))
@@ -542,6 +568,7 @@ getFitData.experimentCode <- function(experimentCode, ...) {
   myMessenger$logger$debug(paste0("Returning from getting experiment curve data with ", nrow(fitData), " curves"))
   return(fitData)
 }
+
 doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   ###Fit
@@ -573,7 +600,7 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
 }
 
 categorizeFitData <- function(results.parameterRules, inactive, converged, insufficientRange) {
-  category <- "Good Fit"
+  category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   #Parameter Failed Categories
   if(length(resultList) > 0 ) {
@@ -595,7 +622,7 @@ categorizeFitData <- function(results.parameterRules, inactive, converged, insuf
   return(category)
 }
 categorizeFitData <- function(results.parameterRules, inactive, converged, insufficientRange) {
-  category <- "Good Fit"
+  category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   #Parameter Failed Categories
   if(length(resultList) > 0 ) {
@@ -795,45 +822,6 @@ drcObject.getGoodnessOfFitParameters <- function(drcObj) {
   return(c(stdErrors,tValues, pValues))
 }
 
-api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode) {
-#   cat("Using fake data")
-#   file <- "inst/docs/example-ec50-simple-fitSettings.json"
-#   file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
-#   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-#   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-#   recordedBy <- "bbolt"
-  
-  #experimentCode <- loadDoseResponseTestData()
-  experimentCode <- "EXPT-00000441"
-  
-  myMessenger <- messenger()$reset()
-  myMessenger$devMode <- FALSE
-  myMessenger$logger <- logger(logName = "com.acas.fit.doseresponse.experiment")
-
-  myMessenger$logger$debug("Converting simple fit settings to advanced settings")
-  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", userError = "Fit settings error")
-
-  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
-  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
-  
-  myMessenger$logger$debug("Fitting the data")
-  myMessenger$captureOutput("fitData <- doseResponse.fitData(fitSettings, fitData)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
-  
-  myMessenger$logger$debug("Saving the curve data")
-  myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy, experimentCode = experimentCode)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
-  
-  #Convert the fit data to a response for acas
-  myMessenger$logger$debug("Responding to ACAS")
-  if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
-    response <- fitDataToResponse.acas(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
-  } else {
-    myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
-    myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
-    response <- fitDataToResponse.acas(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
-  }
-  return(response)
-}
-
 #' fitData object to json response
 #'
 #' Converts a fitData object to a json response to return to the GUI
@@ -897,8 +885,12 @@ knit2html.bugFix <- function (input, output = NULL, text = NULL, template = temp
   return(output)
 }
 
-loadDoseResponseTestData <- function() {
-  doseResponseSELFile <- system.file("docs", "Example-Dose-Response-SEL.xls", package="racas")
+loadDoseResponseTestData <- function(size = c("small","large")) {
+  size <- match.arg(size)
+  doseResponseSELFile <- switch(size,
+                                "small" = system.file("docs", "Example-Dose-Response-SEL.xls", package="racas"),
+                                "large" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
+  )
   t <- tempfile(fileext = ".xls")
   file.copy(doseResponseSELFile,t)
   originalWD <- getwd()

@@ -14,7 +14,7 @@ library(xtable)
 file <- "inst/docs/example-ec50-simple-fitSettings.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-fitSettingsJSON <- toJSON(simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest))
+fitSettingsJSON <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 fitData <- getFitData.curve(curveids)
 system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
@@ -23,6 +23,14 @@ session <- parsedResponse$sessionID
 loadSession(session)
 
 
+file <- "inst/docs/example-ec50-simple-fitSettings.json"
+simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
+experimentCode <- "EXPT-00000446"
+fitData <- getFitData.experimentCode(experimentCode)
+curveids <- fitData[1]$curveid
+response <- doseResponse(fitSettings, curveids = curveid)
 
 #DNET sampling
 source("inst/docs/scratchPrivate.R")

@@ -1,0 +1,67 @@
+\docType{class}
+\name{Messenger}
+\alias{Messenger}
+\title{Messenger}
+\value{
+A json object with the sessionid among a number of html
+divs to display back to the user
+}
+\description{
+Reference class object to allow passing of messages
+}
+\examples{
+#Basic Messenger
+myMessenger <- Messenger$new(envir = environment())
+
+#Racas Messenger
+#This special messenger is stored within the racas environment and can be passed in and out of functions
+#To retrieve the racas messenger
+racasMessenger <- messenger()
+#To reset the messenger
+racasMessenger <- messenger()$reset()
+
+#Adding messages
+myMessenger <- Messenger$new(envir = environment())
+myMessenger$addError("myerror")
+myMessenger$addWarning("mywarning")
+myMessenger$addInfo("mywarning")
+myMessenger$addUserError("my user error")
+myMessenger$addUserWarning("my user warning")
+myMessenger$addUserInfo("my user info")
+
+#Running and capture output using messenger
+myMessenger <- Messenger$new(envir = environment())
+
+#This is run like normal
+myMessenger$captureOutput("test <- 1+1")
+test
+
+#This captures the error
+myMessenger <- Messenger$new(envir = environment())
+test <- function() stop("there is an error!")
+myMessenger$captureOutput("test()")
+myMessenger$errors
+
+#Capturing a user error on run
+myMessenger <- Messenger$new(envir = environment())
+test <- function() stop("there is an error!")
+myMessenger$captureOutput("test()", userError = "There was an error running test function")
+myMessenger$errors
+myMessenger$userErrors
+
+#Adding a user error within a captureOutput Call (use racas messenger)
+racasMessenger <- messenger()$reset()
+test <- function() {
+ racasMessenger <- messenger()
+ e <- try(stop("there is an error!"), silent = TRUE)
+ if(class(e)=="try-error") {
+   racasMessenger$addUserError("Inner error")
+   #note, you have to throw and error for the outer userError to be added
+   stop("some error")
+ }
+ return(1)
+}
+racasMessenger$captureOutput("answer <- test()", userError = "Outer error")
+racasMessenger$userErrors
+}
+

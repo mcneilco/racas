@@ -45,7 +45,7 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas::applicationSettings$server.log.path, logLevel = racas::applicationSettings$server.log.level, envir = environment(), ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
   basicConfig(level = logLevel)
   if(is.na(logDir)) {

@@ -111,3 +111,74 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
   names(entitiesList) <- x
   return(entitiesList)
 }
+#' Fits experiment dose response data
+#'
+#' This function retrieves the dose response data for a given experiment code, refits it using the simple settings and then saves the data back to the database
+#'
+#' @param simpleFitSettings list of fit settings (see details) 
+#' @param recordedBy character user that curve data will be saved as
+#' @param experimentCode character saved experiment code that contains dose response data
+#' @param testMode logical unimplemented
+#' @return a list of the entities returned from the server
+#' @keywords dose, response, fit, model, experimet
+#' @export
+#' @examples
+#' 
+#' 
+#' file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#' simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#' recordedBy <- "bbolt"
+#' experimentCode <- "EXPT-00000441"
+#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
+#' 
+#' #Loading fake data first
+#' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
+#' #          2. have a valid recordedBy (or that acas is set to client.require.login=false) 
+#'  
+#' file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#' simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#' experimentCode <- loadDoseResponseTestData()
+#' recordedBy <- "bbolt"
+#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
+api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
+#     cat("Using fake data")
+#     file <- "inst/docs/example-ec50-simple-fitSettings.json"
+#     file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#     simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#     simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#     recordedBy <- "bbolt"
+  
+  #experimentCode <- loadDoseResponseTestData()
+  #experimentCode <- "EXPT-00000446"
+  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.fit.doseresponse.experiment")
+  
+  myMessenger$logger$debug("Converting simple fit settings to advanced settings")
+  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", userError = "Fit settings error")
+  
+  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
+  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  
+  myMessenger$logger$debug("Fitting the data")
+  myMessenger$captureOutput("fitData <- doseResponse.fitData(fitSettings, fitData)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
+  
+  myMessenger$logger$debug("Saving the curve data")
+  myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy, experimentCode = experimentCode)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
+  
+  #Convert the fit data to a response for acas
+  myMessenger$logger$debug("Responding to ACAS")
+  if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
+    response <- fitDataToResponse.acas(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+  } else {
+    myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
+    myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
+    response <- fitDataToResponse.acas(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+  }
+  return(response)
+}
+
+
