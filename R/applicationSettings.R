@@ -111,19 +111,20 @@ readConfigFile <- function(configLocation) {
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
   #server.log.path validation
   #Check if set
+  currentWD <-  getwd()
   if(is.null(applicationSettings$server.log.path)) {
-    warning("applicationSettings$server.log.path is null. Setting to /tmp")
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   #Check if exits
   if(!file.exists(applicationSettings$server.log.path)) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting applicationSettings$server.log.path to \'/tmp\'"))
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   #Check writeable
   if(file.access(applicationSettings$server.log.path, mode = 2) != 0) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting applicationSettings$server.log.path to \'/tmp\'"))
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   return(applicationSettings)
 }
