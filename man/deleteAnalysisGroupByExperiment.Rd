@@ -1,0 +1,20 @@
+\name{deleteAnalysisGroupByExperiment}
+\alias{deleteAnalysisGroupByExperiment}
+\title{Delete analysis groups by experiment}
+\usage{
+deleteAnalysisGroupByExperiment(experiment,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+}
+\arguments{
+  \item{experiment}{a list that has an element id for the
+  experiment}
+
+  \item{lsServerURL}{the URL of the persistence server}
+}
+\value{
+empty string
+}
+\description{
+Deletes all analysis groups within an experiment
+}
+

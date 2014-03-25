@@ -1,0 +1,19 @@
+\name{getProtocolsByName}
+\alias{getProtocolsByName}
+\title{Protocol search by name}
+\usage{
+getProtocolsByName(protocolName)
+}
+\arguments{
+  \item{protocolName}{a string, the name of the protocol}
+}
+\value{
+a list of protocols
+}
+\description{
+Gets protocols by name
+}
+\details{
+returns a list as uniqueness is not always enforced
+}
+
