@@ -31,7 +31,7 @@ objects. This can be used on any ACAS object that has
 lsStates that have lsValues. If no information is needed
 from the state or entity, \code{includeFromState} and
 \code{includeFromEntity}, respectively, can be set to an
-empty list, \code{c()}. columns in \code{includeFromState}
+empty list, \code{c()}. Columns in \code{includeFromState}
 will have "state" prepended and the first letter
 capitalized, while columns in \code{includeFromEntity} will
 have \code{acasCategory} prepended and the first letter

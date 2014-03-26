@@ -1547,7 +1547,7 @@ saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL) {
 #' on any ACAS object that has lsStates that have lsValues. If no information is
 #' needed from the state or entity, \code{includeFromState} and
 #' \code{includeFromEntity}, respectively, can be set to an empty list,
-#' \code{c()}. columns in \code{includeFromState} will have "state" prepended
+#' \code{c()}. Columns in \code{includeFromState} will have "state" prepended
 #' and the first letter capitalized, while  columns in \code{includeFromEntity} 
 #' will have \code{acasCategory} prepended and the first letter capitalized. The
 #' list of ACAS categories can be found in \code{racas::acasEntityHierarchy}
@@ -1573,7 +1573,8 @@ flattenDeepEntity <- function(entity, desiredAcasCategory, currentAcasCategory="
                     desiredAcasCategory=desiredAcasCategory, currentAcasCategory=lowerCategory, 
                     includeFromState=includeFromState, includeFromEntity=includeFromEntity)
     if (nrow(output) > 0) {
-      output[, paste0(lowerCategoryCamel, "Id")] <- entity$id
+      currentCategoryCamel <- racas::acasEntityHierarchyCamel[currentAcasCategoryIndex]
+      output[, paste0(currentCategoryCamel, "Id")] <- entity$id
     }
   }
   return(output)
