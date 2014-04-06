@@ -27,9 +27,10 @@ file <- "inst/docs/example-ec50-simple-fitSettings.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
-experimentCode <- "EXPT-00000446"
+experimentCode <- "EXPT-00000012"
 fitData <- getFitData.experimentCode(experimentCode)
-curveids <- fitData[1]$curveid
+fitData <- doseResponse.fitData(fitSettings, fitData)
+curveid <- fitData[8]$curveid
 response <- doseResponse(fitSettings, curveids = curveid)
 
 #DNET sampling

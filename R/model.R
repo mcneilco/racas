@@ -1,5 +1,5 @@
 
-LL4 <- 'min + (max - min)/((1 + exp(slope * (log(x/ec50))))^1)'
+LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
 
@@ -304,6 +304,12 @@ fitDataToResponse.curation <- function(fitData, ...) {
   curveErrors <- objToHTMLTableString(listToDataTable(fitData[1]$goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE])
   category <- fitData[1]$category[[1]]
   algorithmApproved = fitData[1]$approved[[1]]
+  points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseUnits", "response", "responseUnits", "flag"), with = FALSE]
+  points <- split(points, points$response_sv_id)
+  names(points) <- NULL
+  curve <- predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
+  curve <- split(curve, row.names(curve))
+  names(curve) <- NULL
   plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
                    points  = fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseUnits", "response", "responseUnits", "flag"), with = FALSE],
                    curve = predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
@@ -320,7 +326,7 @@ fitDataToResponse.curation <- function(fitData, ...) {
                      parameterStdErrors = parameterStdErrors,
                      curveErrors = curveErrors,
                      category = category,
-                     algorithmApproved = approved,
+                     algorithmApproved = algorithmApproved,
                      curveAttributes = curveAttributes,
                      plotData = plotData,
                      ...
@@ -333,16 +339,16 @@ predictPoints <- function(pts, drcObj) {
   }
   x <- unique(pts$dose)
   if(grepl("LOG",toupper(pts$doseUnits[1]))) {
-    valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=8*length(x)) ))
+    valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=12*length(x)) ))
   } else {
-    valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=8*length(x)))
+    valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=12*length(x)))
   }
   curveData <- data.frame(dose = valuesToPredict$x, response = predict(drcObj, newdata = valuesToPredict))
   return(curveData)
 }
 
 
-plotWindow <- function(pts){
+plotWindow <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA, ymax = NA, xmin = NA, xmax = NA){
   if(nrow(pts)==0) {
     return(NULL)
   } else {
@@ -350,12 +356,37 @@ plotWindow <- function(pts){
     minDose <- min(pts$dose)
     maxResponse <- max(pts$response)
     minResponse <- min(pts$response)
-    range <- abs(maxResponse-minResponse)
-    xmin <- minDose - minDose/2
-    ymax <- (maxResponse + 0.04*range)
-    xmax <- maxDose + maxDose/2
-    ymin <- (minResponse - 0.04*range)
-    return(c(log(xmin),ymax,log(xmax),ymin))
+    responseRange <- abs(maxResponse-minResponse)
+    doseRange <- abs(maxDose-minDose)
+    if(is.na(ymin)) {
+      if(logResponse) {
+        ymin <- floor(log10(maxResponse))
+      } else {
+        ymin <- (minResponse - 0.025*responseRange)
+      }
+    }
+    if(is.na(ymax)) {
+      if(logResponse) {
+        ymax <- ceiling(log10(maxResponse))
+      } else {
+        ymax <- (maxResponse + 0.025*responseRange)
+      }
+    }
+    if(is.na(xmax)) {
+      if(logDose) {
+        xmax <- ceiling(log10(maxDose))
+      } else {
+        xmax <- maxDose + abs(0.01 * doseRange)
+      }  
+    }
+    if(is.na(xmin)) {
+      if(logDose) {
+        xmin <- floor(log10(minDose))
+      } else {
+        xmin <- minDose - abs(0.01 * doseRange)
+      }
+    }
+    return(c(xmin,ymax,xmax,ymin))
   }
 }
 captureOutput <- function(obj) {
@@ -369,7 +400,7 @@ captureOutput <- function(obj) {
 
 objToHTMLTableString <- function(dataTable, ...) {
   htmlTableString <- ""
-  if(is.null(obj)) {return(htmlTableString)}
+  if(is.null(dataTable)) {return(htmlTableString)}
   if(nrow(dataTable) == 0) {
     return(htmlTableString)
   }
