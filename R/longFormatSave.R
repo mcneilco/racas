@@ -17,8 +17,6 @@
 
 
 saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL, testMode=FALSE) {
-  
-  require(plyr)
 
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
@@ -195,13 +193,14 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' @param replacedFakeBatchCode deprecated: a character vector of fake batch id's that were replaced, marking invalid batch codes
 #' 
 #' @details Does not work with data.table
+#' entityData must have columns "batchCode", "stateID", "stateGroupIndex", "publicData"
 #' 
 #' @return A data frame with rows for all code values
 #' 
 meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID")) {
-  require('plyr')
+  neededColumns <- c("batchCode", "stateID", "stateGroupIndex", "publicData")
   
-  neededColumns <- c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")
+  if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
   
@@ -427,7 +426,6 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 #' 
 #' @details If there are both prefixed and unprefixed labels that match, the prefixed labels will have precedence
 linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, stateGroupIndices = NULL, testModeData = NULL) {
-  require(plyr)
   
   # Get stateGroupIndices if not provided
   if (is.null(stateGroupIndices)) {
