@@ -41,7 +41,7 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
   uncertanties <- lapply(x, function(x) x$stdErr)
   uncertantyTypes <- uncertanties
   uncertantyTypes[!unlist(lapply(uncertanties,is.null))] <- "Standard Error"
-  analysisGroupValues <- lapply(1:length(x), 
+  agValues <- lapply(1:length(x), 
                                 function(x) {
                                   createStateValue(lsType = lsTypes[[x]],
                                                    lsKind = lsKinds[[x]],
@@ -57,24 +57,25 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
                                                    recordedBy = as.character(recordedBy))
                                 }
   )
-  return(list(analysisGroupCode = analysisGroupCode, analysisGroupValues = analysisGroupValues))
+  return(list(analysisGroupCode = analysisGroupCode, analysisGroupValues = agValues))
 }
 
 saveDoseResponseData <- function(fitData, recorded_by, experimentCode = NULL) {
   
   transactionID <- createLsTransaction()$id
+  blah <<- list()
   fitData[ , analysisGroupValues := list(list(getAnalysisGroupValues(reportedParameters[[1]],
                                                                                  fixedParameters[[1]],
                                                                                  fittedParameters[[1]],
                                                                                  goodnessOfFit.model[[1]],
-                                                                                 category,
-                                                                                 approved,
+                                                                                 category[[1]],
+                                                                                 approved[[1]],
                                                                                  tested_lot = parameters[[1]][lsKind=="batch code",]$codeValue,
-                                                                                 recorded_by,
+                                                                                 recorded_by[[1]],
                                                                                  transactionID,
                                                                                  doseUnits = as.character(points[[1]][1]$doseunits), 
                                                                                  responseUnits = as.character(points[[1]][1]$responseunits), 
-                                                                                 analysisGroupCode = codeName, 
+                                                                                 analysisGroupCode = codeName[[1]], 
                                                                                  as.character(parameters[[1]][lsKind=="Rendering Hint"]$stringValue)))), by = curveid]
   if(!is.null(experimentCode)) {
     savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points = points, transactionID, experimentCode = experimentCode))][[1]]

@@ -151,7 +151,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #     recordedBy <- "bbolt"
   
   #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000446"
+  #experimentCode <- "EXPT-00000026"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -179,6 +179,55 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
     response <- fitDataToResponse.acas(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   }
   return(response)
+}
+
+api_doseResponse_stubs <- function(GET) {  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.stubs")
+  if(is.null(GET$experimentcode)) {
+    msg <- "No 'experimentcode' provided"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  } else {
+    experimentCode <- GET$experimentcode
+  }
+  #experimentCode <- "EXPT-00000026"
+  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
+  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
+  modelHint <- fitData[1]$modelHint
+  myMessenger$logger$debug(paste0("Got modelHint '",modelHint,"'"))
+  myMessenger$logger$debug(paste0("Getting sort options '",modelHint,"'"))
+  if(fitData[1]$modelHint == "LL.4") {
+    sortOptions <- list(list(code = "compoundCode", name = "Compound Code"),
+                       list(code = "EC50", name = "EC50"),
+                       list(code = "SST", name = "SST"),
+                       list(code = "SSE", name = "SSE"),
+                       list(code = "rsquare", name = "R^2"))
+  } else {
+    msg <- paste0("Model Hint '", modelHint, "' unimplemented for sort options")
+    myMessenger$logger$error(msg)
+    stop(msg)
+  }
+   myMessenger$logger$debug(paste0("Get curve attributes"))
+  fitData[ , curves := list(list(list(curveid = curveid[[1]], 
+                  algorithmApproved = TRUE,
+                  userApproved = TRUE,
+                  category = parameters[[1]][lsKind == "category", ]$stringValue,
+                  curveAttributes = list(
+                    EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
+                    SST =  parameters[[1]][lsKind == "SST"]$numericValue,
+                    SSE =  parameters[[1]][lsKind == "SSE"]$numericValue,
+                    rsquare = parameters[[1]][lsKind == "rSquared"]$numericValue,
+                    compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue
+                  )
+                  ))), by = curveid]
+    stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
+    myMessenger$logger$debug(paste0("Returning stubs"))
+  
+    #stop(toJSON(stubs))
+    return(stubs)
 }
 
 

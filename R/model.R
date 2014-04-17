@@ -307,12 +307,10 @@ fitDataToResponse.curation <- function(fitData, ...) {
   points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseUnits", "response", "responseUnits", "flag"), with = FALSE]
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
-  curve <- predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
-  curve <- split(curve, row.names(curve))
-  names(curve) <- NULL
   plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
-                   points  = fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseUnits", "response", "responseUnits", "flag"), with = FALSE],
-                   curve = predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
+                   points  = points,
+                   curve = c(type = fitData[1]$modelHint,
+                                fitData[1]$fittedParameters[[1]])
   )
   curveAttributes <- list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
                           Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
@@ -537,7 +535,7 @@ getFitData.experimentCode <- function(experimentCode, ...) {
   myMessenger$logger$debug("Extracting curve points")
   fitData[ ,  points:= list(list({
     treatmentGroups <- rbindlist(treatmentGroups)[ignored == FALSE]
-    subjects <- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
+    subjects <<- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
     subjectStates <- subjects[ , rbindlist(lsStates)[ , subj_id:= subj_id], by = subj_id]
     points <- subjectStates[ , {
       lsValues <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(lsValues, as.data.table))
@@ -919,7 +917,7 @@ knit2html.bugFix <- function (input, output = NULL, text = NULL, template = temp
 loadDoseResponseTestData <- function(size = c("small","large")) {
   size <- match.arg(size)
   doseResponseSELFile <- switch(size,
-                                "small" = system.file("docs", "Example-Dose-Response-SEL.xls", package="racas"),
+                                "small" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
                                 "large" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
   )
   t <- tempfile(fileext = ".xls")

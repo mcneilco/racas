@@ -27,11 +27,17 @@ file <- "inst/docs/example-ec50-simple-fitSettings.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
-experimentCode <- "EXPT-00000012"
+experimentCode <- "EXPT-00000026"
 fitData <- getFitData.experimentCode(experimentCode)
 fitData <- doseResponse.fitData(fitSettings, fitData)
-curveid <- fitData[8]$curveid
+curveid <- fitData[1]$curveid
 response <- doseResponse(fitSettings, curveids = curveid)
+
+
+#Experiment Code to curveCuratorThumbs
+
+
+
 
 #DNET sampling
 source("inst/docs/scratchPrivate.R")
