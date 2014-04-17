@@ -233,7 +233,7 @@ checkRefit <- function(fitData) {
 #' session <- parsedResponse$sessionID
 #' loadSession(session)
 #' head(fitData)
-doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA) {
+doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, ...) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
     fitData <- getFitData.curve(curveids)
@@ -261,8 +261,7 @@ doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = N
   } else {
     sessionID <- saveSession(sessionID)
   }
-  response <- fitDataToResponse.curation(fitData, sessionID = sessionID)
-  return(response)
+  return(list(fitData = fitData, sessionID = sessionID))
 }
 #' fitData object to json response
 #'
@@ -518,10 +517,10 @@ getFitData.curve <- function(curveids, ...) {
   fitData[ , model.synced := FALSE]
   return(fitData)
 }
-getFitData.experimentCode <- function(experimentCode, ...) {
+getFitData.experimentCode <- function(experimentCode, include = "fullobject", ...) {
   myMessenger <- messenger()
   myMessenger$logger$debug("Calling experiment service")
-  experimentJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=fullobject"))
+  experimentJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=", include))
   
   myMessenger$logger$debug("Parsing experiment json")
   experiment <- jsonlite::fromJSON(experimentJSON[[1]])
@@ -531,49 +530,6 @@ getFitData.experimentCode <- function(experimentCode, ...) {
   fitData[ , parameters := list(list(
     rbindlist(rbindlist(lsStates)[ignored == FALSE & lsKind=="Dose Response"][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)
   )), by = id]
-  
-  myMessenger$logger$debug("Extracting curve points")
-  fitData[ ,  points:= list(list({
-    treatmentGroups <- rbindlist(treatmentGroups)[ignored == FALSE]
-    subjects <<- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
-    subjectStates <- subjects[ , rbindlist(lsStates)[ , subj_id:= subj_id], by = subj_id]
-    points <- subjectStates[ , {
-      lsValues <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(lsValues, as.data.table))
-      list(list(lsValues[ , subj_id:=subj_id]))
-    }, by = subj_id]
-    Reduce(function(x,y) rbind(x,y,fill = TRUE), points$V1)
-  }
-  )), by = id]
-  myMessenger$logger$debug("Pivoting the curve points")
-  fitData[ , points := list(list({ 
-    dr <- data.table::dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "numericValue")[ , id:=points[[1]][lsKind=="Response"]$id]    
-    drUnits <- dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "unitKind")
-    setnames(drUnits, "Dose", "doseUnits")
-    setnames(drUnits, "Response", "responseUnits")
-    dr <- dr[drUnits]
-    setnames(dr, "id", "response_sv_id")
-    if(nrow(points[[1]][lsKind=="flag"]) > 0) {
-      fl <- dcast.data.table(points[[1]][lsKind=="flag"], subj_id ~ lsKind, value.var = "stringValue")
-    } else {
-      fl <- data.table(subj_id = as.integer(),flag = as.character())
-      setkey(fl, subj_id)
-    }
-    bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
-    setkey(fl, subj_id)
-    setkey(bc, subj_id)
-    setkey(dr, subj_id)
-    if(nrow(fl) == 0) {
-      pts <- bc[dr]
-    } else {
-      pts <- fl[bc][dr]
-    }
-    if(is.null(pts$flag)) {
-      pts[ , flag := as.character(NA)]
-    }
-    setnames(pts, names(pts), tolower(names(pts)))
-  })), by = id]
-  myMessenger$logger$debug("Filling out the rest of the fit data object")
-  
   fitData[ , curveid := parameters[[1]][grepl('.*curve id', lsKind)]$stringValue , by = id]
   myParameterRules <- list(goodnessOfFits = list(), limits = list())
   myInactiveRule <- list()
@@ -594,6 +550,51 @@ getFitData.experimentCode <- function(experimentCode, ...) {
     myMessenger$logger$error(paste0("Attempted to fit an expt code with no rendering hint stored in analysis group parameters"))
   }
   fitData[ , model.synced := FALSE]
+  
+  if (include == "fullobject") {
+    myMessenger$logger$debug("Extracting curve points")
+    fitData[ ,  points:= list(list({
+      treatmentGroups <- rbindlist(treatmentGroups)[ignored == FALSE]
+      subjects <<- treatmentGroups[ , rbindlist(subjects)[ , subj_id := id], by = id]
+      subjectStates <- subjects[ , rbindlist(lsStates)[ , subj_id:= subj_id], by = subj_id]
+      points <- subjectStates[ , {
+        lsValues <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(lsValues, as.data.table))
+        list(list(lsValues[ , subj_id:=subj_id]))
+      }, by = subj_id]
+      Reduce(function(x,y) rbind(x,y,fill = TRUE), points$V1)
+    }
+    )), by = id]
+    myMessenger$logger$debug("Pivoting the curve points")
+    fitData[ , points := list(list({ 
+      dr <- data.table::dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "numericValue")[ , id:=points[[1]][lsKind=="Response"]$id]    
+      drUnits <- dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "unitKind")
+      setnames(drUnits, "Dose", "doseUnits")
+      setnames(drUnits, "Response", "responseUnits")
+      dr <- dr[drUnits]
+      setnames(dr, "id", "response_sv_id")
+      if(nrow(points[[1]][lsKind=="flag"]) > 0) {
+        fl <- dcast.data.table(points[[1]][lsKind=="flag"], subj_id ~ lsKind, value.var = "stringValue")
+      } else {
+        fl <- data.table(subj_id = as.integer(),flag = as.character())
+        setkey(fl, subj_id)
+      }
+      bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
+      setkey(fl, subj_id)
+      setkey(bc, subj_id)
+      setkey(dr, subj_id)
+      if(nrow(fl) == 0) {
+        pts <- bc[dr]
+      } else {
+        pts <- fl[bc][dr]
+      }
+      if(is.null(pts$flag)) {
+        pts[ , flag := as.character(NA)]
+      }
+      setnames(pts, names(pts), tolower(names(pts)))
+    })), by = id]
+    myMessenger$logger$debug("Filling out the rest of the fit data object")
+  }
+  
   myMessenger$logger$debug(paste0("Returning from getting experiment curve data with ", nrow(fitData), " curves"))
   return(fitData)
 }

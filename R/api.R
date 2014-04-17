@@ -145,9 +145,9 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
 #     cat("Using fake data")
 #     file <- "inst/docs/example-ec50-simple-fitSettings.json"
-#     file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
-#     simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-#     simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+     file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+     simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+     simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #     recordedBy <- "bbolt"
   
   #experimentCode <- loadDoseResponseTestData()
@@ -194,7 +194,7 @@ api_doseResponse_stubs <- function(GET) {
   }
   #experimentCode <- "EXPT-00000026"
   myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
-  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
   modelHint <- fitData[1]$modelHint
   myMessenger$logger$debug(paste0("Got modelHint '",modelHint,"'"))
@@ -230,4 +230,23 @@ api_doseResponse_stubs <- function(GET) {
     return(stubs)
 }
 
+api_doseResponse_detail <- function(GET) {  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.detail")
+  if(is.null(GET$id)) {
+    msg <- "No GET parameter 'id' provided"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  } else {
+    id <- GET$id
+  }
+  file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas")
+  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+  simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+  fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
 
+  fitResponse <- doseResponse(fitSettings, curveids = id)
+  response <- fitDataToResponse.curation(fitData = fitResponse$fitData, sessionID = fitResponse$sessionID, fitSettings = simpleBulkDoseResponseFitRequest)
+  return(response)
+}
