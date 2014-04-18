@@ -538,3 +538,18 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
   
   return(serverFileLocation)
 }
+
+#' Returns file path for uploaded files 
+#'
+#' @param inputString File Name
+#' @return File path
+#' @keywords config, configuration, filePath, fileToParse
+#' @export
+
+getUploadedFilePath <- function(inputString) {
+  return(file.path(racas::applicationSettings$server.file.server.path, inputString))  
+}
+
+
+
+

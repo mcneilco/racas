@@ -184,7 +184,7 @@ deleteLinkFile <- function(experiment, testMode=FALSE) {
           return(filesToDelete)
         } else {
           tryCatch({
-            file.remove(paste0("serverOnlyModules/blueimp-file-upload-node/public/files/", filesToDelete))
+            file.remove(paste0(racas::applicationSettings$server.file.server.path,"/", filesToDelete))
           }, error = function(e) {
             stop("There was an error deleting the old report file. Please contact your system adminstrator.")
           })

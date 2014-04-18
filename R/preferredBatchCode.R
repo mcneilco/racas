@@ -13,7 +13,7 @@
 getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) {
   
   if (is.null(preferredIdService)) {
-    preferredIdService <- paste0("http://", racas::applicationSettings$client.host, ":", racas::applicationSettings$client.port, 
+    preferredIdService <- paste0(racas::applicationSettings$server.nodeapi.path, 
                                 racas::applicationSettings$client.service.preferred.batchid.path)
   }
   
