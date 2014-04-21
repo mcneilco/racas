@@ -128,3 +128,24 @@ validateApplicationSettings <- function(applicationSettings = racas::application
   }
   return(applicationSettings)
 }
+
+#' Returns "http://" for blank, null, or FALSE inputs; "https://" for TRUE inputs. 
+#'
+#' @param clientUseSSL Boolean, default is applicationSettings$client.use.ssl
+#' @return Outputs either "http://" or "https://"
+#' @keywords applicationSettings, config, configuration, SSL
+#' @export
+getSSLString <- function(clientUseSSL = applicationSettings$client.use.ssl) {
+  # Pulls in clientUseSSL from applicationSettings to see if we heed http:// or https:// in URL
+  # Input:   clientUseSSL (boolean)
+  # Output:  http:// or https:// (character)
+  # Default: http://
+  
+  if (is.null(clientUseSSL) || clientUseSSL == "" || !clientUseSSL) {
+    sslString <- "http://"
+  } else if (clientUseSSL) {
+    sslString <- "https://"
+  } 
+  
+  return(sslString)
+}
