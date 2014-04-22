@@ -111,19 +111,41 @@ readConfigFile <- function(configLocation) {
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
   #server.log.path validation
   #Check if set
+  currentWD <-  getwd()
   if(is.null(applicationSettings$server.log.path)) {
-    warning("applicationSettings$server.log.path is null. Setting to /tmp")
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   #Check if exits
   if(!file.exists(applicationSettings$server.log.path)) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting applicationSettings$server.log.path to \'/tmp\'"))
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   #Check writeable
   if(file.access(applicationSettings$server.log.path, mode = 2) != 0) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting applicationSettings$server.log.path to \'/tmp\'"))
-    applicationSettings$server.log.path <- "/tmp"
+    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
+    applicationSettings$server.log.path <- currentWD
   }
   return(applicationSettings)
+}
+
+#' Returns "http://" for blank, null, or FALSE inputs; "https://" for TRUE inputs. 
+#'
+#' @param clientUseSSL Boolean, default is applicationSettings$client.use.ssl
+#' @return Outputs either "http://" or "https://"
+#' @keywords applicationSettings, config, configuration, SSL
+#' @export
+getSSLString <- function(clientUseSSL = applicationSettings$client.use.ssl) {
+  # Pulls in clientUseSSL from applicationSettings to see if we heed http:// or https:// in URL
+  # Input:   clientUseSSL (boolean)
+  # Output:  http:// or https:// (character)
+  # Default: http://
+  
+  if (is.null(clientUseSSL) || clientUseSSL == "" || !clientUseSSL) {
+    sslString <- "http://"
+  } else if (clientUseSSL) {
+    sslString <- "https://"
+  } 
+  
+  return(sslString)
 }

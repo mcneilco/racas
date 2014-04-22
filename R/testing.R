@@ -38,7 +38,7 @@ loadTestData <- function(applicationSettings = racas::applicationSettings, ...) 
     calculatedResultsStart <- grep("Calculated Results", genericDataFileDataFrame) + 1
     genericDataFileDataFrame[calculatedResultsStart:(nrow(calculatedResults)+calculatedResultsStart-1) ,] <- calculatedResults
     
-    selFile <- tempfile(fileext=".csv", tmpdir = file.path("serverOnlyModules/blueimp-file-upload-node/public/files"))
+    selFile <- tempfile(fileext=".csv", tmpdir = file.path(racas::applicationSettings$server.file.server.path))
     write.table(genericDataFileDataFrame, file = selFile, col.names = FALSE, row.names = FALSE, na = "", sep = "," )
     
     # Collect the information from the request

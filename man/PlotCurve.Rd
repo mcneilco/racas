@@ -3,7 +3,7 @@
 \title{Curve plotting function}
 \usage{
 plotCurve(curveData, params, fitFunction, paramNames = c("ec50", "min", "max",
-  "hill"), drawIntercept = "ec50", outFile = NA, ymin = NA,
+  "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA,
   logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA,
   xmax = NA, height = 300, width = 300, showGrid = FALSE,
   showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE,

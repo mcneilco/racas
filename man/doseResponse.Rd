@@ -2,7 +2,8 @@
 \alias{doseResponse}
 \title{Fit dose response data}
 \usage{
-doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA)
+doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA,
+  ...)
 }
 \arguments{
   \item{fitSettings}{a fit settings list object (see

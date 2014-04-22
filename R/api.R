@@ -145,13 +145,13 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
 #     cat("Using fake data")
 #     file <- "inst/docs/example-ec50-simple-fitSettings.json"
-#     file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
-#     simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-#     simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#      file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#      simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#      simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #     recordedBy <- "bbolt"
-  
+#   
   #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000446"
+  #experimentCode <- "EXPT-00000036"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -161,8 +161,8 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", userError = "Fit settings error")
   
   myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
-  myMessenger$captureOutput("fitData <- getFitData.experimentCode(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
-  
+  myMessenger$captureOutput("fitData <- getFitData(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveid]
   myMessenger$logger$debug("Fitting the data")
   myMessenger$captureOutput("fitData <- doseResponse.fitData(fitSettings, fitData)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
   
@@ -181,4 +181,104 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   return(response)
 }
 
+api_doseResponse_stubs <- function(GET) {  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.stubs")
+  if(is.null(GET$experimentcode)) {
+    msg <- "No 'experimentcode' provided"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  } else {
+    experimentCode <- GET$experimentcode
+  }
+  #experimentCode <- "EXPT-00000026"
+  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
+  myMessenger$captureOutput("fitData <- getFitData(experimentCode, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
+  modelHint <- fitData[1]$modelHint
+  myMessenger$logger$debug(paste0("Got modelHint '",modelHint,"'"))
+  myMessenger$logger$debug(paste0("Getting sort options '",modelHint,"'"))
+  if(fitData[1]$modelHint == "LL.4") {
+    sortOptions <- list(list(code = "compoundCode", name = "Compound Code"),
+                       list(code = "EC50", name = "EC50"),
+                       list(code = "SST", name = "SST"),
+                       list(code = "SSE", name = "SSE"),
+                       list(code = "rsquare", name = "R^2"))
+  } else {
+    msg <- paste0("Model Hint '", modelHint, "' unimplemented for sort options")
+    myMessenger$logger$error(msg)
+    stop(msg)
+  }
+   myMessenger$logger$debug(paste0("Get curve attributes"))
+  fitData[ , curves := list(list(list(curveid = curveid[[1]], 
+                  algorithmApproved = TRUE,
+                  userApproved = TRUE,
+                  category = parameters[[1]][lsKind == "category", ]$stringValue,
+                  curveAttributes = list(
+                    EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
+                    SST =  parameters[[1]][lsKind == "SST"]$numericValue,
+                    SSE =  parameters[[1]][lsKind == "SSE"]$numericValue,
+                    rsquare = parameters[[1]][lsKind == "rSquared"]$numericValue,
+                    compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue
+                  )
+                  ))), by = curveid]
+    stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
+    myMessenger$logger$debug(paste0("Returning stubs"))
+  
+    #stop(toJSON(stubs))
+    return(stubs)
+}
 
+api_doseResponse_detail <- function(GET, ...) {  
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- FALSE
+  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.detail")
+  if(is.null(GET$id)) {
+    msg <- "No GET parameter 'id' provided"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  } else {
+    id <- GET$id
+  }
+  
+  fitData <- getFitData(id, type = "analysisGroupID", include = "fullobject")
+  
+  reportedValues <- fitData[1]$parameters[[1]][lsKind == "reportedValuesClob"]$clobValue
+  fitSummary <- fitData[1]$parameters[[1]][lsKind == "fitSummaryClob"]$clobValue
+  parameterStdErrors <- fitData[1]$parameters[[1]][lsKind == "parameterStdErrorsClob"]$clobValue
+  curveErrors <- fitData[1]$parameters[[1]][lsKind == "curveErrorsClob"]$clobValue
+  category <- fitData[1]$category[[1]]
+  algorithmApproved = fitData[1]$approved[[1]]
+  points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag"), with = FALSE]
+  points <- split(points, points$response_sv_id)
+  names(points) <- NULL
+  fittedParameters <- fitData[1]$parameters[[1]][grepl("Fitted ",lsKind), ][ , c("lsKind","numericValue"), with = FALSE]
+  fittedParametersList <- list()
+  fittedParametersList[1:nrow(fittedParameters)] <- fittedParameters$numericValue
+  names(fittedParametersList) <- tolower(gsub('Fitted ', '', fittedParameters$lsKind))
+  plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
+                   points  = points,
+                   curve = c(type = fitData[1]$modelHint,
+                             fittedParametersList)
+  )
+  curveAttributes <- list(EC50 = fitData[1]$parameters[[1]][lsKind == "EC50"]$numericValue,
+                          Operator = fitData[1]$parameters[[1]][lsKind == "EC50"]$valueOperator,
+                          SST = fitData[1]$parameters[[1]][lsKind == "SST"]$numericValue,
+                          SSE =  fitData[1]$parameters[[1]][lsKind == "SSE"]$numericValue,
+                          rSquared =  fitData[1]$parameters[[1]][lsKind == "rSquared"]$numericValue,
+                          compoundCode = fitData[1]$parameters[[1]][lsKind == "batch code"]$stringValue
+  )
+  fitSettings <- fromJSON(fitData[1]$parameters[[1]][lsKind == "fitSettings"]$clobValue)
+  return(toJSON(list(reportedValues = reportedValues,
+                     fitSummary = fitSummary,
+                     parameterStdErrors = parameterStdErrors,
+                     curveErrors = curveErrors,
+                     category = category,
+                     algorithmApproved = algorithmApproved,
+                     curveAttributes = curveAttributes,
+                     plotData = plotData,
+                     fitSettings = fitSettings,
+                     ...
+  ))) 
+}
