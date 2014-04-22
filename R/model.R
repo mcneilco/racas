@@ -277,20 +277,6 @@ doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = N
 #' #FitData object plus the "cars" data to a json string
 #' fitDataToResponse.curation(fitData, cars)
 fitDataToResponse.curation <- function(fitData, ...) {
-  listToDataTable <- function(l) {
-    dt <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(1:length(l), function(x) {dt <- as.data.table(l[[x]])
-                                                                                        dt[ , name := names(l)[[x]]]
-                                                                                        classes <- lapply(dt, class) 
-                                                                                        removeThese <- names(classes)[classes=="NULL"]
-                                                                                        if(length(removeThese) > 0) {
-                                                                                          dt[ , removeThese := NULL, with = FALSE]
-                                                                                        }
-                                                                                        return(dt)
-    }
-    )
-    )
-    return(dt)
-  }
   reportedParameters <- listToDataTable(fitData[1]$reportedParameters[[1]])
   reportedValues <- objToHTMLTableString(reportedParameters[ , c("name", "value"), with = FALSE], include.colnames = FALSE)
   fitSummary <- captureOutput(summary(fitData[1]$model[[1]]))
@@ -493,38 +479,35 @@ getReportedParameters <- function(modelHint, results, inactive, fitConverged, in
   )
 }
 
-getFitData.curve <- function(curveids, ...) {
-  fitData <- getCurveData(curveids, flagsAsLogical = FALSE, ...)
-  fitData$points <- cbind(fitData$points, flagChanged = FALSE)
-  fitData <- data.table(curveid = unique(as.character(fitData$points$curveid,fitData$parameters$curveid))[order(unique(as.character(fitData$points$curveid,fitData$parameters$curveid)))], 
-                        modelHint = unlist(lapply(fitData$parameters$renderingHint, 
-                                                  function(x) {
-                                                    ans <- switch(x,
-                                                                  "4 parameter D-R" = "LL.4",
-                                                                  "2 parameter Michaelis Menten" = "MM.2")
-                                                    return(ans)
-                                                  })),
-                        points = split(as.data.table(fitData$points), fitData$points$curveid),
-                        parameters = split(as.data.table(fitData$parameters), fitData$parameters$curveid),
-                        key = "curveid")
-  fitData[ , tested_lot := as.character(rbindlist(fitData$parameters)$tested_lot)]
-  myParameterRules <- list(goodnessOfFits = list(), limits = list())
-  myInactiveRule <- list()
-  myFixedParameters <- list()
-  fitData[ , c("parameterRules", "inactiveRule", "fixedParameters") := list(list(myParameterRules),
-                                                                            list(myInactiveRule),
-                                                                            list(myFixedParameters))]
-  fitData[ , model.synced := FALSE]
+getFitData.curveID <- function(curveID, include = "fullobject", ...) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("Doing query to convert curve id to analyis group id")
+  analyisGroupIDOfCurveID <- query(paste0("select ag.id 
+               from analysis_group ag join analysis_group_state ags 
+               on ag.id=ags.analysis_group_id 
+               join analysis_group_value agv 
+               on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))[[1]]
+  
+  analyisGroupJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "analysisgroups/", analyisGroupIDOfCurveID, "?with=", include))
+  myMessenger$logger$debug("Parsing analyis group json")
+  analysisGroup <- jsonlite::fromJSON(analyisGroupJSON[[1]])
+  fitData <- listToDataTable(analysisGroup)
   return(fitData)
 }
 getFitData.experimentCode <- function(experimentCode, include = "fullobject", ...) {
   myMessenger <- messenger()
-  myMessenger$logger$debug("Calling experiment service")
   experimentJSON <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=", include))
-  
   myMessenger$logger$debug("Parsing experiment json")
   experiment <- jsonlite::fromJSON(experimentJSON[[1]])
   fitData <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
+}
+getFitData <- function(entityID, type = c("experimentCode", "analysisGroupID"), include = "fullobject", ...) {
+  type <- match.arg(type)
+  myMessenger <- messenger()
+  fitData <- switch(type,
+                                "experimentCode" = getFitData.experimentCode(entityID, include),
+                                "analysisGroupID" = getFitData.curveID(entityID, include)
+  )
   
   myMessenger$logger$debug("Extracting curve parameters")
   fitData[ , parameters := list(list(
@@ -546,7 +529,7 @@ getFitData.experimentCode <- function(experimentCode, include = "fullobject", ..
                                         }))
           ]  
   if(is.null(fitData$modelHint)) {
-    myMessenger$addUserError(paste0("No Rendering Hint found for ", experimentCode))
+    myMessenger$addUserError(paste0("No Rendering Hint found for ", entityID))
     myMessenger$logger$error(paste0("Attempted to fit an expt code with no rendering hint stored in analysis group parameters"))
   }
   fitData[ , model.synced := FALSE]
@@ -921,7 +904,7 @@ loadDoseResponseTestData <- function(size = c("small","large")) {
                                 "small" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
                                 "large" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
   )
-  t <- tempfile(fileext = ".xls")
+  t <- tempfile(fileext = ".xlsx")
   file.copy(doseResponseSELFile,t)
   originalWD <- getwd()
   acasHome <- normalizePath(file.path(path.package("racas"),"..",".."))
@@ -935,4 +918,39 @@ loadDoseResponseTestData <- function(size = c("small","large")) {
   }
   setwd(originalWD)
   return(response$results$experimentCode)
+}
+
+flattenListToDataTable <- function(l) {
+  dt <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(1:length(l), function(x) {cat(x)
+    dt <- as.data.table(l[[x]])
+                                                                                      dt[ , name := names(l)[[x]]]
+                                                                                      classes <- lapply(dt, class) 
+                                                                                      removeThese <- names(classes)[classes=="NULL"]
+                                                                                      if(length(removeThese) > 0) {
+                                                                                        dt[ , removeThese := NULL, with = FALSE]
+                                                                                      }
+                                                                                      return(dt)
+  }
+  )
+  )
+  return(dt)
+}
+
+listToDataTable <- function(l) {
+  dt <- data.table(1)
+  invisible(lapply(1:length(l) , function(x) {
+    if(is.null(l[[x]])) return()
+    if(length(l[[x]]) == 1) {
+      dt[ , names(l)[[x]] := l[[x]]]
+    } else {
+      if(class(l[[x]]) == "data.frame") {
+        dt[ , names(l)[[x]] := list(list(as.data.table(l[[x]])))]
+      } else {
+        dt[ , names(l)[[x]] := list(list(l[[x]]))]
+      }
+    }
+  }
+  ))
+  dt[ , V1 := NULL]
+  return(dt)
 }

@@ -1,0 +1,22 @@
+\name{getSSLString}
+\alias{getSSLString}
+\title{Returns "http://" for blank, null, or FALSE inputs; "https://" for TRUE inputs.}
+\usage{
+getSSLString(clientUseSSL = applicationSettings$client.use.ssl)
+}
+\arguments{
+  \item{clientUseSSL}{Boolean, default is
+  applicationSettings$client.use.ssl}
+}
+\value{
+Outputs either "http://" or "https://"
+}
+\description{
+Returns "http://" for blank, null, or FALSE inputs;
+"https://" for TRUE inputs.
+}
+\keyword{SSL}
+\keyword{applicationSettings,}
+\keyword{config,}
+\keyword{configuration,}
+
