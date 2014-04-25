@@ -1,0 +1,23 @@
+\name{parentAcasEntity}
+\alias{parentAcasEntity}
+\title{Get parent of ACAS entity}
+\usage{
+parentAcasEntity(entityKind, currentMode = "lowercase")
+}
+\arguments{
+  \item{entityKind}{Something from the
+  racas::acasEntityHierarchy (or acasEntityHierarchyCamel
+  or acasEntityHierarchySpace)}
+
+  \item{currentMode}{One of "lowercase", "camel", or
+  "space"}
+}
+\description{
+Get the parent of an acas entity (experiment, analysis
+group, etc.). Useful for generic functions that can accept
+any level.
+}
+\details{
+returns an empty character vector when given "protocol"
+}
+

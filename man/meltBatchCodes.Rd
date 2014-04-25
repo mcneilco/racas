@@ -24,6 +24,7 @@ A data frame with rows for all code values
 Turns a batchCode column into rows in a long format
 }
 \details{
-Does not work with data.table
+Does not work with data.table entityData must have columns
+"batchCode", "stateID", "stateGroupIndex", "publicData"
 }
 

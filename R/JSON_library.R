@@ -1779,13 +1779,62 @@ getExperimentByCodeName <- function(experimentCodeName, include=NULL, errorEnv=N
 
 #' The hierarcy of ACAS entities
 #' 
-#' Each category of entity contains the level below. Both a lowercase version
-#' (for URLs) and a camelCase verison (for JSON) exist. Can be found in
-#' racas::acasEntityHierarchy and racas::acasEntityHierarchyCamel
+#' Each category of entity contains the level below. A lowercase version (for
+#' URLs), a camelCase verison (for JSON), and a spaced version (for getting
+#' codeNames) exist. Can be found in \code{racas::acasEntityHierarchy},
+#' \code{racas::acasEntityHierarchyCamel} and
+#' \code{racas::acasEntityHierarchySpace}
 acasEntityHierarchy <- c("protocol", "experiment", "analysisgroup", "treatmentgroup", "subject")
 
 #' @rdname acasEntityHierarchy
 acasEntityHierarchyCamel <- c("protocol", "experiment", "analysisGroup", "treatmentGroup", "subject")
+
+#' @rdname acasEntityHierarchy
+acasEntityHierarchySpace <- c("protocol", "experiment", "analysis group", "treatment group", "subject")
+
+#' Get parent of ACAS entity
+#' 
+#' Get the parent of an acas entity (experiment, analysis group, etc.). Useful 
+#' for generic functions that can accept any level.
+#' 
+#' @param entityKind Something from the racas::acasEntityHierarchy (or
+#'   acasEntityHierarchyCamel or acasEntityHierarchySpace)
+#' @param currentMode One of "lowercase", "camel", or "space"
+#' 
+#' @details returns an empty character vector when given "protocol"
+parentAcasEntity <- function(entityKind, currentMode = "lowercase") {
+  switch(
+    currentMode,
+    lowercase = acasEntityHierarchy[which(entityKind == acasEntityHierarchy) - 1],
+    camel = acasEntityHierarchyCamel[which(entityKind == acasEntityHierarchyCamel) - 1],
+    space = acasEntityHierarchySpace[which(entityKind == acasEntityHierarchySpace) - 1],
+    stop(paste0("Internal error: ", currentMode, " is not a valid mode")))
+}
+
+#' Change mode ACAS entity
+#' 
+#' Changes the mode of an acas entity from camelcase to all lowercase or with a
+#' space between words
+#' 
+#' @param entityKind A list, one of racas::acasEntityHierarchy (or 
+#'   acasEntityHierarchyCamel or acasEntityHierarchySpace)
+#' @param currentMode One of "lowercase", "camel", or "space"
+#' @param desiredMode One of "lowercase", "camel", or "space"
+changeEntityMode <- function(entityKind, currentMode, desiredMode) {
+  entityKindIndex <- switch(
+    currentMode,
+    lowercase = which(entityKind == acasEntityHierarchy),
+    camel = which(entityKind == acasEntityHierarchyCamel),
+    space = which(entityKind == acasEntityHierarchySpace),
+    stop(paste0("Internal error: ", currentMode, " is not a valid mode")))
+  
+  return(switch(
+    desiredMode,
+    lowercase = acasEntityHierarchy[entityKindIndex],
+    camel = acasEntityHierarchyCamel[entityKindIndex],
+    space = acasEntityHierarchySpace[entityKindIndex],
+    stop(paste0("Internal error: ", desiredMode, " is not a valid mode"))))
+}
 
 #' Gets Entity Name
 #' 
