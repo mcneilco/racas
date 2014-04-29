@@ -329,7 +329,6 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
 doseResponse_add_clob_values <- function(fitData) {
     fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
       if(fitConverged) {
-        saveSession("~/Desktop/blah")
         reportedValues <- flattenListToDataTable(reportedParameters[[1]])
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
