@@ -3,7 +3,7 @@
 \title{Fit dose response data}
 \usage{
 doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA,
-  ...)
+  simpleFitSettings = NULL, ...)
 }
 \arguments{
   \item{fitSettings}{a fit settings list object (see
@@ -16,8 +16,7 @@ doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA,
   \item{fitData}{a fidData object to refit}
 }
 \value{
-A json object with the sessionid among a number of html
-divs to display back to the user
+A list object with a fitted fitData object and sessionID
 }
 \description{
 Converts a character vector of curveids, character
@@ -39,11 +38,5 @@ fitSettingsJSON <- readChar(file, file.info(file)$size)
 fitSettings <- fromJSON(fitSettingsJSON)
 #fit the data
 system.time(response <- doseResponse(fitSettings, curveids = curveids))
-
-#Inspect the saved fit session
-parsedResponse <- fromJSON(response)
-session <- parsedResponse$sessionID
-loadSession(session)
-head(fitData)
 }
 

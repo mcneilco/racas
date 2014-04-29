@@ -27,7 +27,7 @@ file <- "inst/docs/example-ec50-simple-fitSettings.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
-experimentCode <- "EXPT-00000026"
+experimentCode <- "EXPT-00000049"
 fitData <- getFitData.experimentCode(experimentCode)
 fitData <- doseResponse.fitData(fitSettings, fitData)
 curveid <- fitData[1]$curveid

@@ -151,7 +151,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #     recordedBy <- "bbolt"
 #   
   #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000036"
+  #experimentCode <- "EXPT-00000063"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -170,7 +170,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$captureOutput("fitData <- doseResponse_add_clob_values(fitData)", continueOnError = FALSE)
   
   myMessenger$logger$debug("Saving the curve data")
-  myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy, experimentCode = experimentCode)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
+  myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, recordedBy)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("Responding to ACAS")
@@ -201,7 +201,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   } else {
     experimentCode <- GET$experimentcode
   }
-  #experimentCode <- "EXPT-00000036"
+  #experimentCode <- "EXPT-00000049"
   myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
   myMessenger$captureOutput("fitData <- getFitData(experimentCode, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
@@ -288,6 +288,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                             rSquared =  fitData[1]$parameters[[1]][lsKind == "rSquared"]$numericValue,
                             compoundCode = fitData[1]$parameters[[1]][lsKind == "batch code"]$codeValue
     )
+    category <- fitData[1]$parameters[[1]][lsKind == "category"]$stringValue
+  
   } else {
     reportedValues <- fitData[1]$reportedValuesClob[[1]]
     fitSummary <- fitData[1]$fitSummaryClob[[1]]
@@ -302,12 +304,13 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                             rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
                             compoundCode = fitData[1]$parameters[[1]][lsKind == "batch code"]$codeValue
     )
+    category <- fitData[1]$category[[1]]
+    
   }
   curveid <- fitData[1]$curveid
-  category <- fitData[1]$category[[1]]
   algorithmApproved = fitData[1]$approved[[1]]
   points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag", "flagchanged"), with = FALSE]
-  category <- nrow(points[!is.na(flag)])
+  #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
   plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
@@ -329,18 +332,22 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   )))
 }
 doseResponse_add_clob_values <- function(fitData) {
-  fitData[ , reportedValuesClob := list(list(objToHTMLTableString(flattenListToDataTable(reportedParameters[[1]])[ , c("name", "value"), with = FALSE], include.colnames = FALSE))), by = curveid]
-  fitData[ , fitSummaryClob := list(list(captureOutput(model[[1]])))]
-  fitData[ , parameterStdErrorsClob := {
-    goodnessOfFit.parameters <- flattenListToDataTable(goodnessOfFit.parameters[[1]])
-    goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
-                                                      list(name = sp[[1]], type = sp[[2]])
-    }, by = c("V1", "name")]
-    goodnessOfFit.parameters <- dcast.data.table(goodnessOfFit.parameters, name ~ type, value.var = "V1")
-    parameterStdErrors <- objToHTMLTableString(goodnessOfFit.parameters)
-    list(list(parameterStdErrors))
-  }, by = curveid]
-  fitData[, curveErrorsClob := list(list(objToHTMLTableString(flattenListToDataTable(goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE]))), by = curveid]
+    fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
+      if(fitConverged) {
+        reportedValuesClob <- objToHTMLTableString(flattenListToDataTable(reportedParameters[[1]])[ , c("name", "value"), with = FALSE], include.colnames = FALSE)
+        fitSummaryClob <- captureOutput(summary(model[[1]]))
+        goodnessOfFit.parameters <- flattenListToDataTable(goodnessOfFit.parameters[[1]])
+        goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
+                                                            list(name = sp[[1]], type = sp[[2]])}, by = c("V1", "name")]
+        goodnessOfFit.parameters <- dcast.data.table(goodnessOfFit.parameters, name ~ type, value.var = "V1")
+        parameterStdErrors <- objToHTMLTableString(goodnessOfFit.parameters)
+        parameterStdErrorsClob <- parameterStdErrors
+        curveErrorsClob <- objToHTMLTableString(flattenListToDataTable(goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE])
+        list(reportedValuesClob = list(reportedValuesClob), fitSummaryClob = list(fitSummaryClob), parameterStdErrorsClob = list(parameterStdErrorsClob), curveErrorsClob = list(curveErrorsClob))
+      } else {
+        list(reportedValuesClob = list(NULL), fitSummaryClob = list(NULL), parameterStdErrorsClob= list(NULL), curveErrorsClob = list(NULL))
+      }
+    }, by = curveid]
   return(fitData)
 }
 
@@ -350,26 +357,34 @@ api_doseResponse_fit_curve <- function(postData) {
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.fit.curve")
   
   myMessenger$logger$debug("parsing json from acas")
+  myMessenger$logger$debug(paste0("got post data: ", capture.output(cat(postData))))
+  
   POST <- jsonlite::fromJSON(postData)
-  
-  myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(POST$fitSettings)", userError = "Fit settings error")
-
-  myMessenger$logger$debug("getting updated point flags sent from acas")
-  points <- data.table(POST$plotData$points)
-  fitSettings$updateFlags <- points
-  
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
   
-  myMessenger$logger$debug("fitting the dose response model")
-  myMessenger$captureOutput("doseResponse <- doseResponse(fitSettings, sessionID = POST$sessionID)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
+  if(is.null(POST$persist)) POST$persist <- FALSE
+  if(POST$persist == TRUE) {
+    loadSession(POST$sessionID)
+    myMessenger$logger$debug("adding clob values to fit data")    
+    fitData <- doseResponse_add_clob_values(fitData)
+    myMessenger$logger$debug("saving the curve data")
+    myMessenger$logger$debug(exists("fitData"))
+    myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, 'bbolt')", userError = "Error saving the experiment curve data", continueOnError = FALSE)
+    response <- TRUE
+  } else {
+    myMessenger$logger$debug("getting updated point flags sent from acas")
+    points <- data.table(POST$plotData$points)
+    myMessenger$logger$debug("converting simple fit settings to advanced settings")
+    myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(POST$fitSettings, points)", userError = "Fit settings error")
   
-  myMessenger$logger$debug("converting the fitted data to a response json object")
-  fitData <- doseResponse_add_clob_values(doseResponse$fitData)
-  fitData[ , simpleFitSettings := toJSON(POST$fitSettings), by = curveid]
+    myMessenger$logger$debug("fitting the dose response model")
+    myMessenger$captureOutput("doseResponse <- doseResponse(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)", userError = "Error when fitting the experiment curve data", continueOnError = FALSE)
+    
+    myMessenger$logger$debug("converting the fitted data to a response json object")
+    fitData <- doseResponse_add_clob_values(doseResponse$fitData)
   
-  myMessenger$captureOutput("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
-  
+    myMessenger$captureOutput("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
+  }
   myMessenger$logger$debug("returning response")
   return(response)
 }
