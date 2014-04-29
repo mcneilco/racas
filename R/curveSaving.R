@@ -64,8 +64,8 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
   return(list(analysisGroupCode = analysisGroupCode, analysisGroupValues = agValues))
 }
 
-saveDoseResponseData <- function(fitData, recorded_by, experimentCode = NULL) {
-  
+saveDoseResponseData <- function(fitData, recorded_by) {
+  myMessenger <- messenger()
   transactionID <- createLsTransaction()$id
   fitData[ , analysisGroupValues := list(list(getAnalysisGroupValues(reportedParameters[[1]],
                                                                                   fixedParameters[[1]],
@@ -89,84 +89,30 @@ saveDoseResponseData <- function(fitData, recorded_by, experimentCode = NULL) {
                                               
                                               ))
           , by = curveid]
-  if(!is.null(experimentCode)) {
-    savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points = points, transactionID, experimentCode = experimentCode))][[1]]
-  } else {
-    if("parameters" %in% names(fitData)) {
-      savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points, transactionID))]
-    } else {
-      savedStates <- fitData[,  list(saveDoseResponseCurve(recorded_by, analysisGroupValues, points, transactionID))]
-    }
-  }
+  
+  savedStates <- saveDoseResponseCurve(fitData, recorded_by, transactionID)[[1]]
+  savedPoints <- fitData[,  list(updatePointFlags(points, recorded_by, transactionID))][[1]]  
   return(list(lsStates = savedStates, lsTransaction = transactionID))
   
-} # model.R in curve branch has data.table examples
+}
 
-saveDoseResponseCurve <- function(recordedBy, analysisGroupValues, points, lsTransaction, experimentCode = NULL, ignoreDoseResponseState.analysisGroupIds = NULL) {
-  #analysisGroupValues <- fitData$analysisGroupValues
-  #points <- fitData$points
-  #experimentCode <- experimentCode
-  #recordedBy <- "bbolt"
-
-  #First ignore the analysis group states for the analysis group values we are going to update
-  #If experimentCode is provided, we are ignoring all Dose Response states and then adding new ones
-  if(!is.null(experimentCode)) {
-    experiment <- getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=analysisgroupvalues"))
-    experiment <- fromJSON(experiment)[[1]]
-    analysisGroups <- experiment$analysisGroups  
-  } else {
-    #Else if no experiment code is provided, then we are only ignoring Dose Response states for ag_ids that are provided
-    if(is.null(ignoreDoseResponseState.analysisGroupIds)) {
-      analysisGroups <- list()
-    } else {
-      analysisGroups <- lapply(fitData$id, getEntityById, "analysisgroups")
-    }
-  }
-  analysisGroupStatesToIgnore <- getLSStateFromEntity(analysisGroups, lsType = "data", lsKind = "Dose Response", ignored = "FALSE")
-  ignoredAnalysisGroupStates <- lapply(analysisGroupStatesToIgnore, function(x) {
+saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
+  ignoredAnalysisGroupStates <- lapply(fitData$lsStates, function(x) {
+    x <- as.list(x)
+    x$lsValues <- NULL
     x$ignored <- TRUE
     updateAcasEntity(x, "analysisgroupstates")
   })
-  #need to add an analysis group value curve id!
-  matches <- match(unlist(lapply(analysisGroups,function(x) x$codeName)), unlist(lapply(analysisGroupValues, function(x) x$analysisGroupCode)))
-  analysisGroupStates <- lapply(1:length(analysisGroups),
-                                    function(x) {
-                                      state <- createAnalysisGroupState(
-                                        analysisGroup = list(id =  analysisGroups[[x]]$id, version = analysisGroups[[x]]$version),
-                                        analysisGroupValues = analysisGroupValues[[matches[[x]]]]$analysisGroupValues,
-                                        recordedBy = recordedBy,
-                                        lsType = "data",
-                                        lsKind = "Dose Response",
-                                        lsTransaction = lsTransaction
-                                      )
-                                      return(state)
-                                    }
-                                    
-  )
-  writeLines(toJSON(analysisGroupStates), con = "~/Desktop/blah.json")
-  savedAnalysisGroupStates <- saveAcasEntities(analysisGroupStates, "analysisgroupstates")
+  fitData[ , newStates := list(list(createAnalysisGroupState(
+    analysisGroup = list(id =  id[[1]], version = version),
+    analysisGroupValues = analysisGroupValues[[1]]$analysisGroupValues,
+    recordedBy = recordedBy,
+    lsType = "data",
+    lsKind = "Dose Response",
+    lsTransaction = lsTransaction    
+    ))), by = curveid]
+  savedAnalysisGroupStates <- saveAcasEntities(fitData$newStates, "analysisgroupstates")
   return(savedAnalysisGroupStates)
-}
-
-updateDoseResponseCurve <- function(fitData) {
-  # This takes one curve
-  
-  # Need flag_value_id in points
-  # Need flag to be a value or NA
-  # Need response_ss_version
-  
-  # This will ignore and replace states that are there
-  # Save new, ignore old
-  # If passed analysisGroupId, it is already saved
-  # will be passing flags to update
-  # Idea: one for analysis groups, one for flags
-  # Need to recalculate treatment groups
-  # Ignore states for whole object? just states
-  # TODO: deal with empty 
-  
-  fitData[, updatePointFlags(points[[1]]), by = curveid]
-  
-  fitData[, saveNewAnalysisGroupData(parameters[[1]])]
 }
 
 getLSStateFromEntity <- function(entities, ...) {
@@ -188,72 +134,21 @@ getLSStateFromEntity <- function(entities, ...) {
   return(lsStates)
 }
 
-saveNewAnalysisGroupData <- function(parameters) {
-  parameters <- cbind(rbindlist(fitData$analysisGroupValues),ag_id = rbindlist(fitData$parameters)$ag_id)
-  
-  lsTransaction <- createLsTransaction()$id
-  analysisGroups <- lapply(parameters$ag_id, getEntityById, "analysisgroups")
-  analysisGroupStatesToIgnore <- getLSStateFromEntity(analysisGroups, lsType = "data", lsKind = "Dose Response", ignored = "FALSE")
-  ignoredAnalysisGroupStates <- lapply(analysisGroupStatesToIgnore, function(x) {
-    x$ignored <- TRUE
-    updateAcasEntity(x, "analysisgroupstates")
-  })
-  #analysisGroupsStates lapply(analysisGroups, function(x) x$)
-  analysisGroupStateGroups <- list(list(entityKind = "analysisgroups",
-                                        stateType = "data", 
-                                        stateKind = "Dose Response",
-                                        includesOthers = TRUE,
-                                        includesCorpName = TRUE))
-  
-  analysisGroupData$stateGroupIndex <- 1
-  analysisGroupData$publicData <- TRUE
-  
-  analysisGroupsToIgnore <- unique(analysisGroupData$analysisGroupID)
-  
-  sqlAnalysisGroupIds <- paste(analysisGroupData$analysisGroupID, collapse = ",")
-  query(paste0(
-    "UPDATE analysis_group_state
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE state_type_and_kind = 'data_Dose Response'
-    AND analysis_group_id     IN (", sqlAnalysisGroupIds, ")"))
-  query(paste0(
-    "UPDATE analysis_group_value
-    SET ignored               = 1,
-    version                   = version+1
-    WHERE analysis_state_id    IN
-    (SELECT id
-    FROM analysis_group_state
-    WHERE state_type_and_kind = 'data_Dose Response'
-    AND analysis_group_id IN (", sqlAnalysisGroupIds, "))"))
-  
-  analysisGroupData$stateID <- saveStatesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
-                                                        stateGroups=analysisGroupStateGroups, stateGroupIndices = 1, 
-                                                        idColumn = "analysisGroupID", recordedBy = "curveCuration", lsTransaction = lsTransaction)[['entityStateId']]
-  analysisGroupData$stateVersion <- 0
-  analysisGroupData <- rbind.fill(analysisGroupData, meltBatchCodes(analysisGroupData, 1))
-  saveValuesFromLongFormat(entityData = analysisGroupData, entityKind = "analysisgroup", 
-                           stateGroups = analysisGroupStateGroups, stateGroupIndices = 1,
-                           lsTransaction = lsTransaction)
-  
-}
-updatePointFlags <- function(pointData, recordedBy) {
-  library(RCurl)
-  library(rjson)
-  
-  lsTransaction <- createLsTransaction()$id
-  updateTheseFlags <- pointData[!is.na(pointData$flag)]
-  changedFlags <- pointData[!is.na(flag_sv_id), list(flag_sv_id, response_ss_id, response_ss_version, tg_id, flag)]
-  flagsToIgnore <- lapply(changedFlags$flag_sv_id, getEntityById, "subjectvalues")
+updatePointFlags <- function(points, recordedBy, lsTransaction) {
+  pointData <- Reduce(function(x,y) rbind(x,y,fill = TRUE), points)
+  pointData <- pointData[flagchanged == TRUE, ]
+  addTheseFlags <- pointData[!is.na(pointData$flag)]
+  ignoreTheseFlags <- pointData[!is.na(flag_sv_id), list(flag_sv_id, response_ss_id, response_ss_version, tg_id, flag)]
+  flagsToIgnore <- lapply(ignoreTheseFlags$flag_sv_id, getEntityById, "subjectvalues")
   ignoredFlags <- lapply(flagsToIgnore, function(x) {
     x$ignored <- TRUE
     updateAcasEntity(x, "subjectvalues")
   })
-  newFlags <- updateTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = flag, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id, version=response_ss_version)))), by = response_sv_id]$V1
+  newFlags <- addTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = flag, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id[[1]], version=response_ss_version[[1]])))), by = response_sv_id]$V1
   saveAcasEntities(newFlags, "subjectvalues")
   
   #Treatment group value updates
-  update_tg_id <- unique(changedFlags$tg_id)
+  update_tg_id <- unique(pointData$tg_id)
   updateTheseValues <- pointData[pointData$tg_id %in% update_tg_id]
   treatmentGroups <- lapply(update_tg_id, getEntityById, "treatmentgroups")
   treatmentGroupDF <- ldply(treatmentGroups, flattenEntity, acasCategory= "treatmentGroup", includeFromState = c("id", "lsType", "lsKind", "version"))
@@ -279,6 +174,7 @@ updatePointFlags <- function(pointData, recordedBy) {
                                                                            version=unique(tgs_version))))), 
                                  by = tg_id]$V1
   saveAcasEntities(newValues, "treatmentgroupvalues")
+  
 }
 
 getEntityById <- function(id, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {

@@ -2,7 +2,8 @@
 \alias{simpleToAdvancedFitSettings}
 \title{Convert a simple dose response request to an advanced dose response request}
 \usage{
-simpleToAdvancedFitSettings(simpleSettings, modelHint = "LL.4")
+simpleToAdvancedFitSettings(simpleSettings, updateFlags = NULL,
+  modelHint = "LL.4")
 }
 \arguments{
   \item{simpleSettings}{a list object of simple fit

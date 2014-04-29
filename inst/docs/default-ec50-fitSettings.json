@@ -15,9 +15,16 @@
          "maxUncertaintyRule":{
             "parameter":"max",
             "type":"stdErr",
-            "value":5,
+            "value":10,
             "operator":">",
             "displayName":"Max uncertainty exceeded"
+         },
+        "minUncertaintyRule":{
+            "parameter":"min",
+            "type":"stdErr",
+            "value":10,
+            "operator":">",
+            "displayName":"Min uncertainty exceeded"
          },
          "ec50PValue":{
             "parameter":"ec50",
