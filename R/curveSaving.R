@@ -66,7 +66,11 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
 
 saveDoseResponseData <- function(fitData, recorded_by) {
   myMessenger <- messenger()
+  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.save")
+  
+  myMessenger$logger$debug("getting transaction id")
   transactionID <- createLsTransaction()$id
+  myMessenger$logger$debug("getting analysis group values from fit data")
   fitData[ , analysisGroupValues := list(list(getAnalysisGroupValues(reportedParameters[[1]],
                                                                                   fixedParameters[[1]],
                                                                                   fittedParameters[[1]],
@@ -89,9 +93,11 @@ saveDoseResponseData <- function(fitData, recorded_by) {
                                               
                                               ))
           , by = curveid]
-  
-  savedStates <- saveDoseResponseCurve(fitData, recorded_by, transactionID)[[1]]
+  myMessenger$logger$debug("saving dose response parameter data")
+  savedStates <- saveDoseResponseCurve(fitData, recorded_by, transactionID)
+  myMessenger$logger$debug("saving dose response point data")
   savedPoints <- fitData[,  list(updatePointFlags(points, recorded_by, transactionID))][[1]]  
+  myMessenger$logger$debug("returning response")
   return(list(lsStates = savedStates, lsTransaction = transactionID))
   
 }
@@ -112,11 +118,10 @@ saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
     lsTransaction = lsTransaction    
     ))), by = curveid]
   savedAnalysisGroupStates <- saveAcasEntities(fitData$newStates, "analysisgroupstates")
-  return(savedAnalysisGroupStates)
+  return(fitData$newStates)
 }
 
 getLSStateFromEntity <- function(entities, ...) {
-  #listCriteria <<- list(...)
   unlistEntities <- unlist(entities, recursive = FALSE)
   lsStatesList <- unlistEntities[names(unlistEntities) == "lsStates"]
   lsStates <- do.call("c", lsStatesList)
@@ -129,12 +134,11 @@ getLSStateFromEntity <- function(entities, ...) {
     return(all(unlist(lapply(1:length(listCriteria), function(x) matchCriteria(unlistedLSState,listCriteria[x])))))
   }
   matches <- unlist(lapply(lsStates, matchListCriteria, listCriteria = list(...)))
-  #matches <- unlist(lapply(lsStates, matchListCriteria, listCriteria = listCriteria))
   lsStates[!matches] <- NULL
   return(lsStates)
 }
 
-updatePointFlags <- function(points, recordedBy, lsTransaction) {
+updatePointFlags <- function(points, recordedBy, lsTransaction) {  
   pointData <- Reduce(function(x,y) rbind(x,y,fill = TRUE), points)
   pointData <- pointData[flagchanged == TRUE, ]
   addTheseFlags <- pointData[!is.na(pointData$flag)]
@@ -144,36 +148,37 @@ updatePointFlags <- function(points, recordedBy, lsTransaction) {
     x$ignored <- TRUE
     updateAcasEntity(x, "subjectvalues")
   })
-  newFlags <- addTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = flag, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id[[1]], version=response_ss_version[[1]])))), by = response_sv_id]$V1
-  saveAcasEntities(newFlags, "subjectvalues")
-  
-  #Treatment group value updates
-  update_tg_id <- unique(pointData$tg_id)
-  updateTheseValues <- pointData[pointData$tg_id %in% update_tg_id]
-  treatmentGroups <- lapply(update_tg_id, getEntityById, "treatmentgroups")
-  treatmentGroupDF <- ldply(treatmentGroups, flattenEntity, acasCategory= "treatmentGroup", includeFromState = c("id", "lsType", "lsKind", "version"))
-  valuesToIgnoreDF <- treatmentGroupDF[treatmentGroupDF$lsKind == "Response", ]
-  valuesToIgnore <- lapply(valuesToIgnoreDF$id, getEntityById, "treatmentgroupvalues")
-  ignoredValues <- lapply(valuesToIgnore, function(x) {
-    x$ignored <- T
-    updateAcasEntity(x, "treatmentgroupvalues")
-  })
-  updateTheseValues$tgs_id <- treatmentGroupDF$stateId[match(updateTheseValues$tg_id, treatmentGroupDF$treatmentGroupId)]
-  updateTheseValues$tgs_version <- treatmentGroupDF$stateVersion[match(updateTheseValues$tg_id, treatmentGroupDF$treatmentGroupId)]
-  #updateTheseValues$tgv_id <- treatmentGroupDF$id[match(updateTheseValues$tg_id, valuesToIgnoreDF$TreatmentGroupId)]
-  
-  newValues <- updateTheseValues[, list(list(createStateValue(lsType = "numericValue",
-                                                              lsKind = "Response", 
-                                                              numericValue = NAtoNULL(suppressWarnings(mean(response))), 
-                                                              numberOfReplicates=length(response), 
-                                                              uncertaintyType="standard deviation", 
-                                                              uncertainty = NAtoNULL(sd(response)), 
-                                                              lsTransaction=lsTransaction,
-                                                              recordedBy=recordedBy, 
-                                                              lsState=list(id=unique(tgs_id), 
-                                                                           version=unique(tgs_version))))), 
-                                 by = tg_id]$V1
-  saveAcasEntities(newValues, "treatmentgroupvalues")
+  if(nrow(addTheseFlags) > 0) {
+    newFlags <- addTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = flag, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id[[1]], version=response_ss_version[[1]])))), by = response_sv_id]$V1
+    saveAcasEntities(newFlags, "subjectvalues")
+  }
+#   #Treatment group value updates
+#   update_tg_id <- unique(pointData$tg_id)
+#   updateTheseValues <- pointData[pointData$tg_id %in% update_tg_id]
+#   treatmentGroups <- lapply(update_tg_id, getEntityById, "treatmentgroups")
+#   treatmentGroupDF <- ldply(treatmentGroups, flattenEntity, acasCategory= "treatmentGroup", includeFromState = c("id", "lsType", "lsKind", "version"))
+#   valuesToIgnoreDF <- treatmentGroupDF[treatmentGroupDF$lsKind == "Response", ]
+#   valuesToIgnore <- lapply(valuesToIgnoreDF$id, getEntityById, "treatmentgroupvalues")
+#   ignoredValues <- lapply(valuesToIgnore, function(x) {
+#     x$ignored <- T
+#     updateAcasEntity(x, "treatmentgroupvalues")
+#   })
+#   updateTheseValues$tgs_id <- treatmentGroupDF$stateId[match(updateTheseValues$tg_id, treatmentGroupDF$treatmentGroupId)]
+#   updateTheseValues$tgs_version <- treatmentGroupDF$stateVersion[match(updateTheseValues$tg_id, treatmentGroupDF$treatmentGroupId)]
+#   #updateTheseValues$tgv_id <- treatmentGroupDF$id[match(updateTheseValues$tg_id, valuesToIgnoreDF$TreatmentGroupId)]
+#   
+#   newValues <- updateTheseValues[, list(list(createStateValue(lsType = "numericValue",
+#                                                               lsKind = "Response", 
+#                                                               numericValue = NAtoNULL(suppressWarnings(mean(response))), 
+#                                                               numberOfReplicates=length(response), 
+#                                                               uncertaintyType="standard deviation", 
+#                                                               uncertainty = NAtoNULL(sd(response)), 
+#                                                               lsTransaction=lsTransaction,
+#                                                               recordedBy=recordedBy, 
+#                                                               lsState=list(id=unique(tgs_id), 
+#                                                                            version=unique(tgs_version))))), 
+#                                  by = tg_id]$V1
+#   saveAcasEntities(newValues, "treatmentgroupvalues")
   
 }
 

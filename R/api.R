@@ -160,7 +160,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$logger$debug("Converting simple fit settings to advanced settings")
   myMessenger$captureOutput("fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)", userError = "Fit settings error")
   
-  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
+  myMessenger$logger$debug(paste0("getting fit data for ",experimentCode))
   myMessenger$captureOutput("fitData <- getFitData(experimentCode)", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveid]
   myMessenger$logger$debug("Fitting the data")
@@ -188,16 +188,22 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.stubs")
-  if(is.null(GET$experimentcode)) {
-    msg <- "No 'experimentcode' provided"
+  if(is.null(GET$experimentcode) & is.null(GET$curveid)) {
+    msg <- "No 'experimentcode' or 'curveid' provided"
     myMessenger$logger$error(msg)
     stop(msg)
   } else {
-    experimentCode <- GET$experimentcode
+    if(!is.null(GET$experimentcode)) {
+      entityID <- GET$experimentcode
+      type <- "experimentCode"
+    } else {
+      entityID <- GET$curveid
+      type <- "curveID"
+    }
   }
   #experimentCode <- "EXPT-00000063"
-  myMessenger$logger$debug(paste0("Getting fit data for ",experimentCode))
-  myMessenger$captureOutput("fitData <- getFitData(experimentCode, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
+  myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
+  myMessenger$captureOutput("fitData <- getFitData(entityID, type = type, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
   modelHint <- fitData[1]$modelHint
@@ -238,15 +244,21 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.detail")
-  if(is.null(GET$id)) {
-    msg <- "No GET parameter 'id' provided"
+  if(is.null(GET$id) & is.null(GET$analysisgroupid)) {
+    msg <- "No GET parameter 'id' or 'analysisgroupid' provided"
     myMessenger$logger$error(msg)
     stop(msg)
   } else {
-    id <- GET$id
+    if(!is.null(GET$id)) {
+      id <- GET$id
+      type = "curveID"
+    } else {
+      id <- GET$analysisgroupid
+      type <- "analysisGroupID"
+    }
   }
   
-  fitData <- getFitData(id, type = "analysisGroupID", include = "fullobject")
+  fitData <- getFitData(id, type = type, include = "fullobject")
   sessionID <- saveSession()
   
   response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
@@ -329,7 +341,6 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
 doseResponse_add_clob_values <- function(fitData) {
     fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
       if(fitConverged) {
-        saveSession("~/Desktop/blah")
         reportedValues <- flattenListToDataTable(reportedParameters[[1]])
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
@@ -371,9 +382,11 @@ api_doseResponse_fit_curve <- function(postData) {
     myMessenger$logger$debug("adding clob values to fit data")    
     fitData <- doseResponse_add_clob_values(fitData)
     myMessenger$logger$debug("saving the curve data")
-    myMessenger$logger$debug(exists("fitData"))
     myMessenger$captureOutput("savedStates <- saveDoseResponseData(fitData, POST$user)", userError = "Error saving the experiment curve data", continueOnError = FALSE)
-    response <- TRUE
+    GET <- list()
+    GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) listToDataTable(x)))$analysisGroup[[1]]$id
+    myMessenger$logger$debug(paste0('retrieving curve detail for analysis group id \'', GET$analysisgroupid,'\''))
+    response <- api_doseResponse_get_curve_detail(GET)
   } else {
     myMessenger$logger$debug("getting updated point flags sent from acas")
     points <- data.table(POST$plotData$points)
