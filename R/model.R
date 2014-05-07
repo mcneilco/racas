@@ -365,14 +365,15 @@ plotWindow <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA, ymax
     return(c(xmin,ymax,xmax,ymin))
   }
 }
-captureOutput <- function(obj) {
-  return(paste(capture.output({
+captureOutput <- function(obj, ...) {
+  val <- capture.output({
     result <- withVisible(obj)
     if (result$visible)
       print(result$value)
-  }), collapse=""))
+  })
+  
+  return(paste(val, ...))
 }
-
 
 objToHTMLTableString <- function(dataTable, ...) {
   htmlTableString <- ""
@@ -387,7 +388,7 @@ objToHTMLTableString <- function(dataTable, ...) {
                            timestamp = FALSE, 
                            rotate.rownames = TRUE, 
                            html.table.attributes = "",
-                           print.results = FALSE)
+                           print.results = FALSE, ...)
   return(htmlTableString)
 }
 

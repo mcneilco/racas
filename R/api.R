@@ -350,7 +350,7 @@ doseResponse_add_clob_values <- function(fitData) {
             value
           }}]
         reportedValuesClob <- objToHTMLTableString(reportedValues[ , c("name", "value"), with = FALSE], include.colnames = FALSE)
-        fitSummaryClob <- captureOutput(summary(model[[1]]))
+        fitSummaryClob <- captureOutput(summary(model[[1]]), collapse = "<br>")
         goodnessOfFit.parameters <- flattenListToDataTable(goodnessOfFit.parameters[[1]])
         goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
                                                             list(name = sp[[1]], type = sp[[2]])}, by = c("V1", "name")]
@@ -399,7 +399,6 @@ api_doseResponse_fit_curve <- function(postData) {
     
     myMessenger$logger$debug("converting the fitted data to a response json object")
     fitData <- doseResponse_add_clob_values(doseResponse$fitData)
-  
     myMessenger$captureOutput("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
   }
   myMessenger$logger$debug("returning response")
