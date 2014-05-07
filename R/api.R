@@ -145,13 +145,13 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
 #     cat("Using fake data")
 #     file <- "inst/docs/example-ec50-simple-fitSettings.json"
-#      file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
-#      simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-#      simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-#     recordedBy <- "bbolt"
+     file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+     simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+     simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+    recordedBy <- "bbolt"
 #   
   #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000063"
+  #experimentCode <- "EXPT-00000070"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -204,7 +204,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   #experimentCode <- "EXPT-00000063"
   myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
   myMessenger$captureOutput("fitData <- getFitData(entityID, type = type, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
-  setkey(fitData, codeName)
+  #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
+  #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
   modelHint <- fitData[1]$modelHint
   myMessenger$logger$debug(paste0("Got modelHint '",modelHint,"'"))

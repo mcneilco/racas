@@ -52,15 +52,15 @@ doseResponse.fitData <- function(fitSettings, fitData) {
       pts <- merge(pts,updateFlags, all.x = TRUE, by = "response_sv_id", suffixes = c("",".y"))
       pts[, flag := as.character(flag)]
       #  The following two lines are probably much faster than the "changers" lines but there seems to be a compatability issue with R 3.1 and data.table
-      #      pts[ , flagchanged := flag == flag.y | flagchanged, "response_sv_id" ]
-      #      pts[ ,flagchanged := !identical(flag,flag.y) | flagchanged, by = "response_sv_id" ]
-      changers <- unlist(lapply(1:length(pts$response_sv_id), function(x) {
-        flag <- pts[x]$flag
-        flag.y <- pts[x]$flag.y
-        flagchanged <- pts[x]$flagchanged
-        return(any(!identical(as.character(flag),as.character(flag.y)), flagchanged))
-      }))
-      pts[ , flagchanged:= changers]
+      pts[ , flagchanged := flag == flag.y | flagchanged, "response_sv_id" ]
+      pts[ ,flagchanged := !identical(flag,flag.y) | flagchanged, by = "response_sv_id" ]
+      #       changers <- unlist(lapply(1:length(pts$response_sv_id), function(x) {
+      #         flag <- pts[x]$flag
+      #         flag.y <- pts[x]$flag.y
+      #         flagchanged <- pts[x]$flagchanged
+      #         return(any(!identical(as.character(flag),as.character(flag.y)), flagchanged))
+      #       }))
+      #       pts[ , flagchanged:= changers]
       
       pts[flagchanged==TRUE , flag := flag.y]
       return(pts[, returnCols, with = FALSE])
@@ -78,9 +78,9 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   fitData <- doseResponse.applyLimits(fitData, iterations = 20)
   
   #Categorize the fit data
-  fitData[ , category := categorizeFitData(results.parameterRules, fitSettings, inactive, fitConverged, insufficientRange, potent), by = curveid]
+  fitData[ , category := categorizeFitData(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]]), by = curveid]
   #Extract the reported Parameters
-  fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive, fitConverged, insufficientRange, potent, fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]]))), by = curveid]
+  fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]]))), by = curveid]
   return(fitData)  
 }
 doseResponse.biphasicDection <- function(fitData) {
@@ -97,10 +97,10 @@ doseResponse.biphasicDection <- function(fitData) {
   }
   
 }
-  
-  
-  
-  
+
+
+
+
 doseResponse.applyLimits <- function(fitData, iterations = 20) {
   #While refit is true, keep refitting using fixed parameters
   #The reason we check refit and continue is because we are dealing with limits, 
@@ -394,7 +394,7 @@ objToHTMLTableString <- function(dataTable, ...) {
 getReportedParameters <- function(modelHint, results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model) {
   switch(modelHint,
          "LL.4" = {
-            if(potent) {
+           if(potent) {
              max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
              min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
              ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
@@ -435,13 +435,12 @@ getReportedParameters <- function(modelHint, results, inactive, fitConverged, in
            } else {
              slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
            }
-           if("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) {
-             ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-           } else {
-             ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = goodnessOfFit.parameters$ec50.stdErr)
-           }
-           if("ec50ThresholdLow" %in% results$limits) {
-             ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+           if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
+             if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+               ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+             } else {
+               ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+             }
            } else {
              ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = goodnessOfFit.parameters$ec50.stdErr)
            }
@@ -642,29 +641,6 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   
   fitData[ model.synced == FALSE, model.synced := TRUE]
   return(fitData[, returnCols, with = FALSE])
-}
-
-categorizeFitData_OLD <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange) {
-  category <- "sigmoid"
-  resultList <- unlist(results.parameterRules)
-  #Parameter Failed Categories
-  if(length(resultList) > 0 ) {
-    reasons <- paste0("Failed ",resultList)
-    parameterFails <- paste0(reasons,collapse = ", ")
-    if(length(parameterFails) > 0 ) {
-      category <- sort(parameterFails)
-    }
-  }
-  if(!converged) {
-    category <- "Convergence Failed"
-  }
-  if(insufficientRange) {
-    category <- "Insufficient Range"
-  }
-  if(inactive) {
-    category <- "Inactive"
-  }
-  return(category)
 }
 
 categorizeFitData <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent) {
@@ -926,14 +902,13 @@ loadDoseResponseTestData <- function(size = c("small","large")) {
                                 "small" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
                                 "large" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
   )
-  t <- tempfile(fileext = ".xlsx")
-  file.copy(doseResponseSELFile,t)
   originalWD <- getwd()
   acasHome <- normalizePath(file.path(path.package("racas"),"..",".."))
   selCode <- file.path(acasHome,"public","src","modules","GenericDataParser","src","server","generic_data_parser.R")
   setwd(acasHome)
+  file.copy(doseResponseSELFile,"privateUploads")
   source(selCode, local = TRUE)
-  request <- list(fileToParse=t, dryRunMode = "false", user="bbolt")
+  request <- list(fileToParse=basename(doseResponseSELFile), dryRunMode = "false", user="bbolt")
   response <- parseGenericData(request)
   if(response$hasError) {
     cat(response$errorMessages[[1]]$message)

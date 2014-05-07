@@ -71,7 +71,6 @@ Messenger <- setRefClass(Class = "Messenger",
                                        logger = "Logger",
                                        envir = "environment",
                                        devMode = "logical"),
-                         contains = list("objectUtilities"),
                          methods = list(
                            initialize = function(...) {
                              devMode <<- FALSE
