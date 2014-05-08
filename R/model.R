@@ -544,8 +544,8 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
                                                         "4 parameter D-R" = "LL.4",
                                                         "2 parameter Michaelis Menten" = "MM.2")
                                           return(ans)
-                                        }))
-          ]  
+                                        })),
+          by = curveid]
   if(is.null(fitData$modelHint)) {
     myMessenger$addUserError(paste0("No Rendering Hint found for ", entityID))
     myMessenger$logger$error(paste0("Attempted to fit an expt code with no rendering hint stored in analysis group parameters"))

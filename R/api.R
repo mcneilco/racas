@@ -151,7 +151,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
     recordedBy <- "bbolt"
 #   
   #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000070"
+  #experimentCode <- "EXPT-00000078"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -201,7 +201,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
       type <- "curveID"
     }
   }
-  #experimentCode <- "EXPT-00000063"
+  #entityID <- "EXPT-00000070"
   myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
   myMessenger$captureOutput("fitData <- getFitData(entityID, type = type, include = 'analysisgroupvalues')", userError = "Error when fetching the experiment curve data", continueOnError = FALSE)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
