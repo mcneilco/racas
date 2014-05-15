@@ -672,14 +672,14 @@ plotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
       curveIntercept <- fct(params[,drawIntercept])
       ylin <- c()
-      ylin$x <- c(get(drawIntercept), get(drawIntercept))
+      ylin$x <- c(params[,drawIntercept], params[,drawIntercept])
       ylin$y <- c(par("usr")[3],curveIntercept)
       #Horizontal
       xlin <- c()
       if(logDose) {
-        xlin$x <- c(0.0000000000000001,get(drawIntercept))
+        xlin$x <- c(0.0000000000000001,params[,drawIntercept])
       } else {
-        xlin$x <- c(par("usr")[1],get(drawIntercept))
+        xlin$x <- c(par("usr")[1],params[,drawIntercept])
       }
       xlin$y <- c(curveIntercept,curveIntercept)
       #Draw AC50 Lines

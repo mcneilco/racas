@@ -7,24 +7,27 @@ Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
+Depends:
+      R (== 3.0.3)
 Imports:
-    drc,
-    data.table,
-    rjson,
-    RCurl,
-    plyr,
-    plotrix,
-    brew,
-    logging,
-    evaluate,
-    XLConnect,
-    gdata,
-    reshape,
-    xtable,
-    knitr,
-    reshape2,
-    ggplot2,
-    grid
+    drc (== 2.3-96),
+    data.table (== 1.9.2),
+    rjson (== 0.2.13),
+    RCurl (== 1.95-4.1),
+    plyr (== 1.8.1),
+    plotrix (== 3.5-5),
+    brew (== 1.0-6),
+    logging (== 0.7-103),
+    evaluate (== 0.5.5),
+    XLConnect (== 0.2-7),
+    gdata (== 2.13.3),
+    reshape (== 0.8.5),
+    xtable (== 1.7-3),
+    knitr (== 1.5),
+    reshape2 (== 1.4),
+    ggplot2 (== 0.9.3.1),
+    grid,
+    utils
 Suggests:
     RPostgreSQL,
     ROracle,
@@ -47,7 +50,8 @@ Collate:
     'logger.R'
     'longFormatSave.R'
     'messenger.R'
-    'model.R'
+    'doseResponse.R'
+    'doseResponse_api.R'
     'objectHelper.R'
     'onLoad.R'
     'pingPong.R'
