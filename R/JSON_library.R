@@ -1049,18 +1049,33 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
 
 saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
+  logName = "com.acas.racas.saveAcasEntitiesInternal"
+  logFileName = file.path(racas::applicationSettings$server.log.path, "racas.log")
+  
+  h = basicTextGatherer()
+  
   message <- toJSON(entities)
   response <- getURL(
-    paste(lsServerURL, acasCategory, "/jsonArray", sep=""),
+    paste0(lsServerURL, acasCategory, "/jsonArray"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
+    postfields=message,
+    headerfunction = h$update)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
+  if (statusCode >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", lsServerURL, acasCategory, "/jsonArray with method 'POST' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
+                           message, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stop (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the log ", 
+                 logFileName, " at ", Sys.time()))
+  } else if (grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
     myLogger$error(response)
     stop (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
-  }
-  if (grepl("^\\s*$", response)) {
+  } else if (grepl("^\\s*$", response)) {
     return(list())
   }
   response <- fromJSON(response)
