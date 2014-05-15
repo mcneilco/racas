@@ -54,7 +54,7 @@ readConfigFile <- function(configLocation) {
   l <- lapply(l, sub, pattern = "=", replacement = replacement)
   t <- tempfile()
   writeLines(unlist(l), t)
-  applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
+  applicationSettings <- utils::read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
   unlink(t)
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
@@ -105,7 +105,7 @@ readConfigFile <- function(configLocation) {
     }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
-  assignInNamespace("applicationSettings",applicationSettings, ns="racas")
+  utils::assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 }
 
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
