@@ -254,6 +254,7 @@ getDefaultFitSettings <- function(modelHint) {
 #' @param curveids a character list of curveids
 #' @param sessionID a path to a curve fit session
 #' @param fitData a fidData object to refit
+#' @param simpleFitSettings a list of simplefitsettings to attach to the fitData object
 #' @return A list object with a fitted fitData object and sessionID
 #' @export
 #' @examples
@@ -272,7 +273,7 @@ getDefaultFitSettings <- function(modelHint) {
 doseResponse <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, ...) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
-    fitData <- getFitData.curve(curveids)
+    fitData <- getFitData.curveID(curveids)
   }
   if(!is.na(sessionID)) {
     fitSettings_new <- fitSettings
@@ -311,7 +312,7 @@ predictPoints <- function(pts, drcObj) {
     return(NULL)
   }
   x <- unique(pts$dose)
-  if(grepl("LOG",toupper(pts$doseUnits[1]))) {
+  if(grepl("LOG",toupper(pts$doseunits[1]))) {
     valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=12*length(x)) ))
   } else {
     valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=12*length(x)))
@@ -494,6 +495,7 @@ getFitData.curveID <- function(curveID, include = "fullobject") {
   fitData <- getFitData.analysisGroupID(analyisGroupIDOfCurveID, include)
   return(fitData)
 }
+
 getFitData.analysisGroupID <- function (analysisGroupdID, include) {
   myMessenger <- messenger()
   myMessenger$logger$debug("Calling analysisgroup id service")
@@ -505,6 +507,7 @@ getFitData.analysisGroupID <- function (analysisGroupdID, include) {
   fitData <- listToDataTable(analysisGroup)
   return(fitData)
 }
+
 getFitData.experimentCode <- function(experimentCode, include = "fullobject", ...) {
   myMessenger <- messenger()
   myMessenger$logger$debug("Calling experiment code name service")

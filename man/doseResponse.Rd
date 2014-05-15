@@ -14,6 +14,8 @@ doseResponse(fitSettings, curveids = NA, sessionID = NA, fitData = NA,
 \item{sessionID}{a path to a curve fit session}
 
 \item{fitData}{a fidData object to refit}
+
+\item{simpleFitSettings}{a list of simplefitsettings to attach to the fitData object}
 }
 \value{
 A list object with a fitted fitData object and sessionID

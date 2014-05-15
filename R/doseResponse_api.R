@@ -31,14 +31,14 @@
 #' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
-  #     file <- "inst/docs/example-ec50-simple-fitSettings.json"
-  file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
-  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-  simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-  recordedBy <- "bbolt"
-  #   
-  #experimentCode <- loadDoseResponseTestData()
-  #experimentCode <- "EXPT-00000078"
+#       file <- "inst/docs/example-ec50-simple-fitSettings.json"
+#   file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#   recordedBy <- "bbolt"
+#     
+#   experimentCode <- loadDoseResponseTestData()
+#   experimentCode <- "EXPT-00000078"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
