@@ -48,7 +48,7 @@ if(runTests) {
     conn <- getDatabaseConnection()
     dbDisconnect(conn)
     assign("conn", conn, .GlobalEnv)
-    expect_that(dbGetInfo(get("conn",envir = .GlobalEnv)),throws_error("invalid connection"))
+    expect_that(dbGetInfo(get("conn",envir = .GlobalEnv)),throws_error())
     rs <- query(qu, globalConnect = TRUE)
     expect_that(class(try(dbGetInfo(get("conn",envir = .GlobalEnv)))),equals("list"))
     dbDisconnect(get("conn", envir = .GlobalEnv))
