@@ -339,7 +339,8 @@ meltTimes <- function(entityData) {
 #' @param  testMode             A boolean marking if the function should return JSON instead of saving values
 #' @param recordedBy String: the username recording the data
 #' @return A list of value objects (lists)
-#' @details In longFormatSave.R
+#' @details All numericValues of Inf will be have their stringValue set to
+#'   "infinite" as Inf can't be stored in the database. Code in longFormatSave.R
 saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL, lsTransaction, recordedBy, stateGroupIndices = NULL, testMode=FALSE) {
 
   
@@ -348,6 +349,11 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
   }
   if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
     stop("Internal error: No stateID can be NA")
+  }
+  
+  if (any(entityData$numericValue == Inf, na.rm = TRUE)) {
+    entityData$stringValue[entityData$numericValue == Inf] <- "infinite"
+    entityData$numericValue[entityData$numericValue == Inf] <- NA
   }
   
   factorColumns <- vapply(entityData, is.factor, c(TRUE))
