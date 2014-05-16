@@ -510,14 +510,15 @@ getFitData.analysisGroupID <- function (analysisGroupdID, include) {
 
 getFitData.experimentCode <- function(experimentCode, include = "fullobject", ...) {
   myMessenger <- messenger()
-  myMessenger$logger$debug("Calling experiment code name service")
+  myMessenger$logger$debug("calling experiment code name service")
   serviceURL <- paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=", include)
   myMessenger$logger$debug(serviceURL)
   experimentJSON <- getURL(serviceURL)
-  myMessenger$logger$debug("Parsing experiment json")
+  myMessenger$logger$debug("parsing experiment json")
   experiment <- jsonlite::fromJSON(experimentJSON[[1]])
   fitData <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
 }
+
 getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "curveID"), include = "fullobject", ...) {
   type <- match.arg(type)
   myMessenger <- messenger()
