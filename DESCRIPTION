@@ -29,11 +29,11 @@ Imports:
     grid,
     utils
 Suggests:
-    RPostgreSQL,
-    ROracle,
-    RMySQL,
-    RJDBC,
-    DBI
+    RPostgreSQL (== 0.4),
+    ROracle (== 1.1-8),
+    RMySQL (== 0.2-3),
+    RJDBC (== 0.2-3),
+    DBI (== 0.9-3)
 Collate:
     'JSON_library.R'
     'api.R'

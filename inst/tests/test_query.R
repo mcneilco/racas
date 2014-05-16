@@ -54,12 +54,7 @@ if(runTests) {
     dbDisconnect(get("conn", envir = .GlobalEnv))
     rm(conn, envir = .GlobalEnv)
   })
-  
 
-
-  
-  
-  
 } else {
   cat("Not Testing Query functions because databse connection cannot be established with call to 'getDatabaseConnection()'")
 }
