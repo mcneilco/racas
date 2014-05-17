@@ -81,9 +81,8 @@ readConfigFile <- function(configLocation) {
       }
       if(installDep) {
         cat(paste0("Attempting to install ",applicationSettings$server.database.r.package))
-        repos <- "http://cran.rstudio.com/"
-        options(repos = "http://cran.rstudio.com/")
-        try(install.packages(applicationSettings$server.database.r.package, repos = repos))
+        method <- ifelse(is.null(options("method")$method),"auto",options("method")$method)
+        try(install.packages(applicationSettings$server.database.r.package, repos = options("repos"), method = method))
         try(require(applicationSettings$server.database.r.package, character.only=TRUE))
       } else {
         warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",

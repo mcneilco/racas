@@ -1,7 +1,7 @@
 Package: racas
 Type: Package
 Title: R Package for ACAS
-Version: 0.1
+Version: 0.2.0
 Date: 2013-03-26
 Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
@@ -26,6 +26,7 @@ Imports:
     knitr (== 1.5),
     reshape2 (== 1.4),
     ggplot2 (== 0.9.3.1),
+    jsonlite (== 0.9.7),
     grid,
     utils
 Suggests:
@@ -49,6 +50,7 @@ Collate:
     'hello.R'
     'logger.R'
     'longFormatSave.R'
+    'installation.R'
     'messenger.R'
     'doseResponse.R'
     'doseResponse_api.R'

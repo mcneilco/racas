@@ -103,6 +103,7 @@ saveDoseResponseData <- function(fitData, recorded_by) {
 }
 
 saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
+  
   ignoredAnalysisGroupStates <- lapply(fitData$lsStates, function(x) {
     x <- as.list(x)
     x$lsValues <- NULL
@@ -139,17 +140,21 @@ getLSStateFromEntity <- function(entities, ...) {
 }
 
 updatePointFlags <- function(points, recordedBy, lsTransaction) {  
+  saveSession("~/Desktop/blah")
   pointData <- Reduce(function(x,y) rbind(x,y,fill = TRUE), points)
   pointData <- pointData[flagchanged == TRUE, ]
-  addTheseFlags <- pointData[!is.na(pointData$flag)]
-  ignoreTheseFlags <- pointData[!is.na(flag_sv_id), list(flag_sv_id, response_ss_id, response_ss_version, tg_id, flag)]
+  addTheseFlags <- pointData[ !is.na(flag_user) | !is.na(flag_on.load) | !is.na(flag_algorithm)]
+  ignoreTheseFlags <- pointData[!is.na(flag_sv_id), list(flag_sv_id, response_ss_id, response_ss_version, tg_id, flag_user, flag_on.load, flag_algorithm)]
   flagsToIgnore <- lapply(ignoreTheseFlags$flag_sv_id, getEntityById, "subjectvalues")
   ignoredFlags <- lapply(flagsToIgnore, function(x) {
     x$ignored <- TRUE
     updateAcasEntity(x, "subjectvalues")
   })
   if(nrow(addTheseFlags) > 0) {
-    newFlags <- addTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = flag, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id[[1]], version=response_ss_version[[1]])))), by = response_sv_id]$V1
+    addTheseFlags <- reshape2::melt(addTheseFlags,  measure.vars = c("flag_user", "flag_on.load", "flag_algorithm"), value.name = "comments", variable.name = "stringValue")[!is.na(comments),]
+    addTheseFlags[ , stringValue := gsub("flag_","" ,stringValue)]
+    addTheseFlags[ , stringValue := gsub("on.load","on load" ,stringValue)]
+    newFlags <- addTheseFlags[, list(list(createStateValue(lsType = "stringValue", lsKind = "flag", stringValue = stringValue, comments = comments, lsTransaction=lsTransaction,recordedBy=recordedBy, lsState=list(id=response_ss_id[[1]], version=response_ss_version[[1]])))), by = response_sv_id]$V1
     saveAcasEntities(newFlags, "subjectvalues")
   }
 #   #Treatment group value updates

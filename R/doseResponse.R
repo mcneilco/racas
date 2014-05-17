@@ -43,31 +43,27 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(fitSettings$updateFlags)
   if(nrow(updateFlags) > 0 ) {
-    updateFlags[flag=="NA", flag := as.character(NA)]
+    #updateFlags[flag=="NA", flag := as.character(NA)]
     setkey(updateFlags,"response_sv_id" )
     #First update the flags in points
     updFlags <- function(pts) {
+      updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
+      updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
+      updateFlags[ flag_algorithm == "NA", flag_algorithm := as.character(NA)]
+      updateFlags[ , flag_user := as.character(flag_user)]
+      updateFlags[ , flag_on.load := as.character(flag_on.load)]
+      updateFlags[ , flag_algorithm := as.character(flag_algorithm)]
       returnCols <- names(pts)
       setkey(pts, "response_sv_id")
       pts <- merge(pts,updateFlags, all.x = TRUE, by = "response_sv_id", suffixes = c("",".y"))
-      pts[, flag := as.character(flag)]
-      #  The following two lines are probably much faster than the "changers" lines but there seems to be a compatability issue with R 3.1 and data.table
-      pts[ , flagchanged := flag == flag.y | flagchanged, "response_sv_id" ]
-      pts[ ,flagchanged := !identical(flag,flag.y) | flagchanged, by = "response_sv_id" ]
-      #       changers <- unlist(lapply(1:length(pts$response_sv_id), function(x) {
-      #         flag <- pts[x]$flag
-      #         flag.y <- pts[x]$flag.y
-      #         flagchanged <- pts[x]$flagchanged
-      #         return(any(!identical(as.character(flag),as.character(flag.y)), flagchanged))
-      #       }))
-      #       pts[ , flagchanged:= changers]
-      
-      pts[flagchanged==TRUE , flag := flag.y]
+      pts[ , flagchanged :=  !identical(flag_user,flag_user.y) | !identical(flag_on.load,flag_on.load.y) | !identical(flag_algorithm,flag_algorithm.y) | flagchanged, by = "response_sv_id" ]
+      pts[flagchanged==TRUE , c('flag_user', 'flag_on.load', 'flag_algorithm' ):= list(flag_user.y, flag_on.load.y, flag_algorithm.y)]
       return(pts[, returnCols, with = FALSE])
     }
     #pts <- fitData[1]$points[[1]]
     fitData[, points := list(list(updFlags(points[[1]]))) , by = curveid]
   }
+  
   #Fit the data
   fitData <- doseResponseFit(fitData)
   
@@ -81,7 +77,7 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   fitData[ , category := categorizeFitData(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]]), by = curveid]
   #Extract the reported Parameters
   fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]]))), by = curveid]
-  return(fitData)  
+  return(fitData)
 }
 doseResponse.biphasicDection <- function(fitData) {
   checkRefit <- function(fitData){
@@ -589,28 +585,27 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
       dr <- dr[drUnits]
       setnames(dr, "id", "response_sv_id")
       if(nrow(points[[1]][lsKind=="flag" & ignored == FALSE]) > 0) {
-        fl <- dcast.data.table(points[[1]][lsKind=="flag" & ignored == FALSE], subj_id ~ lsKind, value.var = "stringValue")
+        fl <- dcast.data.table(points[[1]][lsKind=="flag" & ignored == FALSE], subj_id ~ lsKind+stringValue, value.var = "comments")
+        setnames(fl, make.names(names(fl)))
+        missingFlagColumns <- setdiff(c("flag_on.load","flag_user", "flag_algorithm"), names(fl))
+        if(length(missingFlagColumns) > 0) {
+          fl[ , missingFlagColumns := as.character(NA), with = FALSE]
+        }
         fl <- merge(fl,points[[1]][ lsKind=="flag" & ignored == FALSE, c("subj_id", "id"), with =  FALSE], by = "subj_id")
         setnames(fl, "id", "flag_sv_id")
       } else {
-        fl <- data.table(subj_id = as.integer(),flag = as.character())
+        fl <- data.table(subj_id = as.integer(),flag_sv_id = as.integer(), flag_on.load = as.character(), flag_user = as.character(), flag_algorithm = as.character())
         setkey(fl, subj_id)
       }
       bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
       setkey(fl, subj_id)
       setkey(bc, subj_id)
       setkey(dr, subj_id)
-      if(nrow(fl) == 0) {
-        pts <- bc[dr]
-      } else {
-        pts <- fl[bc][dr]
-      }
-      if(is.null(pts$flag)) {
-        pts[ , flag := as.character(NA)]
-        pts[ , flag_sv_id := as.integer(NA)]
-      }
+      pts <- fl[bc][dr]
       pts[ , flagchanged := FALSE]
       setnames(pts, names(pts), tolower(names(pts)))
+      setcolorder(pts, order(names(pts)))
+      pts
     })), by = id]
     myMessenger$logger$debug("Filling out the rest of the fit data object")
   }
@@ -734,7 +729,7 @@ applyInactiveRule <- function(pointStats, points, rule) {
       response.empiricalMax <- pointStats$response.empiricalMax
       threshold <- threshold * abs(min(response.empiricalMin) - max(response.empiricalMax))
     }
-    means <- points[ is.na(flag), list("dose" = dose, "mean.response" = mean(response)), by = dose]
+    means <- points[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), list("dose" = dose, "mean.response" = mean(response)), by = dose]
     numDoses <- nrow(means)
     dosesAboveThreshold <- length(which(means$mean.response >= threshold))
     inactive <- dosesAboveThreshold < rule$activeDoses
@@ -756,12 +751,9 @@ getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
   fixedParams[which(matches != 0)] <- fixed[matches]
   fixed <- unlist(fixedParams)
   fct <- drcFunction(fixed=fixed, names=paramNames)
-  if(class(dataSet$flag) == "NULL") {
-    dataSet$flag <- NA
-  }
   drcObj <- NULL
   tryCatch({
-    drcObj <- drm(formula = response ~ dose, data = dataSet, subset = is.na(flag), robust=robust, fct = fct, control = drmc(errorm=TRUE))
+    drcObj <- drm(formula = response ~ dose, data = dataSet, subset = is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), robust=robust, fct = fct, control = drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)
@@ -771,15 +763,15 @@ getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eva
 
 getPointStats <- function(pts) {
   pts <- copy(pts)
-  pts[ is.na(flag), meanByDose := mean(response), by = dose ]
-  response.empiricalMax <- pts[is.na(flag), max(meanByDose)]
-  response.empiricalMin <- pts[is.na(flag), min(meanByDose)]
-  dose.min <- min(pts[is.na(flag), ]$dose)
-  dose.max <- max(pts[is.na(flag), ]$dose)
-  dose.empiricalMaxResponse <- pts[is.na(flag) &  meanByDose == response.empiricalMax, min(dose)]
-  dose.empiricalMinResponse <- pts[is.na(flag) &  meanByDose == response.empiricalMin, min(dose)]
-  doses.doseAbove.dose.empiricalMaxResponse.response.belowEmpiricalMax <- pts[is.na(flag) & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
-  doses.doseBelow.dose.empiricalMinResponse.response.aboveEmpiricalMin <- pts[is.na(flag) & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
+  pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), meanByDose := mean(response), by = dose ]
+  response.empiricalMax <- pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), max(meanByDose)]
+  response.empiricalMin <- pts[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), min(meanByDose)]
+  dose.min <- min(pts[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), ]$dose)
+  dose.max <- max(pts[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm), ]$dose)
+  dose.empiricalMaxResponse <- pts[(is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm)) &  meanByDose == response.empiricalMax, min(dose)]
+  dose.empiricalMinResponse <- pts[(is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm)) &  meanByDose == response.empiricalMin, min(dose)]
+  doses.doseAbove.dose.empiricalMaxResponse.response.belowEmpiricalMax <- pts[(is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm)) & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
+  doses.doseBelow.dose.empiricalMinResponse.response.aboveEmpiricalMin <- pts[(is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm)) & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
   return(list(response.empiricalMax = response.empiricalMax, response.empiricalMin = response.empiricalMin, dose.min = dose.min, dose.max = dose.max, doses.doseAbove.dose.empiricalMaxResponse.response.belowEmpiricalMax = doses.doseAbove.dose.empiricalMaxResponse.response.belowEmpiricalMax, doses.doseBelow.dose.empiricalMinResponse.response.aboveEmpiricalMin = doses.doseBelow.dose.empiricalMinResponse.response.aboveEmpiricalMin))
 }
 
@@ -819,7 +811,7 @@ drcObject.getParameters <- function(drcObj = drcObject) {
 drcObject.getDRCFitStats <- function(drcObject, points) {
   if(is.null(drcObject)) return(NULL)
   SSE <- sum((residuals(drcObject))^2)
-  SST <- sum((points$response-mean(points$response))^2)
+  SST <- sum((points$response-mean(points[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm),]$response))^2)
   rSquared <- 1-(SSE/SST)
   return(list(SSE = SSE, SST = SST, rSquared = rSquared))
 }

@@ -38,7 +38,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #   recordedBy <- "bbolt"
 #     
 #   experimentCode <- loadDoseResponseTestData()
-#   experimentCode <- "EXPT-00000078"
+#   experimentCode <- "EXPT-00000079"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
@@ -204,7 +204,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   }
   curveid <- fitData[1]$curveid
   algorithmApproved = fitData[1]$approved[[1]]
-  points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag", "flagchanged"), with = FALSE]
+  points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag_user", "flag_on.load", "flag_algorithm", "flagchanged"), with = FALSE]
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
@@ -263,7 +263,7 @@ api_doseResponse_fit_curve <- function(postData) {
   
   POST <- jsonlite::fromJSON(postData)
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
-  
+  saveSession("~/Desktop/blah2")
   if(is.null(POST$persist)) POST$persist <- FALSE
   if(POST$persist == TRUE) {
     loadSession(POST$sessionID)
