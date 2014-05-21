@@ -56,10 +56,10 @@ session <- parsedResponse$sessionID
 loadSession(session)
 fitData[ , DNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
 fitData[,actualDNETCategory:=rbindlist(fitData$parameters)$resultcomment]
-blah <- fitData[, c("curveid","category","DNETCategory","actualDNETCategory"), with = FALSE][DNETCategory!=actualDNETCategory, ]
+blah <- fitData[, c("curveid","category","actualDNETCategory"), with = FALSE][category!=actualDNETCategory, ]
 
 for(i in blah$curveid) {
-  cat(paste0("New Category: ", fitData[curveid==i,]$DNETCategory,"\n"))
+  cat(paste0("New Category: ", fitData[curveid==i,]$category,"\n"))
   cat(paste0("Old Category: ", fitData[curveid==i,]$actualDNETCategory,"\n"))
   plot(fitData[curveid==i,]$model[[1]])
   readline("next:")

@@ -38,7 +38,8 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #   recordedBy <- "bbolt"
 #     
 #   experimentCode <- loadDoseResponseTestData()
-#   experimentCode <- "EXPT-00000079"
+  #   experimentCode <- "EXPT-00000093"
+  #   experimentCode <- "EXPT-00000002"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE

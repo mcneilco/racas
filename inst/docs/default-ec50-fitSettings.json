@@ -12,8 +12,9 @@
    },
    "biphasicRule":{
       "detectBiphasic":true,
-      "type":"percentOfResponseRange",
-      "value":10
+      "type":"percentage",
+      "parameter":"SST",
+      "value":0.1
    },
    "parameterRules":{
       "goodnessOfFits":{
