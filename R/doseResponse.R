@@ -34,7 +34,7 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   myFixedParameters <- fitSettings$fixedParameters
   myParameterRules <- fitSettings$parameterRules
   myInactiveRule <- fitSettings$inactiveRule
-  myInverseAgonistMode <- fitSettings$inverseAgonistMode
+  myInverseAgonistMode <- ifelse(is.null(fitSettings$inverseAgonistMode), TRUE, fitSettings$inverseAgonistMode)
   myBiphasicRule <- fitSettings$biphasicRule
   fitData[ , fixedParameters := list(list(myFixedParameters))]
   fitData[ , parameterRules := list(list(myParameterRules))]
@@ -64,9 +64,7 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   fitData <- doseResponseFit(fitData)
   
   #Biphasic Detection
-  if(!is.null(fitSettings$biphasicRule)) {
-    #fitData <- doseResponse.biphasicDetection(fitData)
-  }
+  fitData <- doseResponse.biphasicDetection(fitData)
   
   #Applying Limits
   fitData <- doseResponse.applyLimits(fitData, iterations = 20)
@@ -89,36 +87,37 @@ update_point_flags <- function(pts) {
 }
 
 doseResponse.biphasicDetection <- function(fitData) {
-  s <- "~/Desktop/biphasic"
-  saveSession(s)
-
-  testForPossibleBiphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue, testConc, continueBiphasicDetection) {
+  returnCols <- names(fitData)
+  testForBiphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue, testConc, continueBiphasicDetection) {    
     #If detect biphasic is on,
     # there are doses above the empirical max dose with respnoses below empirical max respnose
-    # the curve is not inactive, non-converged, insufficient range or potent
-#     saveSession("~/Desktop/blah")
-    
+    # the curve is not inactive, non-converged, insufficient range or potent        
     if(continueBiphasicDetection & is.NULLorNA(biphasicParameterPreviousValue)) {
-      continueBiphasicDetection <- biphasicRule$detectBiphasic & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (!inactive | !fitConverged | !insufficientRange | !potent)
+      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (!inactive | !fitConverged | !insufficientRange | !potent)
     }
-    
     if(continueBiphasicDetection) {
       if(biphasicRule$type == "percentage") {
         if(is.NULLorNA(biphasicParameterPreviousValue)) {
           biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-          testConc <- pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax[order(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax)]
+          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
           points[dose == testConc, flag_temp := "biphasic"]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
         } else {
-          cat("old-", biphasicParameterPreviousValue,"# new", goodnessOfFit.model[biphasicRule$parameter][[1]])
-          better <- (biphasicParameterPreviousValue - goodnessOfFit.model[biphasicRule$parameter][[1]])/biphasicParameterPreviousValue > biphasicRule$value          
+          better <- eval(parse(text = paste('(biphasicParameterPreviousValue - goodnessOfFit.model[biphasicRule$parameter][[1]])/biphasicParameterPreviousValue',biphasicRule$operator,'biphasicRule$value')))
           if (better) {
             biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-            points[dose == testConc, flag_temp := "biphasic"]
-            testConc <- pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax[order(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax)]
-            model.synced <- FALSE
-            continueBiphasicDetection <- TRUE
+            points[dose == testConc, flag_algorithm := "biphasic"]
+            points[dose == testConc, flag_temp := as.character(NA)]
+            if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
+              testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+              points[dose == testConc, flag_temp := "biphasic"]
+              model.synced <- FALSE
+              continueBiphasicDetection <- TRUE
+            } else {
+              model.synced <- FALSE
+              continueBiphasicDetection <- FALSE
+            }
           } else {
             biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
             testConc <- as.numeric(NA)
@@ -127,43 +126,38 @@ doseResponse.biphasicDetection <- function(fitData) {
             continueBiphasicDetection <- FALSE
           }
         }
-       } else {
+      } else {
         stop(paste(biphasicRule$type, "not a valid biphasic rule"))
       }
     } else {
       continueBiphasicDetection <- FALSE
+      points[, flag_temp := as.character(NA)]
       testConc <- as.numeric(NA)
       biphasicParameterPreviousValue <- as.numeric(NA)
     }
     return(list(points = list(points), model.synced = model.synced, biphasicParameterPreviousValue = biphasicParameterPreviousValue, testConc = testConc, continueBiphasicDetection = continueBiphasicDetection))
   }
-#   loadSession(s)
-#   biphasicRule$value <- 0.90
-#   fitData[ ,biphasicRule := NULL]
-#   fitData[ ,biphasicRule := list(list(biphasicRule))]
   fitData[ , continueBiphasicDetection := TRUE]
-  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := testForPossibleBiphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], inactive, fitConverged, potent, insufficientRange, continueBiphasicDetection = continueBiphasicDetection), by = curveid]
+  fitData[ , biphasicParameterPreviousValue := as.numeric(NA)]
+  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := testForBiphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection), by = curveid]
   while(any(!fitData$model.synced)) {
     fitData <- doseResponseFit(fitData)
-    fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := testForPossibleBiphasic(biphasicRule[[1]], 
-                                                                                     points[[1]], 
-                                                                                     pointStats[[1]], 
-                                                                                     model.synced,
-                                                                                     goodnessOfFit.model[[1]], 
-                                                                                     inactive, 
-                                                                                     fitConverged, 
-                                                                                     potent, 
-                                                                                     insufficientRange,
-                                                                                     biphasicParameterPreviousValue,
-                                                                                     testConc,
-                                                                                     continueBiphasicDetection), by = curveid]
+    fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := testForBiphasic(biphasicRule[[1]], 
+                                                                                                                                               points[[1]], 
+                                                                                                                                               pointStats[[1]], 
+                                                                                                                                               model.synced,
+                                                                                                                                               goodnessOfFit.model[[1]], 
+                                                                                                                                               inactive, 
+                                                                                                                                               fitConverged, 
+                                                                                                                                               potent, 
+                                                                                                                                               insufficientRange,
+                                                                                                                                               biphasicParameterPreviousValue,
+                                                                                                                                               testConc,
+                                                                                                                                               continueBiphasicDetection), by = curveid]
   }
-  
+  return(fitData[, returnCols, with = FALSE])
   
 }
-
-
-
 
 doseResponse.applyLimits <- function(fitData, iterations = 20) {
   #While refit is true, keep refitting using fixed parameters
@@ -606,10 +600,10 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
   myBiphasicRule <- list()
   myFixedParameters <- list()
   fitData[ , c("parameterRules", "inactiveRule", "fixedParameters", "inverseAgonistMode", "biphasicRule") := list(list(myParameterRules),
-                                                                            list(myInactiveRule),
-                                                                            myInverseAgonistMode,
-                                                                            list(myBiphasicRule),
-                                                                            list(myFixedParameters))]
+                                                                                                                  list(myInactiveRule),
+                                                                                                                  list(myFixedParameters),
+                                                                                                                  myInverseAgonistMode,
+                                                                                                                  list(myBiphasicRule))]
   fitData[ , modelHint := unlist(lapply(rbindlist(parameters)[lsKind == "Rendering Hint"]$stringValue, 
                                         function(x) {
                                           ans <- switch(x,
@@ -706,7 +700,6 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = applyParameterRules.goodnessOfFits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = applyParameterRules.limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveid]
-  
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := applyInactiveRule(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveid]
   fitData[ model.synced == FALSE, "approved" := fitConverged | inactive | insufficientRange | potent, by = curveid]
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange", "potent"))
@@ -791,11 +784,10 @@ applyParameterRules.goodnessOfFits <- function(goodnessOfFit.parameters, rules) 
 }
 
 applyInactiveRule <- function(pointStats, points, rule, inverseAgonistMode) {
-  saveSession("~/Desktop/apply")
   if(is.null(pointStats)) return(NULL)
   if(is.null(points)) return(NULL)
-  threshold <- rule$value
   if(length(rule) > 0) {
+    threshold <- rule$value
     mockControls <- ifelse(is.null(rule$mockControls), FALSE, rule$mockControls)
     if(mockControls) {
       response.empiricalMin <- pointStats$response.empiricalMin
@@ -811,7 +803,7 @@ applyInactiveRule <- function(pointStats, points, rule, inverseAgonistMode) {
     }
     inactive <- dosesAboveThreshold < rule$activeDoses
     potent <- dosesAboveThreshold == numDoses
-
+    
     insufficientRange <- abs(pointStats$response.empiricalMax - pointStats$response.empiricalMin) < threshold
   } else {
     inactive <- FALSE

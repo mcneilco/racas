@@ -140,10 +140,18 @@ plot(prof)
 
 
 
-fitData[fitConverged == TRUE, { fittedParams <- fittedParameters[[1]]
-                                names(fittedParams) <- paste0("fitted",names(fittedParams))
-                                plotData(points[[1]], as.data.frame(c(c    currentTime <- as.numeric(format(Sys.time(), "%s%S3"))
-urveid = curveid, name = curveid,fittedParams,fixedParameters[[1]])), LL4, paramNames = c("slope", "min", "max", "ec50"), logDose = TRUE, drawIntercept = "ec50", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
+fitData[fitConverged == TRUE, {
+                                fittedParams <- fittedParameters[[1]]
+                                #names(fittedParams) <- paste0("fitted_",names(fittedParams))
+                                plotCurve(points[[1]], 
+                                          as.data.frame(c(currentTime = as.numeric(format(Sys.time(), "%s%S3")),curveid = curveid, name = curveid,fittedParams)), 
+                                          fitFunction = LL4, 
+                                          paramNames = c("slope", "min", "max", "ec50"), 
+                                          logDose = TRUE, 
+                                          drawIntercept = "ec50", 
+                                          showLegend = TRUE, 
+                                          outFile = paste0(curveid,".png"), 
+                                          xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
 
 
 
@@ -233,3 +241,4 @@ finalData[,renderingHint := "2 parameter Michaelis Menten"]
 points <- split(fitdata, fitdata$exptno)
 points <- data.table(curveid = names(points), points = points)
 finalData <- merge(finalData, points, by = "curveid")
+
