@@ -42,7 +42,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   #   experimentCode <- "EXPT-00000002"
   
   myMessenger <- messenger()$reset()
-  myMessenger$devMode <- FALSE
+  myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.acas.doseresponse.fit.experiment")
   
   myMessenger$logger$debug("Converting simple fit settings to advanced settings")
@@ -104,7 +104,9 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                         list(code = "EC50", name = "EC50"),
                         list(code = "SST", name = "SST"),
                         list(code = "SSE", name = "SSE"),
-                        list(code = "rsquare", name = "R^2"))
+                        list(code = "rsquare", name = "R^2"),
+                        list(code = "userApproved", name = "User Approved"),
+                        list(code = "algorithmApproved", name = "Algorithm Approved"))
   } else {
     msg <- paste0("Model Hint '", modelHint, "' unimplemented for sort options")
     myMessenger$logger$error(msg)
@@ -112,15 +114,17 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
-                                      algorithmApproved = user_approved,
-                                      userApproved = algorithm_approved,
+                                      algorithmApproved = is.na(flag_algorithm),
+                                      userApproved = is.na(flag_user),
                                       category = parameters[[1]][lsKind == "category", ]$stringValue,
                                       curveAttributes = list(
                                         EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
                                         SST =  parameters[[1]][lsKind == "SST"]$numericValue,
                                         SSE =  parameters[[1]][lsKind == "SSE"]$numericValue,
                                         rsquare = parameters[[1]][lsKind == "rSquared"]$numericValue,
-                                        compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue
+                                        compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue,
+                                        algorithmApproved = is.na(flag_algorithm),
+                                        userApproved = is.na(flag_user)
                                       )
   ))), by = curveid]
   stubs <- list(sortOptions = sortOptions, curves = fitData$curves)

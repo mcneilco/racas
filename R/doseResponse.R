@@ -282,8 +282,8 @@ simpleToAdvancedFitSettings <- function(simpleSettings, updateFlags = NULL, mode
   if(!is.null(simpleSettings$biphasicRule)) {
     modifiedSettings$biphasicRule <- simpleSettings$biphasicRule
   }
-  if(!is.null(simpleSettings$user_approved)) {
-    modifiedSettings$user_approved <- simpleSettings$user_approved
+  if(!is.null(simpleSettings$flag_user)) {
+    modifiedSettings$flag_user <- simpleSettings$flag_user
   }
   
   modifiedSettings <- switch(modelHint,
@@ -596,9 +596,9 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
   fitData[ , parameters := list(list(
     rbindlist(lsStates[[1]][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)
   )), by = id]
-  fitData[ , c('curveid','algorithm_approved','user_approved') := list(parameters[[1]][grepl('.*curve id', lsKind)]$stringValue,
-                                 ifelse(is.null(parameters[[1]][lsKind == "algorithm_approved"]$stringValue), as.logical(NA), as.logical(parameters[[1]][lsKind == "algorithm_approved"]$stringValue)),
-                                 ifelse(is.null(parameters[[1]][lsKind == "user_approved"]$stringValue), as.logical(NA), as.logical(parameters[[1]][lsKind == "user_approved"]$stringValue))), by = id]
+  fitData[ , c('curveid','flag_algorithm','flag_user') := list(parameters[[1]][grepl('.*curve id', lsKind)]$stringValue,
+                                 ifelse(length(parameters[[1]][lsKind == "flag" & stringValue == "algorithm"]$comments) == 0, as.character(NA), as.character(parameters[[1]][lsKind == "flag" & stringValue == "algorithm"]$comments)),
+                                 ifelse(length(parameters[[1]][lsKind == "flag" & stringValue == "user"]$comments) == 0, as.character(NA), as.character(parameters[[1]][lsKind == "flag" & stringValue == "user"]$comments))), by = id]
   myParameterRules <- list(goodnessOfFits = list(), limits = list())
   myInactiveRule <- list()
   myInverseAgonistMode <- TRUE
@@ -706,8 +706,9 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = applyParameterRules.goodnessOfFits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = applyParameterRules.limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveid]
+  saveSession("~/Desktop/fit")
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := applyInactiveRule(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveid]
-  fitData[ model.synced == FALSE, "algorithm_approved" := fitConverged | inactive | insufficientRange | potent, by = curveid]
+  fitData[ model.synced == FALSE, "flag_algorithm" := ifelse(fitConverged | inactive | insufficientRange | potent, as.character(NA), "algorithm"), by = curveid]
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange", "potent"))
   
   fitData[ model.synced == FALSE, model.synced := TRUE]
@@ -1044,12 +1045,13 @@ listToDataTable <- function(l) {
 
 
 
-getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, algorithm_approved, user_approved, tested_lot, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings) {
+getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, tested_lot, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings) {
+  saveSession("~/Desktop/analysis")
   fitParameters <- c(fixedParameters,fittedParameters)
   names(fitParameters) <- paste0("fitted_",names(fitParameters))
   reportedParameters[unlist(lapply(reportedParameters, function(x) is.NULLorNA(x$value)))] <- NULL
   publicAnalysisGroupValues <- c(reportedParameters, list(tested_lot = list(value = tested_lot, operator = NULL), curveid = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
-  privateAnalysisGroupValues <- c(fitParameters, goodnessOfFit.model, list('Rendering Hint' = renderingHint), c(list(category = category), list(flag = "algorithm")[!algorithm_approved],  list(flag = "user")[ifelse(is.na(user_approved),FALSE,user_approved)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(simpleFitSettings = simpleFitSettings)))
+  privateAnalysisGroupValues <- c(fitParameters, goodnessOfFit.model, list('Rendering Hint' = renderingHint), c(list(category = category), list(algorithmFlag = "algorithm")[!is.na(flag_algorithm)],  list(userFlag = "user")[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(simpleFitSettings = simpleFitSettings)))
   privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is.NULLorNA))] <- NULL
   privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
   
@@ -1057,6 +1059,7 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   lsTypes <- unlist(lapply(x, function(x) ifelse(class(x$value)=="numeric", "numericValue", "stringValue")))
   lsTypes[names(lsTypes) == "tested_lot"] <- "codeValue"
+  lsTypes[names(lsTypes)  %in% c("algorithmFlag", "userFlag")] <- "comments"
   lsTypes[names(lsTypes) %in% c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob", "simpleFitSettings")] <- "clobValue"
   valueUnits <- rep(list(NULL),length(lsTypes))
   valueUnits[names(lsTypes) %in% c("min", "max","fitted_min", "fitted_max")] <- responseUnits
@@ -1075,15 +1078,17 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
                   SST = "SST" ,
                   rSquared = "rSquared" ,
                   category = "category" ,
-                  flag = "flag",
+                  algorithmFlag = "flag",
+                  userFlag = "flag",
                   simpleFitSettings = "fitSettings")
   matches <- match(names(kindMap), names(x))
   names(x)[matches[!is.na(matches)]] <- kindMap[which(!is.na(matches))]
   lsKinds <- names(x)
-  stringValues <- ifelse(lsTypes=="stringValue", lapply(x, function(x) x$value), list(NULL))
+  stringValues <- ifelse(lsTypes=="stringValue" | lsTypes == "comments", lapply(x, function(x) x$value), list(NULL))
   codeValues <- ifelse(lsTypes=="codeValue", lapply(x, function(x) x$value), list(NULL))
   numericValues <- ifelse(lsTypes=="numericValue", lapply(x, function(x) x$value), list(NULL))
   clobValues <- ifelse(lsTypes=="clobValue", lapply(x, function(x) x$value), list(NULL))
+  comments <- ifelse(lsTypes=="comments", lapply(x, function(x) x$value), list(NULL))
   operatorValues <- lapply(x, function(x) x$operator)
   uncertanties <- lapply(x, function(x) x$stdErr)
   uncertantyTypes <- uncertanties
@@ -1094,6 +1099,7 @@ getAnalysisGroupValues <- function(reportedParameters, fixedParameters, fittedPa
                                         lsKind = lsKinds[[x]],
                                         valueUnit = valueUnits[[x]],
                                         stringValue = stringValues[[x]],
+                                        comments = comments[[x]],
                                         numericValue = numericValues[[x]],
                                         valueOperator = operatorValues[[x]],
                                         uncertaintyType = uncertantyTypes[[x]],
@@ -1120,8 +1126,8 @@ saveDoseResponseData <- function(fitData, recorded_by) {
                                                                      fittedParameters[[1]],
                                                                      goodnessOfFit.model[[1]],
                                                                      category[[1]],
-                                                                     algorithm_approved[[1]],
-                                                                     user_approved[[1]],
+                                                                     flag_algorithm[[1]],
+                                                                     flag_user[[1]],
                                                                      tested_lot = parameters[[1]][lsKind=="batch code",]$codeValue,
                                                                      recorded_by[[1]],
                                                                      transactionID,
