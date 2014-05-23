@@ -44,7 +44,6 @@ Collate:
     'containers.R'
     'createHtmlSummary.R'
     'createNewACASExperiment.R'
-    'curveSaving.R'
     'errorLogging.R'
     'fileRead.R'
     'hello.R'

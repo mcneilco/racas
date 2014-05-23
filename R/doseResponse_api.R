@@ -38,7 +38,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #   recordedBy <- "bbolt"
 #     
 #   experimentCode <- loadDoseResponseTestData()
-  #   experimentCode <- "EXPT-00000093"
+  #   experimentCode <- "EXPT-00000095"
   #   experimentCode <- "EXPT-00000002"
   
   myMessenger <- messenger()$reset()
@@ -73,6 +73,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 }
 
 api_doseResponse_get_curve_stubs <- function(GET) {  
+  saveSession("~/Desktop/stubs")
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.stubs")
@@ -111,8 +112,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
-                                      algorithmApproved = TRUE,
-                                      userApproved = TRUE,
+                                      algorithmApproved = user_approved,
+                                      userApproved = algorithm_approved,
                                       category = parameters[[1]][lsKind == "category", ]$stringValue,
                                       curveAttributes = list(
                                         EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
@@ -130,6 +131,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
 }
 
 api_doseResponse_get_curve_detail <- function(GET, ...) {  
+  saveSession("~/Desktop/detail")
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.detail")
@@ -204,7 +206,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     
   }
   curveid <- fitData[1]$curveid
-  algorithmApproved = fitData[1]$approved[[1]]
+  algorithmApproved = fitData[1]$algorithm_approved[[1]]
+  userApproved = fitData[1]$userApproved[[1]]
   points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag_user", "flag_on.load", "flag_algorithm", "flagchanged"), with = FALSE]
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
@@ -221,40 +224,16 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                      curveErrors = curveErrors,
                      category = category,
                      algorithmApproved = algorithmApproved,
+                     userApproved = userApproved,
                      curveAttributes = curveAttributes,
                      plotData = plotData,
                      fitSettings = fitSettings,
                      ...
   )))
 }
-doseResponse_add_clob_values <- function(fitData) {
-  fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
-    if(fitConverged) {
-      reportedValues <- flattenListToDataTable(reportedParameters[[1]])
-      reportedValues <- reportedValues[ , value := {
-        if(exists("operator")) {
-          paste(ifelse(is.na(operator), "",operator), value)
-        } else {
-          value
-        }}]
-      reportedValuesClob <- objToHTMLTableString(reportedValues[ , c("name", "value"), with = FALSE], include.colnames = FALSE)
-      fitSummaryClob <- captureOutput(summary(model[[1]]), collapse = "<br>")
-      goodnessOfFit.parameters <- flattenListToDataTable(goodnessOfFit.parameters[[1]])
-      goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
-                                                        list(name = sp[[1]], type = sp[[2]])}, by = c("V1", "name")]
-      goodnessOfFit.parameters <- dcast.data.table(goodnessOfFit.parameters, name ~ type, value.var = "V1")
-      parameterStdErrors <- objToHTMLTableString(goodnessOfFit.parameters)
-      parameterStdErrorsClob <- parameterStdErrors
-      curveErrorsClob <- objToHTMLTableString(flattenListToDataTable(goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE], include.colnames = FALSE)
-      list(reportedValuesClob = list(reportedValuesClob), fitSummaryClob = list(fitSummaryClob), parameterStdErrorsClob = list(parameterStdErrorsClob), curveErrorsClob = list(curveErrorsClob))
-    } else {
-      list(reportedValuesClob = list(NULL), fitSummaryClob = list(NULL), parameterStdErrorsClob= list(NULL), curveErrorsClob = list(NULL))
-    }
-  }, by = curveid]
-  return(fitData)
-}
 
 api_doseResponse_fit_curve <- function(postData) {  
+  saveSession("~/Desktop/curve")
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.fit.curve")
@@ -264,9 +243,9 @@ api_doseResponse_fit_curve <- function(postData) {
   
   POST <- jsonlite::fromJSON(postData)
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
-  saveSession("~/Desktop/blah2")
+
   if(is.null(POST$persist)) POST$persist <- FALSE
-  if(POST$persist == TRUE) {
+  if(POST$persist) {
     loadSession(POST$sessionID)
     myMessenger$logger$debug("adding clob values to fit data")    
     fitData <- doseResponse_add_clob_values(fitData)
@@ -291,4 +270,24 @@ api_doseResponse_fit_curve <- function(postData) {
   }
   myMessenger$logger$debug("returning response")
   return(response)
+}
+
+api_doseResponse_update_curve_user_approval <- function(GET) {
+  if(is.null(GET$sessionID)) {
+    stop("must provide session id")
+  }
+  if(is.null(GET$userApproved)) {
+    stop("must provide userApproved boolean")
+  } else {
+    userApproved <- as.logical(GET$userApproved)
+  }
+  
+  loadSession(GET$sessionID)
+  updateFitApproval <- function(fitData, userApproved, sessionID) {
+    fitData[ , user_approved := userApproved]
+    saveSession(sessionID)
+    return(sessionID)
+  }
+  updateFitApproval(fitData, userApproved, GET$sessionID)
+  return(list(userApproved = userApproved))
 }
