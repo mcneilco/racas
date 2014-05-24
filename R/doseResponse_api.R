@@ -210,8 +210,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     
   }
   curveid <- fitData[1]$curveid
-  algorithmApproved = fitData[1]$algorithm_approved[[1]]
-  userApproved = fitData[1]$userApproved[[1]]
+  algorithmApproved = is.na(fitData[1]$flag_algorithm)
+  userApproved = fitData[1]$flag_user
   points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag_user", "flag_on.load", "flag_algorithm", "flagchanged"), with = FALSE]
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
