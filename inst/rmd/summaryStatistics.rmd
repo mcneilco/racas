@@ -33,7 +33,7 @@ if (class(history) != "data.frame" && class(progress) != "data.frame") {
 
 
 ```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-if (class(progress) != "data.frame") {
+if (class(progress)[1] != "data.frame") {
   # pass -- we already know history must have something, so there's a plot above
   cat("")
 } else {
@@ -51,35 +51,51 @@ if (class(progress) != "data.frame") {
 
 ## Database History
 
-```{r analysis, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-plot3 <- ggplot(analysis, aes(recorded_date, cumulativeSum)) 
-plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
-plot3 <- plot3 + labs(title = "Calculated Results Over Time", x = NULL, 
-                      y = "Number of Results\nCalculated to Date")
-plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.3)), 
-                       plot.title = element_text(size = rel(2)),
-                       axis.text = element_text(size = rel(1.3)))
-plot3
+```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+if (class(analysis)[1] == "character" && class(subjects)[1] == "character" &&
+      class(values)[1] == "character") {
+  # These are data.tables, so their type is data.table AND data.frame
+  cat("No statistics to display")
+} else if (class(analysis)[1] == "character") {
+  cat("")
+} else {
+  plot3 <- ggplot(analysis, aes(recorded_date, cumulativeSum)) 
+  plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
+  plot3 <- plot3 + labs(title = "Calculated Results Over Time", x = NULL, 
+                        y = "Number of Results\nCalculated to Date")
+  plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.3)), 
+                         plot.title = element_text(size = rel(2)),
+                         axis.text = element_text(size = rel(1.3)))
+  plot3
+}
 ```
 
-```{r subjects, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-plot2 <- ggplot(subjects, aes(recorded_date, cumulativeSum)) 
-plot2 <- plot2 + geom_step(colour = "blue", size = rel(1.3))
-plot2 <- plot2 + labs(title = "Samples Measured Over Time", x = NULL, 
-                      y = "Number of Samples\nMeasured to Date")
-plot2 <- plot2 + theme(axis.title = element_text(size = rel(1.3)), 
-                       plot.title = element_text(size = rel(2)),
-                       axis.text = element_text(size = rel(1.3)))
-plot2
+```{r subjects, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+if (class(subjects)[1] == "character") {
+  cat("")
+} else {
+  plot2 <- ggplot(subjects, aes(recorded_date, cumulativeSum)) 
+  plot2 <- plot2 + geom_step(colour = "blue", size = rel(1.3))
+  plot2 <- plot2 + labs(title = "Samples Measured Over Time", x = NULL, 
+                        y = "Number of Samples\nMeasured to Date")
+  plot2 <- plot2 + theme(axis.title = element_text(size = rel(1.3)), 
+                         plot.title = element_text(size = rel(2)),
+                         axis.text = element_text(size = rel(1.3)))
+  plot2
+}
 ```
 
-```{r values, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-plot4 <- ggplot(values, aes(recorded_date, cumulativeSum)) 
-plot4 <- plot4 + geom_step(colour = "blue", size = rel(1.3))
-plot4 <- plot4 + labs(title = "Raw Data Points Acquired Over Time", x = NULL, 
-                      y = "Number of Points\nAcquired to Date")
-plot4 <- plot4 + theme(axis.title = element_text(size = rel(1.3)), 
-                       plot.title = element_text(size = rel(2)),
-                       axis.text = element_text(size = rel(1.3)))
-plot4
+```{r values, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+if (class(values)[1] == "character") {
+  cat("")
+} else {
+  plot4 <- ggplot(values, aes(recorded_date, cumulativeSum)) 
+  plot4 <- plot4 + geom_step(colour = "blue", size = rel(1.3))
+  plot4 <- plot4 + labs(title = "Raw Data Points Acquired Over Time", x = NULL, 
+                        y = "Number of Points\nAcquired to Date")
+  plot4 <- plot4 + theme(axis.title = element_text(size = rel(1.3)), 
+                         plot.title = element_text(size = rel(2)),
+                         axis.text = element_text(size = rel(1.3)))
+  plot4
+}
 ```

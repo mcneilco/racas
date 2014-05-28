@@ -144,7 +144,7 @@ detailedExperimentChart <- function() {
 # Returns data to plot the total number of analysis groups over time
 # 
 # Input: none
-# Output: The data frame needed to plot the cumulative analysis
+# Output: The data table needed to plot the cumulative analysis
 #         groups over time
 #         "Missing" if there is no data
 # Possible error cases:  analysis_group does not exist
@@ -172,7 +172,7 @@ analysisOverTime <- function() {
 # Returns data to plot the total number of subjects over time
 # 
 # Input: none
-# Output: Returns the data frame needed to plot a cumulative
+# Output: Returns the data table needed to plot a cumulative
 #         graph of subjects over time
 #         "Missing" if there is no data
 # Possible error cases: subject does not exist, or does not contain
@@ -202,7 +202,7 @@ subjectsOverTime <- function() {
 # Returns data to plot the total number of values in subjects over time
 # 
 # Input: none
-# Output: Returns the data frame necessary to plot the cumulative number
+# Output: Returns the data table necessary to plot the cumulative number
 #         of values in subjects, as a function of time
 #         "Missing" if there is no data
 # Possible error cases: api_subject_results table does not exist, or does
