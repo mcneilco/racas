@@ -14,11 +14,11 @@ generateHTML <- function(numWeeks = 4) {
   
   #TODO: Handle cases when there is no data appropriately
   
+  # Get data frames to make plots
   history <- experimentHistoryChart(4)
-  
   subjects <- subjectsOverTime()
-  
   recentUser <- mostRecent(4)
+  analysis <- analysisOverTime()
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
   htmlSummary <- knit2html.bugFix(input = rmd, 
@@ -142,4 +142,31 @@ mostRecent <- function(numWeeks = 4) {
     return("None")
   else
     return(bestEntry$recorded_by) 
+}
+
+
+# analysisOverTime
+# Plots the total number of analysis groups over time
+# 
+# Input: none
+# Output: The data frame needed to plot the cumulative analysis
+#         groups over time
+# Possible error cases:  analysis_group does not exist
+
+analysisOverTime <- function() {
+  groupFrame <- query("select distinct(ag_id), recorded_date 
+                                   from api_analysis_group_results")
+  names(groupFrame) <- tolower(names(groupFrame))
+  groupAndDate <- data.table(groupFrame)
+  
+  if(NROW(groupAndDate) == 0) 
+    return(c("None"))
+  
+  setkey(groupAndDate, recorded_date)
+  
+  # We get a two-column table, with the date and the total number of groups
+  dateTable <- groupAndDate[, NROW(id), by = recorded_date]
+  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  
+  return(dateTable)
 }
