@@ -1,6 +1,12 @@
 Database Summary Statistics
 ========================================================
 
+## Fast Facts
+```{r fastFacts, results='asis', echo=FALSE}
+cat("Number of protocols: ", numExpProtUsers[2], "\n\n")
+cat("Number of experiments: ", numExpProtUsers[1], "\n\n")
+cat("Number of users: ", numExpProtUsers[3], "\n\n")
+```
 
 ### Experiment History
 ```{r history, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
@@ -31,19 +37,8 @@ plot1 <- plot1 + theme(axis.title = element_text(size = rel(1.5)),
 plot1
 ```
 
-### Subjects Over Time
-```{r subjects, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-plot2 <- ggplot(subjects, aes(recorded_date, cumulativeSum)) 
-plot2 <- plot2 + geom_line(colour = "blue", size = rel(1.3))
-plot2 <- plot2 + labs(title = "Samples Measured Over Time", x = "Date", 
-                      y = "Number of Samples Measured to Date")
-plot2 <- plot2 + theme(axis.title = element_text(size = rel(1.5)), 
-                       plot.title = element_text(size = rel(2)),
-                       axis.text = element_text(size = rel(1.3)))
-plot2
-```
+## Database History
 
-### Analysis Over Time
 ```{r analysis, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
 plot3 <- ggplot(analysis, aes(recorded_date, cumulativeSum)) 
 plot3 <- plot3 + geom_line(colour = "blue", size = rel(1.3))
@@ -55,7 +50,17 @@ plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.5)),
 plot3
 ```
 
-### Values Over Time
+```{r subjects, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+plot2 <- ggplot(subjects, aes(recorded_date, cumulativeSum)) 
+plot2 <- plot2 + geom_line(colour = "blue", size = rel(1.3))
+plot2 <- plot2 + labs(title = "Samples Measured Over Time", x = "Date", 
+                      y = "Number of Samples Measured to Date")
+plot2 <- plot2 + theme(axis.title = element_text(size = rel(1.5)), 
+                       plot.title = element_text(size = rel(2)),
+                       axis.text = element_text(size = rel(1.3)))
+plot2
+```
+
 ```{r values, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
 plot4 <- ggplot(values, aes(recorded_date, cumulativeSum)) 
 plot4 <- plot4 + geom_line(colour = "blue", size = rel(1.3))

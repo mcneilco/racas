@@ -120,6 +120,7 @@ subjectsOverTime <- function() {
 mostRecent <- function(numWeeks = 4) {
   userFrame <- query("select recorded_by, recorded_date from api_experiment 
                      where recorded_by != 'nouser'")
+  names(userFrame) <- tolower(names(userFrame))
   
   if(NROW(userFrame) == 0) 
     return()
@@ -237,6 +238,7 @@ dataOverTime <- function() {
 
 detailedExperimentChart <- function() {
   userFrame <- query("select recorded_by, status from api_experiment")
+  names(userFrame) <- tolower(names(userFrame))
   
   if(NROW(userFrame) == 0) 
     return()
