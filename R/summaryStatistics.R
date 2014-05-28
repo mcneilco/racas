@@ -1,23 +1,25 @@
-# Plots the total number of values in subjects over time
-# 
-# Input: none
-# Output: Displays and returns a line graph
-# Possible error cases: subject_value table does not exist, or does
-#    not contain id and recorded_date fields
+# Summary Statistics for the ACAS database
+# Author: Jennifer Rogers
 
-dataOverTime <- function() {
-  dataAndDate <- data.table(query("select sv_id, recorded_date 
-                                  from api_subject_results"))
+# generateHTML
+# Runs functions necessary to generate the summary
+# statistics in an HTML file, then generates the file
+#
+# Input: numWeeks, to be used by several functions
+# Output: an HTML file showing the statistics
+# Possible error cases: Generally, if api tables are
+# missing or have missing columns
+
+generateHTML <- function(numWeeks = 4) {
   
-  if(NROW(dataAndDate) == 0) 
-    return(c("None"))
+  #TODO: Handle cases when there is no data appropriately
   
-  setkey(dataAndDate, recorded_date)
+  history <- experimentHistoryChart(4)
   
-  # We get a two-column table, with the date and the total number of groups
-  dateTable <- dataAndDate[, NROW(sv_id), by = recorded_date]
-  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  subjects <- subjectsOverTime()
   
+  recentUser <- mostRecent(4)
+
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
   htmlSummary <- knit2html.bugFix(input = rmd, 
                                   options = c("base64_images", "mathjax"),
@@ -25,4 +27,119 @@ dataOverTime <- function() {
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
   writeLines(htmlSummary, con = '~/Desktop/output.html')
   return(htmlSummary)
+}
+
+
+# experimentHistoryChart 
+# Creates a bar chart that displays the number of experiments for each user,
+#    broken down by whether the records are older or newer than a user-specified
+#    number of weeks
+# 
+# Input: 
+#    numWeeks - A double, greater than zero, which partitions the experiments.
+#               It partitions them into records that are newer than
+#               numWeeks, and experiments that are older than numWeeks.
+#               numWeeks defaults to 4.
+# Output: Returns the data frame necessary to graph the number of old and
+#         new experiments per user
+# Limitations:
+#   Gives nonsensical legends if numWeeks is not positive
+#   Returns nothing if there is no data in api_experiment
+# Possible error cases: api_experiment does not exist, or does not contain
+#   columns "recorded_by" and "recorded_date"
+
+experimentHistoryChart <- function(numWeeks = 4) {
+  userFrame <- query("select recorded_by, recorded_date from api_experiment")
+  names(userFrame) <- tolower(names(userFrame))
+  
+  if(NROW(userFrame) == 0) 
+    return()
+  
+  #Get a time/date format that was numWeeks ago
+  cutoffDate <- Sys.time() - as.difftime(numWeeks, units = "weeks")
+  
+  #Create a column to separate old experiments from new experiments
+  userFrame <- transform(userFrame, isOld = ifelse(recorded_date < cutoffDate, TRUE, FALSE))
+  
+  # Change all missing entries to "None"
+  nouserList <- which(userFrame$recorded_by == 'nouser')
+  userFrame$recorded_by[nouserList] <- 'None'
+  
+  # Change all missing entries to "Other"
+  naList <- which(is.na(userFrame$recorded_by))
+  userFrame$recorded_by[naList] <- 'Other'
+  
+  #TODO: Try to make a dodged plot with 0's
+  return(userFrame)
+}
+
+
+# subjectsOverTime
+# Plots the total number of subjects over time
+# 
+# Input: none
+# Output: Returns the data frame needed to plot a cumulative
+#         graph of subjects over time
+# Possible error cases: subject does not exist, or does not contain
+#    id and recorded_date fields
+
+subjectsOverTime <- function() {
+  subjectFrame <- query("select distinct(subject_code_name), recorded_date 
+                                     from api_subject_results")
+  names(subjectFrame) <- tolower(names(subjectFrame))
+  subjectAndDate <- data.table(subjectFrame)
+  
+  if(NROW(subjectAndDate) == 0) 
+    return(c("None"))
+  
+  setkey(subjectAndDate, recorded_date)
+  
+  # We get a two-column table, with the date and the total number of groups
+  dateTable <- subjectAndDate[, NROW(subject_code_name), by = recorded_date]
+  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  
+  return(dateTable)
+}
+
+
+# mostRecent
+# Returns the user with the most new experiments in the last numWeeks
+# 
+# Input: numWeeks, to determine what counts as a "new" experiment
+# Output: Returns a one-element vector containing (a string of) the name 
+#         of the user with the most experiments recorded in the past numWeeks
+# Limitations: If there is a tie, it is broken in favor of the username
+#              farther in the alphabet
+#              Returns nothing if there are no named users in api_experiment
+# Possible error cases: api_experiment may not exist
+#
+
+mostRecent <- function(numWeeks = 4) {
+  userFrame <- query("select recorded_by, recorded_date from api_experiment 
+                     where recorded_by != 'nouser'")
+  
+  if(NROW(userFrame) == 0) 
+    return()
+  
+  #Get a time/date format that was numWeeks ago
+  cutoffDate <- Sys.time() - as.difftime(numWeeks, units = "weeks")
+  
+  userFrame <- transform(userFrame, age = ifelse(recorded_date < cutoffDate, "old", "new"))
+  
+  # This data table has users, date recorded, and age
+  userTable <- data.table(userFrame)
+  setkey(userTable, age, recorded_by)
+  
+  # Find the total number of 'new' and 'old' entries per user
+  summaryTable <- userTable[, NROW(recorded_date), by = "age,recorded_by"]
+  newTable <- summaryTable["new",]
+  
+  # V1 is the summarized column; this sorts in ascending order
+  setkey(newTable, "V1")
+  
+  bestEntry <- last(newTable)
+  if(is.na(bestEntry$recorded_by))  # There must have only been old entries
+    return("None")
+  else
+    return(bestEntry$recorded_by) 
 }
