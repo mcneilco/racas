@@ -11,15 +11,12 @@ cat("* Number of users: ", numExpProtUsers[3], "\n")
 ## User Statistics
 
 ```{r figDim, echo = FALSE}
-figWidth = min(7, max(numExpProtUsers[3]+2.4, 4.5))
+figWidth = min(10, max(numExpProtUsers[3]+2.4, 4.5))
 ```
 
 ```{r history, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
-if (class(history) != "data.frame" && class(progress) != "data.frame") {
+if (numExpProtUsers[3] == 0) {
   cat("No statistics to display")
-} else if (class(history) != "data.frame") {
-  # pass -- we don't want to print a blank chart
-  cat("")
 } else {
   plot <- ggplot(history, aes(recorded_by, fill = isOld)) + 
     geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
@@ -33,14 +30,15 @@ if (class(history) != "data.frame" && class(progress) != "data.frame") {
   plot <- plot + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.3)))
+  plot <- plot + theme(axis.text.x = element_text(angle=40, vjust=.8, hjust=1))
   plot
 }
 ```
 
 
 ```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
-if (class(progress)[1] != "data.frame") {
-  # pass -- we already know history must have something, so there's a plot above
+if (numExpProtUsers[3] == 0) {
+  # pass -- we don't want to print this chart if it's empty
   cat("")
 } else {
   plot1 <- ggplot(progress, aes(recorded_by, fill = status)) + 
@@ -52,6 +50,7 @@ if (class(progress)[1] != "data.frame") {
   plot1 <- plot1 + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.3)))
+  plot1 <- plot1 + theme(axis.text.x = element_text(angle=40, vjust=.8, hjust=1))
   plot1
 }
 ```
