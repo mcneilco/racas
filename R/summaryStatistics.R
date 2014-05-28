@@ -19,6 +19,8 @@ generateHTML <- function(numWeeks = 4) {
   subjects <- subjectsOverTime()
   recentUser <- mostRecent(4)
   analysis <- analysisOverTime()
+  numExpProtUsers <- usageStatistics()
+  values <- dataOverTime()
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
   htmlSummary <- knit2html.bugFix(input = rmd, 
@@ -31,7 +33,7 @@ generateHTML <- function(numWeeks = 4) {
 
 
 # experimentHistoryChart 
-# Creates a bar chart that displays the number of experiments for each user,
+# Returns data to create a bar chart that displays the number of experiments for each user,
 #    broken down by whether the records are older or newer than a user-specified
 #    number of weeks
 # 
@@ -75,7 +77,7 @@ experimentHistoryChart <- function(numWeeks = 4) {
 
 
 # subjectsOverTime
-# Plots the total number of subjects over time
+# Returns data to plot the total number of subjects over time
 # 
 # Input: none
 # Output: Returns the data frame needed to plot a cumulative
@@ -146,7 +148,7 @@ mostRecent <- function(numWeeks = 4) {
 
 
 # analysisOverTime
-# Plots the total number of analysis groups over time
+# Returns data to plot the total number of analysis groups over time
 # 
 # Input: none
 # Output: The data frame needed to plot the cumulative analysis
@@ -166,6 +168,54 @@ analysisOverTime <- function() {
   
   # We get a two-column table, with the date and the total number of groups
   dateTable <- groupAndDate[, NROW(id), by = recorded_date]
+  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  
+  return(dateTable)
+}
+
+
+# usageStatistics
+# Creates a vector of summary statistics for the database:
+#    - Total number of experiments
+#    - Total number of protocols
+#    - Total number of users
+# 
+# Input: none
+# Output: Returns a vector containing the statistics
+# Limitations: Includes the users "nouser" and NA, which may or may not be desired
+#             
+# Possible error cases: api_experiment or api_protocol does not exist
+#                      
+
+usageStatistics <- function() {
+  numExperiments <- query("select count(distinct id) from api_experiment")[1,1]
+  numProtocols <- query("select count(distinct protocol_id) from api_protocol")[1,1]
+  numUsers <- query("select count(distinct recorded_by) from api_experiment")[1,1]
+  
+  return(c(numExperiments, numProtocols, numUsers))
+}
+
+
+# dataOverTime
+# Returns data to plot the total number of values in subjects over time
+# 
+# Input: none
+# Output: Returns the data frame necessary to plot the cumulative number
+#         of values in subjects, as a function of time
+# Possible error cases: api_subject_results table does not exist, or does
+#    not contain sv_id and recorded_date fields
+
+dataOverTime <- function() {
+  dataAndDate <- data.table(query("select sv_id, recorded_date 
+                                  from api_subject_results"))
+  
+  if(NROW(dataAndDate) == 0) 
+    return(c("None"))
+  
+  setkey(dataAndDate, recorded_date)
+  
+  # We get a two-column table, with the date and the total number of groups
+  dateTable <- dataAndDate[, NROW(sv_id), by = recorded_date]
   dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
   
   return(dateTable)
