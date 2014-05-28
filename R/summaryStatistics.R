@@ -14,7 +14,8 @@
 
 generateHTML <- function(numWeeks = 4) {
   
-  #TODO: Handle cases when there is no data appropriately
+  #TODO: Resize graphs when there are fewer users? Otherwise
+  #      it looks silly
   
   # Get data frames to make plots
   numExpProtUsers <- usageStatistics()

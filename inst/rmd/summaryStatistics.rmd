@@ -9,14 +9,20 @@ cat("* Number of users: ", numExpProtUsers[3], "\n")
 ```
 
 ## User Statistics
-```{r history, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+
+```{r figDim, echo = FALSE}
+figWidth = min(7, max(numExpProtUsers[3]+2.4, 4.5))
+```
+
+```{r history, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
 if (class(history) != "data.frame" && class(progress) != "data.frame") {
   cat("No statistics to display")
 } else if (class(history) != "data.frame") {
   # pass -- we don't want to print a blank chart
   cat("")
 } else {
-  plot <- ggplot(history, aes(recorded_by, fill = isOld)) + geom_bar()
+  plot <- ggplot(history, aes(recorded_by, fill = isOld)) + 
+    geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
   plot <- plot + guides(fill = guide_legend(title = NULL))
   plot <- plot + scale_fill_manual(values = c("blue", "#56B4E9"), 
                                      labels = c(paste("Newer than \n", 
@@ -32,12 +38,13 @@ if (class(history) != "data.frame" && class(progress) != "data.frame") {
 ```
 
 
-```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
 if (class(progress)[1] != "data.frame") {
   # pass -- we already know history must have something, so there's a plot above
   cat("")
 } else {
-  plot1 <- ggplot(progress, aes(recorded_by, fill = status)) + geom_bar()
+  plot1 <- ggplot(progress, aes(recorded_by, fill = status)) + 
+    geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
   plot1 <- plot1 + guides(fill = guide_legend(title = NULL))
   plot1 <- plot1 + scale_fill_manual(values = c("blue", "#56B4E9"))
   plot1 <- plot1 + labs(title = "Experiment Progress", 
