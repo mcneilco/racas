@@ -11,13 +11,13 @@ Curve Fit Summary
 
 ***Fit Summary***
 * Attempted Fits: `r nrow(fitData)`
-* Successful Fits: `r nrow(fitData[approved==TRUE,])`
-* Failed Fits: `r nrow(fitData[approved==FALSE,])`
+* Successful Fits: `r nrow(fitData[is.na(flag_algorithm),])`
+* Failed Fits: `r nrow(fitData[is.na(flag_algorithm)==FALSE,])`
 
 ***Categories***
 
 ```{r categories, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-qplot(category, data=fitData, geom="bar", fill=approved)
+qplot(category, data=fitData, geom="bar", fill=is.na(flag_algorithm))
 ```
 
 ***Goodness of Fit***

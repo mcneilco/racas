@@ -11,11 +11,20 @@ rdaTest <- function(newResults, acceptedResultsPath, updateResults = FALSE) {
   }
 }
 
+# if(updateResults) {
+#   experimentCode <- loadDoseResponseTestData()
+#   fitData <- getFitData(experimentCode)
+#   save(fitData, file = file.path("data","doseResponse", "example-ec50-fitData.rda"))
+#   file <- file.path("data", "doseResponse","default-ec50-fitSettings.json")
+#   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
+#   fitData <- doseResponse.fitData(fitSettings, fitData)
+#   save(fitData, file = file.path("data","doseResponse", "example-ec50-fitData-fitted.rda"))
+# }
+
 test_that("doseResponse.fitData for ec50 easy curve tests",{
   file <- system.file("tests","data", "doseResponse","default-ec50-fitSettings.json", package = "racas")
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
-  
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "doseResponse.fitData_acceptedResults.rda")
   newResults <- doseResponse.fitData(fitSettings, fitData)
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
@@ -40,7 +49,7 @@ test_that("getDefaultFitSettings for ec50",{
 test_that("doseResponse basic test",{
   file <- system.file("tests","data", "doseResponse","default-ec50-fitSettings.json", package = "racas")
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   newResults <- doseResponse(fitSettings = fitSettings, fitData = fitData)
   acceptedResultsRDAPath <- file.path("data","doseResponse", "doseResponse_acceptedResults.rda")
   if(updateResults) {
@@ -73,7 +82,7 @@ test_that("predictPoints basic test",{
 })
 
 test_that("plotWindow basic test",{
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "plotWindow_acceptedResults.rda")
   newResults <- predictPoints(fitData[1]$points[[1]], fitData[1]$model[[1]])
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
@@ -87,7 +96,7 @@ test_that("captureOutput basic test",{
 })
 
 test_that("objToHTMLTableString basic test",{
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "objToHTMLTableString_acceptedResults.rda")
   newResults <- objToHTMLTableString(fitData[1]$points[[1]])
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
@@ -106,12 +115,14 @@ test_that("getReportedParameters basic test",{
                                                            fittedParameters[[1]],
                                                            pointStats[[1]],
                                                            goodnessOfFit.parameters[[1]],
-                                                           goodnessOfFit.model[[1]])), by = curveid]
+                                                           goodnessOfFit.model[[1]],
+                                                           flag_user, 
+                                                           flag_algorithm)), by = curveid]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
 test_that("doseResponseFit basic test",{
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "doseResponseFit_acceptedResults.rda")
   newResults <- doseResponseFit(fitData)
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
@@ -151,7 +162,7 @@ test_that("categorizeFitData basic test",{
 })
 
 test_that("getDRCModel basic test",{
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "getDRCModel_acceptedResults.rda")
   newResults <- fitData[model.synced == FALSE, list(model = list(switch(modelHint,
                                                                        "LL.4" = getDRCModel(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
@@ -163,7 +174,7 @@ test_that("getDRCModel basic test",{
 })
 
 test_that("getPointStats basic test",{
-  load(system.file("tests","data", "doseResponse","example_ec50-fitData.rda", package = "racas"))
+  load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "getPointStats_acceptedResults.rda")
   newResults <- getPointStats(fitData[1]$points[[1]])
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
@@ -229,7 +240,7 @@ test_that("flattenListToDataTable basic test",{
 test_that("biphasic compounds still biphasic",{
   file <- system.file("tests","data", "doseResponse","default-ec50-fitSettings.json", package = "racas")
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
-  load(system.file("tests","data", "doseResponse", "example_biphasic_fitData.rda", package = "racas")) 
+  load(system.file("tests","data", "doseResponse", "example-ec50-fitData.rda", package = "racas")) 
   acceptedResultsPath <- file.path("data","doseResponse", "biphasic_acceptedResults.rda")
   newResults <- rbindlist(doseResponse.fitData(fitSettings, fitData)$points)[ , c("dose", "response", "flag_algorithm"), with = FALSE]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
