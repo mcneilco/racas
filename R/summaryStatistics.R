@@ -180,7 +180,7 @@ analysisOverTime <- function() {
 # Creates a vector of summary statistics for the database:
 #    - Total number of experiments
 #    - Total number of protocols
-#    - Total number of users
+#    - Total number of users (not counting "nouser")
 # 
 # Input: none
 # Output: Returns a vector containing the statistics
@@ -192,7 +192,8 @@ analysisOverTime <- function() {
 usageStatistics <- function() {
   numExperiments <- query("select count(distinct id) from api_experiment")[1,1]
   numProtocols <- query("select count(distinct protocol_id) from api_protocol")[1,1]
-  numUsers <- query("select count(distinct recorded_by) from api_experiment")[1,1]
+  numUsers <- query("select count(distinct recorded_by) from api_experiment 
+                    where recorded_by != 'nouser'")[1,1]
   
   return(c(numExperiments, numProtocols, numUsers))
 }
