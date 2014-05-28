@@ -21,6 +21,7 @@ generateHTML <- function(numWeeks = 4) {
   analysis <- analysisOverTime()
   numExpProtUsers <- usageStatistics()
   values <- dataOverTime()
+  progress <- detailedExperimentChart()
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
   htmlSummary <- knit2html.bugFix(input = rmd, 
@@ -206,8 +207,9 @@ usageStatistics <- function() {
 #    not contain sv_id and recorded_date fields
 
 dataOverTime <- function() {
-  dataAndDate <- data.table(query("select sv_id, recorded_date 
-                                  from api_subject_results"))
+  dataFrame <- query("select sv_id, recorded_date from api_subject_results")
+  names(dataFrame) <- tolower(names(dataFrame))
+  dataAndDate <- data.table(dataFrame)
   
   if(NROW(dataAndDate) == 0) 
     return(c("None"))
@@ -219,4 +221,37 @@ dataOverTime <- function() {
   dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
   
   return(dateTable)
+}
+
+
+# detailedExperimentChart
+# Returns data to plot the number of experiments (finalized
+# and total) for each user
+# 
+# Input: none
+# Output: a data frame that can be used to plot the number of
+#         finalized and unfinalized experiments per user
+# Limitations: Returns nothing if there is no data in api_experiment
+# Possible error cases: api_experiment does not exist, or does not contain
+#    the columns "status" or "recorded_by"
+
+detailedExperimentChart <- function() {
+  userFrame <- query("select recorded_by, status from api_experiment")
+  
+  if(NROW(userFrame) == 0) 
+    return()
+  
+  # Change all statuses to either 'Finalized' or 'Unfinalized'  
+  unfinalizedList <- which(userFrame$status != 'Finalized')
+  userFrame$status[unfinalizedList] <- 'Unfinalized'
+  
+  # Change all missing entries to "Other"
+  naList <- which(is.na(userFrame$recorded_by))
+  userFrame$recorded_by[naList] <- 'Other'
+  
+  # Change all unrecorded entries to "None"
+  nouserList <- which(userFrame$recorded_by == 'nouser')
+  userFrame$recorded_by[nouserList] <- 'None'
+  
+  return(userFrame)
 }
