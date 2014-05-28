@@ -169,7 +169,7 @@ analysisOverTime <- function() {
   setkey(groupAndDate, recorded_date)
   
   # We get a two-column table, with the date and the total number of groups
-  dateTable <- groupAndDate[, NROW(id), by = recorded_date]
+  dateTable <- groupAndDate[, NROW(ag_id), by = recorded_date]
   dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
   
   return(dateTable)
