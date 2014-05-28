@@ -3,9 +3,9 @@ Database Summary Statistics
 
 ## Fast Facts
 ```{r fastFacts, results='asis', echo=FALSE}
-cat("Number of protocols: ", numExpProtUsers[2], "\n\n")
-cat("Number of experiments: ", numExpProtUsers[1], "\n\n")
-cat("Number of users: ", numExpProtUsers[3], "\n\n")
+cat("* Number of protocols: ", numExpProtUsers[2], "\n")
+cat("* Number of experiments: ", numExpProtUsers[1], "\n")
+cat("* Number of users: ", numExpProtUsers[3], "\n")
 ```
 
 ## User Statistics
