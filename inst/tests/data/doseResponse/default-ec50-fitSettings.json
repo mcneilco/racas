@@ -1,4 +1,5 @@
 {
+   "inverseAgonistMode":true,
    "fixedParameters":{
       "min":null,
       "max":null,

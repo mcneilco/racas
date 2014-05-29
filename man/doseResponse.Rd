@@ -32,7 +32,7 @@ a json representation of the fitted fitData object with the savedSessionID
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 
 #fitSettings
-file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
+file <- system.file("conf", "default-ec50-fitSettings.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 fitSettings <- fromJSON(fitSettingsJSON)
 #fit the data
