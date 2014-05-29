@@ -5,7 +5,7 @@ Database Summary Statistics
 ```{r fastFacts, results='asis', echo=FALSE}
 cat("* Number of protocols: ", numExpProtUsers[2], "\n")
 cat("* Number of experiments: ", numExpProtUsers[1], "\n")
-cat("* Number of users: ", numExpProtUsers[3], "\n")
+cat("* Number of users who have uploaded experiments: ", numExpProtUsers[3], "\n")
 ```
 
 ## User Statistics
@@ -15,7 +15,7 @@ figWidth = min(10, max(numExpProtUsers[3]+2.4, 5))
 ```
 
 ```{r history, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
-if (numExpProtUsers[3] == 0) {
+if (is.null(history)) {
   cat("No statistics to display")
 } else {
   plot <- ggplot(history, aes(recorded_by, fill = isOld)) + 
@@ -30,6 +30,9 @@ if (numExpProtUsers[3] == 0) {
   plot <- plot + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.1)))
+  if (numExpProtUsers[3] > 30) {
+    plot <- plot + scale_x_discrete(labels = NULL)
+  }
   plot <- plot + theme(axis.text.x = element_text(angle = 40, vjust = 1, hjust = 1))
   plot
 }
@@ -37,7 +40,7 @@ if (numExpProtUsers[3] == 0) {
 
 
 ```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
-if (numExpProtUsers[3] == 0) {
+if (is.null(progress)) {
   # pass -- we don't want to print this chart if it's empty
   cat("")
 } else {
@@ -58,11 +61,10 @@ if (numExpProtUsers[3] == 0) {
 ## Database History
 
 ```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-if (class(analysis)[1] == "character" && class(subjects)[1] == "character" &&
-      class(values)[1] == "character") {
-  # These are data.tables, so their type is data.table AND data.frame
+if (is.null(analysis) && is.null(subjects) &&
+      is.null(values)) {
   cat("No statistics to display")
-} else if (class(analysis)[1] == "character") {
+} else if (is.null(analysis)) {
   cat("")
 } else {
   plot3 <- ggplot(analysis, aes(recorded_date, cumulativeSum)) 
@@ -77,7 +79,7 @@ if (class(analysis)[1] == "character" && class(subjects)[1] == "character" &&
 ```
 
 ```{r subjects, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-if (class(subjects)[1] == "character") {
+if (is.null(subjects)) {
   cat("")
 } else {
   plot2 <- ggplot(subjects, aes(recorded_date, cumulativeSum)) 
@@ -92,7 +94,7 @@ if (class(subjects)[1] == "character") {
 ```
 
 ```{r values, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
-if (class(values)[1] == "character") {
+if (is.null(values)) {
   cat("")
 } else {
   plot4 <- ggplot(values, aes(recorded_date, cumulativeSum)) 
@@ -104,4 +106,12 @@ if (class(values)[1] == "character") {
                          axis.text = element_text(size = rel(1.1)))
   plot4
 }
+```
+
+```{r details, echo=FALSE, results='asis', cache=FALSE}
+cat("Summary statistics generated on ", date(), ". Data can be downloaded at ",
+    paste("http://", racas::applicationSettings$client.host, ":", 
+          file.path(racas::applicationSettings$client.port,
+          "dataFiles", "summaryStatistics", "summaryStatistics.csv"), 
+          sep = ""), sep="")
 ```

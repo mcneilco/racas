@@ -29,6 +29,21 @@ generateHTML <- function(numWeeks = 4) {
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
   writeLines(htmlSummary, con = '~/Desktop/output.html')
+  
+  # TODO: Get all the relevant data into a file that we can write to this folder
+  # Make one data frame with all relevant information
+  # write it with write.csv(dataFrame, file =  path)
+  # call it summaryStatistics.csv
+  
+  # Check that the folder exists
+  #summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
+  #if (!file.exists(summaryStatisticsFolder)) {
+  #  dir.create(summaryStatisticsFolder)
+  #}
+  
+  
+  
+  #writeLines for the csv file (maybe a list of experiment names, protocol names, etc)
   return(htmlSummary)
 }
 
@@ -68,7 +83,7 @@ usageStatistics <- function() {
 #               numWeeks defaults to 4.
 # Output: Returns the data frame necessary to graph the number of old and
 #         new experiments per user
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Limitations:
 #   Gives nonsensical legends if numWeeks is not positive
 #   Returns nothing if there is no data in api_experiment
@@ -79,7 +94,7 @@ experimentHistoryChart <- function(numWeeks = 4) {
   userFrame <- query("select recorded_by, recorded_date from api_experiment")
   
   if(NROW(userFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(userFrame) <- tolower(names(userFrame))
   
@@ -108,7 +123,7 @@ experimentHistoryChart <- function(numWeeks = 4) {
 # Input: none
 # Output: a data frame that can be used to plot the number of
 #         finalized and unfinalized experiments per user
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Limitations: Returns nothing if there is no data in api_experiment
 # Possible error cases: api_experiment does not exist, or does not contain
 #    the columns "status" or "recorded_by"
@@ -117,7 +132,7 @@ detailedExperimentChart <- function() {
   userFrame <- query("select recorded_by, status from api_experiment")
   
   if(NROW(userFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(userFrame) <- tolower(names(userFrame))
   
@@ -143,14 +158,14 @@ detailedExperimentChart <- function() {
 # Input: none
 # Output: The data table needed to plot the cumulative analysis
 #         groups over time
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Possible error cases:  analysis_group does not exist
 
 analysisOverTime <- function() {
   groupFrame <- query("select distinct(ag_id), recorded_date 
                                    from api_analysis_group_results")
   if(NROW(groupFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(groupFrame) <- tolower(names(groupFrame))
   groupAndDate <- data.table(groupFrame)
@@ -171,7 +186,7 @@ analysisOverTime <- function() {
 # Input: none
 # Output: Returns the data table needed to plot a cumulative
 #         graph of subjects over time
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Possible error cases: subject does not exist, or does not contain
 #    id and recorded_date fields
 
@@ -180,7 +195,7 @@ subjectsOverTime <- function() {
                         from api_subject_results")
   
   if(NROW(subjectFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(subjectFrame) <- tolower(names(subjectFrame))
   subjectAndDate <- data.table(subjectFrame)
@@ -201,7 +216,7 @@ subjectsOverTime <- function() {
 # Input: none
 # Output: Returns the data table necessary to plot the cumulative number
 #         of values in subjects, as a function of time
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Possible error cases: api_subject_results table does not exist, or does
 #    not contain sv_id and recorded_date fields
 
@@ -209,7 +224,7 @@ dataOverTime <- function() {
   dataFrame <- query("select sv_id, recorded_date from api_subject_results")
   
   if(NROW(dataFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(dataFrame) <- tolower(names(dataFrame))
   dataAndDate <- data.table(dataFrame)
@@ -230,7 +245,7 @@ dataOverTime <- function() {
 # Input: numWeeks, to determine what counts as a "new" experiment
 # Output: Returns a one-element vector containing (a string of) the name 
 #         of the user with the most experiments recorded in the past numWeeks
-#         "Missing" if there is no data
+#         NULL if there is no data
 # Limitations: If there is a tie, it is broken in favor of the username
 #              farther in the alphabet
 # Possible error cases: api_experiment may not exist
@@ -241,7 +256,7 @@ mostRecent <- function(numWeeks = 4) {
                      where recorded_by != 'nouser'")
   
   if(NROW(userFrame) == 0) 
-    return("Missing")
+    return(NULL)
   
   names(userFrame) <- tolower(names(userFrame))
   
