@@ -96,8 +96,7 @@ experimentHistoryChart <- function(numWeeks = 4) {
   # Change all missing entries to "Other"
   naList <- which(is.na(userFrame$recorded_by))
   userFrame$recorded_by[naList] <- 'Other'
-  
-  #TODO: Try to make a dodged plot with 0's
+
   return(userFrame)
 }
 
