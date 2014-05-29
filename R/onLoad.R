@@ -31,7 +31,7 @@
         }
       }
       packageStartupMessage(paste("Using configuration file:",configFileLocation ))
-      output <- readConfigFile(configFileLocation)
+      output <- readConfigFile(configFileLocation, appHome = appHome)
       
     },error = function(ex) {
       #error <- capture.output(print(ex))
