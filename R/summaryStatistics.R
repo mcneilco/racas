@@ -9,14 +9,11 @@
 # Output: an HTML file showing the statistics
 # Possible error cases: Generally, if api tables are
 #        missing or have missing columns
-#        Will also err if any of these functions change their
-#        return type
+#        Will also err if any of the functions with "Over time"
+#        in their name change their return type from "character"
+#        when there is no data to graph
 
 generateHTML <- function(numWeeks = 4) {
-  
-  #TODO: Resize graphs when there are fewer users? Otherwise
-  #      it looks silly
-  
   # Get data frames to make plots
   numExpProtUsers <- usageStatistics()
   history <- experimentHistoryChart(4)
