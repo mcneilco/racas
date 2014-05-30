@@ -23,6 +23,15 @@ generateHTML <- function(numWeeks = 4) {
   values <- dataOverTime()
   numExperiments <- numExperimentsChart()
   #recentUser <- mostRecent(4)    this function is not used
+  
+  # Set up a factor to arrange the users in order of 
+  # the number of experiments they have loaded
+  if (!is.null(history)) {
+    history$recorded_by <- factor(history$recorded_by, levels = unique(numExperiments$recorded_by))
+  }
+  if (!is.null(progress)) {
+    progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
+  }
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
   htmlSummary <- knit2html.bugFix(input = rmd, 
@@ -305,9 +314,17 @@ numExperimentsChart <- function() {
   naList <- which(is.na(userFrame$recorded_by))
   userFrame$recorded_by[naList] <- 'Other'
   
+  # Change all unrecorded entries to "None"
+  nouserList <- which(userFrame$recorded_by == 'nouser')
+  userFrame$recorded_by[nouserList] <- 'None'
+  
   userTable <- data.table(userFrame)
   setkey(userTable, recorded_date)
   sumTable <- userTable[, NROW(recorded_date), by = recorded_by]
+  
+  # Order from most experiments to least experiments
+  setkey(sumTable, V1)
+  sumTable <- sumTable[order(-V1)]
   
   return (sumTable)
 }
