@@ -9,6 +9,8 @@
 # Output: an HTML file showing the statistics
 # Possible error cases: Generally, if api tables are
 #        missing or have missing columns
+# Especially if:  analysis_group does not exist, or does not
+#                 contain the code_name or recorded_date fields
 #        Will also err if any of the functions with "Over time"
 #        in their name change their return type from "character"
 #        when there is no data to graph
@@ -40,20 +42,16 @@ generateHTML <- function(numWeeks = 4) {
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
   writeLines(htmlSummary, con = '~/Desktop/output.html')
   
-  # TODO: Get all the relevant data into a file that we can write to this folder
-  # Make one data frame with all relevant information
-  # write it with write.csv(dataFrame, file =  path)
-  # call it summaryStatistics.csv
-  
   # Check that the folder exists
-  #summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
-  #if (!file.exists(summaryStatisticsFolder)) {
-  #  dir.create(summaryStatisticsFolder)
-  #}
+  summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
+  if (!file.exists(summaryStatisticsFolder)) {
+    dir.create(summaryStatisticsFolder)
+  }
   
-  
-  
-  #writeLines for the csv file (maybe a list of experiment names, protocol names, etc)
+  # Get the data and write to CSV
+  summaryTable <- query("select * from WHATEVER_SAM_CALLS_IT")
+  write.csv(summaryTable, file.path(summaryStatisticsFolder, 'summaryStatistics.csv'))
+
   return(htmlSummary)
 }
 
@@ -169,11 +167,12 @@ detailedExperimentChart <- function() {
 # Output: The data table needed to plot the cumulative analysis
 #         groups over time
 #         NULL if there is no data
-# Possible error cases:  analysis_group does not exist
+# Possible error cases:  analysis_group does not exist, or does not
+#         contain the code_name or recorded_date fields
 
 analysisOverTime <- function() {
-  groupFrame <- query("select distinct(ag_id), recorded_date 
-                                   from api_analysis_group_results")
+  groupFrame <- query("select distinct(code_name), recorded_date 
+                                   from analysis_group")
   if(NROW(groupFrame) == 0) 
     return(NULL)
   
@@ -183,7 +182,7 @@ analysisOverTime <- function() {
   setkey(groupAndDate, recorded_date)
   
   # We get a two-column table, with the date and the total number of groups
-  dateTable <- groupAndDate[, NROW(ag_id), by = recorded_date]
+  dateTable <- groupAndDate[, NROW(code_name), by = recorded_date]
   dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
   
   return(dateTable)
