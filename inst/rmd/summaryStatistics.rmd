@@ -14,10 +14,12 @@ cat("* Number of users who have uploaded experiments: ", numExpProtUsers[3], "\n
 figWidth = min(10, max(numExpProtUsers[3]+2.4, 5))
 ```
 
-```{r history, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
+```{r history, echo=FALSE, message=FALSE, warning=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
 if (is.null(history)) {
   cat("No statistics to display")
 } else {
+  # Reorder factors (users) by the number of results TODO
+  
   plot <- ggplot(history, aes(recorded_by, fill = isOld)) + 
     geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
   plot <- plot + guides(fill = guide_legend(title = NULL))
@@ -30,16 +32,17 @@ if (is.null(history)) {
   plot <- plot + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.1)))
-  if (numExpProtUsers[3] > 30) {
+  if (numExpProtUsers[3] > 29) {
     plot <- plot + scale_x_discrete(labels = NULL)
+  } else {
+    plot <- plot + theme(axis.text.x = element_text(angle = 40, vjust = 1, hjust = 1))
   }
-  plot <- plot + theme(axis.text.x = element_text(angle = 40, vjust = 1, hjust = 1))
   plot
 }
 ```
 
 
-```{r progress, echo=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
+```{r progress, echo=FALSE, message=FALSE, warning=FALSE, results='asis', fig.show='hold', fig.width=figWidth, fig.height=4, cache=FALSE}
 if (is.null(progress)) {
   # pass -- we don't want to print this chart if it's empty
   cat("")
@@ -53,7 +56,11 @@ if (is.null(progress)) {
   plot1 <- plot1 + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.1)))
-  plot1 <- plot1 + theme(axis.text.x = element_text(angle = 40, vjust = 1, hjust = 1))
+  if (numExpProtUsers[3] > 29) {
+    plot1 <- plot1 + scale_x_discrete(labels = NULL)
+  } else {
+    plot1 <- plot1 + theme(axis.text.x = element_text(angle = 40, vjust = 1, hjust = 1))
+  }
   plot1
 }
 ```
@@ -108,10 +115,14 @@ if (is.null(values)) {
 }
 ```
 
-```{r details, echo=FALSE, results='asis', cache=FALSE}
-cat("Summary statistics generated on ", date(), ". Data can be downloaded at ",
-    paste("http://", racas::applicationSettings$client.host, ":", 
+```{r link, echo=FALSE, results='asis', cache=FALSE}
+link <- paste("http://", racas::applicationSettings$client.host, ":", 
           file.path(racas::applicationSettings$client.port,
           "dataFiles", "summaryStatistics", "summaryStatistics.csv"), 
-          sep = ""), sep="")
+          sep = "")
+```
+
+```{r details, echo=FALSE, results='asis', cache=FALSE}
+cat("Summary statistics generated on ", date(), ". Data can be downloaded at <a href='",
+    link, "'>this link</a>", sep="")
 ```

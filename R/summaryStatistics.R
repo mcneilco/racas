@@ -21,6 +21,7 @@ generateHTML <- function(numWeeks = 4) {
   analysis <- analysisOverTime()
   subjects <- subjectsOverTime()
   values <- dataOverTime()
+  numExperiments <- numExperimentsChart()
   #recentUser <- mostRecent(4)    this function is not used
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
@@ -282,3 +283,32 @@ mostRecent <- function(numWeeks = 4) {
   else
     return(bestEntry$recorded_by) 
 }
+
+
+# Returns a table of users and their number of experiments
+# 
+# Input: none
+# Output: a data table with a column of users and a column with
+#         the number of experiments they have recorded
+# Limitations: Includes the user "NA", which may or may not be desired
+# Possible error cases: the appropriate tables don't exist
+
+numExperimentsChart <- function() {
+  userFrame <- query("select recorded_by, recorded_date from api_experiment")
+  
+  if(NROW(userFrame) == 0) 
+    return(NULL)
+  
+  names(userFrame) <- tolower(names(userFrame))
+  
+  # Change all missing entries to "Other"
+  naList <- which(is.na(userFrame$recorded_by))
+  userFrame$recorded_by[naList] <- 'Other'
+  
+  userTable <- data.table(userFrame)
+  setkey(userTable, recorded_date)
+  sumTable <- userTable[, NROW(recorded_date), by = recorded_by]
+  
+  return (sumTable)
+}
+
