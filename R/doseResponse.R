@@ -1071,13 +1071,13 @@ knit2html.bugFix <- function (input, output = NULL, text = NULL, template = temp
   return(output)
 }
 
-loadDoseResponseTestData <- function(type = c("ec50","ec50large", "explicitec50", "kd")) {
+loadDoseResponseTestData <- function(type = c("small.ll4","large.ll4", "explicit.ll4", "small.mm2")) {
   type <- match.arg(type)
   doseResponseSELFile <- switch(type,
-                                "smallec50" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
-                                "explicitec50" = system.file("docs", "example-dose-response-ec50-explicit.xlsx", package="racas"),
-                                "kd" = system.file("docs", "Example-Dose-Response-SEL-KD.xlsx", package="racas"),
-                                "ec50large" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
+                                "small.ll4" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
+                                "explicit.ll4" = system.file("docs", "example-dose-response-ec50-explicit.xlsx", package="racas"),
+                                "small.mm2" = system.file("docs", "Example-Dose-Response-SEL-KD.xlsx", package="racas"),
+                                "large.ll4" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
   )
   originalWD <- getwd()
   on.exit(  setwd(originalWD))
@@ -1091,7 +1091,7 @@ loadDoseResponseTestData <- function(type = c("ec50","ec50large", "explicitec50"
   if(response$hasError) {
     cat(response$errorMessages[[1]]$message)
   }
-  if(type == "explicit") {
+  if(type == "explicit.ll4") {
     wb <- XLConnect::loadWorkbook(doseResponseSELFile)
     genericDataFileDataFrame <- XLConnect::readWorksheet(wb, sheet=1, header = FALSE, dateTimeFormat="A_date_was_in_Excel_Date_format")
     metaData <- getSection(genericDataFileDataFrame, lookFor = "Experiment Meta Data", transpose = TRUE)
