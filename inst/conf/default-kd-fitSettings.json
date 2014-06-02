@@ -1,54 +1,55 @@
 {
+   "inverseAgonistMode":true,
    "fixedParameters":{
-      "max":{
-         "parameter":"max",
-         "value":null
-      },
-      "kd":{
-         "parameter":"kd",
-         "value":null
-      }
+      "max":null,
+      "kd":null
    },
    "inactiveRule":{
       "type":"threshold",
-      "value":5,
+      "value":2,
       "activeDoses":1
    },
-   "parameterRules":{
-      "goodnessOfFits": {
-  	  "maxUncertaintyRule":{
-			 "parameter":"max",
-			 "type":"stdErr",
-			 "value":5,
-			 "operator":">",
-			 "displayName":"Max uncertainty exceeded"
-		  },
-		  "kdPValue":{
-			 "parameter":"kd",
-			 "type":"pValue",
-			 "value":1,
-			 "operator":">",
-			 "displayName":"KD uncertainty exceeded"
-		  }
-      },
-      "limits": {
-		  "maxThreshold":{
-			 "parameter":"max",
-			 "type":"threshold",
-			 "value":100,
-			 "operator":">",
-			 "displayName":"Max threshold exceeded"
-		  },
-		  "kdThreshold":{
-			 "parameter":"kd",
-			 "type":"logAboveReference",
-			 "reference":"dose.max",
-			 "value":0.5,
-			 "operator":">",
-			 "displayName":"KD threshold exceeded"
-		  }
-      }
+   "biphasicRule":{
+      "type":"percentage",
+      "parameter":"SSE",
+      "operator":">",
+      "value":0.1
    },
-   "updateFlags":{
+   "parameterRules":{
+      "goodnessOfFits":{
+         "maxUncertaintyRule":{
+            "parameter":"max",
+            "type":"stdErr",
+            "value":5,
+            "operator":">",
+            "displayName":"Max uncertainty exceeded"
+         },
+         "kdPValue":{
+            "parameter":"kd",
+            "type":"pValue",
+            "value":1,
+            "operator":">",
+            "displayName":"KD uncertainty exceeded"
+         }
+      },
+      "limits":{
+         "kdThresholdHigh":{
+            "parameter":"kd",
+            "type":"logReference",
+            "reference":"dose.max",
+            "value":0.5,
+            "operator":">",
+            "displayName":"KD high threshold exceeded"
+         },
+         "kdThresholdLow":{
+            "parameter":"kd",
+            "type":"logReference",
+            "reference":"dose.min",
+            "value":0.0,
+            "operator":"<",
+            "displayName":"KD low threshold exceeded"
+         }
+
+      }
    }
 }

@@ -121,8 +121,8 @@ dnetLocalSettings$server.database.r.driver="Oracle()"
 fitData <- getDNETCurveData(fitResultIDs, applicationSettings = dnetLocalSettings)
 fitData <- formatDNETFitData(fitData)
 
-file <- "inst/docs/example-ec50-simple-fitSettings.json"
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+file <- "inst/docs/example-simple-fitsettings-ll4.json"
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20
@@ -149,8 +149,8 @@ fitResultIDs <- c(8778, 8788, 8818, 9629, 8854, 8997, 9403, 9516, 8806, 8827, 88
 fitData <- getDNETCurveData(fitResultIDs, applicationSettings = dnetLocalSettings)
 fitData <- formatDNETFitData(fitData)
 
-file <- "inst/docs/example-ec50-simple-fitSettings.json"
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+file <- "inst/docs/example-simple-fitsettings-ll4.json"
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20
@@ -166,7 +166,7 @@ for(i in fitted$curveid) {
 
 
 ###Biphasics
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20

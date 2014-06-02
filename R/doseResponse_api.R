@@ -12,7 +12,7 @@
 #' @examples
 #' 
 #' 
-#' file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#' file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 #' simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' recordedBy <- "bbolt"
@@ -23,7 +23,7 @@
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
 #' #          2. have a valid recordedBy (or that acas is set to client.require.login=false) 
 #'  
-#' file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#' file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 #' simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' experimentCode <- loadDoseResponseTestData()
@@ -31,8 +31,8 @@
 #' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
-#       file <- "inst/docs/example-ec50-simple-fitSettings.json"
-#   file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+#       file <- "inst/docs/example-simple-fitsettings-ll4.json"
+#   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 #   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #   recordedBy <- "bbolt"
@@ -282,21 +282,6 @@ api_doseResponse_update_curve_user_approval <- function(POST) {
     userApproved <- as.logical(POST$approve)
   }
   
-#   updateFitApproval <- function(userApproved, sessionID, simpleFitSettings) {
-#     userApproved_new <- userApproved
-#     sessionID_new <- sessionID
-#     loadSession(sessionID)
-#     userApproved <- userApproved_new
-#     sessionID <- sessionID_new
-#     rm(userApproved_new ,sessionID_new )
-#     updated <- doseResponse_updateUserFlag(fitData)
-#     GET <- list()
-#     GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) listToDataTable(x)))$analysisGroup[[1]]$id
-#     response <- api_doseResponse_get_curve_detail(GET)
-#     return(respose)
-#   }
-#   
-#   response <- updateFitApproval(userApproved, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
   loadSession(POST$sessionID)
   updated <- doseResponse_updateUserFlag(fitData, userApproved, POST$user)
   GET <- list()
