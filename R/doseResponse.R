@@ -912,7 +912,7 @@ applyInactiveRule <- function(pointStats, points, rule, inverseAgonistMode) {
   return(list(inactive = inactive, insufficientRange = insufficientRange, potent = potent))  
 }
 
-getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "median") {
+getDRCModel <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
   fixedParams <- data.frame(matrix(NA,1,length(paramNames)))
   names(fixedParams) <- paramNames
   fixed[unlist(lapply(fixed, is.null))] <- NULL
