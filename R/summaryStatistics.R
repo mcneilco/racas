@@ -3,7 +3,11 @@
 
 # generateHTML
 # Runs functions necessary to generate the summary
-# statistics in an HTML file, then generates the file
+# statistics in an HTML file, then generates the file. Also
+# writes a CSV file that can be downloaded in a link at
+# the bottom of the HTML page.
+# Note that the corresponding .rmd file needs to be
+#      located in the rmd folder of racas
 #
 # Input: numWeeks, to be used by several functions
 # Output: an HTML file showing the statistics
@@ -24,7 +28,7 @@ generateHTML <- function(numWeeks = 4) {
   subjects <- subjectsOverTime()
   values <- dataOverTime()
   numExperiments <- numExperimentsChart()
-  #recentUser <- mostRecent(4)    this function is not used
+  #recentUser <- mostRecent(4)    this function is not used, but may be useful in the future
   
   # Set up a factor to arrange the users in order of 
   # the number of experiments they have loaded
@@ -40,7 +44,6 @@ generateHTML <- function(numWeeks = 4) {
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
-  writeLines(htmlSummary, con = '~/Desktop/output.html')
   
   # Check that the folder exists
   summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
@@ -49,7 +52,7 @@ generateHTML <- function(numWeeks = 4) {
   }
   
   # Get the data and write to CSV
-  summaryTable <- query("select * from WHATEVER_SAM_CALLS_IT")
+  summaryTable <- query("select * from api_system_statistics")
   write.csv(summaryTable, file.path(summaryStatisticsFolder, 'summaryStatistics.csv'))
 
   return(htmlSummary)
