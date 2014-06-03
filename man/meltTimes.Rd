@@ -7,6 +7,8 @@ meltTimes(entityData, entityKind = "treatmentGroup")
 }
 \arguments{
 \item{entityData}{a data frame with data, must include rows "time" and "timeUnit"}
+
+\item{entityKind}{the current acas entityKind (in racas::acasEntityHierarchyCamel)}
 }
 \description{
 Turns time columns into rows in a long format
