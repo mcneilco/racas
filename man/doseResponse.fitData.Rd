@@ -27,7 +27,7 @@ Converts a fitData object to a fitted fitData object
 data("example-ec50-fitData")
 
 #fitSettingsJSON
-file <- system.file("docs", "default-ec50-fitSettings.json", package = "racas")
+file <- system.file("conf", "default-ec50-fitSettings.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 
 #fit the data

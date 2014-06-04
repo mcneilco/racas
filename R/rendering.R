@@ -43,7 +43,7 @@ getCurveData <- function(curveids, ...) {
 getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical = TRUE, ...) {
   
   
-  drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag, response_ss_id, response_ss_version, response_sv_id, flag_sv_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
+  drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag as flag_on_load, response_ss_id, response_ss_version, response_sv_id, flag_sv_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
   ivPO <- function(type)  {
     paste0("SELECT *
   	FROM
@@ -58,7 +58,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                 'Conc' AS responsetype,
                 MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.unit_kind ELSE NULL END) AS responseunits,
                 MAX(CASE sv.ls_kind WHEN 'flag' then sv.id else null end) as flag_sv_id,
-                MAX(CASE sv.ls_kind WHEN 'flag' THEN sv.string_value ELSE NULL END) AS Flag,
+                MAX(CASE sv.ls_kind WHEN 'flag' THEN sv.string_value ELSE NULL END) AS flag_on_load,
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.subject_state_id ELSE NULL END) AS response_ss_id,
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.id ELSE NULL END) AS response_sv_id,
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN ss.version ELSE NULL END) AS response_ss_version,
@@ -97,7 +97,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.numeric_value else null end) as response,
                   'Conc' as responsetype,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.unit_kind else null end) as responseunits,
-                  max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as Flag,
+                  max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as flag_on_load,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.treatment_state_id else null end) as response_ss_id,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as tg_id,
                   max(api_agsvb.AG_ID) AS ag_id,
@@ -160,7 +160,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
                                   standardDeviation = as.numeric(points$standarddeviation),
-                                  flag = as.character(points$flag),
+                                  flag_on.load = as.character(points$flag_on_load),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   s_id = as.integer(points$s_id),
                                   tg_id = as.integer(points$tg_id),
@@ -176,7 +176,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   response = as.numeric(points$response),
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
-                                  flag = as.character(points$flag),
+                                  flag_on.load = as.character(points$flag_on_load),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   response_sv_id = as.integer(points$response_sv_id),
                                   response_ss_version = as.integer(points$response_ss_version),
@@ -195,7 +195,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   response = as.numeric(points$response),
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
-                                  flag = as.character(points$flag),
+                                  flag_on.load = as.character(points$flag_on_load),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   response_ss_version = as.integer(points$response_ss_version),
                                   response_sv_id = as.integer(points$response_sv_id),
@@ -211,7 +211,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                 doseUnits = as.character(points$doseunits), 
                                 response = as.numeric(points$response),
                                 responseUnits = as.character(points$responseunits),
-                                flag = as.character(points$flag),
+                                flag_on.load = as.character(points$flag_on_load),
                                 response_ss_id = as.integer(points$response_ss_id),
                                 response_sv_id = as.integer(points$response_sv_id),
                                 response_ss_version = as.integer(points$response_ss_version),
@@ -223,8 +223,10 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
   )
   if(nrow(points) > 0) {
     if(flagsAsLogical) {
-      points$flag <- factor(points$flag, levels = c(levels(points$flag), TRUE, FALSE))
-      points$flag <- !is.na(points$flag)
+      points$flag <- factor(points$flag_on.load, levels = c(levels(points$flag_on.load), TRUE, FALSE))
+      points$flag_user <- as.character(NA)
+      points$flag_algorithm <- as.character(NA)
+      points$flag_temp <- as.character(NA)
     }
   }
   return(points)
@@ -418,8 +420,8 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
-  
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+  saveSession("~/Desktop/plot")
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -520,8 +522,8 @@ plotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   yrn <- c(ymin, ymax)
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
-  flaggedPoints <- subset(curveData, curveData$flag)
-  goodPoints <- subset(curveData, !curveData$flag)
+  flaggedPoints <- subset(curveData, !is.na(curveData$flag_user) | !is.na(curveData$flag_algorithm) | !is.na(curveData$flag_on.load) | !is.na(curveData$flag_temp))
+  goodPoints <- subset(curveData, is.na(curveData$flag_user) & is.na(curveData$flag_algorithm) & is.na(curveData$flag_on.load) & is.na(curveData$flag_temp))
   
   ##Calculate Means and SDs
   sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), sd)

@@ -11,7 +11,7 @@ library(xtable)
 #curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 
 #file <- system.file("docs", "simpleBulkDoseResponseFitRequest.json", package = "racas")
-file <- "inst/docs/example-ec50-simple-fitSettings.json"
+file <- "inst/docs/example-simple-fitsettings-ll4.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettingsJSON <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
@@ -23,7 +23,7 @@ session <- parsedResponse$sessionID
 loadSession(session)
 
 
-file <- "inst/docs/example-ec50-simple-fitSettings.json"
+file <- "inst/docs/example-simple-fitsettings-ll4.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
@@ -56,10 +56,10 @@ session <- parsedResponse$sessionID
 loadSession(session)
 fitData[ , DNETCategory := getDNETCategory(results.parameterRules, inactive, fitConverged, insufficientRange), by = curveid]
 fitData[,actualDNETCategory:=rbindlist(fitData$parameters)$resultcomment]
-blah <- fitData[, c("curveid","category","DNETCategory","actualDNETCategory"), with = FALSE][DNETCategory!=actualDNETCategory, ]
+blah <- fitData[, c("curveid","category","actualDNETCategory"), with = FALSE][category!=actualDNETCategory, ]
 
 for(i in blah$curveid) {
-  cat(paste0("New Category: ", fitData[curveid==i,]$DNETCategory,"\n"))
+  cat(paste0("New Category: ", fitData[curveid==i,]$category,"\n"))
   cat(paste0("Old Category: ", fitData[curveid==i,]$actualDNETCategory,"\n"))
   plot(fitData[curveid==i,]$model[[1]])
   readline("next:")
@@ -140,10 +140,18 @@ plot(prof)
 
 
 
-fitData[fitConverged == TRUE, { fittedParams <- fittedParameters[[1]]
-                                names(fittedParams) <- paste0("fitted",names(fittedParams))
-                                plotData(points[[1]], as.data.frame(c(c    currentTime <- as.numeric(format(Sys.time(), "%s%S3"))
-urveid = curveid, name = curveid,fittedParams,fixedParameters[[1]])), LL4, paramNames = c("slope", "min", "max", "ec50"), logDose = TRUE, drawIntercept = "ec50", showLegend = TRUE, outFile = paste0(curveid,".png"), xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
+fitData[fitConverged == TRUE, {
+                                fittedParams <- fittedParameters[[1]]
+                                #names(fittedParams) <- paste0("fitted_",names(fittedParams))
+                                plotCurve(points[[1]], 
+                                          as.data.frame(c(currentTime = as.numeric(format(Sys.time(), "%s%S3")),curveid = curveid, name = curveid,fittedParams)), 
+                                          fitFunction = LL4, 
+                                          paramNames = c("slope", "min", "max", "ec50"), 
+                                          logDose = TRUE, 
+                                          drawIntercept = "ec50", 
+                                          showLegend = TRUE, 
+                                          outFile = paste0(curveid,".png"), 
+                                          xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
 
 
 
@@ -233,3 +241,61 @@ finalData[,renderingHint := "2 parameter Michaelis Menten"]
 points <- split(fitdata, fitdata$exptno)
 points <- data.table(curveid = names(points), points = points)
 finalData <- merge(finalData, points, by = "curveid")
+
+
+#KD
+experimentCode <- "EXPT-00000141"
+fitData <- getFitData(experimentCode)
+file <- system.file("docs", "example-simple-fitsettings-mm2.json", package = "racas")
+simpleSettingsJSON <- readChar(file, file.info(file)$size)
+simpleSettings <- fromJSON(simpleSettingsJSON)
+fitSettings <- simpleToAdvancedFitSettings(simpleSettings, modelHint = "MM.2")
+#ERROR
+fitData <- doseResponse.fitData(fitSettings, fitData)
+myMessenger$captureOutput("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
+for(i in fitData$curveid) {
+  cat(paste0("New Category: ", fitData[curveid==i,]$category,"\n"))
+  plot(fitData[curveid==i,]$model[[1]])
+  readline("next:")
+}
+
+
+#
+file <- system.file("tests","data", "doseResponse","default-ec50-fitSettings.json", package = "racas")
+fitSettings <- fromJSON(readChar(file, file.info(file)$size))
+load(system.file("tests","data", "doseResponse","example-ec50-fitData.rda", package = "racas"))
+fitData <- fitData[1]
+#Need to copy fitData so we are working with our own copy (data.table does objects by reference)
+fitData <- copy(fitData)
+
+#Extract the fit variables from json
+myFixedParameters <- fitSettings$fixedParameters
+myParameterRules <- fitSettings$parameterRules
+myInactiveRule <- fitSettings$inactiveRule
+myInverseAgonistMode <- ifelse(is.null(fitSettings$inverseAgonistMode), TRUE, fitSettings$inverseAgonistMode)
+myBiphasicRule <- fitSettings$biphasicRule
+myUserFlag <- ifelse(is.null(fitSettings$user_flag), "NA", fitSettings$user_flag)
+fitData[ , fixedParameters := list(list(myFixedParameters))]
+fitData[ , parameterRules := list(list(myParameterRules))]
+fitData[ , inactiveRule := list(list(myInactiveRule))]
+fitData[ , inverseAgonistMode := myInverseAgonistMode]
+fitData[ , biphasicRule := list(list(myBiphasicRule))]
+
+#Update all of the flags to those that are in the fitSettings json
+updateFlags <- as.data.table(fitSettings$updateFlags)
+if(nrow(updateFlags) > 0 ) {
+  #updateFlags[flag=="NA", flag := as.character(NA)]
+  setkey(updateFlags,"response_sv_id" )
+  #First fix issues with updateFlags (they may come in with "NA" instead of NA and logical istead of character)
+  updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
+  updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
+  updateFlags[ flag_algorithm == "NA", flag_algorithm := as.character(NA)]
+  updateFlags[ , flag_user := as.character(flag_user)]
+  updateFlags[ , flag_on.load := as.character(flag_on.load)]
+  
+  #pts <- fitData[1]$points[[1]]
+  fitData[, points := list(list(update_point_flags(points[[1]], updateFlags))) , by = curveid]
+}
+
+#Fit the data
+fitData <- doseResponseFit(fitData)

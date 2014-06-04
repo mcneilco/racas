@@ -18,7 +18,7 @@ an advanced fit settings list object
 Reads the default fit settings for the given model hint and updates it based on the simple request
 }
 \examples{
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas")
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas")
 simpleSettingsJSON <- readChar(file, file.info(file)$size)
 simpleSettings <- fromJSON(simpleSettingsJSON)
 simpleToAdvancedFitSettings(simpleSettings)

@@ -33,6 +33,7 @@
 #' # You must assign it to the package namespace in order for it to be used by the package
 #' assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 applicationSettings <- data.frame(
+  appHome = "",
   appName = "ACAS",               #Application Display Name
   db_driver = "PostgreSQL()",     #Must be supplied in your own package load (MySQL(), Oracle() supported)
   db_user = "username",           #ACAS Schema db user
@@ -47,7 +48,7 @@ applicationSettings <- data.frame(
 #' @param configLocation The location of the file to read
 #' @keywords applicationSettings, config, configuration, configurationNode.js
 #' @export
-readConfigFile <- function(configLocation) {
+readConfigFile <- function(configLocation, ...) {
   #This function reads a config file and sets the applicationSettings
   replacement <- "\t"
   l <-readLines(file.path(configLocation))
@@ -81,9 +82,8 @@ readConfigFile <- function(configLocation) {
       }
       if(installDep) {
         cat(paste0("Attempting to install ",applicationSettings$server.database.r.package))
-        repos <- "http://cran.rstudio.com/"
-        options(repos = "http://cran.rstudio.com/")
-        try(install.packages(applicationSettings$server.database.r.package, repos = repos))
+        method <- ifelse(is.null(options("method")$method),"auto",options("method")$method)
+        try(install.packages(applicationSettings$server.database.r.package, repos = options("repos"), method = method))
         try(require(applicationSettings$server.database.r.package, character.only=TRUE))
       } else {
         warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
@@ -105,6 +105,11 @@ readConfigFile <- function(configLocation) {
     }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
+  
+  #Add additional settings passed into readConfigFile
+  additionalSettings <- list(...)
+  applicationSettings[[names(additionalSettings)]] <- unlist(additionalSettings)
+  
   utils::assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 }
 
