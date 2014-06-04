@@ -122,7 +122,7 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
 #'\item{isNullable}{Boolean containing whether the field can be empty}
 #'}
 #'@param errorEnv An environment to send error messages to
-#'@value A data.frame containing the validated meta data
+#'@return A data.frame containing the validated meta data
 #'
 #'@details Example expectedDataFormat can be found in generic_data_parser.R
 validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv = NULL) {
@@ -423,7 +423,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
 
 #'@rdname validate
 #'@return \code{validateCharacter} a string
-#'@detail NA will be allowed through, use other functions to check for NA
+#'@details NA will be allowed through, use other functions to check for NA
 validateCharacter <- function(inputValue, errorEnv = NULL) {
   
   # Checks if the entry is NULL

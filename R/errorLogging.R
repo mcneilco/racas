@@ -1,3 +1,9 @@
+#' Error and warning trapping
+#' 
+#' Traps errors and warnings, creating lists of each
+#' 
+#' @param expr An expression which will have errors caught
+#' @return A list with value (either result or error) and warningList
 tryCatch.W.E <- function(expr) {
   # This function is taken from the R demo file and edited
   # http://svn.r-project.org/R/trunk/src/library/base/demo/error.catching.R

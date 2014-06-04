@@ -7,6 +7,7 @@ Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
+Roxygen: list(wrap = TRUE)
 Imports: 
     drc, 
     data.table, 
