@@ -139,23 +139,35 @@ Messenger <- setRefClass(Class = "Messenger",
                                }
                              } else {
                                #Do nothing
-                               logger$error(paste0("Not running command because of previous errors: ", expr))
+                               logger$debug(paste0("Not running command because of previous errors: ", expr))
                                invisible(NULL)
                              }
                            },
+                           hasErrors = function() {
+                             length(errors) != 0 | length(userErrors) != 0 
+                           },
+                           hasWarnings = function() {
+                             length(warnings) != 0 | length(userWarnings) != 0 
+                           },
+                           hasInfos = function() {
+                             length(infos)!=0 | length(userInfos)!=0
+                           },
+                           toList = function() {
+                             return(list("hasError" = hasErrors(),
+                                  "hasWarning" = hasWarnings(),
+                                  "hasInfo" = hasInfos(),
+                                  errors = errors, 
+                                  warnings = warnings,
+                                  infos = infos,
+                                  userError = length(userErrors)!=0,
+                                  userWarning = length(userWarnings)!=0,
+                                  userInfo = length(userInfos)!=0,
+                                  userErrors = userErrors, 
+                                  userWarnings = userWarnings,
+                                  userInfos = userInfos))
+                           },
                            toJSON = function() {
-                             return(rjson::toJSON(list("error" = length(errors)!=0,
-                                                       "warning" = length(warnings)!=0,
-                                                       info = length(infos)!=0,
-                                                       errors = errors, 
-                                                       warnings = warnings,
-                                                       infos = infos,
-                                                       userError = length(userErrors)!=0,
-                                                       userWarning = length(userWarnings)!=0,
-                                                       userInfo = length(userInfos)!=0,
-                                                       userErrors = userErrors, 
-                                                       userWarnings = userWarnings,
-                                                       userInfos = userInfos)))
+                             return(rjson::toJSON(toList()))
                            }
                          )
 )
