@@ -45,16 +45,20 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), logToConsole = TRUE, ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
-  basicConfig(level = logLevel)
+  logReset()
+  logger <- getLogger(logName)
+  setLevel(logLevel, logger)
+  
   if(is.na(logDir)) {
     logDir <-  getwd()
   }
   logPath <- paste0(logDir,"/",logFileName)
-  getLogger(logName)$addHandler(writeToFile, file=logPath, level = logLevel)
-  logger <- getLogger(logName)
-  setLevel(logLevel, logger)
+  logger$addHandler(writeToFile, file=logPath, level = logLevel)
+  if(logToConsole) {
+    logger$addHandler("basic.stdout", writeToConsole, level = logLevel)
+  }
   return(logger)
 }
 
