@@ -70,10 +70,10 @@ doseResponse.fitData <- function(fitSettings, fitData) {
   
   #Categorize the fit data
   fitData[ , category := categorizeFitData(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]]), by = curveid]
-
+  
   #Extract the reported Parameters
   fitData[ , reportedParameters := list(list(getReportedParameters(modelHint, results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], flag_algorithm, flag_user))), by = curveid]
-
+  
   return(fitData)
 }
 
@@ -90,7 +90,7 @@ update_point_flags <- function(pts, updateFlags) {
 doseResponse.biphasicDetection <- function(fitData) {
   returnCols <- copy(names(fitData))
   testForBiphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
-
+    
     if(firstRun) {
       #If detect biphasic is on,
       # there are doses above the empirical max dose with respnoses below empirical max respnose
@@ -98,17 +98,17 @@ doseResponse.biphasicDetection <- function(fitData) {
       continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (!inactive | !fitConverged | !insufficientRange | !potent)
     }
     
-#     if(continueBiphasicDetection & is.NULLorNA(biphasicParameterPreviousValue)) {
-#       continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0
-#     } else {
-#       if(!is.NULLorNA(biphasicParameterPreviousValue) & (!inactive | !fitConverged | !insufficientRange | !potent)) {
-#         biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-#         testConc <- as.numeric(NA)
-#         points[dose == testConc, flag_temp := as.character(NA)]
-#         model.synced <- FALSE
-#         continueBiphasicDetection <- FALSE
-#       }
-#     }
+    #     if(continueBiphasicDetection & is.NULLorNA(biphasicParameterPreviousValue)) {
+    #       continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0
+    #     } else {
+    #       if(!is.NULLorNA(biphasicParameterPreviousValue) & (!inactive | !fitConverged | !insufficientRange | !potent)) {
+    #         biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
+    #         testConc <- as.numeric(NA)
+    #         points[dose == testConc, flag_temp := as.character(NA)]
+    #         model.synced <- FALSE
+    #         continueBiphasicDetection <- FALSE
+    #       }
+    #     }
     if(continueBiphasicDetection) {
       if(biphasicRule$type == "percentage") {
         if(is.NULLorNA(biphasicParameterPreviousValue)) {
@@ -697,7 +697,6 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
       subjects <- treatmentGroups[ , {
         tg_id <- id
         rbindlist(subjects)[ , c("subj_id","tg_id") := list(subj_id = id, tg_id = tg_id)]
-        
       }, by = id]
       subjectStates <- subjects[ , rbindlist(lsStates)[ , c("subj_id", "tg_id"):= list(subj_id = subj_id, tg_id = unique(tg_id))], by = subj_id]
       subjectStates[ lsKind=="results", c("response_ss_id","response_ss_version") := list(response_ss_id = id, response_ss_version = version)]
@@ -715,6 +714,7 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
     )), by = id]
     myMessenger$logger$debug("pivoting the curve points")
     fitData[ , points := list(list({
+      saveSession("~/Desktop/blah")
       dr <- data.table::dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id+response_ss_id+response_ss_version+tg_id ~ lsKind, value.var = "numericValue")
       dr <- merge(dr, points[[1]][ lsKind=="Response", c("subj_id", "id"), with =  FALSE], by = "subj_id")
       drUnits <- dcast.data.table(points[[1]][lsKind %in% c("Dose", "Response")], subj_id ~ lsKind, value.var = "unitKind")
@@ -735,11 +735,12 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
         fl <- data.table(subj_id = as.integer(),flag_sv_id = as.integer(), flag_on.load = as.character(), flag_user = as.character(), flag_algorithm = as.character(), flag_temp = as.character())
         setkey(fl, subj_id)
       }
-      bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
+      #bc <-  dcast.data.table(points[[1]][lsKind=="batch code"], subj_id ~ lsKind, value.var = "codeValue")
       setkey(fl, subj_id)
-      setkey(bc, subj_id)
+      #setkey(bc, subj_id)
       setkey(dr, subj_id)
-      pts <- fl[bc][dr]
+      #pts <- fl[bc][dr]
+      pts <- fl[dr]
       pts[ , flagchanged := FALSE]
       setnames(pts, names(pts), tolower(names(pts)))
       setcolorder(pts, order(names(pts)))
@@ -764,12 +765,12 @@ doseResponseFit <- function(fitData, refit = FALSE, ...) {
   ###Collect Stats
   fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveid]
   fitData[ model.synced == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
-             list(pointStats = list(getPointStats(points[[1]])),
-                  fittedParameters = list(drcObject.getParameters(model[[1]])),
-                  goodnessOfFit.model = list(drcObject.getDRCFitStats(model[[1]], points[[1]])),
-                  goodnessOfFit.parameters = list(drcObject.getGoodnessOfFitParameters(model[[1]]))
-                  )}
-           , by = curveid]
+    list(pointStats = list(getPointStats(points[[1]])),
+         fittedParameters = list(drcObject.getParameters(model[[1]])),
+         goodnessOfFit.model = list(drcObject.getDRCFitStats(model[[1]], points[[1]])),
+         goodnessOfFit.parameters = list(drcObject.getGoodnessOfFitParameters(model[[1]]))
+    )}
+    , by = curveid]
   #Fail Heuristics  
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = applyParameterRules.goodnessOfFits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = applyParameterRules.limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
@@ -1091,7 +1092,7 @@ loadDoseResponseTestData <- function(type = c("small.ll4","large.ll4", "explicit
   if(response$hasError) {
     cat(response$errorMessages[[1]]$message)
   }
-  if(type == "explicit.ll4") {
+  if(grepl("explicit",type)) {
     wb <- XLConnect::loadWorkbook(doseResponseSELFile)
     genericDataFileDataFrame <- XLConnect::readWorksheet(wb, sheet=1, header = FALSE, dateTimeFormat="A_date_was_in_Excel_Date_format")
     metaData <- getSection(genericDataFileDataFrame, lookFor = "Experiment Meta Data", transpose = TRUE)
@@ -1411,7 +1412,7 @@ NAtoNULL <- function(x) {
 }
 
 doseResponse_add_clob_values <- function(fitData) {
-  fitData[ 1, c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
+  fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
     if(model.synced) {
       if(fitConverged) {
         if(length(reportedParameters[[1]]) == 0) {
