@@ -1050,8 +1050,7 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
 saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   logName = "com.acas.racas.saveAcasEntitiesInternal"
-  logFileName = file.path(racas::applicationSettings$server.log.path, "racas.log")
-  
+  logFileName = "racas.log"
   h = basicTextGatherer()
   
   message <- toJSON(entities)
