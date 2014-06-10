@@ -200,3 +200,19 @@ fitData[fitConverged == TRUE, {
             showLegend = TRUE, 
             outFile = paste0(curveid,".png"), 
             xmin = NA, ymin = NA, ymax = NA)}, by = curveid]
+
+
+
+
+#Blah
+
+blah <- fitData[ , any(!is.na(points[[1]]$flag_algorithm)), by = curveid][V1 == TRUE, ]
+
+for(i in 1:nrow(blah)) {
+  crv <- blah[i]$curveid
+  pts <- fitData[curveid== crv, ]$points[[1]]
+  plot(pts$dose,pts$response, log = "x")
+  plot(fitData[curveid== crv, ]$model[[1]])
+  readline("next:")
+  dev.off()
+}

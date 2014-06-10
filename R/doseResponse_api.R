@@ -113,8 +113,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
-                                      algorithmApproved = is.na(flag_algorithm),
-                                      userApproved = is.na(flag_user),
+                                      flagAlgorithm = flag_algorithm,
+                                      flagUser = flag_user,
                                       category = parameters[[1]][lsKind == "category", ]$stringValue,
                                       curveAttributes = list(
                                         EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
@@ -122,8 +122,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                                         SSE =  parameters[[1]][lsKind == "SSE"]$numericValue,
                                         rsquare = parameters[[1]][lsKind == "rSquared"]$numericValue,
                                         compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue,
-                                        algorithmApproved = is.na(flag_algorithm),
-                                        userApproved = is.na(flag_user)
+                                        flagAlgorithm = flag_algorithm,
+                                        flagUser = flag_user
                                       )
   ))), by = curveid]
   stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
@@ -207,8 +207,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     
   }
   curveid <- fitData[1]$curveid
-  algorithmApproved = is.na(fitData[1]$flag_algorithm)
-  userApproved = fitData[1]$flag_user
+  flagAlgorithm = fitData[1]$flag_algorithm
+  flagUser = fitData[1]$flag_user
   points <- fitData[1]$points[[1]][ , c("response_sv_id", "dose", "doseunits", "response", "responseunits", "flag_user", "flag_on.load", "flag_algorithm", "flagchanged"), with = FALSE]
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
@@ -224,8 +224,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                      parameterStdErrors = parameterStdErrors,
                      curveErrors = curveErrors,
                      category = category,
-                     algorithmApproved = algorithmApproved,
-                     userApproved = userApproved,
+                     flagAlgorithm = flagAlgorithm,
+                     flagUser = flagUser,
                      curveAttributes = curveAttributes,
                      plotData = plotData,
                      fitSettings = fitSettings,
