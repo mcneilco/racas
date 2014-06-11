@@ -108,8 +108,8 @@ readConfigFile <- function(configLocation, ...) {
   
   #Add additional settings passed into readConfigFile
   additionalSettings <- list(...)
-  saveSession("~/Desktop/settings")
   applicationSettings[[names(additionalSettings)]] <- unlist(additionalSettings)
+  
   utils::assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 }
 

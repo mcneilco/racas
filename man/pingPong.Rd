@@ -5,7 +5,7 @@
 \usage{
 pingPong(originView, intermediateTablePrefix = list(schema =
   racas::applicationSettings$server.database.username, name = originView$name,
-  tableSpace = NULL, options = NULL), destinationViewName, primaryKey = NULL,
+  tableSpace = NA, options = c()), destinationViewName, primaryKey = NULL,
   indexes = NULL, applicationSettings = racas::applicationSettings)
 }
 \arguments{

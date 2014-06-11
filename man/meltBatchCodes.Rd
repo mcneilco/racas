@@ -5,7 +5,7 @@
 \usage{
 meltBatchCodes(entityData, batchCodeStateIndices,
   replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID",
-  "analysisGroupID"))
+  "analysisGroupID", "stateVersion"))
 }
 \arguments{
 \item{entityData}{a data frame with data}
@@ -23,8 +23,10 @@ A data frame with rows for all code values
 Turns a batchCode column into rows in a long format
 }
 \details{
-Does not work with data.table
-entityData must have columns "batchCode", "stateID", "stateGroupIndex", "publicData"
-If "batchCode" is missing, will return an empty data.frame
+Does not work with data.table.
+entityData must have columns "batchCode", "stateID", "stateGroupIndex".
+If "batchCode" is missing, will return an empty data.frame.
+publicData is always set to TRUE.
+In longFormatSave.R
 }
 

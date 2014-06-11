@@ -193,21 +193,22 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' @param replacedFakeBatchCode deprecated: a character vector of fake batch id's that were replaced, marking invalid batch codes
 #' @param optionalColumns Columns to include in output (if available). Often the entityID is needed for saving later
 #' 
-#' @details Does not work with data.table
-#' entityData must have columns "batchCode", "stateID", "stateGroupIndex", "publicData"
-#' If "batchCode" is missing, will return an empty data.frame
+#' @details Does not work with data.table.
+#' entityData must have columns "batchCode", "stateID", "stateGroupIndex".
+#' If "batchCode" is missing, will return an empty data.frame.
+#' publicData is always set to TRUE.
+#' In longFormatSave.R
 #' 
 #' @return A data frame with rows for all code values
 #' 
-meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID")) {
-  
-  # Check for 
+meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID", "stateVersion")) {
+  # Check for missing batchCode
   output <- data.frame()
   if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
     return(output)
   }
   
-  neededColumns <- c("batchCode", "stateID", "stateGroupIndex", "publicData")
+  neededColumns <- c("batchCode", "stateID", "stateGroupIndex")
   if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
@@ -227,6 +228,7 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchC
       names(batchCodeValues)[1] <- "codeValue"
       batchCodeValues$valueType <- "codeValue"
       batchCodeValues$valueKind <- "batch code"
+      batchCodeValues$publicData <- TRUE
       output <- rbind.fill(output, batchCodeValues)
     }
 #     if (nrow(fakeBatchCodeValues) > 0) {

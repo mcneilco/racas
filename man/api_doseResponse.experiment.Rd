@@ -22,7 +22,7 @@ a list of the entities returned from the server
 This function retrieves the dose response data for a given experiment code, refits it using the simple settings and then saves the data back to the database
 }
 \examples{
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 recordedBy <- "bbolt"
@@ -33,7 +33,7 @@ api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 # requires 1. that a protocol named "Target Y binding") be saved first (see \\code{\\link{api_createProtocol}})
 #          2. have a valid recordedBy (or that acas is set to client.require.login=false)
 
-file <- system.file("docs", "example-ec50-simple-fitSettings.json", package = "racas" )
+file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 experimentCode <- loadDoseResponseTestData()
