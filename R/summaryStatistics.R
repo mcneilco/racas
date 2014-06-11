@@ -49,11 +49,17 @@ generateHTML <- function(numWeeks = 4) {
     dir.create(summaryStatisticsFolder)
   }
   
+  csvPath <- file.path(summaryStatisticsFolder, 'summaryStatistics.csv')
+  htmlPath <- file.path(summaryStatisticsFolder, 'summaryStatistics.html')
+  
   # Get the data and write to CSV
   summaryTable <- query("select * from api_system_statistics")
-  write.csv(summaryTable, file.path(summaryStatisticsFolder, 'summaryStatistics.csv'), row.names = FALSE)
+  write.csv(summaryTable, csvPath, row.names = FALSE)
+  
+  writeLines(htmlSummary, con = htmlPath)
 
-  return(htmlSummary)
+  return(list(csvFilePath = csvPath,
+              htmlFilePath = htmlPath))
 }
 
 
