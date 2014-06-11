@@ -21,7 +21,7 @@ if (is.null(history)) {
   # Reorder factors (users) by the number of results TODO
   
   plot <- ggplot(history, aes(recorded_by, fill = isOld)) + 
-    geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
+    geom_bar(width = 0.95*numExpProtUsers[3]/(numExpProtUsers[3]+3))
   plot <- plot + guides(fill = guide_legend(title = NULL))
   plot <- plot + scale_fill_manual(values = c("blue", "#56B4E9"), 
                                      labels = c(paste("Newer than \n", 
@@ -48,7 +48,7 @@ if (is.null(progress)) {
   cat("")
 } else {
   plot1 <- ggplot(progress, aes(recorded_by, fill = status)) + 
-    geom_bar(width = numExpProtUsers[3]/(numExpProtUsers[3]+3))
+    geom_bar(width = 0.95*numExpProtUsers[3]/(numExpProtUsers[3]+3))
   plot1 <- plot1 + guides(fill = guide_legend(title = NULL))
   plot1 <- plot1 + scale_fill_manual(values = c("blue", "#56B4E9"))
   plot1 <- plot1 + labs(title = "Experiment Progress", 
@@ -123,6 +123,11 @@ link <- paste("http://", racas::applicationSettings$client.host, ":",
 ```
 
 ```{r details, echo=FALSE, results='asis', cache=FALSE}
-cat("Summary statistics generated on ", date(), ". Data can be downloaded at <a href='",
+if (is.na(Sys.timezone())) {
+  timezone <- ""
+} else {
+  timezone <- Sys.timezone()
+}
+cat("Summary statistics generated on ", date(), " ", timezone, ". Data can be downloaded at <a href='",
     link, "'>this link</a>", sep="")
 ```

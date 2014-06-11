@@ -13,10 +13,8 @@
 # Output: an HTML file showing the statistics
 # Possible error cases: Generally, if api tables are
 #        missing or have missing columns
-# Especially if:  analysis_group does not exist, or does not
-#                 contain the code_name or recorded_date fields
 #        Will also err if any of the functions with "Over time"
-#        in their name change their return type from "character"
+#        in their name change their return type from NULL
 #        when there is no data to graph
 
 generateHTML <- function(numWeeks = 4) {
@@ -53,7 +51,7 @@ generateHTML <- function(numWeeks = 4) {
   
   # Get the data and write to CSV
   summaryTable <- query("select * from api_system_statistics")
-  write.csv(summaryTable, file.path(summaryStatisticsFolder, 'summaryStatistics.csv'))
+  write.csv(summaryTable, file.path(summaryStatisticsFolder, 'summaryStatistics.csv'), row.names = FALSE)
 
   return(htmlSummary)
 }
@@ -170,12 +168,12 @@ detailedExperimentChart <- function() {
 # Output: The data table needed to plot the cumulative analysis
 #         groups over time
 #         NULL if there is no data
-# Possible error cases:  analysis_group does not exist, or does not
-#         contain the code_name or recorded_date fields
+# Possible error cases:  api_analysis_group_results does not 
+#         contain the ag_id or recorded_date fields
 
 analysisOverTime <- function() {
-  groupFrame <- query("select distinct(code_name), recorded_date 
-                                   from analysis_group")
+  groupFrame <- query("select distinct(ag_id), recorded_date 
+                                   from api_analysis_group_results")
   if(NROW(groupFrame) == 0) 
     return(NULL)
   
@@ -185,7 +183,7 @@ analysisOverTime <- function() {
   setkey(groupAndDate, recorded_date)
   
   # We get a two-column table, with the date and the total number of groups
-  dateTable <- groupAndDate[, NROW(code_name), by = recorded_date]
+  dateTable <- groupAndDate[, NROW(ag_id), by = recorded_date]
   dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
   
   return(dateTable)
