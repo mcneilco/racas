@@ -8,7 +8,7 @@ Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
 Depends:
-      R (== 3.0.3)
+      R (<= 3.1.0)
 Imports:
     drc (== 2.3-96),
     data.table (== 1.9.2),
