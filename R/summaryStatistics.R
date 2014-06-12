@@ -1,7 +1,7 @@
 # Summary Statistics for the ACAS database
 # Author: Jennifer Rogers
 
-# generateHTML
+# generateSummaryStatistics
 # Runs functions necessary to generate the summary
 # statistics in an HTML file, then generates the file. Also
 # writes a CSV file that can be downloaded in a link at
@@ -17,7 +17,7 @@
 #        in their name change their return type from NULL
 #        when there is no data to graph
 
-generateHTML <- function(numWeeks = 4) {
+generateSummaryStatistics <- function(numWeeks = 4) {
   # Get data frames to make plots
   numExpProtUsers <- usageStatistics()
   history <- experimentHistoryChart(4)

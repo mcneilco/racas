@@ -40,7 +40,9 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   
   #Check to see if both tables are preset A and B
   if (dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_a"), schema = intermediateTablePrefix$schema) & dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_b"), schema = intermediateTablePrefix$schema)){
-    logger$warn(paste0(intermediateTablePrefix$schema,".",intermediateTablePrefix$name,' Table A and B are present for'))
+    msg <- paste0(intermediateTablePrefix$schema,".",intermediateTablePrefix$name,' Table A and B are present for ',intermediateTablePrefix$schema, ".", paste0(intermediateTablePrefix$name))
+    logger$error(msg)
+    stop(msg)
   }
   
   #Create the intermediate table
@@ -59,7 +61,7 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   
   ##Primary Key creation
   if(!is.null(primaryKey)) {
-    qu <- paste0(" ALTER TABLE ",intermediateTablePrefix$schema,".",intermediateTablePrefix$name,"_", pingPongTableNew," ADD PRIMARY KEY (",primaryKey,") ", paste0(index$options, collapse = " "))
+    qu <- paste0(" ALTER TABLE ",intermediateTablePrefix$schema,".",intermediateTablePrefix$name,"_", pingPongTableNew," ADD PRIMARY KEY (",primaryKey,") ", paste0(intermediateTablePrefix$options, collapse = " "))
     primaryKeyCreated <- query(qu, applicationSettings = applicationSettings, conn = conn)
     if(class(primaryKeyCreated) == "list") {
       logger$error(qu)
