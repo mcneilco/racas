@@ -20,7 +20,7 @@
 #'  indexes = lapply(list("AGV_ID"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
 #'  
 pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::applicationSettings$server.database.username, name = originView$name, tableSpace = NA, options = c()), destinationViewName, primaryKey = NULL, indexes = NULL, applicationSettings = racas::applicationSettings) {
-  logger <- createLogger(logName = "com.mcneilco.racas.pingpong.apiviews")
+  logger <- createLogger(logName = "com.mcneilco.racas.pingpong.apiviews", logToConsole = FALSE)
   options(scipen=99)
   error_ping_pong_generator <- FALSE
   conn <- getDatabaseConnection(applicationSettings)
