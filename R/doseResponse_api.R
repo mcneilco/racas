@@ -59,6 +59,11 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug("saving the curve data")
   savedStates <- saveDoseResponseData(fitData, recordedBy)
+ 
+  myMessenger$logger$debug("updating experiment model fit status")
+  experiment <-updateExperimentStatus(experimentCode, "complete")
+  
+  savedStates <- saveDoseResponseData(fitData, recordedBy)
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("responding to acas")

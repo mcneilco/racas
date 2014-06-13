@@ -705,10 +705,11 @@ getFitData <- function(entityID, type = c("experimentCode","analysisGroupID", "c
   fitData[ , lsStates := list(list(
     rbindlist(lsStates)[ignored == FALSE]
   )), by = id]
+  fitData <- fitData[fitData[ , 'data' %in% lsStates[[1]]$lsType, by = id][[2]]]
   fitData[ , parameters := list(list(
     rbindlist(lsStates[[1]][ , lsValues:= list(list(lsValues[[1]][ , order(names(lsValues[[1]]))])), by = id]$lsValues)[ , lsStates := list(list(lsStates[[1]]))]
   )), by = id]
-  fitData[ , c('curveid','flag_algorithm','flag_user') := {saveSession("~/Desktop/blah2")
+  fitData[ , c('curveid','flag_algorithm','flag_user') := {
       list(parameters[[1]][grepl('.*curve id', lsKind)]$stringValue,
                                                                ifelse(length(parameters[[1]][lsKind == "flag" & stringValue == "algorithm" & ignored == FALSE]$comments) == 0, as.character(NA), as.character(parameters[[1]][lsKind == "flag" & stringValue == "algorithm"]$comments)),
                                                                ifelse(length(parameters[[1]][lsKind == "flag" & stringValue == "user" & ignored == FALSE]$comments) == 0, as.character(NA), as.character(parameters[[1]][lsKind == "flag" & stringValue == "user"]$comments)))
@@ -1298,7 +1299,14 @@ saveDoseResponseData <- function(fitData, recorded_by) {
   return(list(lsStates = savedStates, lsTransaction = transactionID))
   
 }
-
+updateExperimentStatus <- function(experimentCodeName, status) { 
+  experiment <- getExperimentByCodeName(experimentCodeName)
+  experimentMetaDataState <- which(unlist(lapply(experiment$lsStates, function(x) x$lsKind == "experiment metadata" & x$ignored == FALSE)))
+  analysisStatusValue <- which(unlist(lapply(experiment$lsStates[[experimentMetaDataState]]$lsValues,function(x) x$lsKind == "analysis status" & x$ignored == FALSE)))
+  experiment$lsStates[[experimentMetaDataState]]$lsValues[[analysisStatusValue]]$stringValue <- status
+  value <- experiment$lsStates[[experimentMetaDataState]]$lsValues[[analysisStatusValue]]
+  value <- updateAcasEntity(value, "experimentvalues")
+}
 saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
   ignoredAnalysisGroupStates <- lapply(fitData$lsStates, function(x) {
     x <- as.list(x)

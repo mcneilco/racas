@@ -116,12 +116,7 @@ if (is.null(values)) {
 ```
 
 ```{r link, echo=FALSE, results='asis', cache=FALSE}
-if (racas::applicationSettings$client.use.ssl) {
-  type <- "https://"
-} else {
-  type <- "http://"
-}
-link <- paste(type, racas::applicationSettings$client.host, ":", 
+link <- paste(getSSLString(), racas::applicationSettings$client.host, ":", 
           file.path(racas::applicationSettings$client.port,
           "dataFiles", "summaryStatistics", "summaryStatistics.csv"), 
           sep = "")
