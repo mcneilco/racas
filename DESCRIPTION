@@ -8,7 +8,7 @@ Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: What license is it under?
 Depends:
-      R (<= 3.1.0)
+      R (>= 3.0.2)
 Imports:
     drc (== 2.3-96),
     data.table (== 1.9.2),
@@ -26,7 +26,7 @@ Imports:
     knitr (== 1.5),
     reshape2 (== 1.4),
     ggplot2 (== 0.9.3.1),
-    jsonlite (== 0.9.7),
+    jsonlite (== 0.9.8),
     grid,
     utils
 Suggests:
