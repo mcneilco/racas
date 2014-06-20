@@ -376,7 +376,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     }
     stateValue <- createStateValue(
       lsState = list(id=entityData$stateID, version = entityData$stateVersion),
-      lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue")) {
+      lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue", "inlineFileValue")) {
         entityData$valueType
       } else {"numericValue"},
       lsKind = entityData$valueKind,

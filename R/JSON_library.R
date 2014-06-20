@@ -1733,10 +1733,15 @@ flattenValue <- function(lsValue) {
 #' 
 #' @export
 #' 
-getExperimentById <- function(experimentId, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+getExperimentById <- function(experimentId, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   experiment <- NULL
+  if (is.null(include)) {
+    include = ""
+  } else {
+    include = paste0("?with=", include)
+  }
   tryCatch({
-    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, "?with=", include))
+    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, include))
     experiment <- fromJSON(experiment)
   }, error = function(e) {
     addError(paste0("Could not get experiment ", experimentId, " from the server"), errorEnv)
