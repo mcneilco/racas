@@ -17,16 +17,16 @@ loadTestData <- function(applicationSettings = racas::applicationSettings, ...) 
           genericDataFileDataFrame <- as.data.frame(sapply(genericDataFileDataFrame,gsub,pattern="&lt;",replacement="<"))
         }
       }, error = function(e) {
-        stop("Cannot read input excel file")
+        stopUser("Cannot read input excel file")
       })
     } else if (grepl("\\.csv$",testFile)){
       tryCatch({
         genericDataFileDataFrame <- read.csv(testFile, header = FALSE)
       }, error = function(e) {
-        stop("Cannot read input csv file")
+        stopUser("Cannot read input csv file")
       })
     } else {
-      stop("The input file must have extension .xls, .xlsx, or .csv")
+      stopUser("The input file must have extension .xls, .xlsx, or .csv")
     }
     calculatedResults <- getSection(genericDataFileDataFrame, lookFor = "Calculated Results")
     calculatedResults[,1] <- as.character(calculatedResults[,1])

@@ -35,12 +35,12 @@ tryCatch.W.E <- function(expr) {
 addError <- function(errorMessage, errorEnv = NULL) {
   if (is.null(errorEnv)) {
     if (!exists("errorList")) {
-      stop("ErrorList has not been defined on the search path")
+      stopUser("ErrorList has not been defined on the search path")
     }
     errorList <<- c(errorList, errorMessage)
   } else {
     if (!exists("errorList", where = errorEnv)) {
-      stop(paste0(errorMessage, 
+      stopUser(paste0(errorMessage, 
                   "; and internal error in use of addError function: errorList has not been defined in the given environment"))
     }
     assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)

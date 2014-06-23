@@ -308,7 +308,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), ...) {
   points <- query(qu)
   names(points) <- tolower(names(points))
   if(nrow(points)==0) {
-    stop("Got 0 rows of points")
+    stopUser("Got 0 rows of points")
   }
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
@@ -420,7 +420,7 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
   }
   if(is.null(renderingHint)) {
     dat <- paste0(capture.output(str(parametersDataFrame)), collapse = "\n")
-    stop(paste0("Could not find ls_kind 'Rendering Hint' for curve id, unable to determine correct curve parameters\n",dat, collapse = "\n"))
+    stopUser(paste0("Could not find ls_kind 'Rendering Hint' for curve id, unable to determine correct curve parameters\n",dat, collapse = "\n"))
   }
   parameters <- switch(renderingHint,
                        "4 parameter D-R" = getLL4ParametersFromWideFormat(wideFormat),
@@ -573,7 +573,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
-      stop("paramNames not found in names of params")
+      stopUser("paramNames not found in names of params")
     }
   } else {
     drawCurve <- FALSE
@@ -585,7 +585,7 @@ PlotCurve <-  function(curveData, params, fitFunction, paramNames = c("ec50", "m
   #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
   add.alpha <- function(col, alpha=1){
     if(missing(col))
-      stop("Please provide a vector of colours.")
+      stopUser("Please provide a vector of colours.")
     apply(sapply(col, col2rgb)/255, 2, 
           function(x) 
             rgb(x[1], x[2], x[3], alpha=alpha))  

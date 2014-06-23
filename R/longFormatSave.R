@@ -26,7 +26,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     # This exists because labels were added, it removes indices for labels
     realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
-    if (length(stateGroupIndices)==0) stop("No valid stateGroups")
+    if (length(stateGroupIndices)==0) stopUser("No valid stateGroups")
   }
   
   createRawOnlyLsState <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction) {
@@ -73,7 +73,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
         recordedBy=recordedBy,
         lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     
     return(lsState)
   }
@@ -177,7 +177,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                             recordedBy=recordedBy,
                                             lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     return(lsLabel)
   }
   lsLabels <- dlply(.data=labelData, .variables=idColumn, .fun=createRawOnlyLsLabel, 
@@ -345,10 +345,10 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 
   
   if (any(!(c("stateGroupIndex", "valueType", "valueKind", "publicData", "stateVersion") %in% names(entityData)))) {
-    stop("Missing input columns in entityData")
+    stopUser("Missing input columns in entityData")
   }
   if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
-    stop("Internal error: No stateID can be NA")
+    stopUser("Internal error: No stateID can be NA")
   }
   
   if (any(entityData$numericValue == Inf, na.rm = TRUE)) {
