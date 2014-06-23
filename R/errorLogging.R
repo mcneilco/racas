@@ -46,3 +46,22 @@ addError <- function(errorMessage, errorEnv = NULL) {
     assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)
   }
 }
+
+#'Fatal error tracking
+#'
+#'Adds the class "userStop" to a fatal error, to differentiate between 
+#'errors that should be displayed to users and errors that shouldn't 
+#'(internal errors)
+#'
+#'@export
+#'@param message The error message that the user should see
+#'@return Stops the function, and adds the class "userStop" to the error object
+#'
+#'All helpful errors should be thrown using \code{stopUser}. Any error 
+#'thrown using \code{stop} will be treated as an internal error by the simple 
+#'experiment loader
+stopUser <- function(message) {
+  e <- simpleError(message)
+  class(e) <- c(class(e), "userStop")
+  stop(e)
+}
