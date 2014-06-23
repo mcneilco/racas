@@ -139,7 +139,9 @@ Messenger <- setRefClass(Class = "Messenger",
                                }
                              } else {
                                #Do nothing
-                               logger$debug(paste0("Not running command because of previous errors: ", expr))
+                               if(exists(".self$logger")) {
+                                 logger$debug(paste0("Not running command because of previous errors: ", expr))
+                               }
                                invisible(NULL)
                              }
                            },
