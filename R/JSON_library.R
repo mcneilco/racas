@@ -460,7 +460,7 @@ createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroup
 	}
   
 	treatmentGroup= list(
-    analysisGroup=analysisGroup,
+    analysisGroups=list(analysisGroup),
     lsType=lsType, 
     lsKind=lsKind, 
 		codeName=codeName,		
@@ -481,7 +481,7 @@ createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="defau
 	}
 	
 	subject= list(
-    treatmentGroup=treatmentGroup,
+    treatmentGroups=list(treatmentGroup),
     lsType=lsType,
     lsKind=lsKind,
 		codeName=codeName,
@@ -639,7 +639,7 @@ createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default"
 		codeName=codeName,
     lsType=lsType,
     lsKind=lsKind,
-		experiment=experiment,
+		experiments=list(experiment),
 		recordedBy=recordedBy,
 		lsTransaction=lsTransaction,
 		treatmentGroups=treatmentGroups,
