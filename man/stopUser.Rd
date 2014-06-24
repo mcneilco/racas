@@ -22,9 +22,9 @@ single string as an error message. This means using paste.
 While \code{stop("text ", variable, " text")} is okay
 syntax, you will get an error if you try
 \code{stopUser("text ", variable, " text")}. Use paste0
-instead: \code{stopUser(paste0("text ", variable, " text))}
-(note that this syntax is also perfectly acceptable inside
-\code{stop})
+instead: \code{stopUser(paste0("text ", variable, "
+text"))} (note that this syntax is also perfectly
+acceptable inside \code{stop})
 }
 \description{
 Declares an error to be of type "userStop", to distinguish
