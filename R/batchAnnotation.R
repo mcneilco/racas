@@ -38,7 +38,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       
       serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
     } else {
-      stopUser("A file service custom code for", racas::applicationSettings$server.service.external.file.type, "should be added in the configuration file")
+      stopUser(paste0("A file service custom code for ", racas::applicationSettings$server.service.external.file.type, " should be added in the configuration file"))
     }
   }
   

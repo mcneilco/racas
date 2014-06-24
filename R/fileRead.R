@@ -61,7 +61,7 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     return(NULL)
   }
   if(is.na(startSection)) {
-    stopUser("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep="")
+    stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
   }
   
   if((startSection+2)>length(genericDataFileDataFrame[[1]])) {

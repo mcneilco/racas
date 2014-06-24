@@ -55,12 +55,12 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
     stopUser(paste("Error in contacting the preferred ID service:", e$message))
   })
   if (substring(response,1,1)!="{") {
-    stopUser("Error in contacting the preferred ID service: ", response)
+    stopUser(paste0("Error in contacting the preferred ID service: ", response))
   } else {
     tryCatch({
       response <- fromJSON(response)
     }, error = function(e) {
-      stopUser("The loader was unable to parse the response it got from the preferred ID service: ", response)
+      stopUser(paste0("The loader was unable to parse the response it got from the preferred ID service: ", response))
     })
   }
   

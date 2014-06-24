@@ -49,9 +49,8 @@ addError <- function(errorMessage, errorEnv = NULL) {
 
 #'Fatal error tracking
 #'
-#'Adds the class "userStop" to a fatal error, to differentiate between 
-#'errors that should be displayed to users and errors that shouldn't 
-#'(internal errors)
+#'Declares an error to be of type "userStop", to distinguish between errors we programmed
+#'into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
 #'
 #'@export
 #'@param message The error message that the user should see
@@ -59,7 +58,13 @@ addError <- function(errorMessage, errorEnv = NULL) {
 #'
 #'All helpful errors should be thrown using \code{stopUser}. Any error 
 #'thrown using \code{stop} will be treated as an internal error by the simple 
-#'experiment loader
+#'experiment loader.
+#'
+#'When using this function, it is important to give it a single string as an error message. 
+#'This means using paste. While \code{stop("text ", variable, " text")} is okay syntax, 
+#'you will get an error if you try \code{stopUser("text ", variable, " text")}. Use paste0 
+#'instead: \code{stopUser(paste0("text ", variable, " text))} (note that this syntax is also 
+#'perfectly acceptable inside \code{stop})
 stopUser <- function(message) {
   e <- simpleError(message)
   class(e) <- c(class(e), "userStop")
