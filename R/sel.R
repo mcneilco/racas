@@ -66,7 +66,7 @@ createSELExperimentMetaData <- function(format = "Generic", protocolName = "", e
 createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "Corporate Batch ID", dataTypes = NULL, ls_kinds = NULL, unit_kinds = NULL) {
   allowedResultClasses <- c("data.table", "data.frame")
   if(!class(calculatedResults) %in% allowedResultClasses) {
-    stop(paste0("calculatedResults must be a ", paste(allowedResultClasses, collapse = " or ")))
+    stopUser(paste0("calculatedResults must be a ", paste(allowedResultClasses, collapse = " or ")))
   } else {
     calculatedResults <- as.data.frame(calculatedResults, check.names = FALSE)
     if(corporateIDColumn %in% names(calculatedResults)) {
@@ -84,10 +84,10 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
   defaultDataType <- "Number"
   if(!is.null(dataTypes)) {
     if(!all(dataTypes %in% allowedDataTypes)) {
-      stop(paste0("dataTypes must be ", paste(allowedDataTypes, collapse = " or ")))
+      stopUser(paste0("dataTypes must be ", paste(allowedDataTypes, collapse = " or ")))
     } else {
       if(ncol(calcResults) != length(dataTypes)) {
-        stop("Length of dataTypes must equal number of columns in calculatedResults excluding the corporateIDColumn column")
+        stopUser("Length of dataTypes must equal number of columns in calculatedResults excluding the corporateIDColumn column")
       }
     }
   } else {
@@ -96,7 +96,7 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
   
   if(!is.null(ls_kinds)) {
     if(ncol(calcResults) != length(ls_kinds)) {
-      stop("Length of ls_kinds must equal number of columns in calculatedResults excluding the corporateIDColumn column")
+      stopUser("Length of ls_kinds must equal number of columns in calculatedResults excluding the corporateIDColumn column")
     }
   } else {
     ls_kinds <- names(calcResults)
@@ -104,7 +104,7 @@ createSELCalculatedResults <- function(calculatedResults, corporateIDColumn = "C
   
   if(!is.null(unit_kinds)) {
     if(ncol(calcResults) != length(unit_kinds)) {
-      stop("Length of unit_kinds must equal number of columns in calcResults excluding the corporateIDColumn column")
+      stopUser("Length of unit_kinds must equal number of columns in calcResults excluding the corporateIDColumn column")
     }
   } else {
     unit_kinds <- NULL

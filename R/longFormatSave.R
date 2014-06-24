@@ -24,7 +24,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     # This exists because labels were added, it removes indices for labels
     realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
-    if (length(stateGroupIndices)==0) stop("No valid stateGroups")
+    if (length(stateGroupIndices)==0) stopUser("No valid stateGroups")
   }
   
   createRawOnlyLsState <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction) {
@@ -71,7 +71,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
         recordedBy=recordedBy,
         lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     
     return(lsState)
   }
@@ -175,7 +175,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                             recordedBy=recordedBy,
                                             lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     return(lsLabel)
   }
   lsLabels <- dlply(.data=labelData, .variables=idColumn, .fun=createRawOnlyLsLabel, 
@@ -352,15 +352,21 @@ meltTimes <- function(entityData, entityKind = "treatmentGroup") {
 #' @param  testMode             A boolean marking if the function should return JSON instead of saving values
 #' @param recordedBy String: the username recording the data
 #' @return A list of value objects (lists)
-#' @details In longFormatSave.R
+#' @details All numericValues of Inf will be have their stringValue set to
+#'   "infinite" as Inf can't be stored in the database. Code in longFormatSave.R
 saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL, lsTransaction, recordedBy, stateGroupIndices = NULL, testMode=FALSE) {
 
   
   if (any(!(c("stateGroupIndex", "valueType", "valueKind", "publicData", "stateVersion") %in% names(entityData)))) {
-    stop("Missing input columns in entityData")
+    stopUser("Missing input columns in entityData")
   }
   if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
-    stop("Internal error: No stateID can be NA")
+    stopUser("Internal error: No stateID can be NA")
+  }
+  
+  if (any(entityData$numericValue == Inf, na.rm = TRUE)) {
+    entityData$stringValue[entityData$numericValue == Inf] <- "infinite"
+    entityData$numericValue[entityData$numericValue == Inf] <- NA
   }
   
   factorColumns <- vapply(entityData, is.factor, c(TRUE))
@@ -383,7 +389,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     }
     stateValue <- createStateValue(
       lsState = list(id=entityData$stateID, version = entityData$stateVersion),
-      lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue")) {
+      lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue", "inlineFileValue")) {
         entityData$valueType
       } else {"numericValue"},
       lsKind = entityData$valueKind,

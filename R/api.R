@@ -11,26 +11,26 @@
 #' api_createProtocol(c("Brian Test Protocol2"), shortDescription = "Test Protocol", recordedBy = "bbolt")
 api_createProtocol <- function(protocolName, shortDescription, recordedBy, stopOnAnyExist = TRUE) {
   if(is.null(protocolName)){
-    stop("Protocol names cannot be null")
+    stopUser("Protocol names cannot be null")
   }
   if(any(unlist(lapply(protocolName, function(x) x=="")))) {
-    stop("Protocol names cannot equal \"\"")
+    stopUser("Protocol names cannot equal \"\"")
   }
   if(any(duplicated(protocolName))) {
-    stop("Protocol names must be unique")
+    stopUser("Protocol names must be unique")
   }
   if(is.null(recordedBy)){
-    stop("Recorded by cannot be null")
+    stopUser("Recorded by cannot be null")
   }
   if(recordedBy == ""){
-    stop("Recorded by cannot equal \"\"")
+    stopUser("Recorded by cannot equal \"\"")
   }
   
   protocolExistence <- checkExistence(protocolName, "protocolName")
   
   if(stopOnAnyExist) {
     if(any(unlist(protocolExistence))) {
-      stop(paste0("Protocols already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '")),"'")
+      stopUser(paste0("Protocols already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '")),"'")
     }
   }
   #Remove protocols that already exist
@@ -96,7 +96,7 @@ checkExistence <- function(x, type = c("protocolName", "experimentName", "protoc
 #' getEntity("EXPT-00000001", "experimentCodeName")
 getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCodeName", "experimentCodeName")) {
   if(length(type) > 1) {
-    stop("Must specify one type")
+    stopUser("Must specify one type")
   }
   type <- match.arg(type)
   servicePath <- switch(type,

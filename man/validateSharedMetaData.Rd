@@ -21,6 +21,9 @@ describing the Meta data data frame and its expected classes. Columns:
 \value{
 A data.frame containing the validated meta data
 }
+\value{
+A data.frame containing the validated meta data
+}
 \description{
 Valides the meta data using services from configuration
 }

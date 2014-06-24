@@ -25,6 +25,7 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   error_ping_pong_generator <- FALSE
   conn <- getDatabaseConnection(applicationSettings)
   on.exit(disconnected <- dbDisconnect(conn))
+
   if (dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_a"), schema = intermediateTablePrefix$schema)){
     pingPongTableNew <- 'b'
     pingPongTableOld <- 'a'
@@ -118,7 +119,7 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   
   if(error_ping_pong_generator) {
     logger$error("PING-PONG tables update unsuccessful, rolledback ")
-    stop(paste0("PING-PONG tables update unsuccessful, rolled back\n for details see\npingpongtables.log"))
+    stopUser(paste0("PING-PONG tables update unsuccessful, rolled back\n for details see\npingpongtables.log"))
   } else {
     logger$info("PING-PONG tables successfully updated and committed")
   }
