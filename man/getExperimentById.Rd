@@ -4,7 +4,7 @@
 \alias{getExperimentById}
 \title{Gets an experiment}
 \usage{
-getExperimentById(experimentId, include = "", errorEnv = NULL,
+getExperimentById(experimentId, include = NULL, errorEnv = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 
 getExperimentByCodeName(experimentCodeName, include = "", errorEnv = NULL,
