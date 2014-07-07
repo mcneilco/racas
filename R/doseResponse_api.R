@@ -238,39 +238,48 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   )))
 }
 
-api_doseResponse_fit_curve <- function(POST) {  
+api_doseResponse_save_session <- function(sessionID, user) {
+  myMessenger <- messenger()$reset()
+  myMessenger$devMode <- TRUE
+  myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.save.session")
+  myMessenger$logger$debug(paste0("got session id: ", sessionID))
+  
+  loadSession(sessionID)    
+  if(is.null(fitData$model)) {
+# If the model is null, then we have not refit the data since loading from the database, just return the object as is
+    myMessenger$logger$debug("nothing has changed, returning object without saving")
+    response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
+  } else {
+# If the model does exist then we have fit, so save the data
+    myMessenger$logger$debug("adding clob values to fit data")
+    fitData <- doseResponse_add_clob_values(fitData)
+    myMessenger$logger$debug("saving the curve data")
+    savedStates <- saveDoseResponseData(fitData, user)
+    GET <- list()
+    GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) listToDataTable(x)))$analysisGroup[[1]]$id
+    myMessenger$logger$debug(paste0('retrieving curve detail for analysis group id \'', GET$analysisgroupid,'\''))
+    response <- api_doseResponse_get_curve_detail(GET)
+  }
+  return(response)
+}
+
+api_doseResponse_refit <- function(POST) {  
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.fit.curve")
   
   myMessenger$logger$debug("parsing json from acas")
-  myMessenger$logger$debug(paste0("got post data: ", capture.output(jsonlite::toJSON(POST))))
-  
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
-
-  if(is.null(POST$persist)) POST$persist <- FALSE
-  if(POST$persist) {
-    loadSession(POST$sessionID)
-    myMessenger$logger$debug("adding clob values to fit data")
-    fitData <- doseResponse_add_clob_values(fitData)
-    myMessenger$logger$debug("saving the curve data")
-    savedStates <- saveDoseResponseData(fitData, POST$user)
-    GET <- list()
-    GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) listToDataTable(x)))$analysisGroup[[1]]$id
-    myMessenger$logger$debug(paste0('retrieving curve detail for analysis group id \'', GET$analysisgroupid,'\''))
-   response <- api_doseResponse_get_curve_detail(GET)
-  } else {
-    myMessenger$logger$debug("getting updated point flags sent from acas")
-    points <- data.table(POST$plotData$points)
-    myMessenger$logger$debug("converting simple fit settings to advanced settings")
-    fitSettings <- simpleToAdvancedFitSettings(POST$fitSettings, points)
-    
-    myMessenger$logger$debug("fitting the dose response model")
-    doseResponse <- doseResponse(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
-    myMessenger$logger$debug("converting the fitted data to a response json object")
-    fitData <- doseResponse_add_clob_values(doseResponse$fitData)
-    response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)
-  }
+  myMessenger$logger$debug("getting updated point flags sent from acas")
+  points <- data.table(POST$plotData$points)
+  myMessenger$logger$debug("converting simple fit settings to advanced settings")
+  fitSettings <- simpleToAdvancedFitSettings(POST$fitSettings, points)
+  
+  myMessenger$logger$debug("fitting the dose response model")
+  doseResponse <- doseResponse(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
+  myMessenger$logger$debug("converting the fitted data to a response json object")
+  fitData <- doseResponse_add_clob_values(doseResponse$fitData)
+  response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)
   if(myMessenger$hasErrors()) {
     return(myMessenger$toJSON())
   }
@@ -278,22 +287,15 @@ api_doseResponse_fit_curve <- function(POST) {
   return(response)
 }
 
-api_doseResponse_update_curve_user_approval <- function(POST) {
+api_doseResponse_update_user_flag <- function(sessionID, flagUser, user) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE
-  myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.approval")
-  
-  if(is.null(POST$sessionID)) {
-    stop("must provide session id")
+  myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.flag")
+  loadSession(sessionID)
+  if(flagUser == "NA") {
+    flagUser <- as.character(NA)
   }
-  if(is.null(POST$approve)) {
-    stop("must provide userApproved boolean")
-  } else {
-    userApproved <- as.logical(POST$approve)
-  }
-  
-  loadSession(POST$sessionID)
-  updated <- doseResponse_updateUserFlag(fitData, userApproved, POST$user)
+  updated <- doseResponse_update_user_flag(fitData, flagUser, user)
   if(!myMessenger$hasErrors()) {
     GET <- list()
     GET$analysisgroupid <- fitData$id

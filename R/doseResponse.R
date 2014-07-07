@@ -51,9 +51,10 @@ doseResponse.fitData <- function(fitSettings, fitData) {
     #First fix issues with updateFlags (they may come in with "NA" instead of NA and logical istead of character)
     updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
     updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
-    updateFlags[ flag_algorithm == "NA", flag_algorithm := as.character(NA)]
+    updateFlags[ , flag_algorithm := as.character(NA)]
     updateFlags[ , flag_user := as.character(flag_user)]
     updateFlags[ , flag_on.load := as.character(flag_on.load)]
+    updateFlags[ , flag_algorithm := as.character(flag_algorithm)]
     
     #pts <- fitData[1]$points[[1]]
     fitData[, points := list(list(update_point_flags(points[[1]], updateFlags))) , by = curveid]
@@ -107,7 +108,7 @@ doseResponse.biphasicDetection <- function(fitData) {
       } else {
         if(biphasicRule$type == "percentage") {
           biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-          ifelse(!is.finite(max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))), saveSession("~/Desktop/nonfinite"), TRUE)
+          ifelse(!is.finite(max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))), , TRUE)
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
           points[dose == testConc, flag_temp := "possible biphasic"]
           model.synced <- FALSE
@@ -545,6 +546,8 @@ captureOutput <- function(obj, ...) {
     if (result$visible)
       print(result$value)
   })
+  nonEmpties <- which(val!="")
+  val <- val[nonEmpties[1]:nonEmpties[length(nonEmpties)]]
   val <- gsub(" ", "&nbsp;", val)
   return(paste(val, ...))
 }
@@ -1307,6 +1310,7 @@ updateExperimentStatus <- function(experimentCodeName, status) {
   value <- experiment$lsStates[[experimentMetaDataState]]$lsValues[[analysisStatusValue]]
   value <- updateAcasEntity(value, "experimentvalues")
 }
+
 saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
   ignoredAnalysisGroupStates <- lapply(fitData$lsStates, function(x) {
     x <- as.list(x)
@@ -1326,11 +1330,14 @@ saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
   return(fitData$newStates)
 }
 
-doseResponse_updateUserFlag <- function(fitData, userApproved, recordedBy) {
-  userFlag <- fitData[1]$parameters[[1]][lsKind == "flag" & stringValue == "user" & ignored == FALSE]
+doseResponse_update_user_flag <- function(fitData, flagUser, recordedBy) {
+  saveSession("~/Desktop/asdfa")
+  savedUserFlag <- fitData[1]$parameters[[1]][lsKind == "flag" & stringValue == "user" & ignored == FALSE]
   
-  if(nrow(userFlag) == 0) {
-    if(userApproved) {
+# If there are already saved user flags (meaning the curve was not approved by the user)
+  if(nrow(savedUserFlag) == 0) {
+# If 
+    if(is.na(flagUser)) {
       idsToIgnore <- fitData[1]$parameters[[1]][(publicData == TRUE | lsKind %in% c("reportedValuesClob") | lsKind == "flag" & stringValue == "user") & !lsKind %in% c("batch code","curve id") ]$id
       valuesToIgnore <- lapply(idsToIgnore, getEntityById, "analysisgroupvalues")
       ignoredAnalysisGroupValues <- lapply(valuesToIgnore, function(x) {
@@ -1340,17 +1347,17 @@ doseResponse_updateUserFlag <- function(fitData, userApproved, recordedBy) {
       return(TRUE)
     } else {
       lsTransactionID <- createLsTransaction()$id
-      userFlagStateValue <- createStateValue(lsState=getEntityById(fitData[1]$parameters[[1]]$lsStates[[1]]$id,acasCategory="analysisgroupstates"),
+      flagUserStateValue <- createStateValue(lsState=getEntityById(fitData[1]$parameters[[1]]$lsStates[[1]]$id,acasCategory="analysisgroupstates"),
                                              lsType = 'comments',
                                              lsKind = 'flag',
-                                             stringValue = 'user',
+                                             stringValue = flagUser,
                                              comments = 'user',
                                              publicData = FALSE,
                                              lsTransaction=lsTransactionID,
                                              recordedBy = as.character(recordedBy))
-      saved <- saveAcasEntities(list(userFlagStateValue), "analysisgroupvalues")
+      saved <- saveAcasEntities(list(flagUserStateValue), "analysisgroupvalues")
       
-      otherStateValuesIds <- fitData[1]$parameters[[1]][ignored == TRUE & (publicData == TRUE | lsKind %in% c("reportedValuesClob")) & !lsKind %in% c("batch code","curve id") ]$id
+      otherStateValuesIds <- fitData[1]$parameters[[1]][ignored == FALSE & (publicData == TRUE | lsKind %in% c("reportedValuesClob")) & !lsKind %in% c("batch code","curve id") ]$id
       otherStateValues <- lapply(otherStateValuesIds, getEntityById, "analysisgroupvalues")
       otherStateValues <- lapply(otherStateValues, function(x) {
         x$ignored <- TRUE
@@ -1359,10 +1366,10 @@ doseResponse_updateUserFlag <- function(fitData, userApproved, recordedBy) {
       return(TRUE)
     }
   } else {
-    if(userApproved) {
-      userFlag <- getEntityById(userFlag$id, "analysisgroupvalues")
-      userFlag$ignored <- TRUE
-      updateAcasEntity(userFlag, "analysisgroupvalues")
+    if(is.na(flagUser)) {
+      savedUserFlag <- getEntityById(savedUserFlag$id, "analysisgroupvalues")
+      savedUserFlag$ignored <- TRUE
+      updateAcasEntity(savedUserFlag, "analysisgroupvalues")
       
       otherStateValuesIds <- fitData[1]$parameters[[1]][ignored == TRUE & (publicData == TRUE | lsKind %in% c("reportedValuesClob")) & !lsKind %in% c("batch code","curve id") ]$id
       otherStateValues <- lapply(otherStateValuesIds, getEntityById, "analysisgroupvalues")
@@ -1373,7 +1380,7 @@ doseResponse_updateUserFlag <- function(fitData, userApproved, recordedBy) {
       return(TRUE)
       
     } else {
-      otherStateValuesIds <- fitData[1]$parameters[[1]][ignored == TRUE & (publicData == TRUE | lsKind %in% c("reportedValuesClob")) & !lsKind %in% c("batch code","curve id") ]$id
+      otherStateValuesIds <- fitData[1]$parameters[[1]][ignored == FALSE & (publicData == TRUE | lsKind %in% c("reportedValuesClob")) & !lsKind %in% c("batch code","curve id") ]$id
       otherStateValues <- lapply(otherStateValuesIds, getEntityById, "analysisgroupvalues")
       otherStateValues <- lapply(otherStateValues, function(x) {
         x$ignored <- TRUE
@@ -1383,6 +1390,7 @@ doseResponse_updateUserFlag <- function(fitData, userApproved, recordedBy) {
     }
   }
 }
+
 getLSStateFromEntity <- function(entities, ...) {
   unlistEntities <- unlist(entities, recursive = FALSE)
   lsStatesList <- unlistEntities[names(unlistEntities) == "lsStates"]
