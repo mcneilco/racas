@@ -40,10 +40,10 @@ ContainerRemap <- setRefClass("ContainerRemap",
                               methods = list(
                                 initialize = function(..., json = NA) {
                                   callSuper(...)
-                                  if(quadrant > 4 | quadrant < 1) stop("quadrant must be between 1-4")
-                                  if(originContainerCode == "") stop("Origin container code cannot be blank")
-                                  if(destinationContainerCode == "") stop("Destination container code cannot be blank")
-                                  if(!direction %in% c("up", "down")) stop("direction must be up or down")
+                                  if(quadrant > 4 | quadrant < 1) stopUser("quadrant must be between 1-4")
+                                  if(originContainerCode == "") stopUser("Origin container code cannot be blank")
+                                  if(destinationContainerCode == "") stopUser("Destination container code cannot be blank")
+                                  if(!direction %in% c("up", "down")) stopUser("direction must be up or down")
                                 },
                                 fromJSON = function(json) {
                                   containerRemapList <- rjson::fromJSON(json)

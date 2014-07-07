@@ -15,10 +15,10 @@
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
-    stop("Need Excel file path as input")
+    stopUser("Need Excel file path as input")
   }
   if (!file.exists(filePath)) {
-    stop("Cannot find input file")
+    stopUser("Cannot find input file")
   }
   
   if (grepl("\\.xlsx?$",filePath)) {
@@ -26,16 +26,16 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
       wb <- XLConnect::loadWorkbook(filePath)
       output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
     }, error = function(e) {
-      stop("Cannot read input excel file")
+      stopUser("Cannot read input excel file")
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
       output <- read.csv(filePath, header = header, stringsAsFactors=FALSE)
     }, error = function(e) {
-      stop("Cannot read input csv file")
+      stopUser("Cannot read input csv file")
     })
   } else {
-    stop("The input file must have extension .xls, .xlsx, or .csv")
+    stopUser("The input file must have extension .xls, .xlsx, or .csv")
   }
   
   return(output)
@@ -61,11 +61,11 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     return(NULL)
   }
   if(is.na(startSection)) {
-    stop("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep="")
+    stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
   }
   
   if((startSection+2)>length(genericDataFileDataFrame[[1]])) {
-    stop(paste0("There must be at least two rows filled in after '", lookFor, 
+    stopUser(paste0("There must be at least two rows filled in after '", lookFor, 
                 "'. Either there is extra data that you need to fill in, or you may wish to remove '", 
                 lookFor, "' entirely."))
   }
@@ -76,7 +76,7 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
   sectionHeaderColumns <- grepl(pattern="\\S", sapply(sectionHeaderRow,as.character))
   secondHeaderColumns <- grepl(pattern="\\S", sapply(secondRow,as.character))
   if (all(!c(sectionHeaderColumns, secondHeaderColumns))) {
-    stop(paste0("There must be at least two rows filled in after '", lookFor, "'."))
+    stopUser(paste0("There must be at least two rows filled in after '", lookFor, "'."))
   }
   if (any(!secondHeaderColumns & !sectionHeaderColumns)) {
     dataColumnIndexes <- 1:(min(which(!secondHeaderColumns & !sectionHeaderColumns)) - 1)
@@ -169,7 +169,7 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
                                  "dateValue" = validateDate, 
                                  "Number" = validateNumeric, 
                                  "stringValue" = validateCharacter,  
-                                 stop(paste("Internal Error: unrecognized class required by the loader:", expectedDataType))
+                                 stopUser(paste("Internal Error: unrecognized class required by the loader:", expectedDataType))
     )
     validatedData <- validationFunction(receivedValue)
     validatedMetaData[, column] <- validatedData
@@ -212,11 +212,11 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
 #'@details resultTypes should not have a factor in DataColumn- order breaks
 meltWideData <- function(wideData, resultTypes, stateGroups=list(), splitColumn=NULL, splitFunction=NULL) {
   if(is.factor(resultTypes$DataColumn)) {
-    stop("Column DataColumn in resultTypes should not be a factor")
+    stopUser("Column DataColumn in resultTypes should not be a factor")
   }
   
   if (!all(resultTypes$DataColumn %in% names(wideData))) {
-    stop("All resultTypes$DataColumn must be included in wideData")
+    stopUser("All resultTypes$DataColumn must be included in wideData")
   }
   
   # Add a temporary rowID to keep track of how rows match up
@@ -503,7 +503,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     }
     serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
   } else {
-    stop("Invalid file service type")
+    stopUser("Invalid file service type")
   }
   
   locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="raw results locations"]
@@ -522,7 +522,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     tryCatch({
       locationState <- saveExperimentState(locationState)
     }, error = function(e) {
-      stop("Internal Error: Could not save the source file state")
+      stopUser("Internal Error: Could not save the source file state")
     })
   }
   
@@ -537,7 +537,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     saveExperimentValues(list(locationValue))
   }, error = function(e) {
-    stop("Internal Error: Could not save the source file location")
+    stopUser("Internal Error: Could not save the source file location")
   })
   
   return(serverFileLocation)

@@ -1,3 +1,9 @@
+#' Error and warning trapping
+#' 
+#' Traps errors and warnings, creating lists of each
+#' 
+#' @param expr An expression which will have errors caught
+#' @return A list with value (either result or error) and warningList
 tryCatch.W.E <- function(expr) {
   # This function is taken from the R demo file and edited
   # http://svn.r-project.org/R/trunk/src/library/base/demo/error.catching.R
@@ -29,14 +35,38 @@ tryCatch.W.E <- function(expr) {
 addError <- function(errorMessage, errorEnv = NULL) {
   if (is.null(errorEnv)) {
     if (!exists("errorList")) {
-      stop("ErrorList has not been defined on the search path")
+      stopUser("ErrorList has not been defined on the search path")
     }
     errorList <<- c(errorList, errorMessage)
   } else {
     if (!exists("errorList", where = errorEnv)) {
-      stop(paste0(errorMessage, 
+      stopUser(paste0(errorMessage, 
                   "; and internal error in use of addError function: errorList has not been defined in the given environment"))
     }
     assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)
   }
+}
+
+#'Fatal error tracking
+#'
+#'Declares an error to be of type "userStop", to distinguish between errors we programmed
+#'into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
+#'
+#'@export
+#'@param message The error message that the user should see
+#'@return Stops the function, and adds the class "userStop" to the error object
+#'
+#'All helpful errors should be thrown using \code{stopUser}. Any error 
+#'thrown using \code{stop} will be treated as an internal error by the simple 
+#'experiment loader.
+#'
+#'When using this function, it is important to give it a single string as an error message. 
+#'This means using paste. While \code{stop("text ", variable, " text")} is okay syntax, 
+#'you will get an error if you try \code{stopUser("text ", variable, " text")}. Use paste0 
+#'instead: \code{stopUser(paste0("text ", variable, " text"))} (note that this syntax is also 
+#'perfectly acceptable inside \code{stop})
+stopUser <- function(message) {
+  e <- simpleError(message)
+  class(e) <- c(class(e), "userStop")
+  stop(e)
 }

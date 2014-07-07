@@ -38,7 +38,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       
       serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
     } else {
-      stop("A file service custom code for", racas::applicationSettings$server.service.external.file.type, "should be added in the configuration file")
+      stopUser(paste0("A file service custom code for ", racas::applicationSettings$server.service.external.file.type, " should be added in the configuration file"))
     }
   }
   
@@ -68,7 +68,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         testMode=testMode
       )
     } else {
-      stop("Must supply either a reportFilePath or a url")
+      stopUser("Must supply either a reportFilePath or a url")
     }
     
     analysisGroupValues[[length(analysisGroupValues)+1]] <- createStateValue(
@@ -99,7 +99,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     tryCatch({
       response <- saveAnalysisGroups(analysisGroups) 
     }, error = function(e) {
-      stop(paste0("Could not save the report ", if (!is.null(reportFilePath)) "file" else "url"))
+      stopUser(paste0("Could not save the report ", if (!is.null(reportFilePath)) "file" else "url"))
     })
   }
   
@@ -142,7 +142,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
                                         testMode=testMode)
     }
   } else {
-    stop("Need to set up separate service R code for this annotation")
+    stopUser("Need to set up separate service R code for this annotation")
   }
   if(testMode) {
     output$locationValue <- locationValue
@@ -151,7 +151,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     tryCatch({
       saveExperimentValues(list(locationValue))
     }, error = function(e) {
-      stop("Could not save the annotation location")
+      stopUser("Could not save the annotation location")
     })
     return(NULL)
   }
@@ -186,12 +186,12 @@ deleteLinkFile <- function(experiment, testMode=FALSE) {
           tryCatch({
             file.remove(paste0(racas::applicationSettings$server.file.server.path,"/", filesToDelete))
           }, error = function(e) {
-            stop("There was an error deleting the old report file. Please contact your system adminstrator.")
+            stopUser("There was an error deleting the old report file. Please contact your system adminstrator.")
           })
         }
       }
     }
   } else {
-    stop("Need to set up custom link file deletion")
+    stopUser("Need to set up custom link file deletion")
   }
 }

@@ -51,6 +51,7 @@ Collate:
     'longFormatSave.R'
     'installation.R'
     'messenger.R'
+    'model.R'
     'doseResponse.R'
     'doseResponse_api.R'
     'objectHelper.R'
