@@ -1331,7 +1331,6 @@ saveDoseResponseCurve <- function(fitData, recordedBy, lsTransaction) {
 }
 
 doseResponse_update_user_flag <- function(fitData, flagUser, recordedBy) {
-  saveSession("~/Desktop/asdfa")
   savedUserFlag <- fitData[1]$parameters[[1]][lsKind == "flag" & stringValue == "user" & ignored == FALSE]
   
 # If there are already saved user flags (meaning the curve was not approved by the user)
