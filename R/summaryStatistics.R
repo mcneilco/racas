@@ -38,7 +38,7 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   }
 
   rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
-  htmlSummary <- knit2html.bugFix(input = rmd, 
+  htmlSummary <- knit2html_bug_fix(input = rmd, 
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))

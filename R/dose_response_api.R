@@ -26,7 +26,7 @@
 #' file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 #' simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-#' experimentCode <- loadDoseResponseTestData()
+#' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
 #' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
@@ -37,7 +37,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #   recordedBy <- "bbolt"
 #     
-#   experimentCode <- loadDoseResponseTestData()
+#   experimentCode <- load_dose_response_test_data()
   #   experimentCode <- "EXPT-00000095"
   #   experimentCode <- "EXPT-00000002"
   
@@ -46,33 +46,33 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
   
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
+  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode))
-  fitData <- getFitData(experimentCode)
+  fitData <- get_fit_data(experimentCode)
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveid]
   myMessenger$logger$debug("fitting the data")
-  fitData <- doseResponse.fitData(fitSettings, fitData)
+  fitData <- dose_response(fitSettings, fitData)
   
   myMessenger$logger$debug("decorating fit data clob values")
-  fitData <- doseResponse_add_clob_values(fitData)
+  fitData <- add_clob_values_to_fit_data(fitData)
   
   myMessenger$logger$debug("saving the curve data")
-  savedStates <- saveDoseResponseData(fitData, recordedBy)
+  savedStates <- save_dose_response_data(fitData, recordedBy)
  
   myMessenger$logger$debug("updating experiment model fit status")
-  experiment <-updateExperimentStatus(experimentCode, "complete")
+  experiment <-update_experiment_status(experimentCode, "complete")
   
-  savedStates <- saveDoseResponseData(fitData, recordedBy)
+  savedStates <- save_dose_response_data(fitData, recordedBy)
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("responding to acas")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
-    response <- fitDataToResponse.acas(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+    response <- fit_data_to_acas_experiment_response(fitData, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   } else {
     myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
     myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
-    response <- fitDataToResponse.acas(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+    response <- fit_data_to_acas_experiment_response(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   }
   return(response)
 }
@@ -96,7 +96,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   #entityID <- "EXPT-00000070"
   myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
-  fitData <- getFitData(entityID, type = type, include = 'analysisgroupvalues')
+  fitData <- get_fit_data(entityID, type = type, include = 'analysisgroupvalues')
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
@@ -156,7 +156,7 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
     }
   }
   
-  fitData <- getFitData(id, type = type, include = "fullobject")
+  fitData <- get_fit_data(id, type = type, include = "fullobject")
   sessionID <- saveSession()
   
   response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
@@ -218,7 +218,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
-  plotData <- list(plotWindow = plotWindow(fitData[1]$points[[1]]),
+  plotData <- list(plotWindow = get_plot_window(fitData[1]$points[[1]]),
                    points  = points,
                    curve = c(type = fitData[1]$modelHint,
                              fittedParametersList)
@@ -252,11 +252,11 @@ api_doseResponse_save_session <- function(sessionID, user) {
   } else {
 # If the model does exist then we have fit, so save the data
     myMessenger$logger$debug("adding clob values to fit data")
-    fitData <- doseResponse_add_clob_values(fitData)
+    fitData <- add_clob_values_to_fit_data(fitData)
     myMessenger$logger$debug("saving the curve data")
-    savedStates <- saveDoseResponseData(fitData, user)
+    savedStates <- save_dose_response_data(fitData, user)
     GET <- list()
-    GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) listToDataTable(x)))$analysisGroup[[1]]$id
+    GET$analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
     myMessenger$logger$debug(paste0('retrieving curve detail for analysis group id \'', GET$analysisgroupid,'\''))
     response <- api_doseResponse_get_curve_detail(GET)
   }
@@ -273,12 +273,13 @@ api_doseResponse_refit <- function(POST) {
   myMessenger$logger$debug("getting updated point flags sent from acas")
   points <- data.table(POST$plotData$points)
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simpleToAdvancedFitSettings(POST$fitSettings, points)
+  fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points)
   
   myMessenger$logger$debug("fitting the dose response model")
-  doseResponse <- doseResponse(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
+  saveSession("~/Desktop/blah")
+  doseResponse <- dose_response_session(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
   myMessenger$logger$debug("converting the fitted data to a response json object")
-  fitData <- doseResponse_add_clob_values(doseResponse$fitData)
+  fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)
   if(myMessenger$hasErrors()) {
     return(myMessenger$toJSON())

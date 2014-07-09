@@ -30,23 +30,23 @@
 #' myMessenger <- Messenger$new(envir = environment())
 #' 
 #' #This is run like normal
-#' myMessenger$captureOutput("test <- 1+1")
+#' myMessenger$capture_output("test <- 1+1")
 #' test
 #' 
 #' #This captures the error
 #' myMessenger <- Messenger$new(envir = environment())
 #' test <- function() stop("there is an error!")
-#' myMessenger$captureOutput("test()")
+#' myMessenger$capture_output("test()")
 #' myMessenger$errors
 #' 
 #' #Capturing a user error on run
 #' myMessenger <- Messenger$new(envir = environment())
 #' test <- function() stop("there is an error!")
-#' myMessenger$captureOutput("test()", userError = "There was an error running test function")
+#' myMessenger$capture_output("test()", userError = "There was an error running test function")
 #' myMessenger$errors
 #' myMessenger$userErrors
 #' 
-#' #Adding a user error within a captureOutput Call (use racas messenger)
+#' #Adding a user error within a capture_output Call (use racas messenger)
 #' racasMessenger <- messenger()$reset()
 #' test <- function() {
 #'  racasMessenger <- messenger()
@@ -58,7 +58,7 @@
 #'  }
 #'  return(1)
 #' }
-#' racasMessenger$captureOutput("answer <- test()", userError = "Outer error")
+#' racasMessenger$capture_output("answer <- test()", userError = "Outer error")
 #' racasMessenger$userErrors
 #' 
 Messenger <- setRefClass(Class = "Messenger", 
@@ -106,7 +106,7 @@ Messenger <- setRefClass(Class = "Messenger",
                              devMode <<- FALSE
                              return(.self)
                            },
-                           captureOutput = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
+                           capture_output = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
                              
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                

@@ -947,7 +947,7 @@ drcObject.getMinActivity.as.numeric <- function(drcObj = drObject) {
   return(value)
 }
 
-drcObject.getDRCFitStats <- function(drcObject) {
+get_fit_stats_drc_object <- function(drcObject) {
   SSE <- sum(residuals(drcObject)^2)
   SST <- sum(treatmentData$RESPONSE-mean(treatmentData$RESPONSE)^2)
   rSquared <- 1-(SSE/SST)
