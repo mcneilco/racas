@@ -179,11 +179,11 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
   additionalColumns <- names(metaData)[is.na(match(names(metaData),expectedHeaders))]
   if (length(additionalColumns) > 0) {
     if (length(additionalColumns) == 1) {
-      warningUser(paste0("The loader found an extra Experiment Meta Data row that will be ignored: '", 
+      warnUser(paste0("The loader found an extra Experiment Meta Data row that will be ignored: '", 
                      additionalColumns, 
                      "'. Please remove this row."))
     } else {
-      warningUser(paste0("The loader found extra Experiment Meta Data rows that will be ignored: '", 
+      warnUser(paste0("The loader found extra Experiment Meta Data rows that will be ignored: '", 
                      paste(additionalColumns,collapse="' ,'"), 
                      "'. Please remove these rows."))
     }
@@ -396,7 +396,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
         bestMatchingDate <- possibleDatesInExpectedFormat[daysFromToday == minDaysFromToday][1]
         
         # Add to the warnings that we coerced the date to a "Best Match"
-        warningUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",bestMatchingDate, 
+        warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",bestMatchingDate, 
                        "\". Please enter dates as YYYY-MM-DD, or click  <a href=\"http://xkcd.com/1179/\" target=\"_blank\">here</a>  for more information."))
         returnDate <- bestMatchingDate
       } else {
@@ -408,7 +408,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
       }
     } else {
       # If the change in the seperators fixed the issue, then we add this to the warnings and return the coerced date
-      warningUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",
+      warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",
                      inputValueWExpectedSeperator, 
                      "\". Please enter dates as YYYY-MM-DD."))
       returnDate <- inputValueWExpectedSeperator
@@ -442,7 +442,7 @@ validateCharacter <- function(inputValue, errorEnv = NULL) {
     if (is.na(as.character(inputValue))) {
       addError(paste("An entry was expected to be a set of characters but the entry was:", inputValue), errorEnv)
     }
-    warningUser(paste("An entry was expected to be a set of characters but the entry was:", inputValue))
+    warnUser(paste("An entry was expected to be a set of characters but the entry was:", inputValue))
   }
   # Returns the input as a character
   return(as.character(inputValue))

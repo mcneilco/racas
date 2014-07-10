@@ -1684,7 +1684,7 @@ updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicat
 appendToContainerName <- function(containerName, appendText) {
   containers <- getContainerByLabelText(containerName)
   if (length(containers) > 1) {
-    warningUser("More than one container has the given name, will change the first one")
+    warnUser("More than one container has the given name, will change the first one")
   }
   container <- containers[[1]]
   containerLabels <- container$lsLabels

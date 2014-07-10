@@ -86,7 +86,7 @@ readConfigFile <- function(configLocation, ...) {
         try(install.packages(applicationSettings$server.database.r.package, repos = options("repos"), method = method))
         try(require(applicationSettings$server.database.r.package, character.only=TRUE))
       } else {
-        warningUser(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
+        warnUser(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
                       "The query functionality of racas may not work properly\n",
                       "\n\nTo fix this, do one of the following:\n",
                        "restart R and run this line \'options(racasInstallDep = TRUE)\' prior to loading the racas package and racas will attempt to install dependency\n",         
@@ -101,7 +101,7 @@ readConfigFile <- function(configLocation, ...) {
     rDependencies <- strsplit(applicationSettings$server.r.dependencies,",")[[1]]
     missing <- !sapply(rDependencies, function(x) x %in% row.names(installed.packages()))
     if(any(missing)) {
-      warningUser(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
+      warnUser(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
     }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
@@ -118,17 +118,17 @@ validateApplicationSettings <- function(applicationSettings = racas::application
   #Check if set
   currentWD <-  getwd()
   if(is.null(applicationSettings$server.log.path)) {
-    warningUser(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   #Check if exits
   if(!file.exists(applicationSettings$server.log.path)) {
-    warningUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   #Check writeable
   if(file.access(applicationSettings$server.log.path, mode = 2) != 0) {
-    warningUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   return(applicationSettings)

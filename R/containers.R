@@ -61,7 +61,7 @@ ContainerRemap <- setRefClass("ContainerRemap",
                                 fetchExternalOriginContainerData = function(func) {
                                   originContainerDat <- func(originContainerCode)
                                   if(nrow(originContainerDat) == 0) {
-                                    warningUser("Call to external container data function returned 0 rows")
+                                    warnUser("Call to external container data function returned 0 rows")
                                   } else {
                                     originContainerData <<- as.data.table(originContainerDat)
                                     return(originContainerData)
@@ -69,7 +69,7 @@ ContainerRemap <- setRefClass("ContainerRemap",
                                 },
                                 remap = function() {
                                   if(is.null(originContainerData)) {return(NULL)}
-                                  if(originContainerData$platesize == 1536 && direction == "up") {warningUser("Sorry cannot remap to plate size larger than 1536"); return(NULL)}
+                                  if(originContainerData$platesize == 1536 && direction == "up") {warnUser("Sorry cannot remap to plate size larger than 1536"); return(NULL)}
                                   originContainerData[,
                                                       c("quadrant","destinationWellRef") := resizeContainerRowColumns(paste0("R",formatC(wellrow,width=3, format="d", flag="0"),"_C",formatC(wellcol,width=3, format="d", flag="0")),
                                                                                                                      originContainerSize = as.integer(unique(platesize)),
@@ -190,7 +190,7 @@ resizeContainerRowColumns <- function(originRowColumns = c("R001_C001","R001_C00
     destinationRowColumns <- list(destinationQuadrant = destinationQuadrant, destinationRowColumns = as.character(matched))
   }
   if(any(is.na(matched))) {
-    warningUser("TODO MESSAGE")
+    warnUser("TODO MESSAGE")
   }
   return(destinationRowColumns)
 }
