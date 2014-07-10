@@ -36,7 +36,7 @@ api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-experimentCode <- loadDoseResponseTestData()
+experimentCode <- load_dose_response_test_data()
 recordedBy <- "bbolt"
 api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 }

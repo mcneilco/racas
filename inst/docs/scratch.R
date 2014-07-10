@@ -14,10 +14,10 @@ library(xtable)
 file <- "inst/docs/example-simple-fitsettings-ll4.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-fitSettingsJSON <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
+fitSettingsJSON <- simple_to_advanced_fit_settings(simpleBulkDoseResponseFitRequest)
 curveids <- as.character(query("select curveid from api_curve_params")[[1]])
 fitData <- getFitData.curve(curveids)
-system.time(response <- doseResponse(fitSettingsJSON, curveids = curveids))
+system.time(response <- dose_response_session(fitSettingsJSON, curveids = curveids))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -26,12 +26,12 @@ loadSession(session)
 file <- "inst/docs/example-simple-fitsettings-ll4.json"
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-fitSettings <- simpleToAdvancedFitSettings(simpleBulkDoseResponseFitRequest)
+fitSettings <- simple_to_advanced_fit_settings(simpleBulkDoseResponseFitRequest)
 experimentCode <- "EXPT-00000049"
-fitData <- getFitData.experimentCode(experimentCode)
-fitData <- doseResponse.fitData(fitSettings, fitData)
+fitData <- get_fit_data_experiment_code(experimentCode)
+fitData <- dose_response(fitSettings, fitData)
 curveid <- fitData[1]$curveid
-response <- doseResponse(fitSettings, curveids = curveid)
+response <- dose_response_session(fitSettings, curveids = curveid)
 
 
 #Experiment Code to curveCuratorThumbs
@@ -50,7 +50,7 @@ simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleBulkDoseResponseFitRequest <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 fitSettingsJSON <- toJSON(simpleToAdvancedBulkFitRequest(simpleBulkDoseResponseFitRequest))
 fitSettings <- fromJSON(fitSettingsJSON)
-system.time(response <- doseResponse(fitSettings, fitData = fitData))
+system.time(response <- dose_response_session(fitSettings, fitData = fitData))
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -72,7 +72,7 @@ for(i in blah$curveid) {
 #pointData <- rbindlist(fitData$points)[!is.na(flag),]
 pointData <- rbindlist(fitData$points)[flagChanged==TRUE,]
 changed <- merge(rbindlist(fitDataBefore$points),pointData, by = "response_sv_id")[, c("flag.x", "flag.y"), with = FALSE]
-updatePointFlags(pointData, "bbolt")
+update_point_flags(pointData, "bbolt")
 
 #Knockout random sample/unkn
 updateFlags <- rbindlist(fitData$points)
@@ -90,11 +90,11 @@ fitSettingsJSON$updateFlags <- randomRows
 #fitSettingsJSON$updateFlags <- randomRows[ , ifelse(is.na(flag), list(list(list(curveid=curveid,flag=NULL,id=id))), list(list(list(curveid=curveid,flag=flag,id=id)))) ,by = id]$V1
 writeLines(toJSON(fitSettingsJSON), con = "inst/docs/doseResponseRequest.json")
 #writeLines(gsub("\"NA\"","null",toJSON(fitSettingsJSON)), con = "inst/docs/doseResponseRequest.json")
-#response <- doseResponse(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
+#response <- dose_response_session(fitSettingsJSON, sessionID = fromJSON(response)$sessionID)
 
 
 ##Profiling
-system.time(blah <- profr(blah <- getPointStats(fitData[1]$points[[1]]), interval=.0001))
+system.time(blah <- profr(blah <- get_point_stats(fitData[1]$points[[1]]), interval=.0001))
 plot(blah)
 
 #4 Parameter Dose Response from fitData
@@ -102,7 +102,7 @@ data("exampleFitData", package = "racas")
 file <- system.file("docs", "doseResponseRequest.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 fitSettings <- fromJSON(fitSettingsJSON)
-response <- doseResponse(fitSettings, fitData = fitData)
+response <- dose_response_session(fitSettings, fitData = fitData)
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -117,7 +117,7 @@ fitData[, points := list(list(points[[1]][,flag := FALSE])), by = curveid]
 file <- system.file("docs", "doseResponseRequest-kd.json", package = "racas")
 fitSettingsJSON <- readChar(file, file.info(file)$size)
 fitSettings <- fromJSON(fitSettingsJSON)
-response <- doseResponse(fitSettings, fitData = fitData)
+response <- dose_response_session(fitSettings, fitData = fitData)
 parsedResponse <- fromJSON(response)
 session <- parsedResponse$sessionID
 loadSession(session)
@@ -129,7 +129,7 @@ data("pointData")
 
 ##Profiling
 Rprof()
-response <- doseResponse(fitSettingsJSON, curveids = curveids)
+response <- dose_response_session(fitSettingsJSON, curveids = curveids)
 Rprof(NULL)
 prof <- parse_rprof("Rprof.out")
 plot(prof)
@@ -203,17 +203,17 @@ me <- print(xtable(as.data.frame(fitData[1]$reportedParameters[[1]]), display = 
 #                                                                                                                              list(myfailSettings.interpolatedValue),
 #                                                                                                                              list(myfailSettings.inactive),
 #                                                                                                                              list(myfixedParameters))]
-# system.time(fitData <- doseResponseFit(fitData))
+# system.time(fitData <- dose_response_fit(fitData))
 # fitData[grepl("max.fail.interpolate",failResults.interpolatedValues), c("model.sync","fixedParameters") := list(model.sync = FALSE,
 #                                                                                                                 list(myfixedParameters = list(max = 10, kd = NA)))
 #         ]
-# fitData <- doseResponseFit(fitData)
+# fitData <- dose_response_fit(fitData)
 # 
 # fitData[fitConverged == FALSE, c("model.sync","renderingHint", "fixedParameters") := list(model.sync = FALSE,
 #                                                                                           renderingHint = "3 parameter Michaelis Menten",
 #                                                                                           list(myfixedParameters = list(NA, NA, NA)))
 #         ]
-# system.time(fitData <- doseResponseFit(fitData))
+# system.time(fitData <- dose_response_fit(fitData))
 # 
 # 
 # 
@@ -245,14 +245,14 @@ finalData <- merge(finalData, points, by = "curveid")
 
 #KD
 experimentCode <- "EXPT-00000141"
-fitData <- getFitData(experimentCode)
+fitData <- get_fit_data(experimentCode)
 file <- system.file("docs", "example-simple-fitsettings-mm2.json", package = "racas")
 simpleSettingsJSON <- readChar(file, file.info(file)$size)
 simpleSettings <- fromJSON(simpleSettingsJSON)
-fitSettings <- simpleToAdvancedFitSettings(simpleSettings, modelHint = "MM.2")
+fitSettings <- simple_to_advanced_fit_settings(simpleSettings, modelHint = "MM.2")
 #ERROR
-fitData <- doseResponse.fitData(fitSettings, fitData)
-myMessenger$captureOutput("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
+fitData <- dose_response(fitSettings, fitData)
+myMessenger$capture_output("response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = FALSE, sessionID = doseResponse$sessionID)", userError = "Error converting Fit to a Response", continueOnError = FALSE)
 for(i in fitData$curveid) {
   cat(paste0("New Category: ", fitData[curveid==i,]$category,"\n"))
   plot(fitData[curveid==i,]$model[[1]])
@@ -298,4 +298,4 @@ if(nrow(updateFlags) > 0 ) {
 }
 
 #Fit the data
-fitData <- doseResponseFit(fitData)
+fitData <- dose_response_fit(fitData)

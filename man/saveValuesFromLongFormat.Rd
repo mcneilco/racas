@@ -53,8 +53,7 @@ A list of value objects (lists)
 Saves values from a specific format
 }
 \details{
-All numericValues of Inf will be have their stringValue set
-to "infinite" as Inf can't be stored in the database. Code
-in longFormatSave.R
+All numericValues of Inf will be have their stringValue set to
+  "infinite" as Inf can't be stored in the database. Code in longFormatSave.R
 }
 

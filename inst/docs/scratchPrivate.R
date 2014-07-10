@@ -126,10 +126,10 @@ file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "ra
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20
-fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
+fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
 fitSettings$inverseAgonistMode <- FALSE
 
-fitted <- doseResponse(fitSettings = fitSettings, fitData = fitData)[[1]]
+fitted <- dose_response_session(fitSettings = fitSettings, fitData = fitData)[[1]]
 oldRegressionResults <- read.csv("/Users/bbolt/Documents/dns/newCurveFitRegression/old_regression_results.txt", sep = "\t")
 matched <- match(rbindlist(fitted$parameters)$lot, oldRegressionResults$sample)
 dnetCurveClasses <- oldRegressionResults$curveDescription[matched[!is.na(matched)]]
@@ -154,9 +154,9 @@ file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "ra
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20
-fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
+fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
 fitSettings$inverseAgonistMode <- FALSE
-fitted <- doseResponse(fitSettings = fitSettings, fitData = fitData)[[1]]
+fitted <- dose_response_session(fitSettings = fitSettings, fitData = fitData)[[1]]
 
 for(i in fitted$curveid) {
   cat(paste0("Category: ", fitted[curveid==i,]$category,"\n"))
@@ -170,7 +170,7 @@ file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "ra
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 simpleFitSettings$inactiveThreshold <- 20
-fitSettings <- simpleToAdvancedFitSettings(simpleFitSettings)
+fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
 fitSettings$inverseAgonistMode <- FALSE
 
 biphasics <- c(9629, 8836, 8806, 8788, 8778)
@@ -187,7 +187,7 @@ fitData[ , points := {
   list(list(pts))
 }, by = curveid]
 
-fitData <- doseResponse(fitSettings = fitSettings, fitData = fitData)[[1]]
+fitData <- dose_response_session(fitSettings = fitSettings, fitData = fitData)[[1]]
 fitData[fitConverged == TRUE, {
   fittedParams <- fittedParameters[[1]]
   #names(fittedParams) <- paste0("fitted_",names(fittedParams))
