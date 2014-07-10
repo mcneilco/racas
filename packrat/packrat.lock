@@ -1,0 +1,247 @@
+PackratFormat: 1.4
+PackratVersion: 0.3.0.99
+RVersion: 3.0.3
+Repos: CRAN=http://cran.rstudio.com
+
+Package: abind
+Source: CRAN
+Version: 1.4-0
+Hash: 5007322a6d081332d1d54b077a82bdf0
+
+Package: bitops
+Source: CRAN
+Version: 1.0-6
+Hash: cb26464a8321628636b547518994c931
+
+Package: brew
+Source: CRAN
+Version: 1.0-6
+Hash: 9d92cc5ac60123fdb7b0daa3ae83bf99
+
+Package: car
+Source: CRAN
+Version: 2.0-20
+Hash: c1e8d289e0f1a0b0d34bfdb35681f01e
+
+Package: colorspace
+Source: CRAN
+Version: 1.2-4
+Hash: b775bd08a10f968fef582304b7c3ab9c
+
+Package: data.table
+Source: CRAN
+Version: 1.9.2
+Hash: f4b376b88117e86fad182086ed992829
+Requires: reshape2
+
+Package: DBI
+Source: CRAN
+Version: 0.2-7
+Hash: 0db80a2ee3da6648eef2cbf0f4a0aed9
+
+Package: dichromat
+Source: CRAN
+Version: 2.0-0
+Hash: 42be2136555fa4b6167605df56d8cd7c
+
+Package: digest
+Source: CRAN
+Version: 0.6.4
+Hash: e4bf0e79b15a352510aff0de905d31e2
+
+Package: drc
+Source: CRAN
+Version: 2.3-96
+Hash: 25bf9195b0710e323acbcd24a2c52f89
+Requires: car, gtools, magic, plotrix
+
+Package: evaluate
+Source: CRAN
+Version: 0.5.5
+Hash: 20881970e590ee68de97a468694db7b0
+Requires: stringr
+
+Package: formatR
+Source: CRAN
+Version: 0.10
+Hash: 20331f0a1a9c5f31541b34ecd9aed520
+
+Package: gdata
+Source: CRAN
+Version: 2.13.3
+Hash: fa67facdc23542b4056b3a50b5a0fb3c
+Requires: gtools
+
+Package: ggplot2
+Source: CRAN
+Version: 1.0.0
+Hash: c8bff66238347472f08b6a35608539ff
+Requires: digest, gtable, plyr, proto, reshape2, scales
+
+Package: gtable
+Source: CRAN
+Version: 0.1.2
+Hash: 0cf4a2b54c02b35dec7e74a8ebed12a0
+
+Package: gtools
+Source: CRAN
+Version: 3.4.1
+Hash: e4c2510a4ba86b5826f05d9f3639cb13
+
+Package: highr
+Source: CRAN
+Version: 0.3
+Hash: 7c85a9b7d07a75e2d8ca74f9467fee21
+
+Package: jsonlite
+Source: CRAN
+Version: 0.9.8
+Hash: b4261ffab4c95d742074ec0fd3c7223b
+
+Package: knitr
+Source: CRAN
+Version: 1.6
+Hash: 0f6457facba94bccad17a7c67c2f4168
+Requires: digest, evaluate, formatR, highr, markdown, stringr
+
+Package: labeling
+Source: CRAN
+Version: 0.2
+Hash: 25f63495dfb737e67bd75fc1eb58ff2c
+
+Package: logging
+Source: CRAN
+Version: 0.7-103
+Hash: 3a2b23f79a8910ed3ac35e4ad487c976
+
+Package: magic
+Source: CRAN
+Version: 1.5-6
+Hash: 4c2fd46b910c822da85ddba07d257c82
+Requires: abind
+
+Package: markdown
+Source: CRAN
+Version: 0.7
+Hash: abb6bfa9a1fc3763de292018a22b7d98
+Requires: mime
+
+Package: mime
+Source: CRAN
+Version: 0.1.1
+Hash: 28ee6ae37bab73846b0a6cc44e797069
+
+Package: munsell
+Source: CRAN
+Version: 0.4.2
+Hash: fa8af6d040041439b249351e9d16ae9a
+Requires: colorspace
+
+Package: packrat
+Source: github
+Version: 0.3.0.99
+Hash: b23b9bf8bef8b8a1dd08acf2e18c5e2e29c8979e
+GithubRepo: packrat
+GithubUsername: rstudio
+GithubRef: master
+GithubSha1: b23b9bf8bef8b8a1dd08acf2e18c5e2e29c8979e
+
+Package: plotrix
+Source: CRAN
+Version: 3.5-7
+Hash: f5060fa12fce7097879ac04c93aba3b6
+
+Package: plyr
+Source: CRAN
+Version: 1.8.1
+Hash: be21bad411e628f810a92212e17b5be7
+Requires: Rcpp
+
+Package: proto
+Source: CRAN
+Version: 0.3-10
+Hash: 668a9e87cedbdc5f56c396edf1bd2648
+
+Package: RColorBrewer
+Source: CRAN
+Version: 1.0-5
+Hash: 6a849b729bec970204ca88b96906adbc
+
+Package: Rcpp
+Source: CRAN
+Version: 0.11.2
+Hash: ef2b1a5e45d1461bd720e4ebbe48e601
+
+Package: RCurl
+Source: CRAN
+Version: 1.95-4.1
+Hash: 42aee7966014fa536adf90df9d5c00cc
+Requires: bitops
+
+Package: reshape
+Source: CRAN
+Version: 0.8.5
+Hash: 3a8bcdf002df52627d35dfab189711f4
+Requires: plyr
+
+Package: reshape2
+Source: CRAN
+Version: 1.4
+Hash: b210925e978fd52ad5eb0822a353e7ce
+Requires: plyr, Rcpp, stringr
+
+Package: rJava
+Source: CRAN
+Version: 0.9-6
+Hash: 5ea21341e7c1d6a40cdde6ef470fec92
+
+Package: RJDBC
+Source: CRAN
+Version: 0.2-4
+Hash: a4c62db840595f41f8e10ab22d609b4b
+Requires: DBI, rJava
+
+Package: rjson
+Source: CRAN
+Version: 0.2.14
+Hash: 6dfb12a8996f481bf8000d885b76db2e
+
+Package: RMySQL
+Source: CRAN
+Version: 0.9-3
+Hash: ec0eafc6e1f392453618e84f3932b125
+Requires: DBI
+
+Package: ROracle
+Source: CRAN
+Version: 1.1-8
+Hash: b96362cc62cbf310fb26fdc59d456dbc
+Requires: DBI
+
+Package: RPostgreSQL
+Source: CRAN
+Version: 0.4
+Hash: 277c23e86f0a04278aed7de72677b3b9
+Requires: DBI
+
+Package: scales
+Source: CRAN
+Version: 0.2.4
+Hash: b8b1af97bd07818605223060386b00dd
+Requires: dichromat, labeling, munsell, plyr, RColorBrewer
+
+Package: stringr
+Source: CRAN
+Version: 0.6.2
+Hash: cdde0cfa0f52cffeaca23a11a3899779
+
+Package: XLConnect
+Source: CRAN
+Version: 0.2-7
+Hash: c29f7c42270a5ace7c53591ed760f8b7
+Requires: rJava
+
+Package: xtable
+Source: CRAN
+Version: 1.7-3
+Hash: af110253b140f3f7199c0cac37536a2f
