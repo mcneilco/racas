@@ -66,7 +66,7 @@ PrimaryCriteria <- setRefClass("PrimaryCriteria",
                                  fetchExternalCampaignData = function(func) {
                                    campaignData <- func("campaign_id")
                                    if(nrow(campaignData) == 0) {
-                                     warning("Call to external campaign data function returned 0 rows")
+                                     warnUser("Call to external campaign data function returned 0 rows")
                                    } else {
                                      return(campaignData)
                                    }

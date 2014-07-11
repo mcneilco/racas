@@ -193,7 +193,7 @@ apply_limits <- function(fitData, iterations = 20) {
                                            refit
                                },
 {
-  warning(paste0("Refit rule not implemented for ", modelHint))
+  warnUser(paste0("Refit rule not implemented for ", modelHint))
   FALSE
 }),
 by = curveid]$V1
@@ -351,7 +351,7 @@ simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, 
   modifiedSettings <- switch(modelHint,
                              "LL.4" = updateFitSettings.LL4(modifiedSettings,simpleSettings),
                              "MM.2" = updateFitSettings.MM2(modifiedSettings,simpleSettings),
-                             warning(paste0("Simple to Advanced fit settings not implemented for modelHint: ",modelHint))
+                             warnUser(paste0("Simple to Advanced fit settings not implemented for modelHint: ",modelHint))
   )
   if(!is.null(updateFlags)) {
     modifiedSettings$updateFlags <- as.data.table(updateFlags)
@@ -606,7 +606,7 @@ get_reported_parameters <- function(modelHint, results, inactive, fitConverged, 
            reportedValues <- list(max = max, kd = kd)
            return(reportedValues)
          },
-{warning("Not implemented for ", modelHint)
+{warnUser(paste0("Not implemented for ", modelHint))
  return(list())
 }
   )
@@ -833,7 +833,7 @@ categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, 
                        }
                        category                       
                      },{
-                       warning(paste0("Limit rules not implemented for ", modelHint))
+                       warnUser(paste0("Limit rules not implemented for ", modelHint))
                        FALSE
                      })
   return(category)
