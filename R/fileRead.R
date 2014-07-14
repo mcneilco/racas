@@ -30,7 +30,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
-      output <- read.csv(filePath, header = header, stringsAsFactors=FALSE)
+      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE)
     }, error = function(e) {
       stopUser("Cannot read input csv file")
     })
