@@ -6,16 +6,16 @@ Date: 2013-03-26
 Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
-License: What license is it under?
+License: GPL
 Depends:
       R (>= 3.0.2)
 Imports:
     drc (== 2.3-96),
     data.table (== 1.9.2),
-    rjson (== 0.2.13),
+    rjson,
     RCurl (== 1.95-4.1),
     plyr (== 1.8.1),
-    plotrix (== 3.5-5),
+    plotrix,
     brew (== 1.0-6),
     logging (== 0.7-103),
     evaluate (== 0.5.5),
@@ -23,9 +23,9 @@ Imports:
     gdata (== 2.13.3),
     reshape (== 0.8.5),
     xtable (== 1.7-3),
-    knitr (== 1.5),
+    knitr,
     reshape2 (== 1.4),
-    ggplot2 (== 0.9.3.1),
+    ggplot2,
     jsonlite (== 0.9.8),
     grid,
     utils

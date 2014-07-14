@@ -70,3 +70,28 @@ stopUser <- function(message) {
   class(e) <- c(class(e), "userStop")
   stop(e)
 }
+
+
+#'Warning tracking
+#'
+#'Declares a warning to be of type "userWarning", to distinguish between warnings we programmed
+#'into the system (e.g. "Found extra meta data") and errors R gives (e.g. "argument has length >1")
+#'
+#'@export
+#'@param message The warning message that the user should see
+#'@return Adds the class "userWarning" to the warning object
+#'
+#'All helpful errors should be thrown using \code{warnUser}. Any warning 
+#'thrown using \code{warning} will be treated as an internal warning by the simple 
+#'experiment loader.
+#'
+#'When using this function, it is important to give it a single string as a message. 
+#'This means using paste. While \code{warning("text ", variable, " text")} is okay syntax, 
+#'you will get an error if you try \code{warnUser("text ", variable, " text")}. Use paste0 
+#'instead: \code{warnUser(paste0("text ", variable, " text"))} (note that this syntax is also 
+#'perfectly acceptable inside \code{warning})
+warnUser <- function(message) {
+  w <- simpleWarning(message)
+  class(w) <- c(class(w), "userWarning")
+  warning(w)
+}
