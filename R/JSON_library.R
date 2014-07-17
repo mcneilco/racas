@@ -546,7 +546,7 @@ createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="use
 #'@return list, a value object
 #'@export
 createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL, fileValue=NULL,
-                             inlineFileValue = NULL, urlValue=NULL, publicData=TRUE, ignored=FALSE,
+                             urlValue=NULL, publicData=TRUE, ignored=FALSE,
                              dateValue=NULL, clobValue=NULL, blobValue=NULL, valueOperator=NULL, operatorType=NULL, numericValue=NULL,
                              sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
@@ -559,7 +559,6 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
     lsKind=lsKind,
     stringValue=stringValue,
     fileValue=fileValue,
-    inlineFileValue=inlineFileValue,
     urlValue=urlValue,
     dateValue=dateValue,
     clobValue=clobValue,
