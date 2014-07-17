@@ -411,7 +411,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
       warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",
                      inputValueWExpectedSeperator, 
                      "\". Please enter dates as YYYY-MM-DD."))
-      returnDate <- inputValueWExpectedSeperator
+      returnDate <- coerceToDate(expectedFormat, inputValueWExpectedSeperator)
     }
   } else {
     # If the date was coercible to the given format with no changes, then good, just return what they gave us as a date
