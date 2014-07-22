@@ -3,11 +3,11 @@ Database Summary Statistics
 
 ## Fast Facts
 ```{r fastFacts, results='asis', echo=FALSE}
-cat("* Number of protocols: ", numExpProtUsers[2], "\n")
-cat("* Number of experiments: ", numExpProtUsers[1], "\n")
-cat("* Number of users who have uploaded experiments: ", numExpProtUsers[3], "\n")
-cat("* Number of samples measured: ", numExpProtUsers[4], "\n")
-cat("* Number of calculated results: ", numExpProtUsers[5], "\n")
+cat("* Number of protocols: ", prettyNum(numExpProtUsers[2], big.mark = ","), "\n")
+cat("* Number of experiments: ", prettyNum(numExpProtUsers[1], big.mark = ","), "\n")
+cat("* Number of users who have uploaded experiments: ", prettyNum(numExpProtUsers[3], big.mark = ","), "\n")
+cat("* Number of samples measured: ", prettyNum(numExpProtUsers[4], big.mark = ","), "\n")
+cat("* Number of calculated results: ", prettyNum(numExpProtUsers[5], big.mark = ","), "\n")
 ```
 
 ```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
