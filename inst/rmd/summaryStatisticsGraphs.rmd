@@ -1,14 +1,7 @@
-Database Summary Statistics
+Database Summary Graphs
 ========================================================
 
-## Fast Facts
-```{r fastFacts, results='asis', echo=FALSE}
-cat("* Number of protocols: ", numExpProtUsers[2], "\n")
-cat("* Number of experiments: ", numExpProtUsers[1], "\n")
-cat("* Number of users who have uploaded experiments: ", numExpProtUsers[3], "\n")
-```
-
-## User Statistics
+## Users
 
 ```{r figDim, echo = FALSE}
 figWidth = min(10, max(numExpProtUsers[3]+2.4, 5))
@@ -27,7 +20,7 @@ if (is.null(history)) {
                                      labels = c(paste("Newer than \n", 
                                      numWeeks, "Weeks", sep = " "),
                                      paste("Older than \n", numWeeks, "Weeks", sep = " ")))
-  plot <- plot + labs(title = "Experiment History", 
+  plot <- plot + labs(title = "Experiment Age", 
                         x = NULL, y = "Number of Expermients")
   plot <- plot + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
@@ -65,7 +58,41 @@ if (is.null(progress)) {
 }
 ```
 
-## Database History
+## Procedures
+
+```{r protocols, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+if (is.null(protocols) && is.null(experiments)) {
+  cat("No statistics to display")
+} else if (is.null(protocols)) {
+  cat("")
+} else {
+  plot3 <- ggplot(protocols, aes(recorded_date, cumulativeSum)) 
+  plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
+  plot3 <- plot3 + labs(title = "Protocol Creation", x = NULL, 
+                        y = "Number of Protocols\nRecorded to Date")
+  plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.3)), 
+                         plot.title = element_text(size = rel(2)),
+                         axis.text = element_text(size = rel(1.1)))
+  plot3
+}
+```
+
+```{r experiments, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+if (is.null(experiments)) {
+  cat("")
+} else {
+  plot3 <- ggplot(experiments, aes(recorded_date, cumulativeSum)) 
+  plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
+  plot3 <- plot3 + labs(title = "Experiment Creation", x = NULL, 
+                        y = "Number of Experiments\nRecorded to Date")
+  plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.3)), 
+                         plot.title = element_text(size = rel(2)),
+                         axis.text = element_text(size = rel(1.1)))
+  plot3
+}
+```
+
+## Data
 
 ```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
 if (is.null(analysis) && is.null(subjects) &&

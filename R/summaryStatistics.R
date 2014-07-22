@@ -22,6 +22,8 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   numExpProtUsers <- usageStatistics()
   history <- experimentHistoryChart(4)
   progress <- detailedExperimentChart()
+  protocols <- protocolsOverTime()
+  experiments <- experimentsOverTime()
   analysis <- analysisOverTime()
   subjects <- subjectsOverTime()
   values <- dataOverTime()
@@ -37,11 +39,17 @@ generateSummaryStatistics <- function(numWeeks = 4) {
     progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
   }
 
-  rmd <- system.file("rmd", "summaryStatistics.rmd", package="racas")
-  htmlSummary <- knit2html_bug_fix(input = rmd, 
+  rmdHome <- system.file("rmd", "summaryStatisticsHome.rmd", package="racas")
+  htmlSummary <- knit2html_bug_fix(input = rmdHome, 
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+  
+  rmdGraphs <- system.file("rmd", "summaryStatisticsGraphs.rmd", package="racas")
+  htmlGraphs <- knit2html_bug_fix(input = rmdGraphs, 
+                                   options = c("base64_images", "mathjax"),
+                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
+                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
   
   # Check that the folder exists
   summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
@@ -51,15 +59,18 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   
   csvPath <- file.path(summaryStatisticsFolder, 'summaryStatistics.csv')
   htmlPath <- file.path(summaryStatisticsFolder, 'summaryStatistics.html')
+  htmlGraphPath <- file.path(summaryStatisticsFolder, 'summaryStatisticsGraphs.html')
   
   # Get the data and write to CSV
   summaryTable <- query("select * from api_system_statistics")
   write.csv(summaryTable, csvPath, row.names = FALSE)
   
   writeLines(htmlSummary, con = htmlPath)
+  writeLines(htmlGraphs, con = htmlGraphPath)
 
   return(list(csvFilePath = csvPath,
-              htmlFilePath = htmlPath))
+              htmlFilePath = htmlPath,
+              htmlGraphs = htmlGraphPath))
 }
 
 
@@ -71,7 +82,7 @@ generateSummaryStatistics <- function(numWeeks = 4) {
 # 
 # Input: none
 # Output: Returns a vector containing the statistics
-# Limitations: Includes the users "nouser" and NA, which may or may not be desired
+# Limitations: Includes the user NA, which may or may not be desired
 #             
 # Possible error cases: api_experiment or api_protocol does not exist
 #                      
@@ -81,8 +92,10 @@ usageStatistics <- function() {
   numProtocols <- query("select count(distinct protocol_id) from api_protocol")[1,1]
   numUsers <- query("select count(distinct recorded_by) from api_experiment 
                     where recorded_by != 'nouser'")[1,1]
+  numSubjects <- query("select count(distinct subject_code_name) from api_subject_results")[1,1]
+  numAnalysisGroups <- query("select count(distinct ag_id) from api_analysis_group_results")[1,1]
   
-  return(c(numExperiments, numProtocols, numUsers))
+  return(c(numExperiments, numProtocols, numUsers, numSubjects, numAnalysisGroups))
 }
 
 
@@ -166,6 +179,57 @@ detailedExperimentChart <- function() {
   return(userFrame)
 }
 
+# protocolsOverTime
+# Returns data to plot the total number of protocols over time
+# 
+# Input: none
+# Output: The data table needed to plot the cumulative protocols
+#         over time
+#         NULL if there is no data
+
+protocolsOverTime <- function() {
+  groupFrame <- query("select distinct(protocol_id), recorded_date 
+                      from api_protocol")
+  if(NROW(groupFrame) == 0) 
+    return(NULL)
+  
+  names(groupFrame) <- tolower(names(groupFrame))
+  groupAndDate <- data.table(groupFrame)
+  
+  setkey(groupAndDate, recorded_date)
+  
+  # We get a two-column table, with the date and the total number of groups
+  dateTable <- groupAndDate[, NROW(protocol_id), by = recorded_date]
+  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  
+  return(dateTable)
+}
+
+# experimentsOverTime
+# Returns data to plot the total number of experiments over time
+# 
+# Input: none
+# Output: The data table needed to plot the cumulative experiments
+#         over time
+#         NULL if there is no data
+
+experimentsOverTime <- function() {
+  groupFrame <- query("select distinct(id), recorded_date 
+                      from api_experiment")
+  if(NROW(groupFrame) == 0) 
+    return(NULL)
+  
+  names(groupFrame) <- tolower(names(groupFrame))
+  groupAndDate <- data.table(groupFrame)
+  
+  setkey(groupAndDate, recorded_date)
+  
+  # We get a two-column table, with the date and the total number of groups
+  dateTable <- groupAndDate[, NROW(id), by = recorded_date]
+  dateTable <- within(dateTable, cumulativeSum <- cumsum(V1))
+  
+  return(dateTable)
+}
 
 # analysisOverTime
 # Returns data to plot the total number of analysis groups over time
