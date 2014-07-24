@@ -998,14 +998,14 @@ saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServe
   return(response)
 }
 
-saveProtocolLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   response <- getURL(
     paste(lsServerURL, "protocollabels/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabel))
+    postfields=toJSON(protocolLabel))
   if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container label. Instead, it got this response:", response))
+    stopUser (paste("The loader was unable to save your protocol label. Instead, it got this response:", response))
   }
   response <- fromJSON(response)
   return(response)
