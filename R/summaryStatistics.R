@@ -20,7 +20,7 @@
 generateSummaryStatistics <- function(numWeeks = 4) {
   # Get data frames to make plots
   numExpProtUsers <- usageStatistics()
-  history <- experimentHistoryChart(4)
+  history <- experimentHistoryChart(numWeeks)
   progress <- detailedExperimentChart()
   protocols <- protocolsOverTime()
   experiments <- experimentsOverTime()
@@ -34,9 +34,11 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   # the number of experiments they have loaded
   if (!is.null(history)) {
     history$recorded_by <- factor(history$recorded_by, levels = unique(numExperiments$recorded_by))
+    history$isOld <- factor(history$isOld, levels = c(FALSE, TRUE))
   }
   if (!is.null(progress)) {
     progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
+    progress$status <- factor(progress$status, levels = c("Finalized", "Unfinalized"))
   }
 
   rmdHome <- system.file("rmd", "summaryStatisticsHome.rmd", package="racas")
@@ -62,8 +64,8 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   htmlGraphPath <- file.path(summaryStatisticsFolder, 'summaryStatisticsGraphs.html')
   
   # Get the data and write to CSV
-  summaryTable <- query("select * from api_system_statistics")
-  write.csv(summaryTable, csvPath, row.names = FALSE)
+  #summaryTable <- query("select * from api_system_statistics")
+  #write.csv(summaryTable, csvPath, row.names = FALSE)
   
   writeLines(htmlSummary, con = htmlPath)
   writeLines(htmlGraphs, con = htmlGraphPath)

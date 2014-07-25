@@ -10,7 +10,7 @@ cat("* Number of samples measured: ", prettyNum(numExpProtUsers[4], big.mark = "
 cat("* Number of calculated results: ", prettyNum(numExpProtUsers[5], big.mark = ","), "\n")
 ```
 
-```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE, dpi=300}
 if (is.null(analysis) && is.null(subjects) &&
       is.null(values)) {
   cat("No statistics to display")
