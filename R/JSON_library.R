@@ -585,7 +585,8 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
 
 
 createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", shortDescription="protocol short description", lsTransaction=NULL, 
-                           recordedBy="userName", protocolLabels=NULL, protocolStates=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000 ){
+                           recordedBy="userName", protocolLabels=NULL, protocolStates=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
+                           modifiedBy=NULL, modifiedDate=NULL){
   if (is.null(codeName) ) {
     codeName <- getAutoLabels(thingTypeAndKind="document_protocol", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
   }
@@ -597,6 +598,8 @@ createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", sh
     lsTransaction=lsTransaction,
     recordedBy=recordedBy,
     recordedDate=recordedDate,
+    modifiedBy=modifiedBy,
+    modifiedDate=modifiedDate,
     lsLabels=protocolLabels,
     lsStates=protocolStates
   )
