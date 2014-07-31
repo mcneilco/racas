@@ -289,7 +289,7 @@ getLL4ParametersFromWideFormat <- function(wideFormat) {
                "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
                "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50")
   newName = c("ag_code_name","tested_lot", "curveid", "renderingHint", "min", "fitted_min",
-              "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslop",
+              "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslope",
               "ec50", "fitted_ec50", "operator")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   return(extractParametersFromWideFormat(valuesToGet, wideFormat))
