@@ -45,13 +45,13 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   htmlSummary <- knit2html_bug_fix(input = rmdHome, 
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
-                                  stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+                                  stylesheet = system.file("rmd", "summaryStats.css", package="racas"))
   
   rmdGraphs <- system.file("rmd", "summaryStatisticsGraphs.rmd", package="racas")
   htmlGraphs <- knit2html_bug_fix(input = rmdGraphs, 
                                    options = c("base64_images", "mathjax"),
                                    template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
-                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+                                   stylesheet = system.file("rmd", "summaryStats.css", package="racas"))
   
   # Check that the folder exists
   summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')
@@ -64,8 +64,8 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   htmlGraphPath <- file.path(summaryStatisticsFolder, 'summaryStatisticsGraphs.html')
   
   # Get the data and write to CSV
-  #summaryTable <- query("select * from api_system_statistics")
-  #write.csv(summaryTable, csvPath, row.names = FALSE)
+  summaryTable <- query("select * from api_system_statistics")
+  write.csv(summaryTable, csvPath, row.names = FALSE)
   
   writeLines(htmlSummary, con = htmlPath)
   writeLines(htmlGraphs, con = htmlGraphPath)
