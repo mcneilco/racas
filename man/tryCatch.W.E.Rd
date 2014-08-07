@@ -6,7 +6,7 @@
 tryCatch.W.E(expr)
 }
 \arguments{
-  \item{expr}{An expression which will have errors caught}
+\item{expr}{An expression which will have errors caught}
 }
 \value{
 A list with value (either result or error) and warningList

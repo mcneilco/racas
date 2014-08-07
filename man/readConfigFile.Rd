@@ -3,10 +3,10 @@
 \alias{readConfigFile}
 \title{Read a configuration file to racas::applicationSettings}
 \usage{
-readConfigFile(configLocation)
+readConfigFile(configLocation, ...)
 }
 \arguments{
-  \item{configLocation}{The location of the file to read}
+\item{configLocation}{The location of the file to read}
 }
 \description{
 Read a configuration file to racas::applicationSettings

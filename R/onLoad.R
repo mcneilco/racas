@@ -1,7 +1,9 @@
 .onLoad <- function(libname, pkgname) {
+  library("methods") 
   appConfName <- paste0(applicationSettings$appName,"_CONFIG")
   appHomeName <- paste0(applicationSettings$appName,"_HOME")
-  relativeConf <- file.path(normalizePath(file.path(libname,"..","..")),"acas","conf","compiled","conf.properties")
+  relativeToAppHome <- file.path(normalizePath(file.path(libname,"..")))
+  relativeConf <- file.path(normalizePath(relativeToAppHome),"conf","compiled","conf.properties")
   appConf <- Sys.getenv(appConfName)
   appHome <- Sys.getenv(appHomeName)
   if(appHome == ""  && appConf == "" && !file.exists(relativeConf)) {
@@ -20,17 +22,21 @@
                    "3) relative path to the config file ",relativeConf),call.=FALSE)
   } else {
     tryCatch({
+      #If app home environment variable is set
       if(appHome!="") {
         configFileLocation <- file.path(appHome,"conf/compiled/conf.properties")
       } else {
+        #if app configuration location
         if(appConf!="") {
           configFileLocation <- file.path(appConf)
         } else {
+          #if relative path then set home accoridingly
+          appHome <- relativeToAppHome
           configFileLocation <- relativeConf
         }
       }
       packageStartupMessage(paste("Using configuration file:",configFileLocation ))
-      output <- readConfigFile(configFileLocation)
+      output <- readConfigFile(configFileLocation, appHome = appHome)
       
     },error = function(ex) {
       #error <- capture.output(print(ex))
@@ -40,4 +46,7 @@
                      "\t",ex),call.=FALSE)
     })
   }
+  racasMessenger <- Messenger$new(envir = environment())
+  assignInNamespace("racasMessenger",racasMessenger, ns="racas")
+  
 }

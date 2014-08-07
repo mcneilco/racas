@@ -6,12 +6,11 @@
 flattenState(lsState, includeFromState)
 }
 \arguments{
-  \item{lsState}{an lsState that has lsValues}
+\item{lsState}{an lsState that has lsValues}
 
-  \item{includeFromState}{a character vector of column
-  names to include from the state
+\item{includeFromState}{a character vector of column names to include from the state
 
-  Will return an empty data frame if there are no lsValues}
+Will return an empty data frame if there are no lsValues}
 }
 \description{
 Gets values into a data.frame

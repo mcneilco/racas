@@ -1,0 +1,60 @@
+Curve Fit Summary
+========================================================
+
+***Model Equation***
+```{r modelEquation, results='asis', echo=FALSE, cache=FALSE}
+  modelEquation <- switch(fitData[1]$modelHint,
+                LL.4 = '$$f(x) = c + \\frac{max-min}{1+\\exp(slope(\\log(conc)-\\log(ec50)))}$$'
+              )
+  cat(modelEquation)
+```
+
+***Fit Summary***
+* Attempted Fits: `r nrow(fitData)`
+* Successful Fits: `r nrow(fitData[is.na(flag_algorithm),])`
+* Failed Fits: `r nrow(fitData[is.na(flag_algorithm)==FALSE,])`
+
+***Categories***
+
+```{r categories, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+ggplot(fitData, aes(x=category, fill=is.na(flag_algorithm))) + geom_bar()  + 
+  scale_fill_manual(values=c("#33CC00", "#CC0000")) +  
+  labs(fill="Successful Fit") + 
+  theme(axis.text=element_text(size=16, face="bold", angle = 20, hjust = 1),
+        axis.title = element_text(size = 20, face = "bold"),
+        legend.title=element_text(size=16),
+        legend.text=element_text(size=16)
+        )
+```
+
+***Goodness of Fit***
+
+```{r goodnessOfFit, echo=FALSE, fig.width=10, fig.height=10, cache=FALSE}
+gf <- rbindlist(fitData$goodnessOfFit.model)
+gf <- gf[ , Category := fitData$category]
+gf <- as.data.frame(gf)
+gf <- reshape2::melt(gf, id.vars = "Category")
+gf <- split(gf,f = gf$variable)
+g <- lapply(1:length(gf), function(x) {
+  variable <- names(gf[x])
+  data <- gf[[x]]
+  g <- ggplot(data=data, aes(x = value, y = 20, fill = ..x..))
+  g <- g + geom_dotplot(binwidth =   diff(range(data["value"]))/30,
+                      stackgroups = TRUE, 
+                     method = "histodot")
+  g <- g + guides(fill=guide_legend(title=variable))
+  g <- g + theme(axis.title.x = element_blank(),
+                 axis.title.y = element_blank(),
+                 axis.line.y= element_blank(),
+                 plot.background=element_rect(fill="transparent"),
+                 axis.ticks.y=element_blank(),
+                 axis.text=element_text(size=16, face="bold"),
+                 legend.title=element_text(size=16),
+                 legend.text=element_text(size=16)
+                 )
+  g + scale_fill_gradient(low = ifelse(variable!="rSquared","green","red"), high = ifelse(variable!="rSquared","red","green"))
+})
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow=length(g), ncol=1,)))
+plots <- lapply(1:length(g), function(x) print(g[[x]], vp = viewport(layout.pos.row = x, layout.pos.col = 1)))
+```

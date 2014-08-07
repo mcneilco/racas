@@ -7,17 +7,15 @@ getEntity(x, type = c("protocolName", "experimentName", "protocolCodeName",
   "experimentCodeName"))
 }
 \arguments{
-  \item{x}{entity names or code names of the same type}
+\item{x}{entity names or code names of the same type}
 
-  \item{type}{entity type of x (protocolName,
-  protocolCodeName, experimentName or experimentCodeName)}
+\item{type}{entity type of x (protocolName, protocolCodeName, experimentName or experimentCodeName)}
 }
 \value{
 a list of the entities returned from the server
 }
 \description{
-This function retrieves a list of protocols or experiments
-by code name or label
+This function retrieves a list of protocols or experiments by code name or label
 }
 \examples{
 getEntity("ADME_Human Liver Microsome Stability", "protocolName")

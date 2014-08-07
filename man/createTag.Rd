@@ -6,12 +6,11 @@
 createTag(tagText, id = NULL, version = NULL)
 }
 \arguments{
-  \item{tagText}{the text of the tag}
+\item{tagText}{the text of the tag}
 
-  \item{id}{used to link to old tags}
+\item{id}{used to link to old tags}
 
-  \item{version}{the version of the tag (only used with an
-  id)}
+\item{version}{the version of the tag (only used with an id)}
 }
 \description{
 Creates a tag

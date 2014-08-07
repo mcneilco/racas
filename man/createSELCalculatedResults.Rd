@@ -9,28 +9,19 @@ createSELCalculatedResults(calculatedResults,
   ls_kinds = NULL, unit_kinds = NULL)
 }
 \arguments{
-  \item{calculatedResultDataFrame}{a data.frame (or
-  data.table) of calculated results}
+\item{calculatedResultDataFrame}{a data.frame (or data.table) of calculated results}
 
-  \item{dataTypes}{optional character with length equal to
-  ncol(calculatedResultDataFrame) with the data types for
-  each column}
+\item{dataTypes}{optional character with length equal to ncol(calculatedResultDataFrame) with the data types for each column}
 
-  \item{ls_kinds}{optional character with length equal to
-  ncol(calculatedResultDataFrame) with the ls_kinds for
-  each column}
+\item{ls_kinds}{optional character with length equal to ncol(calculatedResultDataFrame) with the ls_kinds for each column}
 
-  \item{unit_kinds}{optional character with length equal to
-  ncol(calculatedResultDataFrame) with the unit_kinds for
-  each column}
+\item{unit_kinds}{optional character with length equal to ncol(calculatedResultDataFrame) with the unit_kinds for each column}
 }
 \value{
-data.frame representing the most common inputs to the SEL
-calculated results section
+data.frame representing the most common inputs to the SEL calculated results section
 }
 \description{
-The return structure represents the standard inputs of the
-"Calculated Results" section of SEL
+The return structure represents the standard inputs of the "Calculated Results" section of SEL
 }
 \examples{
 #Basic Example

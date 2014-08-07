@@ -1,0 +1,12 @@
+{
+  "max":{
+    "limitType":"none",
+    "value":101
+  },
+  "kd":{
+    "limitType":"none",
+    "value":0
+  },
+  "inactiveThreshold":2,
+  "inverseAgonistMode":true
+}

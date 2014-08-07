@@ -7,16 +7,15 @@ saveAnalysisResults(experiment, hasError, htmlSummary, lsTransaction = NULL,
   testMode = FALSE)
 }
 \arguments{
-  \item{experiment}{An experiment list of lists}
+\item{experiment}{An experiment list of lists}
 
-  \item{hasError}{A boolean in the analysis had an error}
+\item{hasError}{A boolean in the analysis had an error}
 
-  \item{htmlSummary}{A string that is html}
+\item{htmlSummary}{A string that is html}
 
-  \item{lsTransaction}{An integer that is the transaction
-  id}
+\item{lsTransaction}{An integer that is the transaction id}
 
-  \item{testMode}{a boolean used for testing}
+\item{testMode}{a boolean used for testing}
 }
 \description{
 Saves a summary to the given experiment

@@ -1,7 +1,13 @@
 context("query")
 
-myTestConn <- try(getDatabaseConnection(), silent = TRUE)
-runTests <- class(myTestConn) != "try-error"
+testQuery <- ifelse(is.null(getOption("test_query")), FALSE, getOption("test_query"))
+if(testQuery) {
+  myTestConn <- try(getDatabaseConnection(), silent = TRUE)
+  runTests <- class(myTestConn) != "try-error"
+} else {
+  runTests <- FALSE
+}
+
 if(runTests) {
   dbDisconnect(myTestConn)
     
@@ -42,18 +48,13 @@ if(runTests) {
     conn <- getDatabaseConnection()
     dbDisconnect(conn)
     assign("conn", conn, .GlobalEnv)
-    expect_that(dbGetInfo(get("conn",envir = .GlobalEnv)),throws_error("invalid connection"))
+    expect_that(dbGetInfo(get("conn",envir = .GlobalEnv)),throws_error())
     rs <- query(qu, globalConnect = TRUE)
     expect_that(class(try(dbGetInfo(get("conn",envir = .GlobalEnv)))),equals("list"))
     dbDisconnect(get("conn", envir = .GlobalEnv))
     rm(conn, envir = .GlobalEnv)
   })
-  
 
-
-  
-  
-  
 } else {
   cat("Not Testing Query functions because databse connection cannot be established with call to 'getDatabaseConnection()'")
 }

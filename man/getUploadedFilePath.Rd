@@ -6,7 +6,7 @@
 getUploadedFilePath(inputString)
 }
 \arguments{
-  \item{inputString}{File Name}
+\item{inputString}{File Name}
 }
 \value{
 File path

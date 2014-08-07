@@ -7,12 +7,11 @@ saveAcasEntities(entities, acasCategory,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
-  \item{entities}{a list of entities}
+\item{entities}{a list of entities}
 
-  \item{acasCategory}{e.g. "experiments", "subjectlabels",
-  etc.}
+\item{acasCategory}{e.g. "experiments", "subjectlabels", etc.}
 
-  \item{lsServerURL}{url of ACAS server}
+\item{lsServerURL}{url of ACAS server}
 }
 \value{
 a list, sometimes empty

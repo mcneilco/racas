@@ -7,9 +7,9 @@ api_createProtocol(protocolName, shortDescription, recordedBy,
   stopOnAnyExist = TRUE)
 }
 \arguments{
-  \item{protocolName}{}
+\item{protocolName}{}
 
-  \item{shortDescription}{}
+\item{shortDescription}{}
 }
 \value{
 recordedBy

@@ -8,8 +8,7 @@ createSELRawResults(rawResults, curveIDColumn = "curve id", ls_kinds = NULL,
   unit_kinds = NULL)
 }
 \description{
-The return structure represents the standard inputs of the
-"Raw Results" section of SEL
+The return structure represents the standard inputs of the "Raw Results" section of SEL
 }
 \examples{
 Not implemented yet

@@ -6,10 +6,9 @@
 saveValueKinds(valueKinds, valueTypes, errorEnv = NULL)
 }
 \arguments{
-  \item{valueKinds}{character vector of new valueKinds}
+\item{valueKinds}{character vector of new valueKinds}
 
-  \item{valueTypes}{character vector of valueTypes (e.g.
-  c("stringValue", "numericValue"))}
+\item{valueTypes}{character vector of valueTypes (e.g. c("stringValue", "numericValue"))}
 }
 \description{
 Saves value kinds with matching value types

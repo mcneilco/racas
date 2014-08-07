@@ -6,10 +6,9 @@
 flattenValue(lsValue)
 }
 \arguments{
-  \item{lsValue}{an lsValue
+\item{lsValue}{an lsValue
 
-  Just turns a list into a data frame, not meant to be
-  exported}
+Just turns a list into a data frame, not meant to be exported}
 }
 \description{
 Flattens an lsValue

@@ -33,6 +33,7 @@
 #' # You must assign it to the package namespace in order for it to be used by the package
 #' assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 applicationSettings <- data.frame(
+  appHome = "",
   appName = "ACAS",               #Application Display Name
   db_driver = "PostgreSQL()",     #Must be supplied in your own package load (MySQL(), Oracle() supported)
   db_user = "username",           #ACAS Schema db user
@@ -47,14 +48,14 @@ applicationSettings <- data.frame(
 #' @param configLocation The location of the file to read
 #' @keywords applicationSettings, config, configuration, configurationNode.js
 #' @export
-readConfigFile <- function(configLocation) {
+readConfigFile <- function(configLocation, ...) {
   #This function reads a config file and sets the applicationSettings
   replacement <- "\t"
   l <-readLines(file.path(configLocation))
   l <- lapply(l, sub, pattern = "=", replacement = replacement)
   t <- tempfile()
   writeLines(unlist(l), t)
-  applicationSettings <- read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
+  applicationSettings <- utils::read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
   unlink(t)
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
@@ -81,12 +82,11 @@ readConfigFile <- function(configLocation) {
       }
       if(installDep) {
         cat(paste0("Attempting to install ",applicationSettings$server.database.r.package))
-        repos <- "http://cran.rstudio.com/"
-        options(repos = "http://cran.rstudio.com/")
-        try(install.packages(applicationSettings$server.database.r.package, repos = repos))
+        method <- ifelse(is.null(options("method")$method),"auto",options("method")$method)
+        try(install.packages(applicationSettings$server.database.r.package, repos = options("repos"), method = method))
         try(require(applicationSettings$server.database.r.package, character.only=TRUE))
       } else {
-        warning(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
+        warnUser(paste0("The database r package \'",applicationSettings$server.database.r.package,"\' is not installed\n",
                       "The query functionality of racas may not work properly\n",
                       "\n\nTo fix this, do one of the following:\n",
                        "restart R and run this line \'options(racasInstallDep = TRUE)\' prior to loading the racas package and racas will attempt to install dependency\n",         
@@ -101,11 +101,16 @@ readConfigFile <- function(configLocation) {
     rDependencies <- strsplit(applicationSettings$server.r.dependencies,",")[[1]]
     missing <- !sapply(rDependencies, function(x) x %in% row.names(installed.packages()))
     if(any(missing)) {
-      warning(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
+      warnUser(paste0("Found missing packages in server.r.dependencies list that may cause loss of some racas functionality: ", paste0(names(missing)[missing == TRUE], collapse = ", ")))
     }
   }
   applicationSettings <- validateApplicationSettings(applicationSettings =applicationSettings)
-  assignInNamespace("applicationSettings",applicationSettings, ns="racas")
+  
+  #Add additional settings passed into readConfigFile
+  additionalSettings <- list(...)
+  applicationSettings[[names(additionalSettings)]] <- unlist(additionalSettings)
+  
+  utils::assignInNamespace("applicationSettings",applicationSettings, ns="racas")
 }
 
 validateApplicationSettings <- function(applicationSettings = racas::applicationSettings) {
@@ -113,17 +118,17 @@ validateApplicationSettings <- function(applicationSettings = racas::application
   #Check if set
   currentWD <-  getwd()
   if(is.null(applicationSettings$server.log.path)) {
-    warning(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path is null. Setting to current working directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   #Check if exits
   if(!file.exists(applicationSettings$server.log.path)) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' does not exist.  Setting to current working directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   #Check writeable
   if(file.access(applicationSettings$server.log.path, mode = 2) != 0) {
-    warning(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
+    warnUser(paste0("applicationSettings$server.log.path: \'",applicationSettings$server.log.path, "\' is not writeable.  Setting to current directory: ", currentWD))
     applicationSettings$server.log.path <- currentWD
   }
   return(applicationSettings)

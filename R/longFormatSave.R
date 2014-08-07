@@ -17,8 +17,6 @@
 
 
 saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColumn, recordedBy, lsTransaction, stateGroupIndices = NULL, testMode=FALSE) {
-  
-  require(plyr)
 
   if (is.null(stateGroupIndices)) {
     stateGroupIndices <- which(sapply(stateGroups, getElement, "entityKind") == entityKind)
@@ -26,7 +24,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
     # This exists because labels were added, it removes indices for labels
     realStateGroups <- which(sapply(stateGroups, function(x) !is.null(x$stateType)))
     stateGroupIndices <- stateGroupIndices[stateGroupIndices %in% realStateGroups]
-    if (length(stateGroupIndices)==0) stop("No valid stateGroups")
+    if (length(stateGroupIndices)==0) stopUser("No valid stateGroups")
   }
   
   createRawOnlyLsState <- function(entityData, stateGroups, entityKind, recordedBy, lsTransaction) {
@@ -73,7 +71,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
         recordedBy=recordedBy,
         lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     
     return(lsState)
   }
@@ -177,7 +175,7 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
                                             recordedBy=recordedBy,
                                             lsTransaction=lsTransaction)
       },
-      stop(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
+      stopUser(paste("Configuration Error: Unrecognized entityKind:", entityKind)))
     return(lsLabel)
   }
   lsLabels <- dlply(.data=labelData, .variables=idColumn, .fun=createRawOnlyLsLabel, 
@@ -193,20 +191,30 @@ saveLabelsFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
 #' @param entityData a data frame with data
 #' @param batchCodeStateIndices a numeric vector of indices in the stateGroupIndexColumn which should have batchCodes melted
 #' @param replacedFakeBatchCode deprecated: a character vector of fake batch id's that were replaced, marking invalid batch codes
+#' @param optionalColumns Columns to include in output (if available). Often the entityID is needed for saving later
 #' 
-#' @details Does not work with data.table
+#' @details Does not work with data.table.
+#' entityData must have columns "batchCode", "stateID", "stateGroupIndex".
+#' If "batchCode" is missing, will return an empty data.frame.
+#' publicData is always set to TRUE.
+#' In longFormatSave.R
 #' 
 #' @return A data frame with rows for all code values
 #' 
-meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID")) {
-  require('plyr')
+meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchCode = NULL, optionalColumns = c("treatmentGroupID", "analysisGroupID", "stateVersion")) {
+  # Check for missing batchCode
+  output <- data.frame()
+  if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
+    return(output)
+  }
   
-  neededColumns <- c("batchCode", "stateID", "stateVersion", "stateGroupIndex", "publicData")
+  neededColumns <- c("batchCode", "stateID", "stateGroupIndex")
+  if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
   
   # It will run once, mostly. So it is a for loop
-  output <- data.frame()
+  
   for (index in batchCodeStateIndices) {
 #     if(is.null(replacedFakeBatchCode)) {
       batchCodeValues <- unique(entityData[entityData$stateGroupIndex==index, usedColumns])
@@ -220,6 +228,7 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchC
       names(batchCodeValues)[1] <- "codeValue"
       batchCodeValues$valueType <- "codeValue"
       batchCodeValues$valueKind <- "batch code"
+      batchCodeValues$publicData <- TRUE
       output <- rbind.fill(output, batchCodeValues)
     }
 #     if (nrow(fakeBatchCodeValues) > 0) {
@@ -237,8 +246,10 @@ meltBatchCodes <- function(entityData, batchCodeStateIndices, replacedFakeBatchC
 #' Turns concentration columns into rows in a long format
 #' 
 #' @param entityData a data frame with data, must include rows "concentration" and "concentrationUnit"
-meltConcentrations <- function(entityData) {
-  require('plyr')
+#' @param entityKind the current acas entityKind (in racas::acasEntityHierarchyCamel)
+meltConcentrations <- function(entityData, entityKind = "treatmentGroup") {
+  parentEntityKind <- parentAcasEntity(entityKind, "camel")
+  parentEntityID <- paste0(parentEntityKind, "ID")
   
   createConcentrationRows <- function(entityData) {
     if(any(is.na(entityData$concentration))) {
@@ -258,8 +269,8 @@ meltConcentrations <- function(entityData) {
                                                      entityData$time[1], 
                                                      entityData$timeUnit[1]),
                            stringsAsFactors = FALSE)
-      if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
-        output$treatmentGroupID <- entityData$treatmentGroupID[1]
+      if(!is.null(entityData[[parentEntityID]]) && !is.na(entityData[[parentEntityID]])) {
+        output[[parentEntityID]] <- entityData[[parentEntityID]][1]
       }
       return(output)
     }
@@ -271,8 +282,10 @@ meltConcentrations <- function(entityData) {
 #' Turns time columns into rows in a long format
 #' 
 #' @param entityData a data frame with data, must include rows "time" and "timeUnit"
-meltTimes <- function(entityData) {
-  require('plyr')
+#' @param entityKind the current acas entityKind (in racas::acasEntityHierarchyCamel)
+meltTimes <- function(entityData, entityKind = "treatmentGroup") {
+  parentEntityKind <- parentAcasEntity(entityKind, "camel")
+  parentEntityID <- paste0(parentEntityKind, "ID")
   
   createTimeRows <- function(entityData) {
     if(any(is.na(entityData$time))) {
@@ -292,8 +305,8 @@ meltTimes <- function(entityData) {
                                                      entityData$time[1], 
                                                      entityData$timeUnit[1]),
                            stringsAsFactors = FALSE)
-      if(!is.null(entityData$treatmentGroupID) && !is.na(entityData$treatmentGroupID)) {
-        output$treatmentGroupID <- entityData$treatmentGroupID[1]
+      if(!is.null(entityData[[parentEntityID]]) && !is.na(entityData[[parentEntityID]])) {
+        output[[parentEntityID]] <- entityData[[parentEntityID]][1]
       }
       return(output)
     }
@@ -345,10 +358,10 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 
   
   if (any(!(c("stateGroupIndex", "valueType", "valueKind", "publicData", "stateVersion") %in% names(entityData)))) {
-    stop("Missing input columns in entityData")
+    stopUser("Missing input columns in entityData")
   }
   if (any(is.na(entityData$stateID[entityData$stateGroupIndex %in% stateGroupIndices]))) {
-    stop("Internal error: No stateID can be NA")
+    stopUser("Internal error: No stateID can be NA")
   }
   
   if (any(entityData$numericValue == Inf, na.rm = TRUE)) {
@@ -433,7 +446,6 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 #' 
 #' @details If there are both prefixed and unprefixed labels that match, the prefixed labels will have precedence
 linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, stateGroupIndices = NULL, testModeData = NULL) {
-  require(plyr)
   
   # Get stateGroupIndices if not provided
   if (is.null(stateGroupIndices)) {

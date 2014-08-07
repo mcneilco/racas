@@ -4,25 +4,20 @@
 \title{Creates a new logger}
 \usage{
 createLogger(logName = "com.default.logger", logFileName = "racas.log",
-  logDir = racas::applicationSettings$server.log.path,
-  logLevel = racas::applicationSettings$server.log.level,
-  envir = environment(), ...)
+  logDir = racas:::applicationSettings$server.log.path,
+  logLevel = racas:::applicationSettings$server.log.level,
+  envir = environment(), logToConsole = TRUE, ...)
 }
 \arguments{
-  \item{logName}{Name for the logger output line within the
-  log file (default: "com.default.logger)}
+\item{logName}{Name for the logger output line within the log file (default: "com.default.logger)}
 
-  \item{logFileName}{name of the log file to write to
-  (default: "acas.log")}
+\item{logFileName}{name of the log file to write to (default: "acas.log")}
 
-  \item{logDir}{name directory to write to (default:
-  racas::applicationSettings$server.log.path)}
+\item{logDir}{name directory to write to (default: racas::applicationSettings$server.log.path)}
 
-  \item{logLevel}{the level at which to write logs
-  (default: racas::applicationSettings$server.log.level,
-  see names(logging::loglevels))}
+\item{logLevel}{the level at which to write logs (default: racas::applicationSettings$server.log.level, see names(logging::loglevels))}
 
-  \item{envir}{an environment to attach to the object}
+\item{envir}{an environment to attach to the object}
 }
 \value{
 object of class logger

@@ -6,12 +6,10 @@
 addError(errorMessage, errorEnv = NULL)
 }
 \arguments{
-  \item{errorMessage}{The message for the user}
+\item{errorMessage}{The message for the user}
 
-  \item{errorEnv}{If the errorEnv is not provided, the
-  search path is used to find an errorList. Providing an
-  errorEnv is the preferred method to avoid name
-  collsions.}
+\item{errorEnv}{If the errorEnv is not provided, the search path is used to find an errorList.
+Providing an errorEnv is the preferred method to avoid name collsions.}
 }
 \description{
 Add errors to a list of errors to show a user

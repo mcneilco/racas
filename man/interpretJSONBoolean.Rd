@@ -6,9 +6,9 @@
 interpretJSONBoolean(JSONBoolean)
 }
 \arguments{
-  \item{JSONBoolean}{a string of "true" or "false"
+\item{JSONBoolean}{a string of "true" or "false"
 
-  Other inputs not affected}
+Other inputs not affected}
 }
 \description{
 Turns 'true' and 'false' into TRUE and FALSE

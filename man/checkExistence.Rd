@@ -7,17 +7,15 @@ checkExistence(x, type = c("protocolName", "experimentName",
   "protocolCodeName", "experimentCodeName"))
 }
 \arguments{
-  \item{x}{entity label or code names of the same type}
+\item{x}{entity label or code names of the same type}
 
-  \item{type}{entity type of x (protocolName,
-  protocolCodeName, experimentName or experimentCodeName)}
+\item{type}{entity type of x (protocolName, protocolCodeName, experimentName or experimentCodeName)}
 }
 \value{
 boolean list with names that match x
 }
 \description{
-This function checks to see if a given protocol or
-experiment entity exists
+This function checks to see if a given protocol or experiment entity exists
 }
 \examples{
 checkExistence("ADME_Human Liver Microsome Stability", "protocolName")

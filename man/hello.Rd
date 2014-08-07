@@ -6,7 +6,6 @@
 hello()
 }
 \description{
-Function to say hello from racas (used in main page for
-rapache http://host:port/r-services-api/)
+Function to say hello from racas (used in main page for rapache http://host:port/r-services-api/)
 }
 
