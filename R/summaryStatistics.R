@@ -20,7 +20,7 @@
 generateSummaryStatistics <- function(numWeeks = 4) {
   # Get data frames to make plots
   numExpProtUsers <- usageStatistics()
-  history <- experimentHistoryChart(4)
+  history <- experimentHistoryChart(numWeeks)
   progress <- detailedExperimentChart()
   protocols <- protocolsOverTime()
   experiments <- experimentsOverTime()
@@ -34,22 +34,24 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   # the number of experiments they have loaded
   if (!is.null(history)) {
     history$recorded_by <- factor(history$recorded_by, levels = unique(numExperiments$recorded_by))
+    history$isOld <- factor(history$isOld, levels = c(FALSE, TRUE))
   }
   if (!is.null(progress)) {
     progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
+    progress$status <- factor(progress$status, levels = c("Finalized", "Unfinalized"))
   }
 
   rmdHome <- system.file("rmd", "summaryStatisticsHome.rmd", package="racas")
   htmlSummary <- knit2html_bug_fix(input = rmdHome, 
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
-                                  stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+                                  stylesheet = system.file("rmd", "summaryStats.css", package="racas"))
   
   rmdGraphs <- system.file("rmd", "summaryStatisticsGraphs.rmd", package="racas")
   htmlGraphs <- knit2html_bug_fix(input = rmdGraphs, 
                                    options = c("base64_images", "mathjax"),
                                    template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
-                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))
+                                   stylesheet = system.file("rmd", "summaryStats.css", package="racas"))
   
   # Check that the folder exists
   summaryStatisticsFolder <- file.path(racas::applicationSettings$appHome, 'privateUploads', 'summaryStatistics')

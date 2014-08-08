@@ -1,16 +1,24 @@
-Database Summary Statistics
-========================================================
-
-## Fast Facts
-```{r fastFacts, results='asis', echo=FALSE}
-cat("* Number of protocols: ", prettyNum(numExpProtUsers[2], big.mark = ","), "\n")
-cat("* Number of experiments: ", prettyNum(numExpProtUsers[1], big.mark = ","), "\n")
-cat("* Number of users who have uploaded experiments: ", prettyNum(numExpProtUsers[3], big.mark = ","), "\n")
-cat("* Number of samples measured: ", prettyNum(numExpProtUsers[4], big.mark = ","), "\n")
-cat("* Number of calculated results: ", prettyNum(numExpProtUsers[5], big.mark = ","), "\n")
+```{r fastFacts1, results='asis', echo=FALSE}
+cat("Total number of protocols: ", prettyNum(numExpProtUsers[2], big.mark = ","))
 ```
 
-```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+```{r fastFacts2, results='asis', echo=FALSE}
+cat("Total number of experiments: ", prettyNum(numExpProtUsers[1], big.mark = ","))
+```
+
+```{r fastFacts3, results='asis', echo=FALSE}
+cat("Total number of users who have uploaded experiments: ", prettyNum(numExpProtUsers[3], big.mark = ","))
+```
+
+```{r fastFacts4, results='asis', echo=FALSE}
+cat("Total number of samples measured: ", prettyNum(numExpProtUsers[4], big.mark = ","))
+```
+
+```{r fastFacts5, results='asis', echo=FALSE}
+cat("<p style='margin-bottom:20px;'>", "Total number of calculated results: ", prettyNum(numExpProtUsers[5], big.mark = ","), "</p>")
+```
+
+```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE, dpi=300}
 if (is.null(analysis) && is.null(subjects) &&
       is.null(values)) {
   cat("No statistics to display")
@@ -43,7 +51,7 @@ graphLink <- paste(getSSLString(), racas::applicationSettings$client.host, ":",
 ```
 
 ```{r goToGraphs, echo=FALSE, results='asis', cache=FALSE}
-cat("<p style='font-size:15px'>For more graphs, <a href='",
+cat("<p style='margin-top:30px;'>For more graphs, <a href='",
     graphLink, "'>click here</a>", "</p>", sep="")
 ```
 

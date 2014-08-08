@@ -1059,7 +1059,7 @@ knit2html_bug_fix <- function (input, output = NULL, text = NULL, template = tem
   setwd(t)
   tfile <- tempfile(tmpdir=t)
   out <- knitr::knit(input, output = tfile, text = NULL, envir = parent.frame(), encoding = getOption("encoding"), quiet = TRUE)
-  output <- markdown::markdownToHTML(out, template = template, stylesheet = stylesheet, options = options, fragment.only = FALSE)
+  output <- markdown::markdownToHTML(file = out, template = template, stylesheet = stylesheet, options = options, fragment.only = FALSE)
   setwd(originalWD)
   unlink(t, recursive = TRUE)
   return(output)
