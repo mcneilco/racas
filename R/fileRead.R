@@ -367,7 +367,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
     
     # Let the secondary format pass through
     if(isInFormat(secondaryFormat, inputValue)) {
-      return(coerceToDate(secondaryFormat, inputValue))
+      return(as.character(coerceToDate(secondaryFormat, inputValue)))
     }
     
     # Return an error for Excel Date formats
@@ -375,7 +375,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
       addError(paste0("A date was has a Number Format of 'Date' or 'General' in Excel rather than 'Text'. ",
                       "Please format the dates as Excel 'Text' and use the format YYYY-MM-DD. ",
                       "Excel stores dates in a format we cannot accept."), errorEnv = errorEnv)
-      return(NA)       
+      return(NA_character_)       
     }
     
     #First try substituting out the seperators in the inputValue for those in the expected format
@@ -418,7 +418,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
     returnDate <- coerceToDate(expectedFormat, inputValue)
   }
   # Return the date
-  return(returnDate)	
+  return(as.character(returnDate))
 }
 
 #'@rdname validate
