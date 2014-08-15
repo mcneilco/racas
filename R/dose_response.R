@@ -86,6 +86,8 @@ dose_response <- function(fitSettings, fitData) {
 biphasic_detection <- function(fitData) {
   returnCols <- copy(names(fitData))
   test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
+
+    points <- copy(points)
     if(!continueBiphasicDetection) {
       testConc <- as.numeric(NA)
       biphasicParameterPreviousValue <- as.numeric(NA)
@@ -635,16 +637,120 @@ get_fit_data_analysisgroupid <- function (analysisGroupdID, include) {
   return(fitData)
 }
 
-get_fit_data_experiment_code <- function(experimentCode, include = "fullobject", ...) {
-  myMessenger <- messenger()
-  myMessenger$logger$debug("calling experiment code name service")
-  serviceURL <- paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/codename/", experimentCode, "?with=", include)
-  myMessenger$logger$debug(serviceURL)
-  experimentJSON <- getURL(serviceURL)
-  myMessenger$logger$debug("parsing experiment json")
-  experiment <- jsonlite::fromJSON(experimentJSON[[1]])
-  fitData <- as.data.table(experiment$analysisGroups[[1]][!experiment$analysisGroups[[1]]$ignored,])
+#' tsv service url to data.table
+#'
+#' Calls a tsv service and returns a data.table of results
+#' 
+#' @param url a url encoded string that calls a service that returns a tsv
+#' @param type simple (no embedded html or \t values) or complex (embeded tables .etc.)
+#' @return a data.table result
+#' @export
+#' @examples
+#' # AG values for dose response have complex results
+#' url <- "http://host4.labsynch.com:8080/acas/api/v1/experiments/EXPT-00000408/agvalues/bystate/data/Dose%20Response/tsv"
+#' tsv_url_to_data_table(url, "complex")
+#' 
+#' Subject values fo rdose response have simple results
+#' url <- "http://host4.labsynch.com:8080/acas/api/v1/experiments/EXPT-00000408/subjectvalues/bystate/data/results/tsv"
+#' tsv_url_to_data_table(url, "simple")
+#' 
+tsv_url_to_data_table <- function(url, type = c("simple", "complex"), ...) {
+  type <- match.arg(type)
+  response <- getURL(url)
+  if(type == "simple") {
+    tsv_data_table <- suppressWarnings(fread(response, sep = "\t", stringsAsFactors=FALSE))
+  }
+  if(type == "complex") {
+    on.exit(close(con))
+    con <- textConnection(response)
+    tsv_data_frame <- read.csv(con, sep = "\t", stringsAsFactors=FALSE)
+    tsv_data_table <- as.data.table(tsv_data_frame)
+  }  
+  tsv_data_table[ ,ignored := as.logical(ignored)]
+  tsv_data_table[ ,publicData := as.logical(ignored)]
+  return(tsv_data_table)
 }
+get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ...) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("calling experiment code name services")
+  service_paths <- list(list(url= "/agvalues/bystate/data/Dose Response/tsv", type = "complex"), list(url = "/tgvalues/bystate/data/results/tsv", type = "simple"), list(url = "/subjectvalues/bystate/data/results/tsv", type = "simple"))
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/experiments/", experimentCode, "/agvalues/bystate/data/Dose Response/tsv"))
+  myMessenger$logger$debug(url)
+  ag_values <- tsv_url_to_data_table(url, type = "complex")
+  
+  myMessenger$logger$debug("converting output to fitData object")
+  
+  #Analysis Goup Parameters
+  fit_data <- ag_values[lsKind=="curve id"]
+  setnames(fit_data, "stringValue", "curveid")
+  setkey(fit_data, analysisGroupId)
+  fit_data[ , ag_values := ag_values[ , list(list(.SD)),by = analysisGroupId]$V1]
+  flag_user <- ag_values[lsKind == "flag" & stringValue == "user", comments, analysisGroupId]
+  setnames(flag_user, "comments", "flag_user")
+  setkey(flag_user, analysisGroupId)
+  fit_data <- flag_user[fit_data]
+  flag_algorithm <- ag_values[lsKind == "flag" & stringValue == "algorithm", comments, analysisGroupId]
+  setnames(flag_algorithm, "comments", "flag_algorithm")
+  setkey(flag_algorithm, analysisGroupId)
+  fit_data <- flag_algorithm[fit_data]
+  fit_data[ , c("parameterRules", "inactiveRule", "fixedParameters", "inverseAgonistMode", "biphasicRule") := list(list(list(goodnessOfFits = list(), limits = list())),
+                                                                                                                  list(list()),
+                                                                                                                  list(list()),
+                                                                                                                  TRUE,
+                                                                                                                  list(list()))]
+  ag_values[lsKind == "Rendering Hint" & stringValue == "4 parameter D-R", modelHint := "LL.4"]
+  ag_values[lsKind == "Rendering Hint" & stringValue == "2 parameter Michaelis Menten", modelHint := "MM.2"]
+  modelHints <- ag_values[ !is.na(modelHint), modelHint,by = analysisGroupId]
+  fit_data <- fit_data[modelHints]
+  fit_data[ , model.synced := FALSE]
+  
+  #Treatmeng Groups and Subject Groups
+  if(full_object) {
+    myMessenger$logger$debug("getting treatment group values")
+    url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/experiments/", experimentCode, "/tgvalues/bystate/data/results/tsv"))
+    myMessenger$logger$debug(url)
+    tg_values <- tsv_url_to_data_table(url, type = "simple")
+    fit_data[ , tg_values := tg_values[ , list(list(.SD)),by = analysisGroupId]$V1]
+    myMessenger$logger$debug("getting subject values")
+    url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/experiments/", experimentCode, "/subjectvalues/bystate/data/results/tsv"))
+    myMessenger$logger$debug(url)
+    subject_values <- tsv_url_to_data_table(url, type = "simple")
+    setkey(tg_values, treatmentGroupId)
+    subject_values <- unique(tg_values[ , analysisGroupId,treatmentGroupId])[subject_values]
+    fit_data[ , subject_values := subject_values[ , list(list(.SD)),by = analysisGroupId]$V1]
+    drUnits <- dcast.data.table(subject_values[lsKind %in% c("Dose", "Response")], subjectId ~ lsKind, value.var = "unitKind")
+    setnames(drUnits, "Dose", "doseunits")
+    setnames(drUnits, "Response", "responseunits")    
+    dr <- data.table::dcast.data.table(subject_values[lsKind %in% c("Dose", "Response")], subjectId+treatmentGroupId+analysisGroupId ~ lsKind, value.var = "numericValue")
+    subject_values[lsKind=="Response", response_sv_id := id]
+    setkey(dr, subjectId)
+    dr <- dr[drUnits]
+    dr <- dr[subject_values[lsKind=="Response", response_sv_id, subjectId]]
+    if(nrow(subject_values[lsKind=="flag" & ignored == FALSE]) > 0 & any(!is.na(subject_values$comments))) {
+#       fl <- data.table::dcast.data.table(subject_values[lsKind == "flag"], subjectId+treatmentGroupId+analysisGroupId+id ~ stringValue, value.var = "stringValue")
+#       missingFlagColumns <- setdiff(c("flag_on.load","flag_user", "flag_algorithm", "flag_temp"), names(fl))
+#       if(length(missingFlagColumns) > 0) {
+#         fl[ , missingFlagColumns := as.character(NA), with = FALSE]
+#       }
+#       subject_values[lsKind=="flag", flag_sv_id := id]
+#       fl[subject_values[lsKind=="flag" & ignored == FALSE, flag_sv_id, subjectId]]
+#       fl <- merge(fl,points[[1]][ lsKind=="flag" & ignored == FALSE, c("subj_id", "id"), with =  FALSE], by = "subj_id")
+#       setnames(fl, "id", "flag_sv_id")
+    } else {
+      fl <- data.table(subjectId = as.integer(),flag_sv_id = as.integer(), flag_on.load = as.character(), flag_user = as.character(), flag_algorithm = as.character(), flag_temp = as.character())
+      setkey(fl, subjectId)
+    }
+    setkey(fl, subjectId)
+    setkey(dr, subjectId)
+    pts <- fl[dr]
+    pts[ , flagchanged := FALSE]
+    setcolorder(pts, order(names(pts)))
+    setnames(pts, c("Dose", "Response"), c("dose", "response"))
+    fit_data[ , points := pts[ , list(list(.SD)),by = analysisGroupId]$V1]
+  }
+    return(fit_data)
+}
+
 
 get_fit_data <- function(entityID, type = c("experimentCode","analysisGroupID", "curveID"), include = "fullobject", ...) {
   type <- match.arg(type)
@@ -654,7 +760,6 @@ get_fit_data <- function(entityID, type = c("experimentCode","analysisGroupID", 
                     "curveID" = get_fit_data_curve(entityID, include),
                     "analysisGroupID" = get_fit_data_analysisgroupid(entityID, include)
   )
-  
   myMessenger$logger$debug("extracting curve parameters")
   fitData[ , lsStates := list(list(
     rbindlist(lsStates)[ignored == FALSE]
@@ -1136,6 +1241,7 @@ list_to_data.table <- function(l) {
 }
 
 create_analysis_group_values_from_fitData <- function(reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, tested_lot, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings) {
+  saveSession("~/Desktop/blah")
   fitParameters <- c(fixedParameters,fittedParameters)
   names(fitParameters) <- paste0("fitted_",names(fitParameters))
   reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
@@ -1217,20 +1323,19 @@ save_dose_response_data <- function(fitData, recorded_by) {
                                                                      category[[1]],
                                                                      flag_algorithm[[1]],
                                                                      flag_user[[1]],
-                                                                     tested_lot = parameters[[1]][lsKind=="batch code",]$codeValue,
+                                                                     tested_lot = ag_values[[1]][lsKind=="batch code",]$codeValue,
                                                                      recorded_by[[1]],
                                                                      transactionID,
                                                                      doseUnits = as.character(points[[1]][1]$doseunits), 
                                                                      responseUnits = as.character(points[[1]][1]$responseunits), 
-                                                                     analysisGroupCode = codeName[[1]], 
-                                                                     as.character(parameters[[1]][lsKind=="Rendering Hint"]$stringValue),
+                                                                     analysisGroupCode = analysisGroupCode[[1]], 
+                                                                     as.character(ag_values[[1]][lsKind=="Rendering Hint"]$stringValue),
                                                                      reportedValuesClob = reportedValuesClob[[1]],
                                                                      fitSummaryClob = fitSummaryClob[[1]],
                                                                      parameterStdErrorsClob = parameterStdErrorsClob[[1]],
                                                                      curveErrorsClob = curveErrorsClob[[1]],
                                                                      simpleFitSettings = simpleFitSettings[[1]]
-  )
-  
+  )  
   ))
   , by = curveid]
   myMessenger$logger$debug("saving dose response parameter data")
@@ -1258,7 +1363,7 @@ save_fit_data <- function(fitData, recordedBy, lsTransaction) {
     updateAcasEntity(x, "analysisgroupstates")
   })
   fitData[ , newStates := list(list(createAnalysisGroupState(
-    analysisGroup = list(id =  id[[1]], version = version),
+    analysisGroup = list(id =  id[[1]], version = 0),
     analysisGroupValues = analysisGroupValues[[1]]$analysisGroupValues,
     recordedBy = recordedBy,
     lsType = "data",

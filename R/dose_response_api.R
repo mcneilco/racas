@@ -31,15 +31,14 @@
 #' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
-#       file <- "inst/docs/example-simple-fitsettings-ll4.json"
-#   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
-#   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-#   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-#   recordedBy <- "bbolt"
-#     
-#   experimentCode <- load_dose_response_test_data()
-  #   experimentCode <- "EXPT-00000095"
-  #   experimentCode <- "EXPT-00000002"
+  file <- "inst/docs/example-simple-fitsettings-ll4.json"
+  file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
+  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+  simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+  recordedBy <- "bbolt"
+    
+  #experimentCode <- load_dose_response_test_data()
+  experimentCode <- "EXPT-00000408"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
@@ -49,7 +48,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode))
-  fitData <- get_fit_data(experimentCode)
+  fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveid]
   myMessenger$logger$debug("fitting the data")
   fitData <- dose_response(fitSettings, fitData)
@@ -61,7 +60,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   savedStates <- save_dose_response_data(fitData, recordedBy)
  
   myMessenger$logger$debug("updating experiment model fit status")
-  experiment <-update_experiment_status(experimentCode, "complete")
+  experiment <- update_experiment_status(experimentCode, "complete")
   
   savedStates <- save_dose_response_data(fitData, recordedBy)
   
