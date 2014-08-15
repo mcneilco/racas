@@ -501,3 +501,116 @@ linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, state
   matchingLabelData <- matchingLabelData[, c("subjectID", "containerID")]
   return(list(entityData=entityData, matchingLabelData=matchingLabelData))
 }
+
+
+
+
+
+
+ 
+#' Turns a batchCode column into rows in a long format
+#' 
+#' @param entityData a data frame with data
+#' 
+#' @details Does not work with data.table.
+#' entityData must have columns "batchCode", 
+#' "tempStateId", "parentId", "tempId", "stateType", "stateKind"
+#' If "batchCode" is missing, will return an empty data.frame.
+#' publicData is always set to TRUE.
+#' In longFormatSave.R.
+#' For use with Tsv saves.
+#' 
+#' @return A data frame with rows for all code values
+#' 
+meltBatchCodes2 <- function(entityData) {
+  # Check for missing batchCode
+  output <- data.frame()
+  if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
+    return(output)
+  }
+  
+  optionalColumns <- c("lsTransaction", "recordedBy")
+  
+  neededColumns <- c("batchCode", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
+  if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
+  
+  usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
+  
+  
+  batchCodeValues <- unique(entityData[, usedColumns])
+  
+  names(batchCodeValues)[1] <- "codeValue"
+  batchCodeValues$valueType <- "codeValue"
+  batchCodeValues$valueKind <- "batch code"
+  batchCodeValues$publicData <- TRUE
+      
+  return(batchCodeValues)
+}
+
+
+#' Turns concentration columns into rows in a long format
+#' 
+#' @param entityData a data frame with data, must include rows 
+#' "concentration", "concentrationUnit", "tempStateId", 
+#' "parentId", "tempId", "stateType", "stateKind"
+#' 
+#' For use with Tsv saves
+meltConcentrations2 <- function(entityData) {
+  if(any(is.na(entityData$concentration))) {
+    return(data.frame())
+  }
+  
+  optionalColumns <- c("lsTransaction", "recordedBy")
+  
+  neededColumns <- c("concentration", "concentrationUnit", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
+  if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
+  usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
+  
+  createConcentrationRows <- function(entityData) {
+    output <- unique(entityData[, usedColumns])
+    if (nrow(output) > 1) stop("Non-unique concentrations in a tempStateId")
+    output$numericValue <- output$concentration
+    output$unitKind <- output$concentrationUnit
+    output$valueKind <- "tested concentration"
+    output$valueType <- "numericValue"
+    output$publicData <- TRUE
+    output$concentration <- NULL
+    output$concentrationUnit <- NULL
+    return(output)
+  }
+  
+  output <- ddply(.data=entityData, .variables = c("tempStateId"), .fun = createConcentrationRows)
+  return(output)
+}
+
+#' Turns time columns into rows in a long format
+#' 
+#' @param entityData a data frame with data, must include rows 
+#' "time", "timeUnit", "tempStateId", 
+#' "parentId", "tempId", "stateType", "stateKind"
+#' 
+#' For use with Tsv saves
+meltTimes2 <- function(entityData) {
+  if(any(is.na(entityData$time))) {
+    return(data.frame())
+  }
+  
+  optionalColumns <- c("lsTransaction", "recordedBy")
+  
+  neededColumns <- c("time", "timeUnit", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
+  if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
+  usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
+  
+  createTimeRows <- function(entityData) {
+    output <- unique(entityData[, usedColumns])
+    if (nrow(output) > 1) stop("Non-unique concentrations in a tempStateId")
+    output$numericValue <- output$time
+    output$unitKind <- output$timeUnit
+    output$valueKind <- "time"
+    output$valueType <- "numericValue"
+    output$publicData <- TRUE
+    output$time <- NULL
+    output$timeUnit <- NULL
+    return(output)
+  }
+}
