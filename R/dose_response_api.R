@@ -276,7 +276,6 @@ api_doseResponse_refit <- function(POST) {
   fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points)
   
   myMessenger$logger$debug("fitting the dose response model")
-  saveSession("~/Desktop/blah")
   doseResponse <- dose_response_session(fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings)
   myMessenger$logger$debug("converting the fitted data to a response json object")
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)

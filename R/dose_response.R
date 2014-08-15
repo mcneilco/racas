@@ -1347,7 +1347,6 @@ get_ls_state_from_entity <- function(entities, ...) {
 }
 
 update_point_flags <- function(points, recordedBy, lsTransaction) {  
-  saveSession("~/Desktop/flags")
   pointData <- Reduce(function(x,y) rbind(x,y,fill = TRUE), points)
   pointData <- pointData[flagchanged == TRUE, ]
   addTheseFlags <- pointData[ !is.na(flag_user) | !is.na(flag_on.load) | !is.na(flag_algorithm)]
