@@ -18,7 +18,7 @@ Calls a tsv service and returns a data.table of results
 }
 \examples{
 # AG values for dose response have complex results
-url <- "http://host4.labsynch.com:8080/acas/api/v1/experiments/EXPT-00000408/agvalues/bystate/data/Dose\%20Response/tsv"
+url <- "http://host4.labsynch.com:8080/acas/api/v1/experiments/EXPT-00000408/agvalues/bystate/data/results/tsv"
 tsv_url_to_data_table(url, "complex")
 
 Subject values fo rdose response have simple results
