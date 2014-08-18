@@ -31,14 +31,14 @@
 #' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
-  file <- "inst/docs/example-simple-fitsettings-ll4.json"
-  file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
-  simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
-  simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-  recordedBy <- "bbolt"
-    
-  #experimentCode <- load_dose_response_test_data()
-  experimentCode <- "EXPT-00000408"
+#   file <- "inst/docs/example-simple-fitsettings-ll4.json"
+#   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
+#   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
+#   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
+#   recordedBy <- "bbolt"
+#     
+#   #system.time(experimentCode <- load_dose_response_test_data())
+#   experimentCode <- "EXPT-00000425"
   
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
@@ -61,9 +61,7 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
  
   myMessenger$logger$debug("updating experiment model fit status")
   experiment <- update_experiment_status(experimentCode, "complete")
-  
-  savedStates <- save_dose_response_data(fitData, recordedBy)
-  
+ 
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("responding to acas")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
@@ -95,7 +93,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   #entityID <- "EXPT-00000070"
   myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
-  fitData <- get_fit_data(entityID, type = type, include = 'analysisgroupvalues')
+  fitData <- get_fit_data_experiment_code(entityID, full_object = FALSE)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting modelHint saved parameter"))
@@ -119,13 +117,13 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
                                       flagAlgorithm = flag_algorithm,
                                       flagUser = flag_user,
-                                      category = parameters[[1]][lsKind == "category", ]$stringValue,
+                                      category = ag_values[[1]][lsKind == "category", ]$stringValue,
                                       curveAttributes = list(
-                                        EC50 = parameters[[1]][lsKind == "EC50"]$numericValue,
-                                        SST =  parameters[[1]][lsKind == "SST"]$numericValue,
-                                        SSE =  parameters[[1]][lsKind == "SSE"]$numericValue,
-                                        rsquare = parameters[[1]][lsKind == "rSquared"]$numericValue,
-                                        compoundCode = parameters[[1]][lsKind == "batch code"]$codeValue,
+                                        EC50 = ag_values[[1]][lsKind == "EC50"]$numericValue,
+                                        SST =  ag_values[[1]][lsKind == "SST"]$numericValue,
+                                        SSE =  ag_values[[1]][lsKind == "SSE"]$numericValue,
+                                        rsquare = ag_values[[1]][lsKind == "rSquared"]$numericValue,
+                                        compoundCode = ag_values[[1]][lsKind == "batch code"]$codeValue,
                                         flagAlgorithm = flag_algorithm,
                                         flagUser = flag_user
                                       )
