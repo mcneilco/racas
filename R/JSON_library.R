@@ -1049,34 +1049,19 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
 
 saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
-  logName = "com.acas.racas.saveAcasEntitiesInternal"
-  logFileName = "racas.log"
-  h = basicTextGatherer()
   
   message <- toJSON(entities)
-  response <- getURL(
+  
+  response <- postURLcheckStatus(
     paste0(lsServerURL, acasCategory, "/jsonArray"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
     postfields=message,
-    headerfunction = h$update)
-  responseHeader <- as.list(parseHTTPHeader(h$value()))
-  statusCode <- as.numeric(responseHeader$status)
-  if (statusCode >= 400) {
-    myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    errorMessage <- paste0("Request to ", lsServerURL, acasCategory, "/jsonArray with method 'POST' failed with status '",
-                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
-                           message, "\nHeader was \n", h$value())
-    myLogger$error(errorMessage)
-    stopUser (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the log ", 
-                 logFileName, " at ", Sys.time()))
-  } else if (grepl("^<",response)) {
-    myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    myLogger$error(response)
-    stopUser (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
-  } else if (grepl("^\\s*$", response)) {
+    httpheader=c('Content-Type'='application/json')
+  )
+  
+  if (grepl("^\\s*$", response)) {
     return(list())
   }
+  
   response <- fromJSON(response)
   return(response)
 }
@@ -1458,18 +1443,54 @@ getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::
 #'
 #'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater
 getURLcheckStatus <- function(url, ...) {
-  logName = "com.acas.sel"
-  logFileName = "racas.log"
-  h = basicTextGatherer()
-  response = getURL(url=url, ..., headerfunction = h$update)
-  status <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
-  if (status >= 400) {
+  logName <- "com.acas.sel"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, ..., headerfunction = h$update)
+  statusCode <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
+  if (statusCode >= 400) {
     myLogger <- createLogger(logName = logName, logFileName = logFileName)
     myLogger$error(response)
     stopUser (paste("Server Error, see logs at", Sys.time()))
   }
   return(response)
 }
+
+#'Get URL and check status
+#'
+#'This is similar to getURLcheckStatus, but does a POST, and the postfields are
+#'logged in case of an error
+#'
+#'@param url the url to get/post
+#'@param ... optional parameters passed to getURL
+#'@param postfields data sent to the server
+#'  
+#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400
+#'  or greater
+postURLcheckStatus <- function(url, postfields, ...) {
+  logName <- "com.acas.sel"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, ..., postfields=postfields, customrequest='POST', headerfunction = h$update)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
+  if (statusCode >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " with method 'POST' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
+                           message, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
+                     logFileName, " at ", Sys.time()))
+  } else if (grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("POST:\n", postfields, "\nResponse:\n", response)
+    myLogger$error(errorMessage)
+    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the logs at ", Sys.time()))
+  }
+  return(response)
+}
+
 #' Protocol search by name
 #' 
 #' Gets protocols by name
