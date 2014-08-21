@@ -24,7 +24,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   if (grepl("\\.xlsx?$",filePath)) {
     tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
-      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
+      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="%Y-%m-%d")
     }, error = function(e) {
       stopUser("Cannot read input excel file")
     })
