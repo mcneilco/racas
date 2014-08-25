@@ -490,7 +490,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
   } else if (fileServiceType == "custom") {
-    if(!exists(customSourceFileMove)) {
+    if(!exists('customSourceFileMove')) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
