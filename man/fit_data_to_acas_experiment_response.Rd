@@ -3,8 +3,9 @@
 \alias{fit_data_to_acas_experiment_response}
 \title{fitData object to json response}
 \usage{
-fit_data_to_acas_experiment_response(fitData, transactionId = -1, status,
-  hasWarning, errorMessages = as.character(), ...)
+fit_data_to_acas_experiment_response(fitData, experimentCode,
+  transactionId = -1, status, hasWarning, errorMessages = as.character(),
+  ...)
 }
 \arguments{
 \item{a}{fitData object}
