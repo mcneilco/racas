@@ -531,12 +531,12 @@ data.table_to_html_table <- function(dataTable, ...) {
 get_reported_parameters <- function(modelHint, results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, flag_algorithm, flag_user) {
   switch(modelHint,
          "LL.4" = {
-           if(!is.na(flag_algorithm) | (flag_user == "rejected")) {
-             max <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
-             min <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
-             ec50 <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
-             slope <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ec50 = ec50, slope = slope)
+           if(!is.na(flag_algorithm) | identical(flag_user, "rejected")) {
+               max <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
+               min <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
+               ec50 <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
+               slope <- list(value = ifelse(flag_user == "rejected", flag_user, flag_algorithm), operator = NULL, stdErr = NULL)
+               reportedValues <- list(min = min, max = max, ec50 = ec50, slope = slope)
              return(reportedValues)
            }
            if(potent) {
