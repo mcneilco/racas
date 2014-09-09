@@ -684,8 +684,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
       xlin$y <- c(curveIntercept,curveIntercept)
       #Draw AC50 Lines
-      lines(ylin,lwd=0.7,col="red")
-      lines(xlin,lwd=0.7,col="red")
+      lines(ylin,lty = 2, lwd = 2.0,col="red")
+      lines(xlin, lty = 2, lwd = 2.0,col="red")
     }
   }
   if(labelAxes) {

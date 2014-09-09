@@ -214,6 +214,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   plotData <- list(plotWindow = get_plot_window(fitData[1]$points[[1]]),
                    points  = points,
                    curve = c(type = fitData[1]$modelHint,
+                             reported_ec50 = curveAttributes$EC50,
+                             reported_operator = curveAttributes$Operator,
                              fittedParametersList)
   )
   return(toJSON(list(curveid = curveid,
