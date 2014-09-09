@@ -787,7 +787,7 @@ get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ..
   myMessenger$logger$debug(url)
   ag_values <- tsv_url_to_data_table(url, type = "complex")
   if(nrow(ag_values) == 0) {
-    msg <- "no results returned from service call"
+    msg <- "no experiment results found"
     myMessenger$logger$error(msg)
     stop(msg)
   }
