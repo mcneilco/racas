@@ -684,8 +684,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
       xlin$y <- c(curveIntercept,curveIntercept)
       #Draw AC50 Lines
-      lines(ylin,lty = 2, lwd = 2.0,col="red")
-      lines(xlin, lty = 2, lwd = 2.0,col="red")
+      if(!is.NULLorNA(params$operator)) {
+        col <- '#ff0000'
+      } else {
+        col <- '#808080'
+      }
+      lines(ylin,lty = 2, lwd = 2.0,col= col)
+      lines(xlin, lty = 2, lwd = 2.0,col= col)
     }
   }
   if(labelAxes) {
@@ -696,4 +701,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(!is.na(outFile)) {
     dev.off()
   }
+}
+
+is.NULLorNA <- function(value) {
+  if(is.null(value)) return(TRUE)
+  return(is.na(value))
 }

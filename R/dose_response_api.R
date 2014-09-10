@@ -179,8 +179,9 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     fittedParametersList <- list()
     fittedParametersList[1:nrow(fittedParameters)] <- fittedParameters$numericValue
     names(fittedParametersList) <- tolower(gsub('Fitted ', '', fittedParameters$lsKind))
-    curveAttributes <- list(EC50 = fitData[1]$ag_values[[1]][lsKind == "EC50"]$numericValue,
-                            Operator = fitData[1]$ag_values[[1]][lsKind == "EC50"]$valueOperator,
+    
+    curveAttributes <- list(EC50 = na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$numericValue),
+                            Operator = na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$operatorKind),
                             SST = fitData[1]$ag_values[[1]][lsKind == "SST"]$numericValue,
                             SSE =  fitData[1]$ag_values[[1]][lsKind == "SSE"]$numericValue,
                             rSquared =  fitData[1]$ag_values[[1]][lsKind == "rSquared"]$numericValue,
@@ -193,7 +194,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     parameterStdErrors <- fitData[1]$parameterStdErrorsClob[[1]]
     curveErrors <- fitData[1]$curveErrorsClob[[1]]
     fitSettings = fromJSON(fitData[1]$simpleFitSettings)
-    fittedParametersList <- fitData$fittedParameters[[1]]
+    fittedParametersList <- fitData$fittedParameters[[1]]    
     curveAttributes <- list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
                             Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
                             SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
