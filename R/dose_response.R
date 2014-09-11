@@ -638,7 +638,12 @@ get_fit_data_curveid <- function(curveID, full_object = TRUE) {
   analyisGroupIDOfCurveID <- query(paste0("select ags.analysis_group_id 
                                           from analysis_group_state ags 
                                           join analysis_group_value agv 
-                                          on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))[[1]]
+                                          on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))
+  if(nrow(analyisGroupIDOfCurveID) == 0) {
+    stop("no analysis group id found")
+  } else {
+    analyisGroupIDOfCurveID <- analyisGroupIDOfCurveID[[1]]
+  }
   fitData <- get_fit_data_analysisgroupid2(analyisGroupIDOfCurveID, full_object)
   return(fitData)
 }
