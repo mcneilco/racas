@@ -75,7 +75,7 @@ dose_response <- function(fitSettings, fitData) {
   fitData <- apply_limits(fitData, iterations = 20)
   
   #Categorize the fit data
-  fitData[ , category := categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]]), by = curveid]
+  fitData[ , category := categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveid]
   
   #Extract the reported Parameters
   fitData[ , reportedParameters := list(list(get_reported_parameters(modelHint, results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], flag_algorithm, flag_user))), by = curveid]
@@ -1014,14 +1014,14 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveid]
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveid]
-  fitData[ model.synced == FALSE, "flag_algorithm" := ifelse(fitConverged | inactive | insufficientRange | potent, as.character(NA), "no fit"), by = curveid]
+  fitData[ model.synced == FALSE, "flag_algorithm" := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(NA), "no fit"), by = curveid]
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange", "potent"))
   
   fitData[ model.synced == FALSE, model.synced := TRUE]
   return(fitData[, returnCols, with = FALSE])
 }
 
-categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent) {
+categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
   #   -weak tested potency
   #   strong tested potency
   #   -inactive
@@ -1036,17 +1036,20 @@ categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, 
                        if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
                          category <- "weak tested potency"
                        }
+                       if("ec50ThresholdLow" %in% resultList | potent) {
+                         category <- "strong tested potency"
+                       }
                        if(!converged) {
                          category <- "lack of fit - fit did not converge"
                        }
                        if(insufficientRange) {
                          category <- "insufficient range"
                        }
-                       if("ec50ThresholdLow" %in% resultList | potent) {
-                         category <- "strong tested potency"
-                       }
                        if(inactive) {
                          category <- "inactive"
+                       }
+                       if(pointStats$dose.count < 2) {
+                         category <- "insufficient data"
                        }
                        category
                      },
@@ -1066,6 +1069,10 @@ categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, 
                        if(inactive) {
                          category <- "inactive"
                        }
+                       if(pointStats$dose.count < 2) {
+                         category <- "insufficient data"
+                       }
+                       
                        category                       
                      },{
                        warnUser(paste0("Limit rules not implemented for ", modelHint))
@@ -1171,7 +1178,9 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
 
 get_point_stats <- function(pts) {
   pts <- copy(pts)
+  pts$meanByDose <- as.numeric(NA)
   pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), meanByDose := mean(response), by = dose ]
+  dose.count <- nrow(pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), .N, by = dose])
   response.empiricalMax <- pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), max(meanByDose)]
   response.empiricalMin <- pts[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), min(meanByDose)]
   dose.min <- min(pts[is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), ]$dose)
@@ -1182,7 +1191,8 @@ get_point_stats <- function(pts) {
   count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax)
   doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- pts[(is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp)) & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
   count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin)
-  return(list(response.empiricalMax = response.empiricalMax, 
+  return(list(dose.count = dose.count,
+              response.empiricalMax = response.empiricalMax, 
               response.empiricalMin = response.empiricalMin, 
               dose.min = dose.min, 
               dose.max = dose.max, 

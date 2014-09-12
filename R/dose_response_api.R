@@ -264,7 +264,6 @@ api_doseResponse_refit <- function(POST) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.fit.curve")
-  
   myMessenger$logger$debug("parsing json from acas")
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
   myMessenger$logger$debug("getting updated point flags sent from acas")
