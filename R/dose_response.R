@@ -1178,7 +1178,7 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
 
 get_point_stats <- function(pts) {
   pts <- copy(pts)
-  pts$meanByDose <- as.numeric(NA)
+  pts[, meanByDose := as.numeric(NA)]
   pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), meanByDose := mean(response), by = dose ]
   dose.count <- nrow(pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), .N, by = dose])
   response.empiricalMax <- pts[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), max(meanByDose)]
