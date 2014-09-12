@@ -240,6 +240,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
                             OPERATOR_KIND,
                             NUMERIC_VALUE,
                             STRING_VALUE,
+                            COMMENTS,
                             UNIT_KIND,
                             RECORDED_DATE
                             FROM p_api_analysis_group_results
@@ -256,7 +257,11 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
   longFormat <- parametersDataFrame
   row.names(longFormat) <- parametersDataFrame$agv_id
-  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "operator_kind")]
+  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "comments","operator_kind")]
+  flags <- longFormat[longFormat$ls_kind=="flag",]
+  if(nrow(flags) > 0) {
+    longFormat[longFormat$ls_kind=="flag",]$ls_kind <- paste0(flags$ls_kind,"_",flags$string_value)
+  }
   wideFormat <- reshape(longFormat,
                         timevar="ls_kind",
                         idvar=c("ag_id","ag_code_name","tested_lot"),direction="wide")
@@ -287,10 +292,10 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
 getLL4ParametersFromWideFormat <- function(wideFormat) {
   wideName = c("ag_code_name","tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
                "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
-               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50")
+               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50", "comments.flag_algorithm", "comments.flag_user")
   newName = c("ag_code_name","tested_lot", "curveid", "renderingHint", "min", "fitted_min",
               "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslope",
-              "ec50", "fitted_ec50", "operator")
+              "ec50", "fitted_ec50", "operator","flag_algorithm","flag_user")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   return(extractParametersFromWideFormat(valuesToGet, wideFormat))
 }
@@ -420,7 +425,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -622,14 +627,17 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   #Curve Drawing Function
   drawCurveID <- function(cid) {
-    drawValues <- getDrawValues(params = params[cid,])
-    curveID <- params$curveid[cid]
-    curveParams <- subset(params, params$curveid == curveID)
-    for(i in 1:ncol(drawValues)) {
-      assign(names(drawValues)[i], drawValues[,i])
+    flagged <- any(!is.na(params$flag_user), !is.na(params$flag_algorithm)) && any(params$flag_user == "rejected", params$flag_user == "rejected")
+    if(drawFlagged == FALSE && !flagged) {
+      drawValues <- getDrawValues(params = params[cid,])
+      curveID <- params$curveid[cid]
+      curveParams <- subset(params, params$curveid == curveID)
+      for(i in 1:ncol(drawValues)) {
+        assign(names(drawValues)[i], drawValues[,i])
+      }
+      fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
+      curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
     }
-    fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-    curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
   }
   #Actually Draw Curves
   if(drawCurve) {
