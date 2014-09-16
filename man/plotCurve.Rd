@@ -8,8 +8,8 @@ plotCurve(curveData, params, fitFunction, paramNames = c("ec50", "min", "max",
   logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA,
   xmax = NA, height = 300, width = 300, showGrid = FALSE,
   showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE,
-  connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE,
-  addShapes = FALSE, labelAxes = FALSE, ...)
+  drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE,
+  drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...)
 }
 \arguments{
 \item{curveData}{a data frame with the points with column names curveid, dose, response, flag}

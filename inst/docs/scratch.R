@@ -259,6 +259,24 @@ for(i in fitData$curveid) {
   readline("next:")
 }
 
+  fitData[fitConverged == TRUE, {
+    fittedParams <- fittedParameters[[1]]
+    #names(fittedParams) <- paste0("fitted_",names(fittedParams))
+    plotCurve(points[[1]][ , curveid := curveid], 
+              as.data.frame(c(currentTime = as.numeric(format(Sys.time(), "%s%S3")),curveid = curveid, name = curveid,fittedParams)), 
+              fitFunction = LL4, 
+              paramNames = c("slope", "min", "max", "ec50"), 
+              logDose = TRUE, 
+              drawIntercept = "ec50", 
+              showLegend = TRUE, 
+               outFile = paste0(curveid,".png"), 
+              xmin = NA, ymin = NA, ymax = NA)
+#     cat(paste0("New Category: ", category,"\n"))
+
+#       readline("next:")
+
+    }, by = curveid]
+
 
 #
 file <- system.file("tests","data", "doseResponse","default-ec50-fitSettings.json", package = "racas")
@@ -299,3 +317,25 @@ if(nrow(updateFlags) > 0 ) {
 
 #Fit the data
 fitData <- dose_response_fit(fitData)
+
+
+
+
+#Newer stuff:
+#PLOT FITDATA curves individually
+fitData[fitConverged == TRUE, {
+  fittedParams <- fittedParameters[[1]]
+  #names(fittedParams) <- paste0("fitted_",names(fittedParams))
+  plotCurve(points[[1]][ , curveid := curveid], 
+            as.data.frame(c(currentTime = as.numeric(format(Sys.time(), "%s%S3")),curveid = curveid, name = curveid,fittedParams)), 
+            fitFunction = LL4, 
+            paramNames = c("slope", "min", "max", "ec50"), 
+            logDose = TRUE, 
+            drawIntercept = "ec50", 
+            showLegend = TRUE, 
+            outFile = paste0(curveid,".png"), 
+            xmin = NA, ymin = NA, ymax = NA)
+        cat(paste0("New Category: ", category,"\n"))
+        readline("next:")
+  
+}, by = curveid]

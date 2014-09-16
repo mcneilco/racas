@@ -4,7 +4,8 @@
 \title{Fit dose response data}
 \usage{
 dose_response_session(fitSettings, curveids = NA, sessionID = NA,
-  fitData = NA, simpleFitSettings = NULL, ...)
+  fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL,
+  ...)
 }
 \arguments{
 \item{fitSettings}{a fit settings list object (see examples)}

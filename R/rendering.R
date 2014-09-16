@@ -240,6 +240,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
                             OPERATOR_KIND,
                             NUMERIC_VALUE,
                             STRING_VALUE,
+                            COMMENTS,
                             UNIT_KIND,
                             RECORDED_DATE
                             FROM p_api_analysis_group_results
@@ -256,7 +257,11 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
   longFormat <- parametersDataFrame
   row.names(longFormat) <- parametersDataFrame$agv_id
-  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "operator_kind")]
+  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "comments","operator_kind")]
+  flags <- longFormat[longFormat$ls_kind=="flag",]
+  if(nrow(flags) > 0) {
+    longFormat[longFormat$ls_kind=="flag",]$ls_kind <- paste0(flags$ls_kind,"_",flags$string_value)
+  }
   wideFormat <- reshape(longFormat,
                         timevar="ls_kind",
                         idvar=c("ag_id","ag_code_name","tested_lot"),direction="wide")
@@ -287,10 +292,10 @@ getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
 getLL4ParametersFromWideFormat <- function(wideFormat) {
   wideName = c("ag_code_name","tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
                "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
-               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50")
+               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50", "comments.flag_algorithm", "comments.flag_user")
   newName = c("ag_code_name","tested_lot", "curveid", "renderingHint", "min", "fitted_min",
               "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslope",
-              "ec50", "fitted_ec50", "operator")
+              "ec50", "fitted_ec50", "operator","flag_algorithm","flag_user")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   return(extractParametersFromWideFormat(valuesToGet, wideFormat))
 }
@@ -420,7 +425,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -525,10 +530,12 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   goodPoints <- subset(curveData, is.na(curveData$flag_user) & is.na(curveData$flag_algorithm) & is.na(curveData$flag_on.load) & is.na(curveData$flag_temp))
   
   ##Calculate Means and SDs
-  sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), sd)
-  names(sds)[ncol(sds)] <- "sd"
-  means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), mean)
-  names(means)[ncol(means)] <- "mean"
+  if(nrow(goodPoints) > 0) {
+    sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), sd)
+    names(sds)[ncol(sds)] <- "sd"
+    means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), mean)
+    names(means)[ncol(means)] <- "mean"
+  }
   
   ###Begin Drawing the Plot
   if(!is.na(outFile)) {
@@ -552,19 +559,23 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   #Determine which axes will require log scale plotting
   plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
   #First Plot Good Points so we that can see the flagged points if they are overlayed
-  doGoodPoints <- function(yrn) {
+  plotPoints <- function(yrn, pts) {
     if(!plotMeans) {
       #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(goodPoints$dose, goodPoints$response, log = plotLog, col = goodPoints$color, pch = goodPoints$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
     } else {
       plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
     }
     if(drawStdDevs) {
-      plotCI(x=goodPoints$dose,y=goodPoints$response, uiw=goodPoints$standardDeviation, col = goodPoints$color, add=TRUE,err="y",pch=NA)
+      plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
     }
   }
   #Draw Legend if specified
-  doGoodPoints(yrn = yrn)
+  if(nrow(goodPoints) > 0) {
+    plotPoints(yrn = yrn, goodPoints)
+  } else {
+    plotPoints(yrn = yrn, flaggedPoints)
+  }
   if(showLegend) {
     #par(xpd=TRUE) # allows legends to be printed outside plot area
     #legendYPosition <- 10 ^ par("usr")[2]
@@ -578,10 +589,14 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     legendPCH <- params$pch
     legendLineWidth <- 1
     leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
-    doGoodPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h))
+    if(nrow(goodPoints) > 0) {
+      plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
+    } else {
+      plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
+    }
     leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
   }
-  if(connectPoints) {
+  if(connectPoints && exists("means")) {
     cids <- unique(means$curveid)
     for(c in 1:length(cids)) {
       cid <- cids[c]
@@ -595,8 +610,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     grid(lwd = 1.7)
   }
   #Now Plot Flagged Points
-  points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
-  
+  if(nrow(goodPoints) > 0) {
+    points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
+  }
   #Draw Error Bars and Means
   #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
   getDrawValues <- function(params) {
@@ -622,14 +638,17 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   #Curve Drawing Function
   drawCurveID <- function(cid) {
-    drawValues <- getDrawValues(params = params[cid,])
-    curveID <- params$curveid[cid]
-    curveParams <- subset(params, params$curveid == curveID)
-    for(i in 1:ncol(drawValues)) {
-      assign(names(drawValues)[i], drawValues[,i])
+    flagged <- any(!is.na(params$flag_user), !is.na(params$flag_algorithm)) && any(identical(params$flag_user, "rejected", identical(params$flag_algorithm,"no fit")))
+    if(drawFlagged == FALSE && !flagged) {
+      drawValues <- getDrawValues(params = params[cid,])
+      curveID <- params$curveid[cid]
+      curveParams <- subset(params, params$curveid == curveID)
+      for(i in 1:ncol(drawValues)) {
+        assign(names(drawValues)[i], drawValues[,i])
+      }
+      fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
+      curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
     }
-    fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-    curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
   }
   #Actually Draw Curves
   if(drawCurve) {
@@ -684,8 +703,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
       xlin$y <- c(curveIntercept,curveIntercept)
       #Draw AC50 Lines
-      lines(ylin,lwd=0.7,col="red")
-      lines(xlin,lwd=0.7,col="red")
+      if(!is.NULLorNA(params$operator)) {
+        col <- '#ff0000'
+      } else {
+        col <- '#808080'
+      }
+      lines(ylin,lty = 2, lwd = 2.0,col= col)
+      lines(xlin, lty = 2, lwd = 2.0,col= col)
     }
   }
   if(labelAxes) {
@@ -696,4 +720,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(!is.na(outFile)) {
     dev.off()
   }
+}
+
+is.NULLorNA <- function(value) {
+  if(is.null(value)) return(TRUE)
+  return(is.na(value))
 }

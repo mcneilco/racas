@@ -10,7 +10,9 @@ createStateValue(lsType = "lsType", lsKind = "lsKind", stringValue = NULL,
   sigFigs = NULL, uncertainty = NULL, uncertaintyType = NULL,
   numberOfReplicates = NULL, valueUnit = NULL, unitType = NULL,
   comments = NULL, lsTransaction = NULL, codeValue = NULL,
-  recordedBy = "username", lsState = NULL, testMode = FALSE)
+  recordedBy = "username", lsState = NULL, testMode = FALSE,
+  recordedDate = as.numeric(format(Sys.time(), "\%s")) * 1000,
+  codeType = NULL, codeKind = NULL, codeOrigin = NULL)
 }
 \arguments{
 \item{lsType}{}
