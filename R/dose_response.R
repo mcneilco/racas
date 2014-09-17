@@ -85,8 +85,7 @@ dose_response <- function(fitSettings, fitData) {
 
 biphasic_detection <- function(fitData) {
   returnCols <- copy(names(fitData))
-  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
-
+  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, category, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
     points <- copy(points)
     if(!continueBiphasicDetection) {
       testConc <- as.numeric(NA)
@@ -94,10 +93,10 @@ biphasic_detection <- function(fitData) {
       return(list(points = list(points), model.synced = model.synced, biphasicParameterPreviousValue = biphasicParameterPreviousValue, testConc = testConc, continueBiphasicDetection = continueBiphasicDetection))
     }
     if(firstRun) {
-      #If detect biphasic is on,
+      #If detect biphasic is on and the following
       # there are doses above the empirical max dose with respnoses below empirical max respnose
       # the curve is not inactive, non-converged, insufficient range or potent 
-      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (!inactive & fitConverged & !insufficientRange & !potent)
+      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (category == "sigmoid")
       if(!continueBiphasicDetection) {
         testConc <- as.numeric(NA)
         biphasicParameterPreviousValue <- as.numeric(NA)
@@ -105,7 +104,7 @@ biphasic_detection <- function(fitData) {
       } else {
         if(biphasicRule$type == "percentage") {
           biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-          ifelse(!is.finite(max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))), , TRUE)
+#           ifelse(!is.finite(max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))), , TRUE)
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
           points[dose == testConc, flag_temp := "possible biphasic"]
           model.synced <- FALSE
@@ -114,8 +113,8 @@ biphasic_detection <- function(fitData) {
           stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         }
       }
-    } else {
-      stillASigmoid <- (!inactive & fitConverged & !insufficientRange & !potent)
+    } else {      
+      stillASigmoid <- category == "sigmoid"
       if(stillASigmoid) {
         canCompareAgainstLastFit <- is.finite(goodnessOfFit.model[biphasicRule$parameter][[1]])
       } else {
@@ -155,19 +154,18 @@ biphasic_detection <- function(fitData) {
   fitData[ , continueBiphasicDetection := TRUE]
   fitData[ , firstRun := TRUE]
   fitData[ , biphasicParameterPreviousValue := as.numeric(NA)]
-  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], inactive, fitConverged, potent, insufficientRange, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun), by = curveid]
+  fitData[ ,  tempCategory := categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveid]
+  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun), by = curveid]
   fitData[ , firstRun := FALSE]
   while(any(!fitData$model.synced)) {
-    fitData <- dose_response_fit(fitData)
+    fitData <- dose_response_fit(fitData)  
+    fitData[ ,  tempCategory := categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveid]
     fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], 
                                                                                                                                        points[[1]], 
                                                                                                                                        pointStats[[1]], 
                                                                                                                                        model.synced,
                                                                                                                                        goodnessOfFit.model[[1]], 
-                                                                                                                                       inactive, 
-                                                                                                                                       fitConverged, 
-                                                                                                                                       potent, 
-                                                                                                                                       insufficientRange,
+                                                                                                                                       tempCategory,
                                                                                                                                        biphasicParameterPreviousValue,
                                                                                                                                        testConc,
                                                                                                                                        continueBiphasicDetection,
