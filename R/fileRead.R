@@ -24,7 +24,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   if (grepl("\\.xlsx?$",filePath)) {
     tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
-      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
+      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="%Y-%m-%d")
     }, error = function(e) {
       stopUser("Cannot read input excel file")
     })
@@ -370,14 +370,6 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
       return(as.character(coerceToDate(secondaryFormat, inputValue)))
     }
     
-    # Return an error for Excel Date formats
-    if(inputValue == "A_date_was_in_Excel_Date_format") {
-      addError(paste0("A date was has a Number Format of 'Date' or 'General' in Excel rather than 'Text'. ",
-                      "Please format the dates as Excel 'Text' and use the format YYYY-MM-DD. ",
-                      "Excel stores dates in a format we cannot accept."), errorEnv = errorEnv)
-      return(NA_character_)       
-    }
-    
     #First try substituting out the seperators in the inputValue for those in the expected format
     expectedSeperator <- ifelse(grepl("-",expectedFormat),"-", "/")
     inputValueWExpectedSeperator <- gsub("-|/",expectedSeperator,inputValue)
@@ -498,7 +490,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
   } else if (fileServiceType == "custom") {
-    if(!exists(customSourceFileMove)) {
+    if(!exists('customSourceFileMove')) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)

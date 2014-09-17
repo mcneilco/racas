@@ -18,38 +18,38 @@ options(scipen=99)
 
 #to get system label IDs
 getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	labelSequenceDTO = list(
-		thingTypeAndKind=thingTypeAndKind,
-		labelTypeAndKind=labelTypeAndKind,
-		numberOfLabels=numberOfLabels
-	)
-	cat(toJSON(labelSequenceDTO))
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(labelSequenceDTO)))
-	return(response)
+  labelSequenceDTO = list(
+    thingTypeAndKind=thingTypeAndKind,
+    labelTypeAndKind=labelTypeAndKind,
+    numberOfLabels=numberOfLabels
+  )
+  cat(toJSON(labelSequenceDTO))
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(labelSequenceDTO)))
+  return(response)
 }
 
 
 #to get system labels
 getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind="labelTypeAndKind", numberOfLabels=1, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	labelSequenceDTO = list(
-		thingTypeAndKind=thingTypeAndKind,
-		labelTypeAndKind=labelTypeAndKind,
-		numberOfLabels=numberOfLabels
-	)
-	response <- getURL(
-	  paste(lsServerURL, "labelsequences/getLabels", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(labelSequenceDTO))
-	if (grepl("^<",response)) {
-	  stopUser (paste("The loader was unable to get labels. Instead, it got this response:", response))
-	}
+  labelSequenceDTO = list(
+    thingTypeAndKind=thingTypeAndKind,
+    labelTypeAndKind=labelTypeAndKind,
+    numberOfLabels=numberOfLabels
+  )
+  response <- getURL(
+    paste(lsServerURL, "labelsequences/getLabels", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(labelSequenceDTO))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to get labels. Instead, it got this response:", response))
+  }
   response <- fromJSON(response)
-	return(response)
+  return(response)
 }
 
 # getAutoLabels(thingType="document", thingKind="protocol", labelType="id", labelKind="codeName", numberOfLabels=3)
@@ -57,154 +57,154 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
 
 #to create a new thing kind
 createThingKind <- function(thingType="thingType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	thingKind = list(
-		thingType=thingType,
-		kindName=kindName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "thingkinds", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(thingKind)))
-	return(response)
+  thingKind = list(
+    thingType=thingType,
+    kindName=kindName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "thingkinds", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(thingKind)))
+  return(response)
 }
 
 
 #to create a new labelkind
 createLabelKind <- function(labelType="labelType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	labelKind = list( 
-		labelType=labelType,
-		kindName=kindName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "labelkinds", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(labelKind)))
-	return(response)
+  labelKind = list( 
+    labelType=labelType,
+    kindName=kindName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "labelkinds", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(labelKind)))
+  return(response)
 }
 
 # to create a new thingstatetype
 createStateType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	stateType = list(
-		typeName=typeName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "statetypes", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(stateType)))
-	return(response)
+  stateType = list(
+    typeName=typeName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "statetypes", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(stateType)))
+  return(response)
 }
 
 # to create a new thingstatekind
 createStateKind <- function(stateType="stateType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	stateKind = list(
-		stateType=stateType,
-		kindName=kindName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "statekinds", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(stateKind)))
-	return(response)
+  stateKind = list(
+    stateType=stateType,
+    kindName=kindName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "statekinds", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(stateKind)))
+  return(response)
 }
 
 # to create a new state value type
 createValueType <- function(typeName="typeName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	valueType = list(
-		typeName=typeName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "valuetypes", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(valueType)))
-	return(response)
+  valueType = list(
+    typeName=typeName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "valuetypes", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(valueType)))
+  return(response)
 }
 
 # to create a new state value kind
 createValueKind <- function(valueType="valueType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	valueKind = list(
-		valueType=valueType,
-		kindName=kindName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "valuekinds", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(valueKind)))
-	return(response)
+  valueKind = list(
+    valueType=valueType,
+    kindName=kindName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "valuekinds", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(valueKind)))
+  return(response)
 }
 
 # to create a new interaction kind
 createInteractionKind <- function(interactionType="interactionType List Object", kindName="kindName", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	interactionKind = list(
-		interactionType=interactionType,
-		kindName=kindName
-	)
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "interactionkinds/", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(interactionKind)))
-	return(response)
+  interactionKind = list(
+    interactionType=interactionType,
+    kindName=kindName
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "interactionkinds/", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(interactionKind)))
+  return(response)
 }
 ##to create a new LsTransaction
 createLsTransaction <- function(comments="", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	newLsTransaction = list(
-	  	comments=comments,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	response <- fromJSON(getURL(
-		  paste(lsServerURL, "lstransactions", sep=""),
-		  customrequest='POST',
-		  httpheader=c('Content-Type'='application/json'),
-		  postfields=toJSON(newLsTransaction)))
-	return(response)
+  newLsTransaction = list(
+    comments=comments,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "lstransactions", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(newLsTransaction)))
+  return(response)
 }
 
 
 ##to create a new basic thing
 createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	newThing = list(
-	  	recordedBy=recordedBy,
-		thingType=thingType,
-		thingKind=thingKind,
-		lsTransaction=lsTransaction,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	response <- fromJSON(getURL(
-		  paste(lsServerURL, "lsthings", sep=""),
-		  customrequest='POST',
-		  httpheader=c('Content-Type'='application/json'),
-		  postfields=toJSON(newThing)))
-	return(response)
+  newThing = list(
+    recordedBy=recordedBy,
+    thingType=thingType,
+    thingKind=thingKind,
+    lsTransaction=lsTransaction,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "lsthings", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(newThing)))
+  return(response)
 }
 
 createThingLabel <- function(thing, labelText, author, lsType, lsKind, lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
-	thingLabel = list(
-		thing=thing,
-		labelText=labelText,
-	  	recordedBy=author,
-	    lsType=lsType,
-		lsKind=lsKind,
-		preferred=preferred,
-		ignored=ignored,
-		lsTransaction=lsTransaction,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(thingLabel)
+  thingLabel = list(
+    thing=thing,
+    labelText=labelText,
+    recordedBy=author,
+    lsType=lsType,
+    lsKind=lsKind,
+    preferred=preferred,
+    ignored=ignored,
+    lsTransaction=lsTransaction,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(thingLabel)
 }
 
 saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "thinglabels/jsonArray", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(thingLabels)))
-	return(response)
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "thinglabels/jsonArray", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(thingLabels)))
+  return(response)
 }
 
 #' Creates a tag
@@ -220,11 +220,12 @@ createTag <- function(tagText, id=NULL, version=NULL){
     id = id,
     version = version,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(lsTag)
+  )
+  return(lsTag)
 }
 
-createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorName", lsType="name", lsKind="protocol name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
+createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorName", lsType="name", lsKind="protocol name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE,
+                                recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   # The protocol must include at least an id and version
   protocolLabel = list(
     protocol=protocol,
@@ -235,13 +236,13 @@ createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorNa
     preferred=preferred,
     ignored=ignored,
     lsTransaction=lsTransaction,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+    recordedDate=recordedDate
   )
   return(protocolLabel)
 }
 
 createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="experiment name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
-	experimentLabel = list(
+  experimentLabel = list(
     experiment=experiment,
     labelText=labelText,
     recordedBy=recordedBy,
@@ -249,10 +250,10 @@ createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="author
     lsKind=lsKind,
     preferred=preferred,
     ignored=ignored,
-		lsTransaction=lsTransaction,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(experimentLabel)
+    lsTransaction=lsTransaction,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(experimentLabel)
 }
 
 #' Create experiment with name
@@ -281,18 +282,18 @@ createNamedExperiment <- function(labelText, protocol, recordedBy, lsTransaction
 }
 
 createAnalysisGroupLabel <- function(analysisGroup=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="analysis group name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
-	analysisGroupLabel = list(
+  analysisGroupLabel = list(
     analysisGroup=analysisGroup,
-		labelText=labelText,
-	  	recordedBy=recordedBy,
-	    lsType=lsType,
-		lsKind=lsKind,
-		preferred=preferred,
-		ignored=ignored,
-		lsTransaction=lsTransaction,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(analysisGroupLabel)
+    labelText=labelText,
+    recordedBy=recordedBy,
+    lsType=lsType,
+    lsKind=lsKind,
+    preferred=preferred,
+    ignored=ignored,
+    lsTransaction=lsTransaction,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(analysisGroupLabel)
 }
 
 createTreatmentGroupLabel <- function(treatmentGroup=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="treatment group name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
@@ -326,20 +327,20 @@ createSubjectLabel <- function(subject=NULL, labelText, recordedBy="authorName",
 }
 
 createInteraction <- function(firstThing, secondThing, recordedBy, interactionType, interactionKind,
-									ignored=FALSE, lsTransaction=NULL){
-	interaction = list(
-		firstThing=firstThing,
-		secondThing=secondThing,
-	  	recordedBy=recordedBy,
-	    interactionType=interactionType,
-		interactionKind=interactionKind,
-		ignored=ignored,
-		lsTransaction=lsTransaction,
-		thingType="interaction",
-		thingKind="interaction",
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(interaction)
+                              ignored=FALSE, lsTransaction=NULL){
+  interaction = list(
+    firstThing=firstThing,
+    secondThing=secondThing,
+    recordedBy=recordedBy,
+    interactionType=interactionType,
+    interactionKind=interactionKind,
+    ignored=ignored,
+    lsTransaction=lsTransaction,
+    thingType="interaction",
+    thingKind="interaction",
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(interaction)
 }
 createContainerContainerInteractionState <- function(itxContainerContainer=NULL, lsValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
   containerContainerInteractionState = list(
@@ -372,56 +373,56 @@ createSubjectContainerInteractionState <- function(itxSubjectContainer=NULL, lsV
 }
 
 saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- fromJSON(getURL(
-	  paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(lsInteractions)))
-	return(response)
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(lsInteractions)))
+  return(response)
 }
 
 
 createLsState <- function(lsValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
-	LsState = list(
-		lsValues=lsValues,
-	  	recordedBy=recordedBy,
-	    lsType=lsType,
-		lsKind=lsKind,
-		comments=comments,
-		lsTransaction=lsTransaction,
-		ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(LsState)
+  LsState = list(
+    lsValues=lsValues,
+    recordedBy=recordedBy,
+    lsType=lsType,
+    lsKind=lsKind,
+    comments=comments,
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(LsState)
 }
 createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", lsType="lsType", 
-									lsKind="lsKind", comments="", lsTransaction=NULL){
-	protocolState = list(
+                                lsKind="lsKind", comments="", lsTransaction=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
+  protocolState = list(
     protocol=protocol,
-		lsValues=protocolValues,
-	  	recordedBy=recordedBy,
-	    lsType=lsType,
-		lsKind=lsKind,
-		comments=comments,
-		lsTransaction=lsTransaction,
-		ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(protocolState)
+    lsValues=protocolValues,
+    recordedBy=recordedBy,
+    lsType=lsType,
+    lsKind=lsKind,
+    comments=comments,
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=recordedDate
+  )
+  return(protocolState)
 }
 createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE){
-	experimentState = list(
-	  experiment=experiment, #This will fail if not given an id and version (but the version does not matter)
-	  lsValues=experimentValues,
-	  recordedBy=recordedBy,
-	  lsType=lsType,
-	  lsKind=lsKind,
-	  comments=comments,
-		lsTransaction=lsTransaction,
-		ignored=FALSE,
-	  recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(experimentState)
+  experimentState = list(
+    experiment=experiment, #This will fail if not given an id and version (but the version does not matter)
+    lsValues=experimentValues,
+    recordedBy=recordedBy,
+    lsType=lsType,
+    lsKind=lsKind,
+    comments=comments,
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(experimentState)
 }
 
 createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, testMode=FALSE){
@@ -440,59 +441,59 @@ createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=N
 }
 
 createTreatmentGroupState <- function(treatmentGroup=NULL, treatmentGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
-	treatmentGroupState = list(
+  treatmentGroupState = list(
     treatmentGroup=treatmentGroup,
     lsValues=treatmentGroupValues,
     recordedBy=recordedBy,
     lsType=lsType,
     lsKind=lsKind,
     comments=comments,
-		lsTransaction=lsTransaction,
-		ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(treatmentGroupState)
+    lsTransaction=lsTransaction,
+    ignored=FALSE,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(treatmentGroupState)
 }
 createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroupStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", comments="", lsTransaction=NULL){
-
-	if (is.null(codeName) ) {
-		codeName <- getAutoLabels(thingTypeAndKind="document_treatment group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
-	}
   
-	treatmentGroup= list(
+  if (is.null(codeName) ) {
+    codeName <- getAutoLabels(thingTypeAndKind="document_treatment group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+  }
+  
+  treatmentGroup= list(
     analysisGroup=analysisGroup,
     lsType=lsType, 
     lsKind=lsKind, 
-		codeName=codeName,		
-		subjects=subjects,
+    codeName=codeName,		
+    subjects=subjects,
     lsStates=treatmentGroupStates,
     recordedBy=recordedBy,
     comments=comments,
     lsTransaction=lsTransaction,
-		ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(treatmentGroup)
+    ignored=FALSE,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(treatmentGroup)
 }
 createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", comments="", lsTransaction=NULL){
-
-	if (is.null(codeName) ) {
-		codeName <- getAutoLabels(thingTypeAndKind="document_subject", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
-	}
-	
-	subject= list(
+  
+  if (is.null(codeName) ) {
+    codeName <- getAutoLabels(thingTypeAndKind="document_subject", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+  }
+  
+  subject= list(
     treatmentGroup=treatmentGroup,
     lsType=lsType,
     lsKind=lsKind,
-		codeName=codeName,
+    codeName=codeName,
     lsStates=subjectStates,
     recordedBy=recordedBy,
     comments=comments,
     lsTransaction=lsTransaction,
     ignored=FALSE,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-	)
-	return(subject)
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(subject)
 }
 
 createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
@@ -507,7 +508,7 @@ createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="use
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
-	return(sampleState)
+  return(sampleState)
 }
 
 
@@ -551,7 +552,8 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
                              sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
                              lsTransaction=NULL, codeValue=NULL, recordedBy="username",
-                             lsState=NULL, testMode=FALSE){
+                             lsState=NULL, testMode=FALSE, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
+                             codeType = NULL, codeKind = NULL, codeOrigin = NULL){
   #TODO: use unitType and operatorType
   stateValue = list(
     lsState=lsState,
@@ -575,8 +577,11 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
     ignored=ignored,
     publicData=publicData,
     codeValue=codeValue,
+    codeOrigin=codeOrigin,
+    codeType=codeType,
+    codeKind=codeKind,
     recordedBy=recordedBy,
-    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000,
+    recordedDate=if(testMode) 1376954591000 else recordedDate,
     lsTransaction=lsTransaction		
   )
   return(stateValue)
@@ -584,75 +589,78 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
 
 
 createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", shortDescription="protocol short description", lsTransaction=NULL, 
-							recordedBy="userName", protocolLabels=NULL, protocolStates=NULL ){
-		if (is.null(codeName) ) {
-			codeName <- getAutoLabels(thingTypeAndKind="document_protocol", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
-		}
-	protocol <- list(
-		codeName=codeName,
-		lsType=lsType,
+                           recordedBy="userName", protocolLabels=NULL, protocolStates=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
+                           modifiedBy=NULL, modifiedDate=NULL){
+  if (is.null(codeName) ) {
+    codeName <- getAutoLabels(thingTypeAndKind="document_protocol", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+  }
+  protocol <- list(
+    codeName=codeName,
+    lsType=lsType,
     lsKind=lsKind,
-		shortDescription=shortDescription,
-		lsTransaction=lsTransaction,
-		recordedBy=recordedBy,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
-		lsLabels=protocolLabels,
-		lsStates=protocolStates
-		)
-	return(protocol)	
+    shortDescription=shortDescription,
+    lsTransaction=lsTransaction,
+    recordedBy=recordedBy,
+    recordedDate=recordedDate,
+    modifiedBy=modifiedBy,
+    modifiedDate=modifiedDate,
+    lsLabels=protocolLabels,
+    lsStates=protocolStates
+  )
+  return(protocol)	
 }			
 
 
 createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsKind="default", shortDescription="Experiment Short Description text limit 255", 
-								lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list()){
-	if (is.null(codeName) ) {
-		codeName <- getAutoLabels(thingTypeAndKind="document_experiment", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
-	}
-	experiment <- list(
-		protocol=protocol,
-		codeName=codeName,
-		lsType=lsType,
+                             lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list()){
+  if (is.null(codeName) ) {
+    codeName <- getAutoLabels(thingTypeAndKind="document_experiment", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+  }
+  experiment <- list(
+    protocol=protocol,
+    codeName=codeName,
+    lsType=lsType,
     lsKind=lsKind,
-		shortDescription=shortDescription,
-		recordedBy=recordedBy,
-		lsTransaction=lsTransaction,
-		lsLabels=experimentLabels,
-		lsStates=experimentStates,
-		lsTags=lsTags,
-		recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
-		)
-
-	return(experiment)	
+    shortDescription=shortDescription,
+    recordedBy=recordedBy,
+    lsTransaction=lsTransaction,
+    lsLabels=experimentLabels,
+    lsStates=experimentStates,
+    lsTags=lsTags,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  
+  return(experiment)	
 }			
 
 
 createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default", lsKind="default", lsTransaction=NULL, recordedBy="userName",
-									treatmentGroups=NULL, analysisGroupStates=NULL, testMode=FALSE){
-	if (is.null(codeName) ) {
-	  if(testMode) {
-	    codeName <- "AG-TEST"
-	  } else {
+                                treatmentGroups=NULL, analysisGroupStates=NULL, testMode=FALSE){
+  if (is.null(codeName) ) {
+    if(testMode) {
+      codeName <- "AG-TEST"
+    } else {
       codeName <- getAutoLabels(thingTypeAndKind="document_analysis group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]
-	  }
-	}
-	analysisGroup <- list(
-		codeName=codeName,
+    }
+  }
+  analysisGroup <- list(
+    codeName=codeName,
     lsType=lsType,
     lsKind=lsKind,
-		experiment=experiment,
-		recordedBy=recordedBy,
-		lsTransaction=lsTransaction,
-		treatmentGroups=treatmentGroups,
-		lsStates=analysisGroupStates,
-		recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
-	)
-
-	return(analysisGroup)	
+    experiment=experiment,
+    recordedBy=recordedBy,
+    lsTransaction=lsTransaction,
+    treatmentGroups=treatmentGroups,
+    lsStates=analysisGroupStates,
+    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  
+  return(analysisGroup)	
 }			
 
 
 createContainer <- function(codeName=NULL, ignored = FALSE, lsType="material", lsKind="well", lsTransaction=NULL, recordedBy="userName",
-                               containerStates=NULL, containerLabels=NULL){
+                            containerStates=NULL, containerLabels=NULL){
   if (is.null(codeName) ) {
     codeName <- getAutoLabels(thingTypeAndKind="material_container", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
   }
@@ -726,7 +734,7 @@ createContainerLabel <- function(container=NULL,labelText, recordedBy="userName"
   )
   return(containerLabel)
 }
- 
+
 
 createContainerContainerInteraction <- function(codeName=NULL, ignored = FALSE, lsTransaction=NULL, recordedBy="userName",
                                                 interactionStates=NULL, lsType, lsKind="interaction", 
@@ -780,7 +788,7 @@ createSubjectContainerInteraction <- function(subject, container, lsType, lsKind
 }			
 
 createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, interactionValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
-                                             comments="", lsTransaction=NULL){
+                                           comments="", lsTransaction=NULL){
   interactionState = list(
     subjectContainerInteraction=subjectContainerInteraction,
     lsValues=interactionValues,
@@ -796,59 +804,59 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
 }
 
 saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
- 	  response <- getURL(
-	  paste(lsServerURL, "protocols/jsonArray", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(protocols))
- 	  if (grepl("^<",response)) {
- 	    stopUser (paste("The loader was unable to save your protocols. Instead, it got this response:", response))
- 	  }
- 	  response <- fromJSON(response)
-	return(response)
+  response <- getURL(
+    paste(lsServerURL, "protocols/jsonArray", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(protocols))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your protocols. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 
 saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- getURL(
-	  paste(lsServerURL, "protocols/", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(protocol))
-	if (grepl("^<",response)) {
-	  stopUser (paste("The loader was unable to save your protocol. Instead, it got this response:", response))
-	}
-	response <- fromJSON(response)
-	return(response)
+  response <- getURL(
+    paste(lsServerURL, "protocols/", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(protocol))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your protocol. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 
 
 saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- getURL(
-	  paste(lsServerURL, "experiments/", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(experiment))
-	if (grepl("^<",response)) {
-	  stopUser (paste("The loader was unable to save your experiment. Instead, it got this response:", response))
-	}
-	response <- fromJSON(response)
-	return(response)
+  response <- getURL(
+    paste(lsServerURL, "experiments/", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(experiment))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your experiment. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 
 saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- getURL(
-	  paste(lsServerURL, "experiments/jsonArray", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(experiments))
-	if (grepl("^<",response)) {
-	  stopUser (paste("The loader was unable to save your experiments. Instead, it got this response:", response))
-	}
-	response <- fromJSON(response)
-	return(response)
+  response <- getURL(
+    paste(lsServerURL, "experiments/jsonArray", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(experiments))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your experiments. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
@@ -868,16 +876,16 @@ saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationS
 }
 
 saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-	response <- getURL(
-	  paste(lsServerURL, "analysisgroups/", sep=""),
-	  customrequest='POST',
-	  httpheader=c('Content-Type'='application/json'),
-	  postfields=toJSON(analysisGroup))
-	if (grepl("^<",response)) {
-	  stopUser (paste("The loader was unable to save your data. Instead, it got this response:", response))
-	}
-	response <- fromJSON(response)
-	return(response)
+  response <- getURL(
+    paste(lsServerURL, "analysisgroups/", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(analysisGroup))
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your data. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 # Currently, this cannot accept labels and states
@@ -926,11 +934,11 @@ saveContainerLabels <- function(containerLabels, lsServerURL = racas::applicatio
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(containerLabels))
-    if (grepl("^<",response)) {
-      stopUser (paste("The loader was unable to save your container labels. Instead, it got this response:", response))
-    }
-    response <- fromJSON(response)
-    return(response)
+  if (grepl("^<",response)) {
+    stopUser (paste("The loader was unable to save your container labels. Instead, it got this response:", response))
+  }
+  response <- fromJSON(response)
+  return(response)
 }
 
 saveContainerState <- function(containerState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
@@ -1049,34 +1057,19 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
 
 saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
-  logName = "com.acas.racas.saveAcasEntitiesInternal"
-  logFileName = "racas.log"
-  h = basicTextGatherer()
   
   message <- toJSON(entities)
-  response <- getURL(
+  
+  response <- postURLcheckStatus(
     paste0(lsServerURL, acasCategory, "/jsonArray"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
     postfields=message,
-    headerfunction = h$update)
-  responseHeader <- as.list(parseHTTPHeader(h$value()))
-  statusCode <- as.numeric(responseHeader$status)
-  if (statusCode >= 400) {
-    myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    errorMessage <- paste0("Request to ", lsServerURL, acasCategory, "/jsonArray with method 'POST' failed with status '",
-                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
-                           message, "\nHeader was \n", h$value())
-    myLogger$error(errorMessage)
-    stopUser (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the log ", 
-                 logFileName, " at ", Sys.time()))
-  } else if (grepl("^<",response)) {
-    myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    myLogger$error(response)
-    stopUser (paste0("Internal Error: The loader was unable to save your ", acasCategory, ". Check the logs at ", Sys.time()))
-  } else if (grepl("^\\s*$", response)) {
+    httpheader=c('Content-Type'='application/json')
+  )
+  
+  if (grepl("^\\s*$", response)) {
     return(list())
   }
+  
   response <- fromJSON(response)
   return(response)
 }
@@ -1175,20 +1168,20 @@ saveLabelSequence <- function(labelSequence, lsServerURL = racas::applicationSet
 
 
 compactList <- function(inputList) Filter(Negate(is.null), inputList) ## remove null elements from a list
- 
+
 returnListItem <- function(outputList){
-	## input: list object
-	## output: single list object if there is a single list element
-	## 			return error if 0 or > 1 elements found in the list
-	## note: null list elements are removed
-	parsedList <- compactList(outputList)
-	if (length(parsedList) == 0){
-		return("Error: No results found")
-	} else if (length(parsedList) > 1){
-		return("Error: Multiple results found")		
-	} else {
-		return(compactList(parsedList)[[1]])
-	}
+  ## input: list object
+  ## output: single list object if there is a single list element
+  ## 			return error if 0 or > 1 elements found in the list
+  ## note: null list elements are removed
+  parsedList <- compactList(outputList)
+  if (length(parsedList) == 0){
+    return("Error: No results found")
+  } else if (length(parsedList) > 1){
+    return("Error: Multiple results found")		
+  } else {
+    return(compactList(parsedList)[[1]])
+  }
 }
 
 # getThingKind <- function( thingType="typeName", thingKind="kindName" ){
@@ -1367,10 +1360,10 @@ deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicat
 deleteAnalysisGroupByExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   tryCatch({
     response <- getURLcheckStatus(
-    paste0(lsServerURL, "experiments/", experiment$id, "?with=analysisgroups"),
-    customrequest='DELETE',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(experiment))
+      paste0(lsServerURL, "experiments/", experiment$id, "?with=analysisgroups"),
+      customrequest='DELETE',
+      httpheader=c('Content-Type'='application/json'),
+      postfields=toJSON(experiment))
   }, error = function(e) {
     stop(paste0("The loader was unable to delete the experiment's analysis groups. Check the logs at ", Sys.time()))
   })
@@ -1458,18 +1451,54 @@ getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::
 #'
 #'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater
 getURLcheckStatus <- function(url, ...) {
-  logName = "com.acas.sel"
-  logFileName = "racas.log"
-  h = basicTextGatherer()
-  response = getURL(url=url, ..., headerfunction = h$update)
-  status <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
-  if (status >= 400) {
+  logName <- "com.acas.sel"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, ..., headerfunction = h$update)
+  statusCode <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
+  if (statusCode >= 400) {
     myLogger <- createLogger(logName = logName, logFileName = logFileName)
     myLogger$error(response)
     stopUser (paste("Server Error, see logs at", Sys.time()))
   }
   return(response)
 }
+
+#'Get URL and check status
+#'
+#'This is similar to getURLcheckStatus, but does a POST, and the postfields are
+#'logged in case of an error
+#'
+#'@param url the url to get/post
+#'@param ... optional parameters passed to getURL
+#'@param postfields data sent to the server
+#'  
+#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400
+#'  or greater
+postURLcheckStatus <- function(url, postfields, ...) {
+  logName <- "com.acas.sel"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, ..., postfields=postfields, customrequest='POST', headerfunction = h$update)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
+  if (statusCode >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " with method 'POST' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
+                           message, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
+                     logFileName, " at ", Sys.time()))
+  } else if (grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("POST:\n", postfields, "\nResponse:\n", response)
+    myLogger$error(errorMessage)
+    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the logs at ", Sys.time()))
+  }
+  return(response)
+}
+
 #' Protocol search by name
 #' 
 #' Gets protocols by name
@@ -1488,7 +1517,7 @@ getProtocolsByName <- function(protocolName) {
   }, error = function(e) {
     stopUser("There was an error in accessing the protocol. Please contact your system administrator.")
   })
-    
+  
   return(protocols)
 }
 #' Check valueKinds
@@ -1586,8 +1615,8 @@ flattenDeepEntity <- function(entity, desiredAcasCategory, currentAcasCategory="
       return(data.frame(stringsAsFactors=F))
     }
     output <- plyr::ldply(entity[[lowerCategoryCamelPlural]], flattenDeepEntity, 
-                    desiredAcasCategory=desiredAcasCategory, currentAcasCategory=lowerCategory, 
-                    includeFromState=includeFromState, includeFromEntity=includeFromEntity)
+                          desiredAcasCategory=desiredAcasCategory, currentAcasCategory=lowerCategory, 
+                          includeFromState=includeFromState, includeFromEntity=includeFromEntity)
     if (nrow(output) > 0) {
       currentCategoryCamel <- racas::acasEntityHierarchyCamel[currentAcasCategoryIndex]
       output[, paste0(currentCategoryCamel, "Id")] <- entity$id
