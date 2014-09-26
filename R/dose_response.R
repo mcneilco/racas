@@ -422,7 +422,9 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     }
   }
   if(any(class(fitData) == "data.table")) {
-    fitData[ !is.null(simpleFitSettings), simpleFitSettings := NULL]
+    if(!is.null(fitData$simpleFitSettings)) {
+      fitData[ , simpleFitSettings := NULL]
+    }
     fitData[ , simpleFitSettings := toJSON(simpleFitSettings)]
     if(!is.null(flagUser)) {
       fitData[ , flag_user := flagUser]
@@ -1800,6 +1802,7 @@ length0_or_na_to_null <- function(x) {
 }
 
 add_clob_values_to_fit_data <- function(fitData) {
+  fitData <- copy(fitData)
   fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
     if(model.synced) {
         if(length(reportedParameters[[1]]) == 0) {
@@ -1831,5 +1834,6 @@ add_clob_values_to_fit_data <- function(fitData) {
       fitData[1]$parameters[[]]
     }
   }, by = curveid]
+  
   return(fitData)
 }

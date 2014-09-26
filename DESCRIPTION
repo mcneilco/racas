@@ -7,8 +7,6 @@ Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
 License: GPL
-Depends:
-      R
 Imports:
     drc,
     data.table,
