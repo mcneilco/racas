@@ -42,7 +42,6 @@ getCurveData <- function(curveids, ...) {
 }
 getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical = TRUE, ...) {
   
-  
   drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag as flag_on_load, response_ss_id, response_ss_version, response_sv_id, flag_sv_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
   ivPO <- function(type)  {
     paste0("SELECT *
@@ -460,70 +459,16 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   
   #Determine axes ranges
-  maxDose <- max(curveData$dose)
-  minDose <- min(curveData$dose)
-  maxResponse <- max(curveData$response)
-  minResponse <- min(curveData$response)
-  responseRange <- abs(maxResponse-minResponse)
-  doseRange <- abs(maxDose-minDose)
-  if(is.na(ymin)) {
-    if(logResponse) {
-      ymin <- 10^(log10(min(curveData$response[curveData$response>0])) - 0.5)
-    } else {
-      ymin <- (minResponse - 0.01*responseRange)
-    }
-  }
-  if(is.na(ymax)) {
-    if(logResponse) {
-      ymax <- 10^(log10(maxResponse) + 0.5)
-    } else {
-      ymax <- (maxResponse + 0.01*responseRange)
-    }
-  }
-  if(is.na(xmax)) {
-    if(logDose) {
-      xmax <- 10^(log10(maxDose) + 0.5)
-    } else {
-      xmax <- maxDose + abs(0.01 * doseRange)
-    }  
-  }
-  if(is.na(xmin)) {
-    if(logDose) {
-      xmin <- 10^(log10(min(curveData$dose[curveData$response>0])) - 0.5)
-    } else {
-      xmin <- minDose - abs(0.01 * doseRange)
-    }
-  }
-  #If plotting log data then xrange/yrange vals cannot be negative
+  plot_limits <- get_plot_window(curveData)
+  xrn <- plot_limits[c(1,3)]
   if(logDose) {
-    if(!is.na(xmin)) {
-      if(xmin <= 0) {
-        xmin = 0.001
-      }
-    }
-    if(!is.na(xmax) && !is.na(xmin)) {
-      if(xmax <= xmin) {
-        xmin = NA
-        xmax = NA
-      }
-    }
+    xrn <- 10^(xrn)
   }
+  yrn <- plot_limits[c(4,2)]
   if(logResponse) {
-    if(!is.na(ymin)) {
-      if(ymin <= 0) {
-        ymin = 0.001
-      }
-    }
-    if(!is.na(xmax) && !is.na(ymin)) {
-      if(ymax <= ymin) {
-        ymin = NA
-        ymax = NA
-      }
-    }
+    yrn <- 10^(yrn)
   }
   
-  xrn <- c(xmin, xmax)
-  yrn <- c(ymin, ymax)
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
   flaggedPoints <- subset(curveData, !is.na(curveData$flag_user) | !is.na(curveData$flag_algorithm) | !is.na(curveData$flag_on.load) | !is.na(curveData$flag_temp))
@@ -559,12 +504,12 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   #Determine which axes will require log scale plotting
   plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
   #First Plot Good Points so we that can see the flagged points if they are overlayed
-  plotPoints <- function(yrn, pts) {
+  plotPoints <- function(yrn, pts, ...) {
     if(!plotMeans) {
       #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
     } else {
-      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "")
+      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
     }
     if(drawStdDevs) {
       plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
@@ -574,6 +519,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(nrow(goodPoints) > 0) {
     plotPoints(yrn = yrn, goodPoints)
   } else {
+    flaggedPoints$pch <- 4
     plotPoints(yrn = yrn, flaggedPoints)
   }
   if(showLegend) {

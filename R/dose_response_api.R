@@ -152,7 +152,7 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
   
   sessionID <- saveSession()
   
-  response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
+  response <- api_doseResponse_fitData_to_curveDetail(fitData, saved = TRUE, sessionID = sessionID)
   return(response)
 }
 #' fitData object to json response
@@ -180,12 +180,12 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     fittedParametersList[1:nrow(fittedParameters)] <- fittedParameters$numericValue
     names(fittedParametersList) <- tolower(gsub('Fitted ', '', fittedParameters$lsKind))
     
-    curveAttributes <- list(EC50 = na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$numericValue),
-                            Operator = na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$operatorKind),
-                            SST = fitData[1]$ag_values[[1]][lsKind == "SST"]$numericValue,
-                            SSE =  fitData[1]$ag_values[[1]][lsKind == "SSE"]$numericValue,
-                            rSquared =  fitData[1]$ag_values[[1]][lsKind == "rSquared"]$numericValue,
-                            compoundCode = fitData[1]$ag_values[[1]][lsKind == "batch code"]$codeValue
+    curveAttributes <- list(EC50 = length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$numericValue),
+                            Operator = length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "EC50"]$operatorKind),
+                            SST = length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "SST"]$numericValue),
+                            SSE =  length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "SSE"]$numericValue),
+                            rSquared =  length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "rSquared"]$numericValue),
+                            compoundCode = length0_or_na_to_null(fitData[1]$ag_values[[1]][lsKind == "batch code"]$codeValue)
     )
     category <- fitData[1]$ag_values[[1]][lsKind == "category" & ignored == FALSE]$stringValue
   } else {
@@ -219,6 +219,9 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                              reported_operator = curveAttributes$Operator,
                              fittedParametersList)
   )
+  if(length(fittedParametersList) == 0) {
+    plotData$curve <- NULL
+  }
   return(toJSON(list(curveid = curveid,
                      reportedValues = reportedValues,
                      fitSummary = fitSummary,

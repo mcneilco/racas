@@ -42,13 +42,16 @@ dose_response <- function(fitSettings, fitData) {
   
   #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(fitSettings$updateFlags)
-  if(nrow(updateFlags) > 0 ) {
+  if(nrow(updateFlags) > 0) {
     #updateFlags[flag=="NA", flag := as.character(NA)]
     setkey(updateFlags,"response_sv_id" )
     #First fix issues with updateFlags (they may come in with "NA" instead of NA and logical istead of character)
-    updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
-    updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
-    updateFlags[ , flag_algorithm := as.character(NA)]
+    #bug in data.table 1.9.2 fixed in 1.9.3, when data.table is updated, we can remove this if block
+    if(nrow(updateFlags) > 1) {
+      updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
+      updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
+      updateFlags[ , flag_algorithm := as.character(NA)]
+    }
     updateFlags[ , flag_user := as.character(flag_user)]
     updateFlags[ , flag_on.load := as.character(flag_on.load)]
     updateFlags[ , flag_algorithm := as.character(flag_algorithm)]
@@ -419,10 +422,8 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     }
   }
   if(any(class(fitData) == "data.table")) {
-    if(!is.null(simpleFitSettings)) {
-      fitData[ , simpleFitSettings := NULL]
-      fitData[ , simpleFitSettings := toJSON(simpleFitSettings)]
-    }
+    fitData[ !is.null(simpleFitSettings), simpleFitSettings := NULL]
+    fitData[ , simpleFitSettings := toJSON(simpleFitSettings)]
     if(!is.null(flagUser)) {
       fitData[ , flag_user := flagUser]
     }
@@ -467,7 +468,11 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
       if(logResponse) {
         ymin <- floor(log10(maxResponse))
       } else {
-        ymin <- (minResponse - 0.030*responseRange)
+        if(responseRange != 0) {
+          ymin <- (minResponse - 0.030*responseRange)
+        } else {
+          ymin <- floor(maxResponse)
+        }
       }
       if(ymin > 0) {
         ymin  <- 0 - responseRange*0.1
@@ -477,7 +482,11 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
       if(logResponse) {
         ymax <- ceiling(log10(maxResponse))
       } else {
-        ymax <- (maxResponse + 0.030*responseRange)
+        if(responseRange != 0) {
+          ymax <- (maxResponse + 0.030*responseRange)
+        } else {
+          ymax <- ceiling(maxResponse)
+        }
       }
     }
     if(is.na(xmax)) {
@@ -1031,17 +1040,17 @@ categorize_fit_data <- function(modelHint, results.parameterRules, fitSettings, 
   resultList <- unlist(results.parameterRules)
   category <- switch(modelHint,
                      "LL.4" = {
-                       if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
-                         category <- "weak tested potency"
-                       }
-                       if("ec50ThresholdLow" %in% resultList | potent) {
-                         category <- "strong tested potency"
-                       }
                        if(!converged) {
                          category <- "lack of fit - fit did not converge"
                        }
                        if(insufficientRange) {
                          category <- "insufficient range"
+                       }
+                       if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
+                         category <- "weak tested potency"
+                       }
+                       if("ec50ThresholdLow" %in% resultList | potent) {
+                         category <- "strong tested potency"
                        }
                        if(inactive) {
                          category <- "inactive"
@@ -1269,7 +1278,6 @@ get_goodness_of_fit_parameters_drc_object <- function(drcObj) {
 #' #FitData object plus the "cars" data to a json string
 #' fit_data_to_acas_experiment_response(fitData, cars)
 fit_data_to_acas_experiment_response <- function(fitData, experimentCode, transactionId = -1, status, hasWarning, errorMessages = as.character(), ...) {
-
   hasError <- length(errorMessages) > 0
   if(!hasError) {
     rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
@@ -1782,6 +1790,11 @@ is_null_or_na <- function(value) {
   return(is.na(value))
 }
 na_to_null <- function(x) {
+  if(is_null_or_na(x)) return(NULL)
+  return(x)
+}
+length0_or_na_to_null <- function(x) {
+  if(length(x) == 0) return(NULL)
   if(is_null_or_na(x)) return(NULL)
   return(x)
 }

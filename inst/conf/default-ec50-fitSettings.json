@@ -9,7 +9,7 @@
    "inactiveRule":{
       "type":"threshold",
       "value":20,
-      "activeDoses":1
+      "activeDoses":2
    },
    "biphasicRule":{
       "type":"percentage",

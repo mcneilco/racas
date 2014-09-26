@@ -81,6 +81,8 @@ formatDNETFitData <- function(fitData) {
                         points = split(as.data.table(fitData$points), fitData$points$curveid),
                         parameters = split(as.data.table(fitData$parameters), fitData$parameters$curveid),
                         key = "curveid")
+  fitData[ ,flag_user := as.character(NA)]
+  fitData[ ,flag_algorithm := as.character(NA)]
   myParameterRules <- list(goodnessOfFits = list(), limits = list())
   myInactiveRule <- list()
   myFixedParameters <- list()
@@ -121,13 +123,22 @@ dnetLocalSettings$server.database.r.driver="Oracle()"
 fitData <- getDNETCurveData(fitResultIDs, applicationSettings = dnetLocalSettings)
 fitData <- formatDNETFitData(fitData)
 
-file <- "inst/docs/example-simple-fitsettings-ll4.json"
+file <- "inst/conf/default-ec50-fitSettings.json"
 file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
 simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
-simpleFitSettings$inactiveThreshold <- 20
-fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
-fitSettings$inverseAgonistMode <- FALSE
+simpleFitSettings_1571 <- simpleFitSettings
+simpleFitSettings_1575$inverseAgonistMode <- FALSE
+simpleFitSettings_1575 <- simpleFitSettings
+simpleFitSettings_1575$inverseAgonistMode <- TRUE
+simpleFitSettings_1572 <- simpleFitSettings
+simpleFitSettings_1572$max$limitType <- "limit"
+simpleFitSettings_1572$max$limitType <- 100
+fitSettings_1571 <- simple_to_advanced_fit_settings(simpleFitSettings_1571)
+fitSettings_1575 <- simple_to_advanced_fit_settings(simpleFitSettings_1575)
+fitSettings_1572 <- simple_to_advanced_fit_settings(simpleFitSettings_1572)
+
+
 
 fitted <- dose_response_session(fitSettings = fitSettings, fitData = fitData)[[1]]
 oldRegressionResults <- read.csv("/Users/bbolt/Documents/dns/newCurveFitRegression/old_regression_results.txt", sep = "\t")
@@ -140,7 +151,11 @@ blah <- fitted[, c("curveid","category","DNETCategory"), with = FALSE][category!
 for(i in blah$curveid) {
   cat(paste0("New Category: ", fitted[curveid==i,]$category,"\n"))
   cat(paste0("Old Category: ", fitted[curveid==i,]$DNETCategory,"\n"))
-  plot(fitted[curveid==i,]$model[[1]])
+  if( !is.null(fitted[curveid==i,]$model[[1]])) {
+    plot(fitted[curveid==i,]$model[[1]])
+  } else {
+    plot(fitted[curveid==i,]$points[[1]][ , data.frame(dose = dose, response = response)], log = "x")
+  }
   readline("next:")
 }
 
@@ -184,6 +199,7 @@ fitData[ , points := {
   pts[dose == doses[2], response := response - 40]
   pts[dose == doses[3], response := response - 20]
   pts[dose == doses[4], response := response - 10]
+  pts[ , flagchanged := as.character(NA)]
   list(list(pts))
 }, by = curveid]
 

@@ -19,7 +19,7 @@ Curve Fit Summary
 
 ```{r categories, echo=FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
 ggplot(fitData, aes(x=category, fill=is.na(flag_algorithm))) + geom_bar()  + 
-  scale_fill_manual(values=c("#33CC00", "#CC0000")) +  
+  scale_fill_manual(values=c("TRUE" = "#33CC00", "FALSE" = "#CC0000")) +  
   labs(fill="Successful Fit") + 
   theme(axis.text=element_text(size=16, face="bold", angle = 20, hjust = 1),
         axis.title = element_text(size = 20, face = "bold"),
@@ -31,8 +31,9 @@ ggplot(fitData, aes(x=category, fill=is.na(flag_algorithm))) + geom_bar()  +
 ***Goodness of Fit***
 
 ```{r goodnessOfFit, echo=FALSE, fig.width=10, fig.height=10, cache=FALSE}
-gf <- rbindlist(fitData$goodnessOfFit.model)
-gf <- gf[ , Category := fitData$category]
+goodnessOfFitExists <- !unlist(lapply(fitData$goodnessOfFit.model, is.null))
+gf <- rbindlist(fitData[goodnessOfFitExists,]$goodnessOfFit.model)
+gf <- gf[ , Category := fitData[goodnessOfFitExists,]$category]
 gf <- as.data.frame(gf)
 gf <- reshape2::melt(gf, id.vars = "Category")
 gf <- split(gf,f = gf$variable)
@@ -53,8 +54,8 @@ g <- lapply(1:length(gf), function(x) {
                  legend.title=element_text(size=16),
                  legend.text=element_text(size=16)
                  )
-  g + scale_fill_gradient(low = ifelse(variable!="rSquared","green","red"), high = ifelse(variable!="rSquared","red","green"))
-})
+  g + scale_fill_gradient(low = ifelse(variable!="rSquared","green","red"), high = ifelse(variable!="rSquared","red","green")) + scale_y_continuous(name = "", breaks = NULL)
+}) 
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(nrow=length(g), ncol=1,)))
 plots <- lapply(1:length(g), function(x) print(g[[x]], vp = viewport(layout.pos.row = x, layout.pos.col = 1)))
