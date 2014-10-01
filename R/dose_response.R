@@ -48,9 +48,9 @@ dose_response <- function(fitSettings, fitData) {
     #First fix issues with updateFlags (they may come in with "NA" instead of NA and logical istead of character)
     #bug in data.table 1.9.2 fixed in 1.9.3, when data.table is updated, we can remove this if block
     if(nrow(updateFlags) > 1) {
-      updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
-      updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
-      updateFlags[ , flag_algorithm := as.character(NA)]
+      if(class(updateFlags$flag_user) == "character") updateFlags[ flag_user == "NA", flag_user := as.character(NA)]
+      if(class(updateFlags$flag_on.load) == "character") updateFlags[ flag_on.load == "NA", flag_on.load := as.character(NA)]
+      if(class(updateFlags$flag_algorithm) == "character") updateFlags[ , flag_algorithm := as.character(NA)]
     }
     updateFlags[ , flag_user := as.character(flag_user)]
     updateFlags[ , flag_on.load := as.character(flag_on.load)]
@@ -1399,7 +1399,7 @@ create_analysis_group_values_from_fitData <- function(reportedParameters, fixedP
   
   x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
-  lsTypes <- unlist(lapply(x, function(x) ifelse(class(x$value)=="numeric", "numericValue", "stringValue")))
+  lsTypes <- unlist(lapply(x, function(x) ifelse(class(x$value) %in% c("numeric","integer"), "numericValue", "stringValue")))
   lsTypes[names(lsTypes) == "tested_lot"] <- "codeValue"
   lsTypes[names(lsTypes)  %in% c("algorithmFlag", "userFlag")] <- "comments"
   lsTypes[names(lsTypes) %in% c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob", "simpleFitSettings")] <- "clobValue"
