@@ -41,6 +41,7 @@ applicationSettings <- data.frame(
   db_name = "databasename",       #ACAS Schema db name
   db_host = "mcneilco.com",       #ACAS Host Name
   db_port = "5432",               #ACAS Port Number
+  logDir = as.character(NA),               #ACAS Port Number
   stringsAsFactors = FALSE
 )
 #' Read a configuration file to racas::applicationSettings

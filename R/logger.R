@@ -50,8 +50,8 @@ createLogger <- function(logName = "com.default.logger", logFileName = "racas.lo
   logReset()
   logger <- getLogger(logName)
   setLevel(logLevel, logger)
-  
-  if(is.na(logDir)) {
+
+  if(is.null(logDir) || is.na(logDir)) {
     logDir <-  getwd()
   }
   logPath <- paste0(logDir,"/",logFileName)
