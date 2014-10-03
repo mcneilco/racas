@@ -5,6 +5,8 @@
 #'
 #' @param qu a sql query character string
 #' @param globalConnect should the query assume a global conn variable and return one to the global namespace?
+#' @param conn a database connection to use for the query instead of opening a new connection
+#' @param catchErro logical on error throw error or return list object with success = false, message = character
 #' @param ... expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}
 #' @return A data frame result from the query
 #' @keywords query
@@ -28,7 +30,7 @@
 #' # user  system elapsed 
 #' # 0.007   0.001   0.468 
 #' 
-query <- function(qu, globalConnect=FALSE, conn = NULL, ...) {
+query <- function(qu, globalConnect=FALSE, conn = NULL, catchError = TRUE, ...) {
   isSend <- grepl("^UPDATE|^CREATE|^DELETE|^DROP|^INSERT|^ALTER",toupper(sub("^\\s+", "", qu)))
   closeConnectionOnWaytOut <- !globalConnect & is.null(conn)
   on.exit({if(closeConnectionOnWaytOut) {DBI::dbDisconnect(conn)}})
@@ -55,11 +57,23 @@ query <- function(qu, globalConnect=FALSE, conn = NULL, ...) {
     }
   },
   error = function(ex) {
-    return(list(success = FALSE, error = ex))
+    if(catchError) {
+      return(list(success = FALSE, error = ex))
+    } else {
+      stop(ex)
+    }
   })
   return(result)
 }
-
+getAllDatabaseConnections <- function(dbDriver = racas::applicationSettings$server.database.r.driver) {
+  driver <- eval(parse(text = applicationSettings$server.database.r.driver))
+  dbConnectionsList <- DBI::dbListConnections(driver)
+  return(dbConnectionsList)
+}
+closeAllDatabaseConnections <- function(...) {
+  databaseConnections <- getAllDatabaseConnections(...)
+  lapply(databaseConnections, DBI::dbDisconnect)
+}
 getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
   driver <- eval(parse(text = applicationSettings$server.database.r.driver))
   conn <- switch(class(driver),
