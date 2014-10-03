@@ -2,7 +2,7 @@
 saveSession <- function(id = NA) {
   if(is.na(id)) {
     id <- basename(tempfile(pattern = "rSe-"))
-    temps <- lapply(c('TMPDIR', 'TMP', 'TEMP'), Sys.getenv)
+    temps <- lapply(c('TMPDIR', 'TMP', 'TEMP', '/tmp'), Sys.getenv)
     for(t in temps) { 
       if( t != "")
         id <- file.path(t, id)
