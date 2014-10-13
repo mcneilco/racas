@@ -459,7 +459,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   
   #Determine axes ranges
-  plot_limits <- get_plot_window(curveData)
+  plot_limits <- get_plot_window(curveData, ymin = ymin, ymax = ymax, xmin = ymax, xmax = ymax)
   xrn <- plot_limits[c(1,3)]
   if(logDose) {
     xrn <- 10^(xrn)
