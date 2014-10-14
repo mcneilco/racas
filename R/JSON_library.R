@@ -460,8 +460,8 @@ createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroup
     codeName <- getAutoLabels(thingTypeAndKind="document_treatment group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
   }
   
-  treatmentGroup= list(
-    analysisGroup=analysisGroup,
+	treatmentGroup= list(
+    analysisGroups=list(analysisGroup),
     lsType=lsType, 
     lsKind=lsKind, 
     codeName=codeName,		
@@ -476,13 +476,13 @@ createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroup
   return(treatmentGroup)
 }
 createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", comments="", lsTransaction=NULL){
-  
-  if (is.null(codeName) ) {
-    codeName <- getAutoLabels(thingTypeAndKind="document_subject", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
-  }
-  
-  subject= list(
-    treatmentGroup=treatmentGroup,
+
+	if (is.null(codeName) ) {
+		codeName <- getAutoLabels(thingTypeAndKind="document_subject", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
+	}
+	
+	subject= list(
+    treatmentGroups=list(treatmentGroup),
     lsType=lsType,
     lsKind=lsKind,
     codeName=codeName,
@@ -647,15 +647,15 @@ createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default"
     codeName=codeName,
     lsType=lsType,
     lsKind=lsKind,
-    experiment=experiment,
-    recordedBy=recordedBy,
-    lsTransaction=lsTransaction,
-    treatmentGroups=treatmentGroups,
-    lsStates=analysisGroupStates,
-    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
-  )
-  
-  return(analysisGroup)	
+		experiments=list(experiment),
+		recordedBy=recordedBy,
+		lsTransaction=lsTransaction,
+		treatmentGroups=treatmentGroups,
+		lsStates=analysisGroupStates,
+		recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
+	)
+
+	return(analysisGroup)	
 }			
 
 

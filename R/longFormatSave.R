@@ -503,11 +503,157 @@ linkOldContainers <- function(entityData, stateGroups, labelPrefix = NULL, state
 }
 
 
+saveStatesFromExplicitFormat <- function(entityData, entityKind, testMode=FALSE) {
+  #TODO: should allow containers or interactions
+  idColumn = "stateID"
+  entityID = paste0(entityKind, "ID")
+  entityVersion = paste0(entityKind, "Version")
+  
+  acasServerEntity <- changeEntityMode(entityKind, "camel", "lowercase")
+  
+  
+  # If no version given, assume version 0
+  if (!(entityVersion %in% names(entityData))) {
+    entityData[[entityVersion]] <- 0
+  }
+  
+  if (!(idColumn %in% names(entityData))) {
+    stop(paste0("Internal Error: ", idColumn, " must be a column in entityData"))
+  }
+  
+  if (!(entityKind %in% racas::acasEntityHierarchyCamel)) {
+    stop("Internal Error: entityKind must be in racas::acasEntityHierarchyCamel")
+  }
+  
+  if (!(entityID %in% names(entityData))) {
+    stop("Internal Error: ", entityID, " must be included in entityData")
+  }
+  
+  createExplicitLsState <- function(entityData, entityKind) {
+    # TODO: add stateType and StateKind to meltBatchCodes
+    lsType <- entityData$stateType[1]
+    lsKind <- entityData$stateKind[1]
+    lsState <- list(lsType = entityData$stateType[1],
+                    lsKind = entityData$stateKind[1],
+                    recordedBy = entityData$recordedBy[1],
+                    lsTransaction = entityData$lsTransaction[1])
+    # e.g. lsState$analysisGroup <- list(id=entityData$analysisGroupID[1], version=0)
+    lsState[[entityKind]] <- list(id = entityData[[entityID]][[1]], version = entityData[[entityVersion]][1])
+    return(lsState)
+  }
+  
+  lsStates <- dlply(.data=entityData, .variables=idColumn, .fun=createExplicitLsState, entityKind=entityKind)
+  originalStateIds <- names(lsStates)
+  names(lsStates) <- NULL
+  if (testMode) {
+    lsStates <- lapply(lsStates, function(x) {x$recordedDate <- 1381939115000; return (x)})
+    return(toJSON(lsStates))
+  } else {
+    savedLsStates <- saveAcasEntities(lsStates, paste0(acasServerEntity, "states"))
+  }
+  
+  if (!is.list(savedLsStates) || length(savedLsStates) != length(lsStates)) {
+    stop ("Internal error: the roo server did not respond correctly to saving states")
+  }
+  
+  lsStateIds <- sapply(savedLsStates, getElement, "id")
+  lsStateVersions <- sapply(savedLsStates, getElement, "version")
+  entityStateTranslation <- data.frame(entityStateId = lsStateIds, 
+                                       originalStateId = originalStateIds, 
+                                       entityStateVersion = lsStateVersions)
+  stateIdAndVersion <- entityStateTranslation[match(entityData[[idColumn]], 
+                                                    entityStateTranslation$originalStateId),
+                                              c("entityStateId", "entityStateVersion")]
+  return(stateIdAndVersion)
+}
+
+saveValuesFromExplicitFormat <- function(entityData, entityKind, testMode=FALSE) {
+  ### static variables
+  #TODO: should allow containers or interactions
+  idColumn = "stateID"
+  acasServerEntity <- changeEntityMode(entityKind, "camel", "lowercase")
+  
+  #create a uniqueID to split on
+  entityData$uniqueID <- 1:(nrow(entityData))
+  
+  optionalColumns <- c("fileValue", "urlValue", "codeValue", "numericValue", "dateValue",
+                       "valueOperator", "valueUnit", "clobValue", "blobValue", "numberOfReplicates",
+                       "uncertainty", "uncertaintyType", "comments")
+  missingOptionalColumns <- Filter(function(x) !(x %in% names(entityData)),
+                                   optionalColumns)
+  entityData[missingOptionalColumns] <- NA
+  
+  ### Error Checking
+  requiredColumns <- c("valueType", "valueKind", "publicData", "stateVersion", "stateID")
+  if (any(!(requiredColumns %in% names(entityData)))) {
+    stop("Internal Error: Missing input columns in entityData, must have ", paste(requiredColumns, collapse = ", "))
+  }
+  
+  # Turns factors to character
+  factorColumns <- vapply(entityData, is.factor, c(TRUE))
+  entityData[factorColumns] <- lapply(entityData[factorColumns], as.character)
+  
+  if (is.character(entityData$dateValue)) {
+    entityData$dateValue[entityData$dateValue == ""] <- NA
+    entityData$dateValue <- as.numeric(format(as.Date(entityData$dateValue,origin="1970-01-01"), "%s"))*1000
+  } else if (is.numeric(entityData$dateValue)) {
+    # No change
+  } else if (is.null(entityData$dateValue) || all(is.na(entityData$dateValue))) {
+    entityData$dateValue <- as.character(NA)
+  } else {
+    stop("Internal Error: unrecognized class of entityData$dateValue: ", class(entityData$dateValue))
+  }
+  
+  
+  
+  ### Helper function
+  createLocalStateValue <- function(valueData) {
+    stateValue <- with(valueData, {
+      createStateValue(
+        lsState = list(id = stateID, version = stateVersion),
+        lsType = if (valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue")) {
+          valueType
+        } else {"numericValue"},
+        lsKind = valueKind,
+        stringValue = if (is.character(stringValue) && !is.na(stringValue)) {stringValue} else {NULL},
+        dateValue = if(is.numeric(stringValue)) {dateValue} else {NULL},
+        clobValue = if(is.character(clobValue) && !is.na(clobValue)) {clobValue} else {NULL},
+        blobValue = if(!is.null(blobValue) && !is.na(blobValue)) {blobValue} else {NULL},
+        codeValue = if(is.character(codeValue) && !is.na(codeValue)) {codeValue} else {NULL},
+        fileValue = if(is.character(fileValue) && !is.na(fileValue)) {fileValue} else {NULL},
+        urlValue = if(is.character(urlValue) && !is.na(urlValue)) {urlValue} else {NULL},
+        valueOperator = if(is.character(valueOperator) && !is.na(valueOperator)) {valueOperator} else {NULL},
+        operatorType = if(is.character(operatorType) && !is.na(operatorType)) {operatorType} else {NULL},
+        numericValue = if(is.numeric(numericValue) && !is.na(numericValue)) {numericValue} else {NULL},
+        valueUnit = if(is.character(valueUnit) && !is.na(valueUnit)) {valueUnit} else {NULL},
+        unitType = if(is.character(unitType) && !is.na(unitType)) {unitType} else {NULL},
+        publicData = publicData,
+        lsTransaction = lsTransaction,
+        numberOfReplicates = if(is.numeric(numberOfReplicates) && !is.na(numberOfReplicates)) {numberOfReplicates} else {NULL},
+        uncertainty = if(is.numeric(uncertainty) && !is.na(uncertainty)) {uncertainty} else {NULL},
+        uncertaintyType = if(is.character(uncertaintyType) && !is.na(uncertaintyType)) {uncertaintyType} else {NULL},
+        recordedBy = recordedBy,
+        comments = if(is.character(comments) && !is.na(comments)) {comments} else {NULL}
+      )
+    })
+    return(stateValue)
+  }
+  entityValues <- plyr::dlply(.data = entityData, 
+                              .variables = .(uniqueID), 
+                              .fun = createLocalStateValue)
+  
+  names(entityValues) <- NULL
+  
+  if (testMode) {
+    entityValues <- lapply(entityValues, function(x) {x$recordedDate <- 42; return (x)})
+    return(toJSON(entityValues))
+  } else {
+    savedEntityValues <- saveAcasEntities(entityValues, paste0(acasServerEntity, "values"))
+    return(savedEntityValues)
+  }
+}
 
 
-
-
- 
 #' Turns a batchCode column into rows in a long format
 #' 
 #' @param entityData a data frame with data
