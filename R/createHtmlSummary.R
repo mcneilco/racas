@@ -31,7 +31,7 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
   if(!is.null(summaryInfo$info)) {
     htmlOutputFormat <- paste0(htmlOutputFormat, "<p>Information:</p>
                                <ul>
-                               <li><%=paste(paste0(names(summaryInfo$info),': ',summaryInfo$info),collapse='</li><li>')%></li>
+                               <li><%=paste(paste0(names(summaryInfo$info), ': ', vapply(summaryInfo$info, as.character, '')),collapse='</li><li>')%></li>
                                </ul>")
   }
   if(!is.null(summaryInfo$viewerLink)) {

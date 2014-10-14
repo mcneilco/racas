@@ -1,62 +1,22 @@
 containerRemappingRequest <- list(
   "containerRemaps" = list(
-    "containerRemap" = list("originContainerCode" = "C1097894",
-                            "destinationContainerCode" = "E0017097",
+    "containerRemap" = list("originContainerCode" = "C1129952",
+                            "destinationContainerCode" = "E0017158",
                             "direction" = "down",
                             "quadrant" = 1,
                             "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1097894",
-                            "destinationContainerCode" = "E0017098",
+    "containerRemap" = list("originContainerCode" = "C1129952",
+                            "destinationContainerCode" = "E0017159",
                             "direction" = "down",
                             "quadrant" = 2,
                             "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1097894",
-                            "destinationContainerCode" = "E0017099",
+    "containerRemap" = list("originContainerCode" = "C1129952",
+                            "destinationContainerCode" = "E0017160",
                             "direction" = "down",
                             "quadrant" = 3,
                             "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1097894",
-                            "destinationContainerCode" = "E0017100",
-                            "direction" = "down",
-                            "quadrant" = 4,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1098172",
-                            "destinationContainerCode" = "E0017101",
-                            "direction" = "down",
-                            "quadrant" = 1,
-                            "user" = "mperez"),   
-    "containerRemap" = list("originContainerCode" = "C1098172",
-                            "destinationContainerCode" = "E0017102",
-                            "direction" = "down",
-                            "quadrant" = 2,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1098172",
-                            "destinationContainerCode" = "E0017103",
-                            "direction" = "down",
-                            "quadrant" = 3,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1098172",
-                            "destinationContainerCode" = "E0017104",
-                            "direction" = "down",
-                            "quadrant" = 4,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1113036",
-                            "destinationContainerCode" = "E0017105",
-                            "direction" = "down",
-                            "quadrant" = 1,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1113036",
-                            "destinationContainerCode" = "E0017106",
-                            "direction" = "down",
-                            "quadrant" = 2,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1113036",
-                            "destinationContainerCode" = "E0017107",
-                            "direction" = "down",
-                            "quadrant" = 3,
-                            "user" = "mperez"),
-    "containerRemap" = list("originContainerCode" = "C1113036",
-                            "destinationContainerCode" = "E0017108",
+    "containerRemap" = list("originContainerCode" = "C1129952",
+                            "destinationContainerCode" = "E0017161",
                             "direction" = "down",
                             "quadrant" = 4,
                             "user" = "mperez")
@@ -80,10 +40,10 @@ ContainerRemap <- setRefClass("ContainerRemap",
                               methods = list(
                                 initialize = function(..., json = NA) {
                                   callSuper(...)
-                                  if(quadrant > 4 | quadrant < 1) stop("quadrant must be between 1-4")
-                                  if(originContainerCode == "") stop("Origin container code cannot be blank")
-                                  if(destinationContainerCode == "") stop("Destination container code cannot be blank")
-                                  if(!direction %in% c("up", "down")) stop("direction must be up or down")
+                                  if(quadrant > 4 | quadrant < 1) stopUser("quadrant must be between 1-4")
+                                  if(originContainerCode == "") stopUser("Origin container code cannot be blank")
+                                  if(destinationContainerCode == "") stopUser("Destination container code cannot be blank")
+                                  if(!direction %in% c("up", "down")) stopUser("direction must be up or down")
                                 },
                                 fromJSON = function(json) {
                                   containerRemapList <- rjson::fromJSON(json)
@@ -101,7 +61,7 @@ ContainerRemap <- setRefClass("ContainerRemap",
                                 fetchExternalOriginContainerData = function(func) {
                                   originContainerDat <- func(originContainerCode)
                                   if(nrow(originContainerDat) == 0) {
-                                    warning("Call to external container data function returned 0 rows")
+                                    warnUser("Call to external container data function returned 0 rows")
                                   } else {
                                     originContainerData <<- as.data.table(originContainerDat)
                                     return(originContainerData)
@@ -109,7 +69,7 @@ ContainerRemap <- setRefClass("ContainerRemap",
                                 },
                                 remap = function() {
                                   if(is.null(originContainerData)) {return(NULL)}
-                                  if(originContainerData$platesize == 1536 && direction == "up") {warning("Sorry cannot remap to plate size larger than 1536"); return(NULL)}
+                                  if(originContainerData$platesize == 1536 && direction == "up") {warnUser("Sorry cannot remap to plate size larger than 1536"); return(NULL)}
                                   originContainerData[,
                                                       c("quadrant","destinationWellRef") := resizeContainerRowColumns(paste0("R",formatC(wellrow,width=3, format="d", flag="0"),"_C",formatC(wellcol,width=3, format="d", flag="0")),
                                                                                                                      originContainerSize = as.integer(unique(platesize)),
@@ -165,11 +125,16 @@ ContainerRemaps <- setRefClass("ContainerRemaps",
                                methods = list(
                                  fromJSON = function(json) {
                                    containerRemapsList <- rjson::fromJSON(json)
-                                   containerRemaps <<- lapply(containerRemapsList$containerRemaps, function(x) ContainerRemap$new(originContainerCode = x$originContainerCode,
+                                   user <- containerRemapsList$user
+                                   direction <- containerRemapsList$direction
+                                   containerRemaps <<- lapply(containerRemapsList$containerRemaps, function(x, user, direction) ContainerRemap$new(originContainerCode = x$originContainerCode,
                                                                                                                                   destinationContainerCode = x$destinationContainerCode,
-                                                                                                                                  direction = x$direction,
-                                                                                                                                  user = x$user,
-                                                                                                                                  quadrant = as.integer(x$quadrant))
+                                                                                                                                  direction = ifelse(is.null(x$direction), direction, x$direction),
+                                                                                                                                  user = ifelse(is.null(x$user), user, x$user),
+                                                                                                                                  quadrant = as.integer(x$quadrant)
+                                                                                                                                        ),
+                                                              direction = direction,
+                                                              user = user
                                    )
                                    dryRun <<- as.logical(containerRemapsList$dryRun)
                                    
@@ -225,7 +190,7 @@ resizeContainerRowColumns <- function(originRowColumns = c("R001_C001","R001_C00
     destinationRowColumns <- list(destinationQuadrant = destinationQuadrant, destinationRowColumns = as.character(matched))
   }
   if(any(is.na(matched))) {
-    warning("TODO MESSAGE")
+    warnUser("TODO MESSAGE")
   }
   return(destinationRowColumns)
 }

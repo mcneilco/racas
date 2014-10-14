@@ -15,27 +15,27 @@
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
-    stop("Need Excel file path as input")
+    stopUser("Need Excel file path as input")
   }
   if (!file.exists(filePath)) {
-    stop("Cannot find input file")
+    stopUser("Cannot find input file")
   }
   
   if (grepl("\\.xlsx?$",filePath)) {
     tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
-      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
+      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="%Y-%m-%d")
     }, error = function(e) {
-      stop("Cannot read input excel file")
+      stopUser("Cannot read input excel file")
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
-      output <- read.csv(filePath, header = header, stringsAsFactors=FALSE)
+      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE)
     }, error = function(e) {
-      stop("Cannot read input csv file")
+      stopUser("Cannot read input csv file")
     })
   } else {
-    stop("The input file must have extension .xls, .xlsx, or .csv")
+    stopUser("The input file must have extension .xls, .xlsx, or .csv")
   }
   
   return(output)
@@ -61,11 +61,11 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     return(NULL)
   }
   if(is.na(startSection)) {
-    stop("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep="")
+    stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
   }
   
   if((startSection+2)>length(genericDataFileDataFrame[[1]])) {
-    stop(paste0("There must be at least two rows filled in after '", lookFor, 
+    stopUser(paste0("There must be at least two rows filled in after '", lookFor, 
                 "'. Either there is extra data that you need to fill in, or you may wish to remove '", 
                 lookFor, "' entirely."))
   }
@@ -76,7 +76,7 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
   sectionHeaderColumns <- grepl(pattern="\\S", sapply(sectionHeaderRow,as.character))
   secondHeaderColumns <- grepl(pattern="\\S", sapply(secondRow,as.character))
   if (all(!c(sectionHeaderColumns, secondHeaderColumns))) {
-    stop(paste0("There must be at least two rows filled in after '", lookFor, "'."))
+    stopUser(paste0("There must be at least two rows filled in after '", lookFor, "'."))
   }
   if (any(!secondHeaderColumns & !sectionHeaderColumns)) {
     dataColumnIndexes <- 1:(min(which(!secondHeaderColumns & !sectionHeaderColumns)) - 1)
@@ -169,7 +169,7 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
                                  "dateValue" = validateDate, 
                                  "Number" = validateNumeric, 
                                  "stringValue" = validateCharacter,  
-                                 stop(paste("Internal Error: unrecognized class required by the loader:", expectedDataType))
+                                 stopUser(paste("Internal Error: unrecognized class required by the loader:", expectedDataType))
     )
     validatedData <- validationFunction(receivedValue)
     validatedMetaData[, column] <- validatedData
@@ -179,11 +179,11 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
   additionalColumns <- names(metaData)[is.na(match(names(metaData),expectedHeaders))]
   if (length(additionalColumns) > 0) {
     if (length(additionalColumns) == 1) {
-      warning(paste0("The loader found an extra Experiment Meta Data row that will be ignored: '", 
+      warnUser(paste0("The loader found an extra Experiment Meta Data row that will be ignored: '", 
                      additionalColumns, 
                      "'. Please remove this row."))
     } else {
-      warning(paste0("The loader found extra Experiment Meta Data rows that will be ignored: '", 
+      warnUser(paste0("The loader found extra Experiment Meta Data rows that will be ignored: '", 
                      paste(additionalColumns,collapse="' ,'"), 
                      "'. Please remove these rows."))
     }
@@ -212,11 +212,11 @@ validateSharedMetaData <- function(metaData, expectedDataFormat = NULL, errorEnv
 #'@details resultTypes should not have a factor in DataColumn- order breaks
 meltWideData <- function(wideData, resultTypes, stateGroups=list(), splitColumn=NULL, splitFunction=NULL) {
   if(is.factor(resultTypes$DataColumn)) {
-    stop("Column DataColumn in resultTypes should not be a factor")
+    stopUser("Column DataColumn in resultTypes should not be a factor")
   }
   
   if (!all(resultTypes$DataColumn %in% names(wideData))) {
-    stop("All resultTypes$DataColumn must be included in wideData")
+    stopUser("All resultTypes$DataColumn must be included in wideData")
   }
   
   # Add a temporary rowID to keep track of how rows match up
@@ -367,15 +367,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
     
     # Let the secondary format pass through
     if(isInFormat(secondaryFormat, inputValue)) {
-      return(coerceToDate(secondaryFormat, inputValue))
-    }
-    
-    # Return an error for Excel Date formats
-    if(inputValue == "A_date_was_in_Excel_Date_format") {
-      addError(paste0("A date was has a Number Format of 'Date' or 'General' in Excel rather than 'Text'. ",
-                      "Please format the dates as Excel 'Text' and use the format YYYY-MM-DD. ",
-                      "Excel stores dates in a format we cannot accept."), errorEnv = errorEnv)
-      return(NA)       
+      return(as.character(coerceToDate(secondaryFormat, inputValue)))
     }
     
     #First try substituting out the seperators in the inputValue for those in the expected format
@@ -396,7 +388,7 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
         bestMatchingDate <- possibleDatesInExpectedFormat[daysFromToday == minDaysFromToday][1]
         
         # Add to the warnings that we coerced the date to a "Best Match"
-        warning(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",bestMatchingDate, 
+        warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",bestMatchingDate, 
                        "\". Please enter dates as YYYY-MM-DD, or click  <a href=\"http://xkcd.com/1179/\" target=\"_blank\">here</a>  for more information."))
         returnDate <- bestMatchingDate
       } else {
@@ -408,17 +400,17 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
       }
     } else {
       # If the change in the seperators fixed the issue, then we add this to the warnings and return the coerced date
-      warning(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",
+      warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",
                      inputValueWExpectedSeperator, 
                      "\". Please enter dates as YYYY-MM-DD."))
-      returnDate <- inputValueWExpectedSeperator
+      returnDate <- coerceToDate(expectedFormat, inputValueWExpectedSeperator)
     }
   } else {
     # If the date was coercible to the given format with no changes, then good, just return what they gave us as a date
     returnDate <- coerceToDate(expectedFormat, inputValue)
   }
   # Return the date
-  return(returnDate)	
+  return(as.character(returnDate))
 }
 
 #'@rdname validate
@@ -442,7 +434,7 @@ validateCharacter <- function(inputValue, errorEnv = NULL) {
     if (is.na(as.character(inputValue))) {
       addError(paste("An entry was expected to be a set of characters but the entry was:", inputValue), errorEnv)
     }
-    warning(paste("An entry was expected to be a set of characters but the entry was:", inputValue))
+    warnUser(paste("An entry was expected to be a set of characters but the entry was:", inputValue))
   }
   # Returns the input as a character
   return(as.character(inputValue))
@@ -479,7 +471,8 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
 #' @return New file location (or code)
 moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
                                        fileServiceType = racas::applicationSettings$server.service.external.file.type, 
-                                       fileService = racas::applicationSettings$server.service.external.file.service.url) {
+                                       fileService = racas::applicationSettings$server.service.external.file.service.url,
+                                       deleteOldFile = TRUE) {
   
   fileName <- basename(fileStartLocation)
   
@@ -497,9 +490,12 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
   } else if (fileServiceType == "custom") {
+    if(!exists('customSourceFileMove')) {
+      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+    }
     serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
   } else {
-    stop("Invalid file service type")
+    stopUser("Invalid file service type")
   }
   
   locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="raw results locations"]
@@ -518,7 +514,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     tryCatch({
       locationState <- saveExperimentState(locationState)
     }, error = function(e) {
-      stop("Internal Error: Could not save the source file state")
+      stopUser("Internal Error: Could not save the source file state")
     })
   }
   
@@ -533,7 +529,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     
     saveExperimentValues(list(locationValue))
   }, error = function(e) {
-    stop("Internal Error: Could not save the source file location")
+    stopUser("Internal Error: Could not save the source file location")
   })
   
   return(serverFileLocation)

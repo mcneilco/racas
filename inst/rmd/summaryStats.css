@@ -1,0 +1,27 @@
+
+.racas_container {
+  max-width: 800px;
+  margin: auto;
+  line-height: 20px;
+}
+
+.racas_container pre, img {
+  max-width: 100%;
+}
+
+.racas_container pre code {
+   display: block; padding: 0.5em;
+}
+
+.racas_container code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+.racas_container code[class] {
+  background-color: #F8F8F8;
+}
+
+.racas_container table, td, th {
+  border: none;
+}

@@ -20,11 +20,12 @@
 #'  indexes = lapply(list("AGV_ID"), function(x) list(name = x, tableSpace = "KALYPSYSADMIN_NOLOG", options = "NOLOGGING", "compute statistics"))
 #'  
 pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::applicationSettings$server.database.username, name = originView$name, tableSpace = NA, options = c()), destinationViewName, primaryKey = NULL, indexes = NULL, applicationSettings = racas::applicationSettings) {
-  logger <- createLogger(logName = "com.mcneilco.racas.pingpong.apiviews")
+  logger <- createLogger(logName = "com.mcneilco.racas.pingpong.apiviews", logToConsole = FALSE)
   options(scipen=99)
   error_ping_pong_generator <- FALSE
   conn <- getDatabaseConnection(applicationSettings)
-  on.exit(cat(dbDisconnect(conn)))
+  on.exit(disconnected <- dbDisconnect(conn))
+
   if (dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_a"), schema = intermediateTablePrefix$schema)){
     pingPongTableNew <- 'b'
     pingPongTableOld <- 'a'
@@ -39,7 +40,9 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   
   #Check to see if both tables are preset A and B
   if (dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_a"), schema = intermediateTablePrefix$schema) & dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_b"), schema = intermediateTablePrefix$schema)){
-    logger$warn(paste0(intermediateTablePrefix$schema,".",intermediateTablePrefix$name,' Table A and B are present for'))
+    msg <- paste0(intermediateTablePrefix$schema,".",intermediateTablePrefix$name,' Table A and B are present for ',intermediateTablePrefix$schema, ".", paste0(intermediateTablePrefix$name))
+    logger$error(msg)
+    stop(msg)
   }
   
   #Create the intermediate table
@@ -116,7 +119,7 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   
   if(error_ping_pong_generator) {
     logger$error("PING-PONG tables update unsuccessful, rolledback ")
-    stop(paste0("PING-PONG tables update unsuccessful, rolled back\n for details see\npingpongtables.log"))
+    stopUser(paste0("PING-PONG tables update unsuccessful, rolled back\n for details see\npingpongtables.log"))
   } else {
     logger$info("PING-PONG tables successfully updated and committed")
   }

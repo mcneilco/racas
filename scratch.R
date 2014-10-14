@@ -19,4 +19,4 @@ while(TRUE) {
   i = i + 1
 }
 
-pingPong(originView = list(schema = "ACAS", name = "API_EXPERIMENT"), destinationViewName = list(schema = "ACAS", name = "SOMEBLAH"))
+pingPong(originView = list(schema = "ACAS", name = "API_EXPERIMENT"), destinationViewName = list(schema = "ACAS", name = "SOME BLAH"))
