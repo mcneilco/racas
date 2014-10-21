@@ -16,11 +16,11 @@ readExcelOrCsv(filePath, sheet = 1, header = FALSE)
 a data.frame of the file
 }
 \description{
-Read in xls, xlsx, or csv files and output a data frame of the information
+Read in xls, xlsx, csv, or txt (tab delimited) files and output a data frame of the information
 }
 \details{
 Right now, this turns dates into "A_date_was_in_Excel_Date_format"
 and does not treat headers as column names.
-in fileRead.R
+In fileRead.R
 }
 

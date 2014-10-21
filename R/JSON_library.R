@@ -514,36 +514,38 @@ createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="use
 
 #'Creates a state value
 #'
-#'Creates a state value, used either in all cases
+#'Creates a state value, can include an lsState or be nested inside one.
 #'
-#'@param lsType
-#'@param lsKind
-#'@param stringValue
-#'@param fileValue
-#'@param urlValue
-#'@param publicData
-#'@param ignored
-#'@param dateValue
-#'@param clobValue
-#'@param blobValue
-#'@param valueOperator
-#'@param operatorType
-#'@param numericValue
-#'@param sigFigs
-#'@param uncertainty
-#'@param uncertaintyType
-#'@param numberOfReplicates
-#'@param valueUnit
-#'@param unitType
-#'@param comments
-#'@param lsTransaction
-#'@param codeValue
-#'@param recordedBy
-#'@param lsState
 #'@param testMode used for testing
-#'
+#'@param lsType type of the value
+#'@param lsKind lsKind of the value
+#'@param stringValue <255 character
+#'@param fileValue file code or path
+#'@param urlValue url
+#'@param publicData TRUE to be visible
+#'@param ignored TRUE to mark as old
+#'@param dateValue date in milliseconds
+#'@param clobValue clob
+#'@param blobValue blob
+#'@param valueOperator ">" or "<"
+#'@param operatorType "comparison", not yet implemented
+#'@param numericValue numeric
+#'@param sigFigs integer
+#'@param uncertainty numeric
+#'@param uncertaintyType "standard deviation"
+#'@param numberOfReplicates integer
+#'@param valueUnit "uM", etc.
+#'@param unitType not yet implemented
+#'@param comments used by fileValue for a filename, flags for comments, etc.
+#'@param lsTransaction id of the transaction
+#'@param codeValue codename of something
+#'@param lsState a state object
+#'@param testMode used for testing
+#'@param recordedBy the current username
+#'@param lsServerURL the url for the roo server
+#'  
 #'@details Use either in a nested object or alone
-#'
+#'  
 #'@return list, a value object
 #'@export
 createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL, fileValue=NULL,
@@ -1449,24 +1451,29 @@ getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::
 #'@param url the url to get/post
 #'@param ... optional parameters passed to getURL
 #'
-#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater
+#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater. See also \link{postURLcheckStatus}.
 getURLcheckStatus <- function(url, ...) {
   logName <- "com.acas.sel"
   logFileName <- "racas.log"
   h <- basicTextGatherer()
   response <- getURL(url=url, ..., headerfunction = h$update)
-  statusCode <- as.numeric(as.list(parseHTTPHeader(h$value()))$status)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
   if (statusCode >= 400) {
     myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    myLogger$error(response)
-    stopUser (paste("Server Error, see logs at", Sys.time()))
+    errorMessage <- paste0("Request to ", url, " with method 'GET' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' returning: \n", 
+                           response, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
+                     logFileName, " at ", Sys.time()))
   }
   return(response)
 }
 
-#'Get URL and check status
+#'Post URL and check status
 #'
-#'This is similar to getURLcheckStatus, but does a POST, and the postfields are
+#'This is similar to \link{getURLcheckStatus}, but does a POST, and the postfields are
 #'logged in case of an error
 #'
 #'@param url the url to get/post
@@ -1941,4 +1948,143 @@ getProtocolByCodeName <- function(protocolCodeName, include="", errorEnv=NULL, l
     addError(paste0("Could not get protocol ", protocolCodeName, " from the server"), errorEnv)
   })
   return(protocol)
+}
+
+#' Gets an experiment state
+#' 
+#' Gets an experiment state by stateKind if it exists, or creates a new one if
+#' not.
+#' 
+#' @param experiment an experiment object
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param recordedBy the current username
+#' @param lsTransaction the id of the transaction
+#' @param lsServerURL the url for the roo server
+#' @details This will fail if the experiment has more than one non-ignored state
+#'   of entered stateKind, as it would be unclear which to update.
+#' @export
+getOrCreateExperimentState <- function(experiment, stateType, stateKind, recordedBy, lsTransaction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  getOrCreateEntityState(experiment, "experiment", stateType, stateKind, recordedBy, lsTransaction, lsServerURL)
+}
+
+#' Gets a state
+#' 
+#' Gets a state by stateKind if it exists, or creates a new one if not
+#' 
+#' @param entity an entity object, such as an experiment or analysis group
+#' @param entityKind the kind of entity, such as "experiment" or "analysisgroup", see \link{acasEntityHierarchy}
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param recordedBy the current username
+#' @param lsTransaction the id of the transaction
+#' @param lsServerURL the url for the roo server
+#' @details This will fail if the entity has more than one non-ignored state of entered stateKind, as it would be unclear which to update.
+#' @export
+getOrCreateEntityState <- function(entity, entityKind, stateType, stateKind, recordedBy, lsTransaction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  lsStates <- Filter(f = function(x) x$lsKind == stateKind && x$lsType == stateType && !x$ignored, 
+                     x = entity$lsStates)
+  if (length(lsStates) > 1) {
+    stopUser("Usage: getStateOrCreate cannot be used with multiple lsStates of the same lsKind")
+  } else if (length(lsStates) == 1) {
+    lsState <- lsStates[[1]]
+  } else {
+    # Does not exist yet
+    lsState <- createLsState(recordedBy = recordedBy, 
+                             lsType = stateType, lsKind = stateKind, lsTransaction = lsTransaction)
+    lsState[entityKind] <- entity
+    lsState <- saveAcasEntity(lsState, paste0(entityKind, "states"), lsServerURL)
+  }
+  return(lsState)
+}
+
+#' Gets an entity by id
+#' 
+#' Gets an entity object by id and kind
+#' 
+#' @param entity an entity object, such as an experiment or analysis group
+#' @param entityKind the kind of entity, such as "experiment" or
+#'   "analysisgroup", see \link{acasEntityHierarchy}
+#' @param include a character string describing what to include
+#' @param lsServerURL the url for the roo server
+#' @details This will fail with an error if the object does not exist.
+#'   \code{include} is only implemented for some entities, see
+#'   \link{getExperimentById} for more detail.
+#' @return a named list representing an object.
+#' @export
+getEntityById <- function(id, entityKind, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  entity <- NULL
+  if(include == "") {
+    entity <- getURLcheckStatus(paste0(lsServerURL, entityKind, "/", id))
+  } else {
+    entity <- getURLcheckStatus(paste0(lsServerURL, entityKind, "/", id, "?with=", include))  
+  }
+  entity <- fromJSON(entity)
+  return(entity)
+}
+
+#' Update a value
+#' 
+#' If a value with the correct lsType and lsKind exists within the provided lsState, it is updated, otherwise, it is created.
+#' 
+#' @param entityKind the kind of parent entity, such as "experiment" or "analysisgroup", see \link{acasEntityHierarchy}
+#' @param lsType type of the value
+#' @param lsKind lsKind of the value
+#' @param stringValue string, <255 characters
+#' @param fileValue file code or path
+#' @param urlValue url
+#' @param publicData TRUE to be visible
+#' @param ignored TRUE to mark as old
+#' @param dateValue date in milliseconds
+#' @param clobValue clob
+#' @param blobValue blob
+#' @param valueOperator ">" or "<"
+#' @param operatorType "comparison", not yet implemented
+#' @param numericValue numeric
+#' @param sigFigs integer
+#' @param uncertainty numeric
+#' @param uncertaintyType "standard deviation"
+#' @param numberOfReplicates integer
+#' @param valueUnit "uM", etc.
+#' @param unitType not yet implemented
+#' @param comments used by fileValue for a filename, flags for comments, etc.
+#' @param lsTransaction id of the transaction
+#' @param codeValue codename of something
+#' @param lsState a state object
+#' @param testMode used for testing
+#' @param recordedBy the current username
+#' @param lsServerURL the url for the roo server
+#' @details This will fail if the entity has more than one non-ignored state of entered stateKind, as it would be unclear which to update.
+#' @return a named list of the lsValue object
+#' @export
+updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, stringValue=NULL, fileValue=NULL,
+                                     urlValue=NULL, publicData=TRUE, ignored=FALSE,
+                                     dateValue=NULL, clobValue=NULL, blobValue=NULL, valueOperator=NULL, operatorType=NULL, numericValue=NULL,
+                                     sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
+                                     numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
+                                     lsTransaction=NULL, codeValue=NULL, recordedBy="username",
+                                     testMode=FALSE, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
+                                     codeType = NULL, codeKind = NULL, codeOrigin = NULL) {
+  lsValues <- Filter(f = function(x) x$lsKind == lsKind && x$lsType == lsType && !x$ignored, 
+                     x = lsState$lsValues)
+  if (length(lsValues) > 1) {
+    stopUser("Usage: updateOrCreateStateValue cannot be used with multiple lsValues of the same lsKind")
+  } else if (length(lsValues) == 1) {
+    lsValue <- lsValues[[1]]
+  } else {
+    # Does not exist yet
+    lsValue <- createStateValue(
+      lsType=lsType, lsKind=lsKind, stringValue=stringValue, fileValue=fileValue,
+      urlValue=urlValue, publicData=publicData, ignored=ignored,
+      dateValue=dateValue, clobValue=clobValue, blobValue=blobValue, valueOperator=valueOperator, 
+      operatorType=operatorType, numericValue=numericValue,
+      sigFigs=sigFigs, uncertainty=uncertainty, uncertaintyType=uncertaintyType,
+      numberOfReplicates=numberOfReplicates, valueUnit=valueUnit, unitType=unitType, comments=comments, 
+      lsTransaction=lsTransaction, codeValue=codeValue, recordedBy=recordedBy,
+      lsState=lsState, testMode=testMode, recordedDate=recordedDate,
+      codeType = codeType, codeKind = codeKind, codeOrigin = codeOrigin, 
+      lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+    lsValue <- saveAcasEntity(lsValue, paste0(entityKind, "values"), lsServerURL)
+  }
+  return(lsValue)
 }

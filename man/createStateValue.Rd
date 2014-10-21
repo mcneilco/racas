@@ -15,61 +15,65 @@ createStateValue(lsType = "lsType", lsKind = "lsKind", stringValue = NULL,
   codeType = NULL, codeKind = NULL, codeOrigin = NULL)
 }
 \arguments{
-\item{lsType}{}
+\item{testMode}{used for testing}
 
-\item{lsKind}{}
+\item{lsType}{type of the value}
 
-\item{stringValue}{}
+\item{lsKind}{lsKind of the value}
 
-\item{fileValue}{}
+\item{stringValue}{<255 character}
 
-\item{urlValue}{}
+\item{fileValue}{file code or path}
 
-\item{publicData}{}
+\item{urlValue}{url}
 
-\item{ignored}{}
+\item{publicData}{TRUE to be visible}
 
-\item{dateValue}{}
+\item{ignored}{TRUE to mark as old}
 
-\item{clobValue}{}
+\item{dateValue}{date in milliseconds}
 
-\item{blobValue}{}
+\item{clobValue}{clob}
 
-\item{valueOperator}{}
+\item{blobValue}{blob}
 
-\item{operatorType}{}
+\item{valueOperator}{">" or "<"}
 
-\item{numericValue}{}
+\item{operatorType}{"comparison", not yet implemented}
 
-\item{sigFigs}{}
+\item{numericValue}{numeric}
 
-\item{uncertainty}{}
+\item{sigFigs}{integer}
 
-\item{uncertaintyType}{}
+\item{uncertainty}{numeric}
 
-\item{numberOfReplicates}{}
+\item{uncertaintyType}{"standard deviation"}
 
-\item{valueUnit}{}
+\item{numberOfReplicates}{integer}
 
-\item{unitType}{}
+\item{valueUnit}{"uM", etc.}
 
-\item{comments}{}
+\item{unitType}{not yet implemented}
 
-\item{lsTransaction}{}
+\item{comments}{used by fileValue for a filename, flags for comments, etc.}
 
-\item{codeValue}{}
+\item{lsTransaction}{id of the transaction}
 
-\item{recordedBy}{}
+\item{codeValue}{codename of something}
 
-\item{lsState}{}
+\item{lsState}{a state object}
 
 \item{testMode}{used for testing}
+
+\item{recordedBy}{the current username}
+
+\item{lsServerURL}{the url for the roo server}
 }
 \value{
 list, a value object
 }
 \description{
-Creates a state value, used either in all cases
+Creates a state value, can include an lsState or be nested inside one.
 }
 \details{
 Use either in a nested object or alone

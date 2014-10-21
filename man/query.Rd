@@ -3,12 +3,16 @@
 \alias{query}
 \title{Query the application data server.}
 \usage{
-query(qu, globalConnect = FALSE, conn = NULL, ...)
+query(qu, globalConnect = FALSE, conn = NULL, catchError = TRUE, ...)
 }
 \arguments{
 \item{qu}{a sql query character string}
 
 \item{globalConnect}{should the query assume a global conn variable and return one to the global namespace?}
+
+\item{conn}{a database connection to use for the query instead of opening a new connection}
+
+\item{catchErro}{logical on error throw error or return list object with success = false, message = character}
 
 \item{...}{expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}}
 }
