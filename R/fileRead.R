@@ -1,6 +1,6 @@
 #' Reading of Excel or CSV
 #' 
-#' Read in xls, xlsx, or csv files and output a data frame of the information
+#' Read in xls, xlsx, csv, or txt (tab delimited) files and output a data frame of the information
 #' 
 #' @param filePath The path the the file to read
 #' @param sheet Sheet number of an Excel sheet
@@ -10,7 +10,7 @@
 #' 
 #' @details Right now, this turns dates into "A_date_was_in_Excel_Date_format" 
 #' and does not treat headers as column names.
-#' in fileRead.R
+#' In fileRead.R
 
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
@@ -34,8 +34,14 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     }, error = function(e) {
       stopUser("Cannot read input csv file")
     })
+  } else if (grepl("\\.txt$",filePath)){
+    tryCatch({
+      output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE)
+    }, error = function(e) {
+      stopUser("Cannot read input txt file")
+    })
   } else {
-    stopUser("The input file must have extension .xls, .xlsx, or .csv")
+    stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
   }
   
   return(output)
