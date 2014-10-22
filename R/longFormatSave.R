@@ -689,6 +689,7 @@ meltBatchCodes2 <- function(entityData) {
   batchCodeValues$valueType <- "codeValue"
   batchCodeValues$valueKind <- "batch code"
   batchCodeValues$publicData <- TRUE
+  batchCodeValues <- batchCodeValues[!is.na(batchCodeValues$codeValue), ]
       
   return(batchCodeValues)
 }
