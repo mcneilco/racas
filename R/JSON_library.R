@@ -2064,7 +2064,8 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
                                      numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
                                      lsTransaction=NULL, codeValue=NULL, recordedBy="username",
                                      testMode=FALSE, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
-                                     codeType = NULL, codeKind = NULL, codeOrigin = NULL) {
+                                     codeType = NULL, codeKind = NULL, codeOrigin = NULL, 
+                                     lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   lsValues <- Filter(f = function(x) x$lsKind == lsKind && x$lsType == lsType && !x$ignored, 
                      x = lsState$lsValues)
   if (length(lsValues) > 1) {
@@ -2082,8 +2083,7 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
       numberOfReplicates=numberOfReplicates, valueUnit=valueUnit, unitType=unitType, comments=comments, 
       lsTransaction=lsTransaction, codeValue=codeValue, recordedBy=recordedBy,
       lsState=lsState, testMode=testMode, recordedDate=recordedDate,
-      codeType = codeType, codeKind = codeKind, codeOrigin = codeOrigin, 
-      lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
+      codeType = codeType, codeKind = codeKind, codeOrigin = codeOrigin)
     lsValue <- saveAcasEntity(lsValue, paste0(entityKind, "values"), lsServerURL)
   }
   return(lsValue)
