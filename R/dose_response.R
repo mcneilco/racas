@@ -397,7 +397,7 @@ get_default_fit_settings <- function(modelHint) {
 #' fitSettingsJSON <- readChar(file, file.info(file)$size)
 #' fitSettings <- fromJSON(fitSettingsJSON)
 #' #fit the data
-#' system.time(response <- get_fit_data_experiment_codefitSettings, curveids = curveids))
+#' system.time(response <- get_fit_data_experiment_code(fitSettings, curveids = curveids))
 #' 
 dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL, ...) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
@@ -660,7 +660,7 @@ get_fit_data_curveid <- function(curveID, full_object = TRUE) {
 get_fit_data_analysisgroupid2 <- function (analysisGroupdID, full_object = TRUE, tg_values = TRUE) {
   myMessenger <- messenger()
   myMessenger$logger$debug("getting analysis group values")
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/analysisgroups/", analysisGroupdID, "/agvalues/bystate/data/results/tsv"))
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/analysisgroups/", analysisGroupdID, "/agvalues/bystate/data/dose response/tsv"))
   myMessenger$logger$debug(url)
   ag_values <- tsv_url_to_data_table(url, type = "complex")
   
@@ -704,7 +704,7 @@ get_fit_data_analysisgroupid2 <- function (analysisGroupdID, full_object = TRUE,
     url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/analysisgroups/", analysisGroupdID, "/tgvalues/bystate/data/results/tsv"))
     myMessenger$logger$debug(url)
     tg_values <- tsv_url_to_data_table(url, type = "simple")
-    fit_data[ , tg_values := list(list(tg_values))]
+    fit_data[ , tg_values := list(list(list(tg_values)))]
     myMessenger$logger$debug("getting subject values")
     url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/analysisgroups/", analysisGroupdID, "/subjectvalues/bystate/data/results/tsv"))
     myMessenger$logger$debug(url)
@@ -716,7 +716,7 @@ get_fit_data_analysisgroupid2 <- function (analysisGroupdID, full_object = TRUE,
     subject_values <- rbind(dose_subject_values,response_subject_values)
     setkey(tg_values, treatmentGroupId)
     subject_values <- unique(tg_values[ , analysisGroupId,treatmentGroupId])[subject_values]
-    fit_data[ , subject_values := list(list(subject_values))]
+    fit_data[ , subject_values := list(list(list(subject_values)))]
     drUnits <- dcast.data.table(subject_values[lsKind %in% c("Dose", "Response")], subjectId ~ lsKind, value.var = "unitKind")
     setnames(drUnits, "Dose", "doseunits")
     setnames(drUnits, "Response", "responseunits")    
@@ -797,7 +797,7 @@ tsv_url_to_data_table <- function(url, type = c("simple", "complex"), ...) {
 get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ...) {
   myMessenger <- messenger()
   myMessenger$logger$debug("getting analysis group values")
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/experiments/", experimentCode, "/agvalues/bystate/data/results/tsv"))
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "api/v1/experiments/", experimentCode, "/agvalues/bystate/data/dose response/tsv"))
   myMessenger$logger$debug(url)
   ag_values <- tsv_url_to_data_table(url, type = "complex")
   if(nrow(ag_values) == 0) {
@@ -876,7 +876,7 @@ get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ..
       }
       setnames(fl, "id", "flag_sv_id")
     } else {
-      fl <- data.table(subjectId = as.integer(),flag_sv_id = as.integer(), flag_on.load = as.character(), flag_user = as.character(), flag_algorithm = as.character(), flag_temp = as.character())
+      fl <- data.table(subjectId = as.integer(),treatmentGroupId = as.integer(), analysisGroupId = as.integer(), flag_sv_id = as.integer(), flag_on.load = as.character(), flag_user = as.character(), flag_algorithm = as.character(), flag_temp = as.character())
       setkey(fl, subjectId)
     }
     setkey(fl, subjectId, treatmentGroupId, analysisGroupId)
@@ -1550,7 +1550,7 @@ save_fit_data <- function(fitData, recordedBy, lsTransaction) {
     analysisGroupValues = analysisGroupValues[[1]]$analysisGroupValues,
     recordedBy = recordedBy,
     lsType = "data",
-    lsKind = "results",
+    lsKind = "dose response",
     lsTransaction = lsTransaction    
   ))), by = curveid]
   savedAnalysisGroupStates <- saveAcasEntities(fitData$newStates, "analysisgroupstates")
