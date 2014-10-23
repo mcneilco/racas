@@ -546,6 +546,23 @@ getUploadedFilePath <- function(inputString) {
   return(file.path(racas::applicationSettings$server.file.server.path, inputString))  
 }
 
+#' Get text file contents as character
+#'
+#' @param file character path to file
+#' @return character contents of file
+#' @keywords read, text, character, file
+#' @export
+#' 
+
+get_text_file_contents <- function(file_path) {
+  if(file.access(file_path, 4) == 0) {
+    text <- readChar(file_path, file.info(file_path)$size)
+  } else {
+    warning(paste0("no read access to file '",file_path,"'"))
+    text <- NULL
+  }
+  return(text)
+}
 
 
 
