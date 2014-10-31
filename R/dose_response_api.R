@@ -114,6 +114,37 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
+                                      flagAlgorithm = flag_algorithm[[1]],
+                                      flagUser = flag_user[[1]],
+                                      category = ag_values[[1]][lsKind == "category", ]$stringValue,
+                                      curveAttributes = list(
+                                        EC50 = ag_values[[1]][lsKind == "EC50"]$numericValue,
+                                        SST =  ag_values[[1]][lsKind == "SST"]$numericValue,
+                                        SSE =  ag_values[[1]][lsKind == "SSE"]$numericValue,
+                                        rsquare = ag_values[[1]][lsKind == "rSquared"]$numericValue,
+                                        compoundCode = ag_values[[1]][lsKind == "batch code"]$codeValue,
+                                        flagAlgorithm = flag_algorithm[[1]],
+                                        flagUser = flag_user[[1]]
+                                      )
+  ))), by = curveid]
+  stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
+  myMessenger$logger$debug(paste0("Returning stubs"))
+  
+  #stop(toJSON(stubs))
+  return(stubs)
+}
+
+api_doseResponse_update_flag <- function(POST) {
+  fitData <- get_fit_data_curveid(POST$curveid)
+  simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
+  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
+  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
+  fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
+  savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
+  analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
+  fitData <- get_fit_data_analysisgroupid2(analysisgroupid, full_object = TRUE)
+  
+  fitData[ , curves := list(list(list(curveid = curveid[[1]], 
                                       flagAlgorithm = flag_algorithm,
                                       flagUser = flag_user,
                                       category = ag_values[[1]][lsKind == "category", ]$stringValue,
@@ -127,13 +158,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                                         flagUser = flag_user
                                       )
   ))), by = curveid]
-  stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
-  myMessenger$logger$debug(paste0("Returning stubs"))
-  
-  #stop(toJSON(stubs))
-  return(stubs)
+  return(toJSON(fitData$curves[[1]]))
 }
-
 api_doseResponse_get_curve_detail <- function(GET, ...) {  
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- FALSE

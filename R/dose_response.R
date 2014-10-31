@@ -1530,7 +1530,6 @@ save_dose_response_data <- function(fitData, recorded_by) {
   
 }
 update_experiment_status <- function(experimentCodeName, status) { 
-  experiment <- getExperimentByCodeName(experimentCodeName)
   url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"api/v1/experiments/", experimentCodeName,"/exptvalues/bystate/metadata/experiment metadata/byvalue/stringValue/status/json"))
   experimentStatusValue <- fromJSON(getURL(url))[[1]]
   experimentStatusValue$stringValue <- status
