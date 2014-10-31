@@ -15,8 +15,6 @@ createStateValue(lsType = "lsType", lsKind = "lsKind", stringValue = NULL,
   codeType = NULL, codeKind = NULL, codeOrigin = NULL)
 }
 \arguments{
-\item{testMode}{used for testing}
-
 \item{lsType}{type of the value}
 
 \item{lsKind}{lsKind of the value}
@@ -61,11 +59,13 @@ createStateValue(lsType = "lsType", lsKind = "lsKind", stringValue = NULL,
 
 \item{codeValue}{codename of something}
 
+\item{recordedBy}{the current username}
+
 \item{lsState}{a state object}
 
 \item{testMode}{used for testing}
 
-\item{recordedBy}{the current username}
+\item{testMode}{used for testing}
 
 \item{lsServerURL}{the url for the roo server}
 }
