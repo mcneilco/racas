@@ -3,17 +3,24 @@
 \alias{saveValueKinds}
 \title{Saves value kinds}
 \usage{
-saveValueKinds(valueKinds, valueTypes, errorEnv = NULL)
+saveValueKinds(valueKinds, valueTypes, errorEnv = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
 \item{valueKinds}{character vector of new valueKinds}
 
-\item{valueTypes}{character vector of valueTypes (e.g. c("stringValue", "numericValue"))}
+\item{valueTypes}{character vector of valueTypes (e.g. \code{c("stringValue",
+"numericValue")})}
+
+\item{errorEnv}{Error environment}
+
+\item{lsServerURL}{url for roo server}
 }
 \description{
 Saves value kinds with matching value types
 }
 \details{
-valueKinds must be new, and valueTypes must exist
+valueKinds must be new, and valueTypes must exist. Removes the need
+  to pass in full valueType objects.
 }
 

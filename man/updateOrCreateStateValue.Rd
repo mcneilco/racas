@@ -12,7 +12,8 @@ updateOrCreateStateValue(entityKind, lsState, lsType, lsKind,
   valueUnit = NULL, unitType = NULL, comments = NULL,
   lsTransaction = NULL, codeValue = NULL, recordedBy = "username",
   testMode = FALSE, recordedDate = as.numeric(format(Sys.time(), "\%s")) *
-  1000, codeType = NULL, codeKind = NULL, codeOrigin = NULL)
+  1000, codeType = NULL, codeKind = NULL, codeOrigin = NULL,
+  lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
 \item{entityKind}{the kind of parent entity, such as "experiment" or "analysisgroup", see \link{acasEntityHierarchy}}

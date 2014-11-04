@@ -1069,7 +1069,7 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
   )
   
   if (grepl("^\\s*$", response)) {
-    return(list())
+    return("")
   }
   
   response <- fromJSON(response)
@@ -1560,29 +1560,51 @@ checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
   return(list(newValueKinds=newValueKinds, goodValueKinds=goodValueKinds, wrongTypeKindFrame=wrongTypeKindFrame))
 }
 
+#' valueKinds
+#'
+#' Gets a list of all valueKinds available.
+#'
+#' @param lsServerURL url for roo server
+getAllValueKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  tryCatch({
+    valueKindsList <- getURLcheckStatus(paste0(lsServerURL, "valuekinds/"))
+    return(fromJSON(valueKindsList))
+  }, error = function(e) {
+    stopUser("Internal Error: Could not get current value kinds")
+  })
+}
+#' valueTypes
+#'
+#' Gets a list of all valueTypes available.
+#'
+#' @param lsServerURL url for roo server
+getAllValueTypes <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  tryCatch({
+    valueTypesList <- getURLcheckStatus(paste0(lsServerURL, "valuetypes/"))
+    return(fromJSON(valueTypesList))
+  }, error = function(e) {
+    stopUser("Internal Error: Could not get current value types")
+  })
+}
 #' Saves value kinds
 #' 
 #' Saves value kinds with matching value types
 #' @param valueKinds character vector of new valueKinds
-#' @param valueTypes character vector of valueTypes (e.g. c("stringValue", "numericValue"))
-#' @details valueKinds must be new, and valueTypes must exist
+#' @param valueTypes character vector of valueTypes (e.g. \code{c("stringValue",
+#'   "numericValue")})
+#' @param errorEnv Error environment
+#' @param lsServerURL url for roo server
+#' @details valueKinds must be new, and valueTypes must exist. Removes the need
+#'   to pass in full valueType objects.
 #' @export
-saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL) {
-  valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
+saveValueKinds <- function(valueKinds, valueTypes, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  valueTypesList <- getAllValueTypes(lsServerURL=lsServerURL)
   allowedValueTypes <- sapply(valueTypesList, getElement, "typeName")
   
   newValueTypesList <- valueTypesList[match(valueTypes, allowedValueTypes)]
   newValueKindsUpload <- mapply(function(x, y) list(kindName=x, lsType=y), valueKinds, newValueTypesList,
                                 SIMPLIFY = F, USE.NAMES = F)
-  tryCatch({
-    response <- getURL(
-      paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/jsonArray"),
-      customrequest='POST',
-      httpheader=c('Content-Type'='application/json'),
-      postfields=toJSON(newValueKindsUpload))
-  }, error = function(e) {
-    addError(paste("Internal error in saving new valueKinds:", e$message), errorEnv=errorEnv)
-  })
+  saveAcasEntities(newValueKindsUpload, "valuekinds")
 }
 
 #' Flattens Nested ACAS Entities
