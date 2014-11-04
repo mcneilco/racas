@@ -105,8 +105,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                         list(code = "SST", name = "SST"),
                         list(code = "SSE", name = "SSE"),
                         list(code = "rsquare", name = "R^2"),
-                        list(code = "userApproved", name = "User Approved"),
-                        list(code = "algorithmApproved", name = "Algorithm Approved"))
+                        list(code = "flagUser", name = "User Flag"),
+                        list(code = "flagAlgorithm", name = "Algorithm FLag"))
   } else {
     msg <- paste0("Model Hint '", modelHint, "' unimplemented for sort options")
     myMessenger$logger$error(msg)
