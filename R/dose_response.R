@@ -1529,11 +1529,25 @@ save_dose_response_data <- function(fitData, recorded_by) {
   return(list(lsStates = savedStates, lsTransaction = transactionID))
   
 }
-update_experiment_status <- function(experimentCodeName, status) { 
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"api/v1/experiments/", experimentCodeName,"/exptvalues/bystate/metadata/experiment metadata/byvalue/stringValue/status/json"))
-  experimentStatusValue <- fromJSON(getURL(url))[[1]]
-  experimentStatusValue$stringValue <- status
-  value <- updateAcasEntity(experimentStatusValue, "experimentvalues")
+update_or_replace_experiment_metadata_value <- function(experimentCode, experimentID, lsType, lsKind, value) {   
+  if(missing(experimentCode)) experimentCode <- experimentID
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"api/v1/values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
+  response <- getURL(
+    url,
+    customrequest='PUT',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=value
+  )
+  return(response)
+}
+
+update_experiment_status <- function(experimentCodeOrID, status) {
+  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "stringValue", lsKind = "status", value = status)
+  return(response)
+}
+update_dose_response_analysis_result_html <- function(experimentCodeOrID, html) {
+  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "clobValue", lsKind = "dose response analysis result html", value = html)
+  return(response)
 }
 
 save_fit_data <- function(fitData, recordedBy, lsTransaction) {

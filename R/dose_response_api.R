@@ -58,11 +58,10 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$logger$debug("saving the curve data")
   savedStates <- save_dose_response_data(fitData, recordedBy)
  
-  myMessenger$logger$debug("updating experiment model fit status")
-  experiment <- update_experiment_status(experimentCode, "complete")
- 
+  myMessenger$logger$debug("updating experiment status value to complete")
+  experimentStatusValue <- update_experiment_status(experimentCode, "dose response analysis complete")
   #Convert the fit data to a response for acas
-  myMessenger$logger$debug("responding to acas")
+  myMessenger$logger$debug("getting acas response")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
     response <- fit_data_to_acas_experiment_response(fitData, experimentCode, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   } else {
@@ -70,6 +69,10 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
     myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
     response <- fit_data_to_acas_experiment_response(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   }
+  myMessenger$logger$debug("saving experiment value dose response analysis result html")
+  experimentDoseResponseAnalysisResultValue <- update_dose_response_analysis_result_html(experimentCode, html = response$result$htmlSummary)
+  
+  myMessenger$logger$debug("responding to acas")
   return(response)
 }
 
