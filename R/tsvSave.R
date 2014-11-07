@@ -56,10 +56,11 @@ saveAllViaTsv <- function(analysisGroupData, treatmentGroupData, subjectData, ap
 #' 
 #' @param entityData data.frame that will be changed
 #' @param valueKinds vector of valueKinds to have stringValues changed
-#' @param entitySpaced the name of the entity: "analysis group" or "treatment
+#' @param entitySpaced the name of the entity: "analysis group" or "treatment 
 #'   group" or "subject"
 #'   
-#' @details not for export, used only by saveAllViaTsv
+#' @details not for export, used only by saveAllViaTsv. Supports data.table and
+#'   data.frame. In tsvSave.R
 appendCodeNames <- function(entityData, valueKinds, entitySpaced) {
   thingTypeAndKind <- paste0("document_", entitySpaced)
   entityCodeNameList <- unlist(getAutoLabels(thingTypeAndKind = thingTypeAndKind, 
@@ -70,8 +71,14 @@ appendCodeNames <- function(entityData, valueKinds, entitySpaced) {
   entityData$codeName <- entityCodeNameList[entityData$tempId]
   
   # Adding codeNames to analysisGroupStrings listed in appendCodeNames (e.g. curve id)
-  newStrings <- paste0(entityData$stringValue[entityData$valueKind %in% valueKinds], 
-                       "_", entityData[entityData$valueKind == valueKinds, "codeName"])
+  if (data.table::is.data.table(entityData)) {
+    newStrings <- paste0(entityData[valueKind %in% valueKinds, stringValue], 
+                         "_", entityData[valueKind == valueKinds, codeName])
+  } else {
+    newStrings <- paste0(entityData[entityData$valueKind %in% valueKinds, "stringValue"], 
+                         "_", entityData[entityData$valueKind == valueKinds, "codeName"])
+  }
+
   entityData$stringValue[entityData$valueKind %in% valueKinds] <- newStrings
   
   return(entityData)

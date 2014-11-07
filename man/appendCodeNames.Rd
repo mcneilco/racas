@@ -17,6 +17,7 @@ appendCodeNames(entityData, valueKinds, entitySpaced)
 Appends code names to supplied valueKinds
 }
 \details{
-not for export, used only by saveAllViaTsv
+not for export, used only by saveAllViaTsv. Supports data.table and
+  data.frame. In tsvSave.R
 }
 
