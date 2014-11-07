@@ -152,7 +152,7 @@ createLsTransaction <- function(comments="", lsServerURL = racas::applicationSet
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/lstransactions", sep=""),
+    paste(lsServerURL, "lstransactions", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(newLsTransaction)))
@@ -1565,8 +1565,9 @@ flattenState <- function(lsState, includeFromState) {
 
 #' @rdname saveAcasEntities
 updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/", entity$id)
-  putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
+  #url <- paste0(lsServerURL, "api/v1/", acasCategory, "/", entity$id)
+  url <- paste0(lsServerURL, acasCategory, "/")
+  postURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
 #' Change container names
@@ -1776,7 +1777,7 @@ getPreferredName <- function(entity) {
 #' @export
 getProtocolById <- function(id, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   protocol <- getEntityById(id, "protocols", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
-  return(experiment)
+  return(protocol)
 }
 
 #' @rdname getProtocolById
@@ -1851,7 +1852,7 @@ getOrCreateEntityState <- function(entity, entityKind, stateType, stateKind, rec
 getEntityById <- function(id, entityKind, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   logName <- "com.acas.racas.getEntityById"
   logFileName <- "racas.log"
-  if(include == "") {
+  if(is.null(include) || include == "") {
     url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id)
   } else {
     url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id, "?with=", include)
@@ -1939,23 +1940,28 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
                                      lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   lsValues <- Filter(f = function(x) x$lsKind == lsKind && x$lsType == lsType && !x$ignored, 
                      x = lsState$lsValues)
+  newLsValue <- createStateValue(
+    lsType=lsType, lsKind=lsKind, stringValue=stringValue, fileValue=fileValue,
+    urlValue=urlValue, publicData=publicData, ignored=ignored,
+    dateValue=dateValue, clobValue=clobValue, blobValue=blobValue, valueOperator=valueOperator, 
+    operatorType=operatorType, numericValue=numericValue,
+    sigFigs=sigFigs, uncertainty=uncertainty, uncertaintyType=uncertaintyType,
+    numberOfReplicates=numberOfReplicates, valueUnit=valueUnit, unitType=unitType, comments=comments, 
+    lsTransaction=lsTransaction, codeValue=codeValue, recordedBy=recordedBy,
+    lsState=lsState, testMode=testMode, recordedDate=recordedDate,
+    codeType = codeType, codeKind = codeKind, codeOrigin = codeOrigin)
   if (length(lsValues) > 1) {
     stopUser("Usage: updateOrCreateStateValue cannot be used with multiple lsValues of the same lsKind")
   } else if (length(lsValues) == 1) {
     lsValue <- lsValues[[1]]
+    newLsValue$id <- lsValue$id
+    newLsValue$version <- lsValue$version
+    # TODO: bring back after server fix
+    output <- newLsValue
+    #output <- updateAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL = lsServerURL)
   } else {
     # Does not exist yet
-    lsValue <- createStateValue(
-      lsType=lsType, lsKind=lsKind, stringValue=stringValue, fileValue=fileValue,
-      urlValue=urlValue, publicData=publicData, ignored=ignored,
-      dateValue=dateValue, clobValue=clobValue, blobValue=blobValue, valueOperator=valueOperator, 
-      operatorType=operatorType, numericValue=numericValue,
-      sigFigs=sigFigs, uncertainty=uncertainty, uncertaintyType=uncertaintyType,
-      numberOfReplicates=numberOfReplicates, valueUnit=valueUnit, unitType=unitType, comments=comments, 
-      lsTransaction=lsTransaction, codeValue=codeValue, recordedBy=recordedBy,
-      lsState=lsState, testMode=testMode, recordedDate=recordedDate,
-      codeType = codeType, codeKind = codeKind, codeOrigin = codeOrigin)
-    lsValue <- saveAcasEntity(lsValue, paste0(entityKind, "values"), lsServerURL)
+    output <- saveAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL)
   }
-  return(lsValue)
+  return(output)
 }
