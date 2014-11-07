@@ -71,6 +71,26 @@ stopUser <- function(message) {
   stop(e)
 }
 
+#' @rdname stopUser
+stopUserWithTime <- function(logFileName) {
+  stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
+                   logFileName, " at ", Sys.time()))
+}
+
+#' @rdname stopUser
+stopUserAndLogInvalidJSON <- function (logName, logFileName, url, response, method = "GET", postfields = NULL) {
+  myLogger <- createLogger(logName = logName, logFileName = logFileName)
+  if (method != 'GET') {
+    errorMessage <- paste0("Request to ", url, " with method '", method, 
+    "' responded with invalid JSON when sent \n ", postfields, 
+    "\nBody was: \n", response)
+  } else {
+    errorMessage <- paste0("Request to ", url, " received invalid JSON: \n", response)
+  }
+  myLogger$error(errorMessage)
+  stopUserWithTime(logFileName)
+}
+
 
 #'Warning tracking
 #'

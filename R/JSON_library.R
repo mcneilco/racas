@@ -25,7 +25,7 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
   )
   cat(toJSON(labelSequenceDTO))
   response <- fromJSON(getURL(
-    paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
+    paste(lsServerURL, "api/v1/labelsequences/getNextLabelSequences", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(labelSequenceDTO)))
@@ -40,14 +40,8 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
     labelTypeAndKind=labelTypeAndKind,
     numberOfLabels=numberOfLabels
   )
-  response <- getURL(
-    paste(lsServerURL, "labelsequences/getLabels", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(labelSequenceDTO))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to get labels. Instead, it got this response:", response))
-  }
+  url <- paste0(lsServerURL, "api/v1/labelsequences/getLabels")
+  response <- getURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
 }
@@ -77,7 +71,7 @@ createLabelKind <- function(labelType="labelType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "labelkinds", sep=""),
+    paste(lsServerURL, "api/v1/labelkinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(labelKind)))
@@ -90,7 +84,7 @@ createStateType <- function(typeName="typeName", lsServerURL = racas::applicatio
     typeName=typeName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "statetypes", sep=""),
+    paste(lsServerURL, "api/v1/statetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(stateType)))
@@ -104,7 +98,7 @@ createStateKind <- function(stateType="stateType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "statekinds", sep=""),
+    paste(lsServerURL, "api/v1/statekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(stateKind)))
@@ -117,7 +111,7 @@ createValueType <- function(typeName="typeName", lsServerURL = racas::applicatio
     typeName=typeName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "valuetypes", sep=""),
+    paste(lsServerURL, "api/v1/valuetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(valueType)))
@@ -131,7 +125,7 @@ createValueKind <- function(valueType="valueType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "valuekinds", sep=""),
+    paste(lsServerURL, "api/v1/valuekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(valueKind)))
@@ -145,7 +139,7 @@ createInteractionKind <- function(interactionType="interactionType List Object",
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "interactionkinds/", sep=""),
+    paste(lsServerURL, "api/v1/interactionkinds/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(interactionKind)))
@@ -158,7 +152,7 @@ createLsTransaction <- function(comments="", lsServerURL = racas::applicationSet
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "lstransactions", sep=""),
+    paste(lsServerURL, "api/v1/lstransactions", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(newLsTransaction)))
@@ -176,7 +170,7 @@ createThing <- function(thingType="thingType List Object", thingKind="thingKind 
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "lsthings", sep=""),
+    paste(lsServerURL, "api/v1/lsthings", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(newThing)))
@@ -200,7 +194,7 @@ createThingLabel <- function(thing, labelText, author, lsType, lsKind, lsTransac
 
 saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   response <- fromJSON(getURL(
-    paste(lsServerURL, "thinglabels/jsonArray", sep=""),
+    paste(lsServerURL, "api/v1/thinglabels/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(thingLabels)))
@@ -374,7 +368,7 @@ createSubjectContainerInteractionState <- function(itxSubjectContainer=NULL, lsV
 
 saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   response <- fromJSON(getURL(
-    paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
+    paste(lsServerURL, "api/v1/interactions/lsinteraction/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(lsInteractions)))
@@ -806,234 +800,97 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
 }
 
 saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "protocols/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(protocols))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your protocols. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(protocols, "protocols")
+  return(fromJSON(response))
 }
 
 
 saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "protocols/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(protocol))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your protocol. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(protocol, "protocols")
+  return(fromJSON(response))
 }
 
 
 
 saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "experiments/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(experiment))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiment. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(experiment, "experiments")
+  return(fromJSON(response))
 }
 
 
 saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "experiments/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(experiments))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiments. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(experiments, "experiments")
+  return(fromJSON(response))
 }
 
 saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(analysisGroups)
-  # toJSON fails with NA, NaN, and Inf, but so far it seems that these have been successfully stripped out
-  #message <- gsub("\"NA\"|\"NaN\"", "null", message)
-  response <- getURL(
-    paste(lsServerURL, "analysisgroups/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your data. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(analysisGroups, "analysisgroups")
+  return(fromJSON(response))
 }
 
 saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "analysisgroups/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(analysisGroup))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your data. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(analysisGroup, "analysisgroups")
+  return(fromJSON(response))
 }
 
-# Currently, this cannot accept labels and states
+#' save container objects
+#' Currently, this cannot accept labels and states
 saveContainer <- function(container, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "containers/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(container))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(container, "containers")
+  return(fromJSON(response))
 }
 
 saveContainers <- function(containers, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "containers/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containers))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your containers. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(containers, "containers")
+  return(fromJSON(response))
 }
 
 saveContainerLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "containerlabels/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabel))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container label. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(containerLabel, "containerlabels")
+  return(fromJSON(response))
 }
 
 saveContainerLabels <- function(containerLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "containerlabels/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabels))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container labels. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(containerLabels, "containerlabels")
+  return(fromJSON(response))
 }
 
 saveContainerState <- function(containerState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "containerstates/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabel))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container state. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(containerState, "containerstates")
+  return(fromJSON(response))
 }
 
 saveContainerStates <- function(containerStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "containerstates/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerStates))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container states. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(containerStates, "containerstates")
+  return(fromJSON(response))
 }
 
 saveContainerContainerInteraction <- function(containerContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "itxcontainercontainers/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerContainerInteraction))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your interaction. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(containerContainerInteraction, "itxcontainercontainers")
+  return(fromJSON(response))
 }
 
 saveContainerContainerInteractions <- function(containerContainerInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "itxcontainercontainers/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerContainerInteractions))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your interactions. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(containerContainerInteractions, "itxcontainercontainers")
+  return(fromJSON(response))
 }
 
 saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "itxsubjectcontainers/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(subjectContainerInteraction))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your interaction. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(subjectContainerInteraction, "itxsubjectcontainers")
+  return(fromJSON(response))
 }
 
-saveProtocolLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "protocollabels/", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(containerLabel))
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your container label. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  response <- saveAcasEntity(protocolLabel, "protocollabels")
+  return(fromJSON(response))
 }
 
+#' @rdname saveAcasEntities
 saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
-  response <- getURL(
-    paste0(lsServerURL, acasCategory, "/"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
-    myLogger$error(response)
-    stopUser (paste0("The loader was unable to save your ", acasCategory ,". Check the logs at ", Sys.time()))
-  }
+  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/")
+  response <- postURLcheckStatus(url, message, requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
 }
@@ -1042,10 +899,13 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
 #' 
 #' Save protocols, labels, experiments, etc.
 #' 
+#' @param entity a single entity (a named list, becomes a JSON object)
 #' @param entities a list of entities
 #' @param acasCategory e.g. "experiments", "subjectlabels", etc.
 #' @param lsServerURL url of ACAS server
 #' @return a list, sometimes empty
+#' @details \code{updateAcasEntities} replaces the entity that is at the URL with
+#'   the one sent. Sub-entities (label, state, value) must have a parent object
 #' @export
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   if (length(entities) > 1000) {
@@ -1061,11 +921,12 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   
   message <- toJSON(entities)
-  
+  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/jsonArray")
   response <- postURLcheckStatus(
-    paste0(lsServerURL, acasCategory, "/jsonArray"),
+    url,
     postfields=message,
-    httpheader=c('Content-Type'='application/json')
+    httpheader=c('Content-Type'='application/json'),
+    requireJSON = TRUE
   )
   
   if (grepl("^\\s*$", response)) {
@@ -1077,95 +938,38 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
 }
 
 saveAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(analysisGroupState)
-  response <- getURL(
-    paste(lsServerURL, "analysisgroupstates", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your analysis group state. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(analysisGroupState, "analysisgroupstates")
+  return(fromJSON(response))
 }
 
 saveAnalysisGroupStates <- function(analysisGroupStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(analysisGroupStates)
-  response <- getURL(
-    paste(lsServerURL, "analysisgroupstates/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your analysis group states. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(analysisGroupStates, "analysisgroupstates")
+  return(fromJSON(response))
 }
 
 saveExperimentState <- function(experimentState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(experimentState)
-  response <- getURL(
-    paste(lsServerURL, "experimentstates", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiment state. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(experimentState, "experimentstates")
+  return(fromJSON(response))
 }
 
 saveExperimentStates <- function(experimentStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(experimentStates)
-  response <- getURL(
-    paste(lsServerURL, "experimentstates/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiment states. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(experimentStates, "experimentstates")
+  return(fromJSON(response))
 }
 
 saveExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(experimentValue)
-  response <- getURL(
-    paste(lsServerURL, "experimentvalues", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiment value. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntity(experimentValue, "experimentvalues")
+  return(fromJSON(response))
 }
 
 saveExperimentValues <- function(experimentValues, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  message <- toJSON(experimentValues)
-  response <- getURL(
-    paste(lsServerURL, "experimentvalues/jsonArray", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=message)
-  if (grepl("^<",response)) {
-    stopUser (paste("The loader was unable to save your experiment values. Instead, it got this response:", response))
-  }
-  response <- fromJSON(response)
-  return(response)
+  response <- saveAcasEntities(experimentValues, "experimentvalues")
+  return(fromJSON(response))
 }
 
 saveLabelSequence <- function(labelSequence, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "labelsequences", sep=""),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(labelSequence))
+  response <- saveAcasEntity("labelsequences")
+  return(response)
 }
 
 
@@ -1327,26 +1131,12 @@ returnListItem <- function(outputList){
 # }
 
 deleteExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "experiments/",experiment$id, sep=""),
-    customrequest='DELETE',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(experiment))
-  if(response!="") {
-    stopUser (paste("The loader was unable to delete the old experiment. Instead, it got this response:", response))
-  }
+  response <- deleteAcasEntity(experiment, "experiments")
   return(response)
 }
 
 deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- getURL(
-    paste(lsServerURL, "experimentvalues/",experimentValue$id, sep=""),
-    customrequest='DELETE',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(experimentValue))
-  if(response!="") {
-    stopUser (paste("The loader was unable to delete the experiment values. Instead, it got this response:", response))
-  }
+  response <- deleteAcasEntity(experimentValue, "experimentvalues")
   return(response)
 }
 
@@ -1360,6 +1150,7 @@ deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicat
 #' @return empty string
 #' @export
 deleteAnalysisGroupByExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  stop("This function is not currently available")
   tryCatch({
     response <- getURLcheckStatus(
       paste0(lsServerURL, "experiments/", experiment$id, "?with=analysisgroups"),
@@ -1373,23 +1164,14 @@ deleteAnalysisGroupByExperiment <- function(experiment, lsServerURL = racas::app
 }
 
 deleteAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, "analysisgroupstates/",analysisGroupState$id, sep=""),
-    customrequest='DELETE',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(analysisGroupState))
-  if(response!="") {
-    stopUser (paste("The loader was unable to delete the old analysis group state. Instead, it got this response:", response))
-  }
+  response <- deleteAcasEntity(analysisGroupState, "analysisgroupstates")
   return(response)
 }
 
-deleteEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
-    customrequest='DELETE',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(entity))
+#' @rdname saveAcasEntities
+deleteAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  url <- paste0(lsServerURL, acasCategory, "/", entity$id)
+  response <- deleteURLcheckStatus(url, requireJSON = TRUE)
   if(response!="") {
     stopUser (paste0("The loader was unable to delete the ", acasCategory, ". Instead, it got this response: ", response))
   }
@@ -1424,36 +1206,36 @@ interpretJSONBoolean <- function(JSONBoolean) {
 getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   searchText <- unique(searchText)
   labelList <- lapply(searchText, function(x) {list(labelText=x)})
+  url <- paste0(lsServerURL, "api/v1/containers/findByLabels/jsonArray")
+  postfields <- toJSON(labelList)
+  response <- postURLcheckStatus(url, postfields = postfields, requireJSON = TRUE)
   tryCatch({
-    response <- getURLcheckStatus(
-      paste(lsServerURL, "containers/findByLabels/jsonArray", sep=""),
-      customrequest='POST',
-      httpheader=c('Content-Type'='application/json'),
-      postfields=toJSON(labelList))
     response <- fromJSON(response)
   }, error = function(e) {
-    stopUser (paste0("Internal Error: The loader was unable to get container labels by text. Check the logs at ", Sys.time()))
+    logName <- "com.acas.racas.getContainerByLabelText"
+    logFileName <- "racas.log"
+    stopUserAndLogInvalidJSON(logName, longFileName, url, 'GET', postfields)
   })
-#     response <- getURLstatusCheck(paste0(lsServerURL,
-#                                          "containerlabels?find=ByLabelTextEqualsAndIgnoredNot&labelText=", searchText,
-#                                          "&ignored=", ifelse(ignored, "on", "off")))
-#     response <- fromJSON(response)
-#     }, error = function(e) {
-#       stopUser (paste0("Internal Error: The loader was unable to get container labels. Check the logs at ", Sys.time()))
-#     })
   return(response)
 }
 
 #' Get URL and check status
 #'
-#' This is a wrapper for getURL that throws an error when the HTTP status is 400 or greater
-#' 
-#'@param url the url to get/post
-#'@param ... optional parameters passed to getURL
+#'This is a wrapper for getURL that throws an error when the HTTP status is 400 
+#'or greater, or possibly when the response is html.
 #'
-#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400 or greater. See also \link{postURLcheckStatus}.
-getURLcheckStatus <- function(url, ...) {
-  logName <- "com.acas.sel"
+#'@param url the url to get/post
+#'@param postfields data sent to the server
+#'@param requireJSON boolean if errors should be thrown on JSON
+#'@param ... optional parameters passed to getURL
+#'  
+#'@details Checks the HTTP status and logs to racas.log as com.acas.sel if 400 
+#'  or greater. Setting requireJSON to \code{TRUE} will add a check for if the 
+#'  response is HTML (but not necessarily valid JSON). POST, PUT, and DELETE can
+#'  be done with their own functions. In POST and PUT, the \code{postfields}
+#'  will also be logged. Within \code{racas}, \code{postfields} is usually JSON.
+getURLcheckStatus <- function(url, ..., requireJSON=FALSE) {
+  logName <- "com.acas.racas.getURLcheckStatus"
   logFileName <- "racas.log"
   h <- basicTextGatherer()
   response <- getURL(url=url, ..., headerfunction = h$update)
@@ -1465,25 +1247,21 @@ getURLcheckStatus <- function(url, ...) {
                            statusCode, " ", responseHeader$statusMessage, "' returning: \n", 
                            response, "\nHeader was \n", h$value())
     myLogger$error(errorMessage)
-    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
-                     logFileName, " at ", Sys.time()))
+    stopUserWithTime(logFileName)
+  } else if (requireJSON==TRUE & grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0(
+      "Request to ", url, " with method 'GET' responded with HTML. Response header was: \n", 
+      h$value(), "\nBody was: \n", response)
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
   }
   return(response)
 }
 
-#'Post URL and check status
-#'
-#'This is similar to \link{getURLcheckStatus}, but does a POST, and the postfields are
-#'logged in case of an error
-#'
-#'@param url the url to get/post
-#'@param ... optional parameters passed to getURL
-#'@param postfields data sent to the server
-#'  
-#'@details checks the HTTP status and logs to racas.log as com.acas.sel if 400
-#'  or greater
-postURLcheckStatus <- function(url, postfields, ...) {
-  logName <- "com.acas.sel"
+#' @rdname getURLcheckStatus
+postURLcheckStatus <- function(url, postfields, ..., requireJSON=FALSE) {
+  logName <- "com.acas.racas.postURLcheckStatus"
   logFileName <- "racas.log"
   h <- basicTextGatherer()
   response <- getURL(url=url, ..., postfields=postfields, customrequest='POST', headerfunction = h$update)
@@ -1492,16 +1270,69 @@ postURLcheckStatus <- function(url, postfields, ...) {
   if (statusCode >= 400) {
     myLogger <- createLogger(logName = logName, logFileName = logFileName)
     errorMessage <- paste0("Request to ", url, " with method 'POST' failed with status '",
-                           statusCode, " ", responseHeader$statusMessage, "' when sent the following JSON: \n", 
-                           message, "\nHeader was \n", h$value())
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following: \n", 
+                           postfields, "\nResponse header was: \n", h$value(), "\nBody was: \n", response)
     myLogger$error(errorMessage)
-    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the log ", 
-                     logFileName, " at ", Sys.time()))
-  } else if (grepl("^<",response)) {
+    stopUserWithTime(logFileName)
+  } else if (requireJSON==TRUE & grepl("^<",response)) {
     myLogger <- createLogger(logName = logName, logFileName = logFileName)
-    errorMessage <- paste0("POST:\n", postfields, "\nResponse:\n", response)
+    errorMessage <- paste0(
+      "Request to ", url, " with method 'POST' responded with HTML when sent the following: \n", 
+      postfields, "\nResponse header was: \n", h$value(), "\nBody was: \n", response)
     myLogger$error(errorMessage)
-    stopUser (paste0("Internal Error: The loader was unable to save your data. Check the logs at ", Sys.time()))
+    stopUserWithTime(logFileName)
+  }
+  return(response)
+}
+
+#' @rdname getURLcheckStatus
+putURLcheckStatus <- function(url, postfields, ..., requireJSON=FALSE) {
+  logName <- "com.acas.racas.putURLcheckStatus"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, ..., postfields=postfields, customrequest='PUT', headerfunction = h$update)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
+  if (statusCode >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " with method 'PUT' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following: \n", 
+                           postfields, "\nResponse header was: \n", h$value(), "\nBody was: \n", response)
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
+  } else if (requireJSON==TRUE & grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0(
+      "Request to ", url, " with method 'PUT' responded with HTML when sent the following: \n", 
+      postfields, "\nResponse header was: \n", h$value(), "\nBody was: \n", response)
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
+  }
+  return(response)
+}
+
+#' @rdname getURLcheckStatus
+deleteURLcheckStatus <- function(url, ..., requireJSON=FALSE) {
+  logName <- "com.acas.racas.deleteURLcheckStatus"
+  logFileName <- "racas.log"
+  h <- basicTextGatherer()
+  response <- getURL(url=url, customrequest='DELETE', ..., headerfunction = h$update)
+  responseHeader <- as.list(parseHTTPHeader(h$value()))
+  statusCode <- as.numeric(responseHeader$status)
+  if (statusCode >= 400) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " with method 'DELETE' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' returning: \n", 
+                           response, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
+  } else if (requireJSON==TRUE & grepl("^<",response)) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0(
+      "Request to ", url, " with method 'DELETE' responded with HTML. Response header was: \n", 
+      h$value(), "\nBody was: \n", response)
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
   }
   return(response)
 }
@@ -1511,21 +1342,52 @@ postURLcheckStatus <- function(url, postfields, ...) {
 #' Gets protocols by name
 #' 
 #' @param protocolName a string, the name of the protocol
+#' @param lsServerURL url for roo server
 #' 
 #' @return a list of protocols
 #' 
 #' @details returns a list as uniqueness is not always enforced
 #' @export
-getProtocolsByName <- function(protocolName) { 
+getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
+  url <- paste0(lsServerURL, 
+                "/api/v1/protocols?FindByProtocolName&protocolName=", 
+                URLencode(protocolName, reserved = TRUE))
+  protocols <- getURLcheckStatus(url)
   tryCatch({
-    protocolList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, 
-                                           "protocols?FindByProtocolName&protocolName=", 
-                                           URLencode(protocolName, reserved = TRUE))))
+    protocols <- fromJSON(protocols)
   }, error = function(e) {
-    stopUser("There was an error in accessing the protocol. Please contact your system administrator.")
+    logName <- "com.acas.racas.getProtocolsByName"
+    logFileName <- "racas.log"
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " received invalid JSON: \n", 
+                           response, "\nHeader was \n", h$value())
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
   })
-  
   return(protocols)
+}
+#' Experiment search by name
+#' 
+#' Gets experiments by name
+#' 
+#' @param experimentName a string, the name of the experiment
+#' @param lsServerURL url for roo server
+#' 
+#' @return a list of experiments
+#' 
+#' @details returns a list as uniqueness is not always enforced
+#' @export
+getExperimentsByName <- function(experimentName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
+  url <- paste0(lsServerURL, 
+                "/api/v1/experiments?FindByExperimentName&experimentName=", 
+                URLencode(experimentName, reserved = TRUE))
+  experiments <- getURLcheckStatus(url, requireJSON = TRUE)
+  tryCatch({
+    experiments <- fromJSON(experiments)
+  }, error = function(e) {
+    stopUserAndLogInvalidJSON(logName, logFileName, url, response)
+  })
+  return(experiments)
 }
 #' Check valueKinds
 #' 
@@ -1537,7 +1399,7 @@ getProtocolsByName <- function(protocolName) {
 #' @return a list of two vectors and a data.frame: new valueKinds, old valueKinds, and a data.frame with corrected valueType for valueKinds
 #' @export
 checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
-  currentValueKindsList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/")))
+  currentValueKindsList <- getAllValueKinds()
   if (length(currentValueKindsList)==0) stopUser ("Setup error: valueKinds are missing")
   currentValueKinds <- sapply(currentValueKindsList, getElement, "kindName")
   matchingValueTypes <- sapply(currentValueKindsList, function(x) x$lsType$typeName)
@@ -1701,24 +1563,10 @@ flattenState <- function(lsState, includeFromState) {
   return(output)
 }
 
-#' Updates an entity
-#' 
-#' Replaces the entity that is at the URL with the one sent. Sub-entities (label, state, value) must have a parent object
-#' 
-#' @param entity the entity to place
-#' @param acasCategory the category (e.g. "experiments", "containervalues")
-#' @param lsServerURL the URL of the persistence server
+#' @rdname saveAcasEntities
 updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- getURL(
-    paste(lsServerURL, acasCategory, "/", entity$id, sep=""),
-    customrequest='PUT',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(entity))
-  if (grepl("^<",response)) {
-    myLogger <- createLogger(logName="com.acas.sel", logFileName = "racas.log")
-    myLogger$error(response)
-    stopUser (paste0("Internal Error: The loader was unable to update your ", acasCategory, ". Check the logs at ", Sys.time()))
-  }
+  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/", entity$id)
+  putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
 #' Change container names
@@ -1816,36 +1664,14 @@ flattenLabels <- function(lsLabels) {
 #' @export
 #' 
 getExperimentById <- function(experimentId, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  experiment <- NULL
-  if (is.null(include)) {
-    include = ""
-  } else {
-    include = paste0("?with=", include)
-  }
-  tryCatch({
-    experiment <- getURL(paste0(lsServerURL, "experiments/", experimentId, include))
-    experiment <- fromJSON(experiment)
-  }, error = function(e) {
-    addError(paste0("Could not get experiment ", experimentId, " from the server"), errorEnv)
-  })
+  experiment <- getEntityById(experimentId, "experiments", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
   return(experiment)
 }
 
 #' @rdname getExperimentById
 #' @export
 getExperimentByCodeName <- function(experimentCodeName, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  experiment <- NULL
-  if (is.null(include)) {
-    include = ""
-  } else {
-    include = paste0("?with=", include)
-  }
-  tryCatch({
-    experiments <- getURL(paste0(lsServerURL, "experiments/codename/", experimentCodeName, include))
-    experiment <- fromJSON(experiments)[[1]]
-  }, error = function(e) {
-    addError(paste0("Could not get experiment ", experimentCodeName, " from the server"), errorEnv)
-  })
+  experiment <- getEntityByCodeName(experimentCodeName, "experiments", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
   return(experiment)
 }
 
@@ -1949,26 +1775,14 @@ getPreferredName <- function(entity) {
 #' @details \code{include} not yet implemented by roo server
 #' @export
 getProtocolById <- function(id, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  protocol <- NULL
-  tryCatch({
-    protocol <- getURL(paste0(lsServerURL, "protocols/", id, "?with=", include))
-    protocol <- fromJSON(protocol)
-  }, error = function(e) {
-    addError(paste0("Could not get protocol ", id, " from the server"), errorEnv)
-  })
-  return(protocol)
+  protocol <- getEntityById(id, "protocols", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
+  return(experiment)
 }
 
 #' @rdname getProtocolById
 #' @export
 getProtocolByCodeName <- function(protocolCodeName, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  protocol <- NULL
-  tryCatch({
-    protocols <- getURL(paste0(lsServerURL, "protocols/codename/", protocolCodeName, "?with=", include))
-    protocol <- fromJSON(protocols)[[1]]
-  }, error = function(e) {
-    addError(paste0("Could not get protocol ", protocolCodeName, " from the server"), errorEnv)
-  })
+  protocol <- getEntityByCodeName(protocolCodeName, "protocols", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
   return(protocol)
 }
 
@@ -2035,14 +1849,49 @@ getOrCreateEntityState <- function(entity, entityKind, stateType, stateKind, rec
 #' @return a named list representing an object.
 #' @export
 getEntityById <- function(id, entityKind, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  entity <- NULL
+  logName <- "com.acas.racas.getEntityById"
+  logFileName <- "racas.log"
   if(include == "") {
-    entity <- getURLcheckStatus(paste0(lsServerURL, entityKind, "/", id))
+    url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id)
   } else {
-    entity <- getURLcheckStatus(paste0(lsServerURL, entityKind, "/", id, "?with=", include))  
+    url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id, "?with=", include)
   }
-  entity <- fromJSON(entity)
+  response <- getURLcheckStatus(url, requireJSON = TRUE)
+  tryCatch({
+    entity <- fromJSON(response)
+  }, error = function(e) {
+    stopUserAndLogInvalidJSON(logName, logFileName, url, response)
+  })
   return(entity)
+}
+
+#' @rdname getEntityById
+getEntityByCodeName <- function(codeName, entityKind, include="", errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  logName <- "com.acas.racas.getEntityByCodeName"
+  logFileName <- "racas.log"
+  if (is.null(include)) {
+    include = ""
+  } else {
+    include = paste0("?with=", include)
+  }
+  url <- paste0(lsServerURL, "api/v1/", entityKind, "/codename/", codeName, include)
+  response <- getURLcheckStatus(url, requireJSON = TRUE)
+  tryCatch({
+    entity <- fromJSON(response)
+  }, error = function(e) {
+    stopUserAndLogInvalidJSON(logName, logFileName, url, response)
+  })
+  return(entity)
+}
+
+#' @rdname saveAcasEntities
+getAcasEntity <- function() {
+  stop("Use getEntityById or getEntityByCodeName")
+}
+
+#' @rdname saveAcasEntities
+getAcasEntities <- function(acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  return(getURLcheckStatus(paste0(lsServerURL, "api/v1/", acasCategory)))
 }
 
 #' Update a value

@@ -530,6 +530,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
       lsType = "fileValue",
       lsKind = "source file",
       fileValue = serverFileLocation,
+      comments = fileName,
       lsState = locationState,
       lsTransaction = lsTransaction)
     
