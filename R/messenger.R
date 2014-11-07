@@ -115,8 +115,10 @@ Messenger <- setRefClass(Class = "Messenger",
                                  outputHandler <- new_output_handler(error = function(x) {addError(x$message)
                                                                                           logger$error(x$message)
                                                                                           s <- sys.calls()      
-                                                                                          s <- paste0(c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)]),"\t",collapse = '\n')
-                                                                                          s <- paste0("trace\n",s, collapse = "")
+                                                                                          s <- c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)])
+                                                                                          s <- lapply(1:length(s), function(x) paste0(x,": ", deparse(s[[x]])))
+                                                                                          s <- paste0(s,collapse = '\n')
+                                                                                          s <- paste0("Traceback:\n",s, collapse = "")
                                                                                           logger$error(s)
                                  },
                                  warning = function(x) {addWarning(x$message)

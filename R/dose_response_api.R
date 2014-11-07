@@ -17,7 +17,7 @@
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' recordedBy <- "bbolt"
 #' experimentCode <- "EXPT-00000441"
-#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
+#' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
 #' 
 #' #Loading fake data first
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
@@ -28,8 +28,8 @@
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
-#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
-api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
+#' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
+api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
 #   file <- "inst/docs/example-simple-fitsettings-ll4.json"
 #   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
@@ -138,14 +138,14 @@ api_doseResponse_get_curve_stubs <- function(GET) {
 }
 
 api_doseResponse_update_flag <- function(POST) {
-  fitData <- get_fit_data_curveid(POST$curveid)
+  fitData <- get_fit_data_curve_id(POST$curveid)
   simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
   analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
-  fitData <- get_fit_data_analysisgroupid2(analysisgroupid, full_object = TRUE)
+  fitData <- get_fit_data_analysis_group_id(analysisgroupid, full_object = TRUE)
   
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
                                       flagAlgorithm = flag_algorithm,
@@ -173,9 +173,9 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
     stop(msg)
   } else {
     if(!is.null(GET$id)) {
-      fitData <- get_fit_data_curveid(GET$id, full_object = TRUE)
+      fitData <- get_fit_data_curve_id(GET$id, full_object = TRUE)
     } else {
-      fitData <- get_fit_data_analysisgroupid2(GET$analysisgroupid, full_object = TRUE)
+      fitData <- get_fit_data_analysis_group_id(GET$analysisgroupid, full_object = TRUE)
     }
   }
   
