@@ -110,9 +110,13 @@ Messenger <- setRefClass(Class = "Messenger",
                              
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                
-                               if(!devMode) {
+                               if(!devMode) {                                
                                  outputHandler <- new_output_handler(error = function(x) {addError(x$message)
                                                                                           logger$error(x$message)
+                                                                                          s <- sys.calls()      
+                                                                                          s <- paste0(c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)]),"\t",collapse = '\n')
+                                                                                          s <- paste0("trace\n",s, collapse = "")
+                                                                                          logger$error(s)
                                  },
                                  warning = function(x) {addWarning(x$message)
                                                         logger$warn(x$message)
@@ -194,3 +198,9 @@ messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
   }
   return()
 }
+
+dig <- function(erorr) {stop(erorr)}
+chicen <- function(eror) {dig(eror)}
+ham <- messenger()
+blah <- "some eror"
+ham$capture_output("chicen(blah)")
