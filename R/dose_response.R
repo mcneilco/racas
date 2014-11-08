@@ -1158,7 +1158,7 @@ knit2html_bug_fix <- function (input, output = NULL, text = NULL, template = tem
 load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "explicit.ll4", "small.mm2")) {
   type <- match.arg(type)
   doseResponseSELFile <- switch(type,
-                                "small.ll4" = system.file("docs", "Example-Dose-Response-SEL.xlsx", package="racas"),
+                                "small.ll4" = system.file("tests", "data", "doseResponse", "docs", "Example-Dose-Response-SEL-LL4.xlsx", package="racas"),
                                 "explicit.ll4" = system.file("docs", "example-dose-response-ec50-explicit.xlsx", package="racas"),
                                 "small.mm2" = system.file("docs", "Example-Dose-Response-SEL-KD.xlsx", package="racas"),
                                 "large.ll4" = system.file("docs", "Example-Dose-Response-SEL-Large.xlsx", package="racas")
