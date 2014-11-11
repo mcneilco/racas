@@ -987,13 +987,15 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
     }
     means <- points[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), list("dose" = dose, "mean.response" = mean(response)), by = dose]
     numDoses <- nrow(means)
+    #iverseAgonistMode = inverse agonists are inactive
     if(!inverseAgonistMode) {
       dosesAboveThreshold <- length(which(means$mean.response >= threshold))
+      inverseAgonist <- coefficients(lm(dose ~ mean.response, means))[[2]] < 0
     } else {
       dosesAboveThreshold <- length(which(abs(means$mean.response) >= threshold))
     }
-    inactive <- dosesAboveThreshold < rule$activeDoses
     potent <- dosesAboveThreshold == numDoses
+    inactive <- (dosesAboveThreshold < rule$activeDoses) || ifelse(inverseAgonistMode, FALSE, inverseAgonist && !potent)
     
     insufficientRange <- abs(pointStats$response.empiricalMax - pointStats$response.empiricalMin) < threshold
   } else {
