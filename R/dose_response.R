@@ -1336,7 +1336,29 @@ save_dose_response_data <- function(fitData, recorded_by) {
   return(list(lsStates = savedStates, lsTransaction = transactionID))
   
 }
+get_ls_type <- function(valueType) {
+  valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
+  index <- which(rbindlist(valueTypesList)$typeName==valueType)
+  if(length(index) != 0) {
+    ls_type <- valueTypesList[[which(rbindlist(valueTypesList)$typeName==valueType)]]
+  } else {
+    ls_type <- NULL
+  }
+  return(ls_type)
+}
+create_ls_kind <- function(lsType, kindName) {
+  typeKindList <- list(kindName = kindName, lsType = lsType)
+  response <- getURL(
+    paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/"),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(typeKindList))
+}
 update_or_replace_experiment_metadata_value <- function(experimentCode, experimentID, lsType, lsKind, value) {   
+  if(length(checkValueKinds(lsKind, lsType)$goodValueKinds)==0) {
+    type <- get_ls_type(lsType)
+    create_ls_kind(lsType = type, kindName = lsKind)
+  }
   if(missing(experimentCode)) experimentCode <- experimentID
   url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"api/v1/values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
   response <- getURL(
@@ -1347,6 +1369,7 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
   )
   return(response)
 }
+
 
 update_experiment_model_fit_status <- function(experimentCodeOrID, status) {
   response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status", value = status)
@@ -1522,19 +1545,20 @@ update_point_flags <- function(points, recordedBy, lsTransaction) {
   updateTheseValues$tgs_id <- treatmentGroupDF$stateId[match(updateTheseValues$treatmentGroupId, treatmentGroupDF$treatmentGroupId)]
   updateTheseValues$tgs_version <- treatmentGroupDF$stateVersion[match(updateTheseValues$treatmentGroupId, treatmentGroupDF$treatmentGroupId)]
   updateTheseValues$tgv_id <- treatmentGroupDF$id[match(updateTheseValues$treatmentGroupId, valuesToIgnoreDF$TreatmentGroupId)]
-  
-  newValues <- updateTheseValues[, list(list(createStateValue(lsType = "numericValue",
-                                                              lsKind = "Response", 
-                                                              numericValue = na_to_null(suppressWarnings(mean(response))), 
-                                                              numberOfReplicates=length(response), 
-                                                              uncertaintyType="standard deviation", 
-                                                              uncertainty = na_to_null(sd(response)), 
-                                                              lsTransaction=lsTransaction,
-                                                              recordedBy=recordedBy, 
-                                                              lsState=list(id=unique(tgs_id), 
-                                                                           version=unique(tgs_version))))), 
-                                 by = treatmentGroupId]$V1
-  saveAcasEntities(newValues, "treatmentgroupvalues")
+  if(nrow(updateTheseValues) > 0) {
+    newValues <- updateTheseValues[, list(list(createStateValue(lsType = "numericValue",
+                                                                lsKind = "Response", 
+                                                                numericValue = na_to_null(suppressWarnings(mean(response))), 
+                                                                numberOfReplicates=length(response), 
+                                                                uncertaintyType="standard deviation", 
+                                                                uncertainty = na_to_null(sd(response)), 
+                                                                lsTransaction=lsTransaction,
+                                                                recordedBy=recordedBy, 
+                                                                lsState=list(id=unique(tgs_id), 
+                                                                             version=unique(tgs_version))))), 
+                                   by = treatmentGroupId]$V1
+    saveAcasEntities(newValues, "treatmentgroupvalues")
+  }
 }
 
 get_entity_by_id <- function(id, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
@@ -1589,4 +1613,3 @@ add_clob_values_to_fit_data <- function(fitData) {
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
-
