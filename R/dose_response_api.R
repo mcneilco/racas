@@ -43,6 +43,9 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
   
+  myMessenger$logger$debug("updating experiment model fit status status value to running")
+  experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
+  
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   
@@ -58,8 +61,9 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$logger$debug("saving the curve data")
   savedStates <- save_dose_response_data(fitData, recordedBy)
  
-  myMessenger$logger$debug("updating experiment status value to complete")
-  experimentStatusValue <- update_experiment_status(experimentCode, "dose response analysis complete")
+  myMessenger$logger$debug("updating experiment model fit status value to complete")
+  experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "complete")
+  
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("getting acas response")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
@@ -69,8 +73,8 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
     myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
     response <- fit_data_to_acas_experiment_response(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   }
-  myMessenger$logger$debug("saving experiment value dose response analysis result html")
-  experimentDoseResponseAnalysisResultValue <- update_dose_response_analysis_result_html(experimentCode, html = response$result$htmlSummary)
+  myMessenger$logger$debug("saving experiment value model fit result html")
+  experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
   
   myMessenger$logger$debug("responding to acas")
   return(response)

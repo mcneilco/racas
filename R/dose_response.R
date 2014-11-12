@@ -1348,12 +1348,12 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
   return(response)
 }
 
-update_experiment_status <- function(experimentCodeOrID, status) {
-  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "stringValue", lsKind = "status", value = status)
+update_experiment_model_fit_status <- function(experimentCodeOrID, status) {
+  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status", value = status)
   return(response)
 }
-update_dose_response_analysis_result_html <- function(experimentCodeOrID, html) {
-  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "clobValue", lsKind = "dose response analysis result html", value = html)
+update_experiment_model_fit_html <- function(experimentCodeOrID, html) {
+  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "clobValue", lsKind = "model fit result html", value = html)
   return(response)
 }
 
