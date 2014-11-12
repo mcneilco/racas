@@ -987,7 +987,7 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
     }
     means <- points[ is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), list("dose" = dose, "mean.response" = mean(response)), by = dose]
     numDoses <- nrow(means)
-    #iverseAgonistMode = inverse agonists are inactive
+    #inverseAgonistMode = FALSE = inverse agonists are inactive
     if(!inverseAgonistMode) {
       dosesAboveThreshold <- length(which(means$mean.response >= threshold))
       inverseAgonist <- coefficients(lm(dose ~ mean.response, means))[[2]] < 0
@@ -1007,6 +1007,8 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
 }
 
 get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
+  opt <- options()
+  on.exit(options(opt)) 
   fixedParams <- data.frame(matrix(NA,1,length(paramNames)))
   names(fixedParams) <- paramNames
   fixed[unlist(lapply(fixed, is.null))] <- NULL
@@ -1016,10 +1018,11 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
   fct <- drcFunction(fixed=fixed, names=paramNames)
   drcObj <- NULL
   tryCatch({
+    options(show.error.messages=FALSE)
     drcObj <- drm(formula = response ~ dose, data = dataSet, subset = is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), robust=robust, fct = fct, control = drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
-    #print(ex$message)
+    #print(ex$message)    
   })
   return(drcObj)
 }
