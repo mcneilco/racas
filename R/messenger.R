@@ -108,9 +108,7 @@ Messenger <- setRefClass(Class = "Messenger",
                            },
                            capture_output = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
-                               if(!class(expr) == "character") {
-                                 expr <- deparse(substitute(expr))
-                               }
+                               expr <- parse(expr)
                                if(!devMode) {                                
                                  outputHandler <- new_output_handler(error = function(x) {addError(x$message)
                                                                                           logger$error(x$message)
