@@ -107,6 +107,7 @@ Messenger <- setRefClass(Class = "Messenger",
                              return(.self)
                            },
                            capture_output = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
+                             expr <- substitute(expr)
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                if(!devMode) {                                
                                  outputHandler <- new_output_handler(error = function(x) {currentwd <- getwd()
