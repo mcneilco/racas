@@ -769,6 +769,9 @@ values_to_fit_data <- function(ag_values, tg_values, subject_values) {
     pts[ , flagchanged := FALSE]
     setcolorder(pts, order(names(pts)))
     setnames(pts, c("Dose", "Response"), c("dose", "response"))
+    #Remove 0 dose point
+    pts <- pts[dose != 0]
+    
     if(nrow(fit_data) == 1) {
       fit_data[ , points := list(list(pts))]
     } else {
