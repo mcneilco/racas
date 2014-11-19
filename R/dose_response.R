@@ -821,13 +821,17 @@ get_fit_data_analysis_group_id <- function(analysisGroupID, full_object = FALSE,
   myMessenger$logger$debug(paste0("returning with ", nrow(fit_data), " curves"))
   return(fit_data)
 }
-get_fit_data_curve_id <- function(curveID, full_object = TRUE) {
-  myMessenger <- messenger()
-  myMessenger$logger$debug("Doing query to convert curve id to analyis group id")
+get_analysis_group_id_from_curve_id <- function(curveID) {
   analyisGroupIDOfCurveID <- query(paste0("select ags.analysis_group_id 
                                           from analysis_group_state ags 
                                           join analysis_group_value agv 
                                           on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))
+  return(analyisGroupIDOfCurveID)
+}
+get_fit_data_curve_id <- function(curveID, full_object = TRUE) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("Doing query to convert curve id to analyis group id")
+  analyisGroupIDOfCurveID <- get_analysis_group_id_from_curve_id(curveID)
   if(nrow(analyisGroupIDOfCurveID) == 0) {
     stop("no analysis group id found")
   } else {
