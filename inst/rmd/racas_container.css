@@ -40,9 +40,9 @@ body, td {
    font-size:0.8em; 
 }
 
-.racas_container a:visited {
+/*.racas_container a:visited {
    color: rgb(50%, 0%, 50%);
-}
+}*/
 
 .racas_container pre, img {
   max-width: 100%;
