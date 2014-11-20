@@ -1023,10 +1023,13 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
   fixedParams[which(matches != 0)] <- fixed[matches]
   fixed <- unlist(fixedParams)
   fct <- drcFunction(fixed=fixed, names=paramNames)
+  if(!"weight" %in% names(dataSet)) {
+    dataSet$weight <- 1
+  }
   drcObj <- NULL
   tryCatch({
     options(show.error.messages=FALSE)
-    drcObj <- drm(formula = response ~ dose, data = dataSet, subset = is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), robust=robust, fct = fct, control = drmc(errorm=TRUE))
+    drcObj <- drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = is.na(flag_user) & is.na(flag_on.load) & is.na(flag_algorithm) & is.na(flag_temp), robust=robust, fct = fct, control = drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)    
