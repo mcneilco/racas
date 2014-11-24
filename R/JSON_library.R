@@ -41,7 +41,7 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
     numberOfLabels=numberOfLabels
   )
   url <- paste0(lsServerURL, "api/v1/labelsequences/getLabels")
-  response <- getURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
+  response <- postURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
 }
