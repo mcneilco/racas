@@ -1264,7 +1264,8 @@ postURLcheckStatus <- function(url, postfields, ..., requireJSON=FALSE) {
   logName <- "com.acas.racas.postURLcheckStatus"
   logFileName <- "racas.log"
   h <- basicTextGatherer()
-  response <- getURL(url=url, ..., postfields=postfields, customrequest='POST', headerfunction = h$update)
+  response <- getURL(url=url, ..., postfields=postfields, customrequest='POST', 
+                     httpheader=c('Content-Type'='application/json'), headerfunction = h$update)
   responseHeader <- as.list(parseHTTPHeader(h$value()))
   statusCode <- as.numeric(responseHeader$status)
   if (statusCode >= 400) {
@@ -1290,7 +1291,8 @@ putURLcheckStatus <- function(url, postfields, ..., requireJSON=FALSE) {
   logName <- "com.acas.racas.putURLcheckStatus"
   logFileName <- "racas.log"
   h <- basicTextGatherer()
-  response <- getURL(url=url, ..., postfields=postfields, customrequest='PUT', headerfunction = h$update)
+  response <- getURL(url=url, ..., postfields=postfields, customrequest='PUT', 
+                     httpheader=c('Content-Type'='application/json'), headerfunction = h$update)
   responseHeader <- as.list(parseHTTPHeader(h$value()))
   statusCode <- as.numeric(responseHeader$status)
   if (statusCode >= 400) {
@@ -1564,10 +1566,10 @@ flattenState <- function(lsState, includeFromState) {
 }
 
 #' @rdname saveAcasEntities
-updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  #url <- paste0(lsServerURL, "api/v1/", acasCategory, "/", entity$id)
-  url <- paste0(lsServerURL, acasCategory, "/")
-  postURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
+updateAcasEntity <- function(entity, acasCategory, acasLevel = "values", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  # acasLevel is "values" or "states"
+  url <- paste0(lsServerURL, "api/v1/", acasLevel, "/", acasCategory, "/")
+  putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
 #' Change container names
@@ -1956,9 +1958,7 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
     lsValue <- lsValues[[1]]
     newLsValue$id <- lsValue$id
     newLsValue$version <- lsValue$version
-    # TODO: bring back after server fix
-    output <- newLsValue
-    #output <- updateAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL = lsServerURL)
+    output <- updateAcasEntity(newLsValue, "experiment", acasLevel = "values", lsServerURL = lsServerURL)
   } else {
     # Does not exist yet
     output <- saveAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL)
