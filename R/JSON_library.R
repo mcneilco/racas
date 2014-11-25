@@ -800,49 +800,40 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
 }
 
 saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(protocols, "protocols")
-  return(fromJSON(response))
+  return(saveAcasEntities(protocols, "protocols"))
 }
 
-
 saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(protocol, "protocols")
-  return(fromJSON(response))
+  return(saveAcasEntity(protocol, "protocols"))
 }
 
 
 
 saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(experiment, "experiments")
-  return(fromJSON(response))
+  return(saveAcasEntity(experiment, "experiments"))
 }
 
 
 saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(experiments, "experiments")
-  return(fromJSON(response))
+  return(saveAcasEntities(experiments, "experiments"))
 }
 
 saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(analysisGroups, "analysisgroups")
-  return(fromJSON(response))
+  return(saveAcasEntities(analysisGroups, "analysisgroups"))
 }
 
 saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(analysisGroup, "analysisgroups")
-  return(fromJSON(response))
+  return(saveAcasEntity(analysisGroup, "analysisgroups"))
 }
 
 #' save container objects
 #' Currently, this cannot accept labels and states
 saveContainer <- function(container, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(container, "containers")
-  return(fromJSON(response))
+  return(saveAcasEntity(container, "containers"))
 }
 
 saveContainers <- function(containers, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(containers, "containers")
-  return(fromJSON(response))
+  return(saveAcasEntities(containers, "containers"))
 }
 
 saveContainerLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
