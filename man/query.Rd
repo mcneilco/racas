@@ -3,7 +3,8 @@
 \alias{query}
 \title{Query the application data server.}
 \usage{
-query(qu, globalConnect = FALSE, conn = NULL, catchError = TRUE, ...)
+query(qu, globalConnect = FALSE, conn = NULL, catchError = TRUE, send,
+  ...)
 }
 \arguments{
 \item{qu}{a sql query character string}
