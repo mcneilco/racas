@@ -424,7 +424,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -472,6 +472,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(logResponse) {
     yrn <- 10^(yrn)
   }
+  if(is.na(curveXrn[1])) {
+    curveXrn[1] <- xrn[1]
+  }
+  if(length(curveXrn) == 1 | is.na(curveXrn[2])) {
+    curveXrn[2] <- xrn[2]
+  }
+  
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
   flaggedPoints <- subset(curveData, !is.na(curveData$flag_user) | !is.na(curveData$flag_algorithm) | !is.na(curveData$flag_on.load) | !is.na(curveData$flag_temp))
@@ -596,7 +603,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
+      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color)  
     }
   }
   #Actually Draw Curves
