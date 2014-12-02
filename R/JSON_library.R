@@ -235,7 +235,7 @@ createProtocolLabel <- function(protocol = NULL, labelText, recordedBy="authorNa
   return(protocolLabel)
 }
 
-createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="experiment name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE){
+createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="authorName", lsType="name", lsKind="experiment name", lsTransaction=NULL, preferred=TRUE, ignored=FALSE, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   experimentLabel = list(
     experiment=experiment,
     labelText=labelText,
@@ -245,7 +245,7 @@ createExperimentLabel <- function(experiment=NULL, labelText, recordedBy="author
     preferred=preferred,
     ignored=ignored,
     lsTransaction=lsTransaction,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+    recordedDate=recordedDate
   )
   return(experimentLabel)
 }
@@ -404,7 +404,7 @@ createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="
   )
   return(protocolState)
 }
-createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE){
+createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE, recordedDate=NULL){
   experimentState = list(
     experiment=experiment, #This will fail if not given an id and version (but the version does not matter)
     lsValues=experimentValues,
@@ -414,7 +414,7 @@ createExperimentState <- function(experimentValues=NULL, recordedBy="userName", 
     comments=comments,
     lsTransaction=lsTransaction,
     ignored=FALSE,
-    recordedDate=if(testMode) 1376954591000 else as.numeric(format(Sys.time(), "%s"))*1000
+    recordedDate=if(testMode) 1376954591000 else if(!is.null(recordedDate)) recordedDate else as.numeric(format(Sys.time(), "%s"))*1000
   )
   return(experimentState)
 }
