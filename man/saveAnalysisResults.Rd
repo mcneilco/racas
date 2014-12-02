@@ -3,8 +3,8 @@
 \alias{saveAnalysisResults}
 \title{Save the HTML summary into the experiment}
 \usage{
-saveAnalysisResults(experiment, hasError, htmlSummary, lsTransaction = NULL,
-  testMode = FALSE)
+saveAnalysisResults(experiment, hasError, htmlSummary, recordedBy = "none",
+  dryRun = F, lsTransaction = NULL, testMode = FALSE)
 }
 \arguments{
 \item{experiment}{An experiment list of lists}
@@ -13,9 +13,11 @@ saveAnalysisResults(experiment, hasError, htmlSummary, lsTransaction = NULL,
 
 \item{htmlSummary}{A string that is html}
 
-\item{lsTransaction}{An integer that is the transaction id}
+\item{recordedBy}{current user (not used)}
 
-\item{testMode}{a boolean used for testing}
+\item{lsTransaction}{An integer that is the transaction id (not used)}
+
+\item{testMode}{a boolean used for testing (not used)}
 }
 \description{
 Saves a summary to the given experiment

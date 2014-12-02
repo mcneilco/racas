@@ -29,14 +29,17 @@ the experiment object, or if it does not exist, \code{addError} is
 Gets an experiment by id or codename, with options of what to get
 }
 \details{
-\code{include} can be in the list: \itemize{ \item{analysisgroups:
-  returns the experiment stub with analysis group stubs} \item{fullobject:
-  returns the full experiment object (warning: this may be slow if there is a
-  lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
-  json format} \item{prettyjsons: returns the full experiment in pretty json
-  format} \item{analysisgroupvalues: returns the experiment stub with full
-  analysis groups}} If left blank, an experiment stub (with states and
-  values) is returned. The codeName will do the same as
-  include=analysisgroups.
+\code{include} can be in the list: \itemize{
+\item{analysisgroups: returns the experiment stub with analysis group stubs}
+\item{fullobject: returns the full experiment object (warning: this may be
+slow if there is a lot of data)}
+\item{prettyjsonstub: returns the experiment stub in pretty json format}
+\item{prettyjson: returns the full experiment in pretty json format}
+\item{analysisgroupvalues: returns the experiment stub with full analysis
+groups}
+\item{analysisgroupstates: returns the experiment stub with analysis group
+states}}
+If left blank, an experiment stub (with states and values) is returned. The
+codeName will do the same as include=analysisgroups.
 }
 

@@ -41,7 +41,7 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
     numberOfLabels=numberOfLabels
   )
   url <- paste0(lsServerURL, "api/v1/labelsequences/getLabels")
-  response <- getURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
+  response <- postURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
 }
@@ -800,89 +800,72 @@ createSubjectContainerItxState <- function(subjectContainerInteraction=NULL, int
 }
 
 saveProtocols <- function(protocols, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(protocols, "protocols")
-  return(fromJSON(response))
+  return(saveAcasEntities(protocols, "protocols"))
 }
 
-
 saveProtocol <- function(protocol, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(protocol, "protocols")
-  return(fromJSON(response))
+  return(saveAcasEntity(protocol, "protocols"))
 }
 
 
 
 saveExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(experiment, "experiments")
-  return(fromJSON(response))
+  return(saveAcasEntity(experiment, "experiments"))
 }
 
 
 saveExperiments <- function(experiments, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(experiments, "experiments")
-  return(fromJSON(response))
+  return(saveAcasEntities(experiments, "experiments"))
 }
 
 saveAnalysisGroups <- function(analysisGroups, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(analysisGroups, "analysisgroups")
-  return(fromJSON(response))
+  return(saveAcasEntities(analysisGroups, "analysisgroups"))
 }
 
 saveAnalysisGroup <- function(analysisGroup, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(analysisGroup, "analysisgroups")
-  return(fromJSON(response))
+  return(saveAcasEntity(analysisGroup, "analysisgroups"))
 }
 
 #' save container objects
 #' Currently, this cannot accept labels and states
 saveContainer <- function(container, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(container, "containers")
-  return(fromJSON(response))
+  return(saveAcasEntity(container, "containers"))
 }
 
 saveContainers <- function(containers, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(containers, "containers")
-  return(fromJSON(response))
+  return(saveAcasEntities(containers, "containers"))
 }
 
 saveContainerLabel <- function(containerLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- saveAcasEntity(containerLabel, "containerlabels")
-  return(fromJSON(response))
+  return(saveAcasEntity(containerLabel, "containerlabels"))
 }
 
 saveContainerLabels <- function(containerLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- saveAcasEntities(containerLabels, "containerlabels")
-  return(fromJSON(response))
+  return(saveAcasEntities(containerLabels, "containerlabels"))
 }
 
 saveContainerState <- function(containerState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- saveAcasEntity(containerState, "containerstates")
-  return(fromJSON(response))
+  return(saveAcasEntity(containerState, "containerstates"))
 }
 
 saveContainerStates <- function(containerStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- saveAcasEntities(containerStates, "containerstates")
-  return(fromJSON(response))
+  return(saveAcasEntities(containerStates, "containerstates"))
 }
 
 saveContainerContainerInteraction <- function(containerContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(containerContainerInteraction, "itxcontainercontainers")
-  return(fromJSON(response))
+  return(saveAcasEntity(containerContainerInteraction, "itxcontainercontainers"))
 }
 
 saveContainerContainerInteractions <- function(containerContainerInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(containerContainerInteractions, "itxcontainercontainers")
-  return(fromJSON(response))
+  return(saveAcasEntities(containerContainerInteractions, "itxcontainercontainers"))
 }
 
 saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(subjectContainerInteraction, "itxsubjectcontainers")
-  return(fromJSON(response))
+  return(saveAcasEntities(subjectContainerInteraction, "itxsubjectcontainers"))
 }
 
 saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  response <- saveAcasEntity(protocolLabel, "protocollabels")
-  return(fromJSON(response))
+  return(saveAcasEntity(protocolLabel, "protocollabels"))
 }
 
 #' @rdname saveAcasEntities
@@ -938,33 +921,27 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
 }
 
 saveAnalysisGroupState <- function(analysisGroupState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(analysisGroupState, "analysisgroupstates")
-  return(fromJSON(response))
+  return(saveAcasEntity(analysisGroupState, "analysisgroupstates"))
 }
 
 saveAnalysisGroupStates <- function(analysisGroupStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(analysisGroupStates, "analysisgroupstates")
-  return(fromJSON(response))
+  return(saveAcasEntities(analysisGroupStates, "analysisgroupstates"))
 }
 
 saveExperimentState <- function(experimentState, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(experimentState, "experimentstates")
-  return(fromJSON(response))
+  return(saveAcasEntity(experimentState, "experimentstates"))
 }
 
 saveExperimentStates <- function(experimentStates, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(experimentStates, "experimentstates")
-  return(fromJSON(response))
+  return(saveAcasEntities(experimentStates, "experimentstates"))
 }
 
 saveExperimentValue <- function(experimentValue, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntity(experimentValue, "experimentvalues")
-  return(fromJSON(response))
+  return(saveAcasEntity(experimentValue, "experimentvalues"))
 }
 
 saveExperimentValues <- function(experimentValues, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- saveAcasEntities(experimentValues, "experimentvalues")
-  return(fromJSON(response))
+  return(saveAcasEntities(experimentValues, "experimentvalues"))
 }
 
 saveLabelSequence <- function(labelSequence, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
@@ -1566,9 +1543,8 @@ flattenState <- function(lsState, includeFromState) {
 }
 
 #' @rdname saveAcasEntities
-updateAcasEntity <- function(entity, acasCategory, acasLevel = "values", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  # acasLevel is "values" or "states"
-  url <- paste0(lsServerURL, "api/v1/", acasLevel, "/", acasCategory, "/")
+updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/")
   putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
@@ -1651,15 +1627,18 @@ flattenLabels <- function(lsLabels) {
 #' @param errorEnv the environment where errors will be stored to
 #' @param lsServerURL the url for the roo server
 #'   
-#' @details \code{include} can be in the list: \itemize{ \item{analysisgroups:
-#'   returns the experiment stub with analysis group stubs} \item{fullobject:
-#'   returns the full experiment object (warning: this may be slow if there is a
-#'   lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
-#'   json format} \item{prettyjsons: returns the full experiment in pretty json 
-#'   format} \item{analysisgroupvalues: returns the experiment stub with full
-#'   analysis groups}} If left blank, an experiment stub (with states and
-#'   values) is returned. The codeName will do the same as
-#'   include=analysisgroups.
+#' @details \code{include} can be in the list: \itemize{ 
+#' \item{analysisgroups: returns the experiment stub with analysis group stubs} 
+#' \item{fullobject: returns the full experiment object (warning: this may be 
+#' slow if there is a lot of data)}
+#' \item{prettyjsonstub: returns the experiment stub in pretty json format}
+#' \item{prettyjson: returns the full experiment in pretty json format}
+#' \item{analysisgroupvalues: returns the experiment stub with full analysis
+#' groups}
+#' \item{analysisgroupstates: returns the experiment stub with analysis group
+#' states}}
+#' If left blank, an experiment stub (with states and values) is returned. The
+#' codeName will do the same as include=analysisgroups.
 #'   
 #' @return the experiment object, or if it does not exist, \code{addError} is
 #'   run and NULL is returned
@@ -1667,7 +1646,7 @@ flattenLabels <- function(lsLabels) {
 #' @export
 #' 
 getExperimentById <- function(experimentId, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  experiment <- getEntityById(experimentId, "experiments", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
+  experiment <- getEntityById(experimentId, "experiments/stub", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
   return(experiment)
 }
 
@@ -1958,10 +1937,33 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
     lsValue <- lsValues[[1]]
     newLsValue$id <- lsValue$id
     newLsValue$version <- lsValue$version
-    output <- updateAcasEntity(newLsValue, "experiment", acasLevel = "values", lsServerURL = lsServerURL)
+    output <- updateAcasEntity(newLsValue, "experiment", lsServerURL = lsServerURL)
   } else {
     # Does not exist yet
     output <- saveAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL)
   }
   return(output)
+}
+
+#' Update Values
+#' 
+#' Updates values without requiring knowledge of whether the value already
+#' exists or not- it will be checked by the roo server. Also adds valueType and
+#' valueKind if needed.
+#' 
+#' @param newValue value to save, will be sent as a string
+#' @param entityKind kind of entity, e.g. "experiment"
+#' @param parentId id of the parent entity
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param valueType lsType of the value
+#' @param valueKind lsKind of the value
+#' @return updated value object
+#' @export
+updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, stateKind, valueType, valueKind, 
+                                     lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  #url <- "acas/api/v1/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
+  url <- paste0(lsServerURL, "api/v1/", entityKind, "/", parentId, "/bystate/", 
+                stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
+  putURLcheckStatus(URLencode(url), postfields = newValue)
 }

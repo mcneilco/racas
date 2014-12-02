@@ -82,10 +82,11 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
 #' @param experiment An experiment list of lists
 #' @param hasError A boolean in the analysis had an error
 #' @param htmlSummary A string that is html
-#' @param lsTransaction An integer that is the transaction id
-#' @param testMode a boolean used for testing
+#' @param lsTransaction An integer that is the transaction id (not used)
+#' @param testMode a boolean used for testing (not used)
+#' @param recordedBy current user (not used)
 #' @export
-saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction=NULL, testMode=FALSE) {
+saveAnalysisResults <- function(experiment, hasError, htmlSummary, recordedBy="none", dryRun=F, lsTransaction=NULL, testMode=FALSE) {
   # Saves (replace) the analysis html and status
   # Notes: experiment must have an "experiment metadata" state with values "analysis result html" and "analysis status"
   
@@ -93,41 +94,8 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, lsTransaction
     return (htmlSummary)
   }
   
-  # Refresh the experiment from the server in case anything has changed
-  experiment <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "experiments/", experiment$id)))
+  status <- if(hasError) {"failed"} else {"complete"}
+  setExperimentStatus(status, experiment, recordedBy, dryRun, lsTransaction)
   
-  metadataState <- experiment$lsStates[lapply(experiment$lsStates, getElement, "lsKind")=="experiment metadata"][[1]]
-  
-  valueKinds <- lapply(metadataState$lsValues, getElement, "lsKind")
-  
-  valuesToDelete <- metadataState$lsValues[valueKinds == "analysis result html" | valueKinds == "analysis status"]
-  
-  htmlValue <- createStateValue(
-    lsType = "clobValue",
-    lsKind = "analysis result html",
-    clobValue = htmlSummary,
-    lsState = metadataState,
-    lsTransaction = lsTransaction,
-    testMode = testMode
-  )
-  
-  statusValue <- createStateValue(
-    lsType = "stringValue",
-    lsKind = "analysis status",
-    stringValue = if(hasError) {"failed"} else {"complete"},
-    lsState = metadataState,
-    lsTransaction = lsTransaction,
-    testMode = testMode)
-  
-  if(testMode) {
-    return(list(htmlValue,statusValue))
-  } else {
-    tryCatch({
-      lapply(valuesToDelete, deleteExperimentValue)
-      saveExperimentValues(list(htmlValue,statusValue))
-    }, error = function(e) {
-      htmlSummary <- paste(htmlSummary, "<p>Could not save the experiment status</p>")
-    })
-    return (htmlSummary)
-  }
+  setExperimentHtml(htmlSummary, experiment, recordedBy, dryRun, lsTransaction)
 }

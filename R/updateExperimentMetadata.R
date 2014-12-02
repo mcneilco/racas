@@ -4,9 +4,9 @@
 #' 
 #' @param status a string such as "running" or "completed"
 #' @param experiment an experiment object
-#' @param recordedBy username of current user
+#' @param recordedBy username of current user (not used)
 #' @param dryRun boolean if in dry run
-#' @param lsTransaction the id of the transaction
+#' @param lsTransaction the id of the transaction (not used)
 #' @param lsServerURL the url for the roo server
 #' @details sets the "status" value in state "analysis status" (or "dryrun
 #'   status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
@@ -18,21 +18,33 @@ setExperimentStatus <- function(status, experiment, recordedBy, dryRun = F, lsTr
     lsKind <- "analysis status"
   }
   
-  if (is.null(experiment$lsStates)) {
-    experiment <- getExperimentById(experiment$id)
+  updateValueByTypeAndKind(status, "experiment", experiment$id, "metadata", 
+                           "experiment metadata", "stringValue", "analysis status", 
+                           lsServerURL = lsServerURL)
+}
+
+#' Experiment html
+#' 
+#' Sets experiment html
+#' 
+#' @param htmlText html element to display for experiment
+#' @param experiment an experiment object
+#' @param recordedBy username of current user
+#' @param dryRun boolean if in dry run
+#' @param lsTransaction the id of the transaction
+#' @param lsServerURL the url for the roo server
+#' @details sets the "status" value in state "analysis status" (or "dryrun
+#'   status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
+#' @export
+setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTransaction = NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  if (dryRun) {
+    lsKind <- "dryrun result html"
+  } else {
+    lsKind <- "analysis result html"
   }
   
-  if (is.null(lsTransaction)) {
-    lsTransaction <- createLsTransaction()$id
-  }
-  
-  experimentState <- getOrCreateExperimentState(
-    experiment, "metadata", "experiment metadata", recordedBy, lsTransaction
-  )
-  experimentValue <- updateOrCreateStateValue(
-    "experiment", experimentState, "stringValue", lsKind, stringValue = status, 
-    lsTransaction = lsTransaction, recordedBy = recordedBy
-  )
+  updateValueByTypeAndKind(htmlText, "experiment", experiment$id, "metadata", 
+                           "experiment metadata", "clobValue", lsKind)
 }
 
 #' save file in ACAS
@@ -139,14 +151,8 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     stopUser("Invalid file service type")
   }
   
-  if (is.null(entity$lsStates)) {
-    entity <- getEntityById(entity$id, paste0(entityKind, "s"))
-  }
-  lsState <- getOrCreateEntityState(entity, entityKind, stateType, stateKind, recordedBy, lsTransaction)
-  
-  updateOrCreateStateValue(entityKind, lsState, valueType, valueKind, 
-                           fileValue = serverFileLocation, comments = fileName, 
-                           lsTransaction = lsTransaction, recordedBy = recordedBy)
+  updateValueByTypeAndKind(serverFileLocation, entityKind, entity$id, stateType, 
+                           stateKind, valueType, valueKind)
   
   return(serverFileLocation)
 }
