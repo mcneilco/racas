@@ -1543,9 +1543,8 @@ flattenState <- function(lsState, includeFromState) {
 }
 
 #' @rdname saveAcasEntities
-updateAcasEntity <- function(entity, acasCategory, acasLevel = "values", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  # acasLevel is "values" or "states"
-  url <- paste0(lsServerURL, "api/v1/", acasLevel, "/", acasCategory, "/")
+updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/")
   putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
@@ -1938,10 +1937,33 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
     lsValue <- lsValues[[1]]
     newLsValue$id <- lsValue$id
     newLsValue$version <- lsValue$version
-    output <- updateAcasEntity(newLsValue, "experiment", acasLevel = "values", lsServerURL = lsServerURL)
+    output <- updateAcasEntity(newLsValue, "experiment", lsServerURL = lsServerURL)
   } else {
     # Does not exist yet
     output <- saveAcasEntity(newLsValue, paste0(entityKind, "values"), lsServerURL)
   }
   return(output)
+}
+
+#' Update Values
+#' 
+#' Updates values without requiring knowledge of whether the value already
+#' exists or not- it will be checked by the roo server. Also adds valueType and
+#' valueKind if needed.
+#' 
+#' @param newValue value to save, will be sent as a string
+#' @param entityKind kind of entity, e.g. "experiment"
+#' @param parentId id of the parent entity
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param valueType lsType of the value
+#' @param valueKind lsKind of the value
+#' @return updated value object
+#' @export
+updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, stateKind, valueType, valueKind, 
+                                     lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  #url <- "acas/api/v1/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
+  url <- paste0(lsServerURL, "api/v1/", entityKind, "/", parentId, "/bystate/", 
+                stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
+  putURLcheckStatus(URLencode(url), postfields = newValue)
 }

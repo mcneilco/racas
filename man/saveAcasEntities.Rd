@@ -17,7 +17,7 @@ saveAcasEntities(entities, acasCategory,
 deleteAcasEntity(entity, acasCategory,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 
-updateAcasEntity(entity, acasCategory, acasLevel = "values",
+updateAcasEntity(entity, acasCategory,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 
 getAcasEntity()
