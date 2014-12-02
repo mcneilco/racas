@@ -30,8 +30,12 @@
 #' # user  system elapsed 
 #' # 0.007   0.001   0.468 
 #' 
-query <- function(qu, globalConnect=FALSE, conn = NULL, catchError = TRUE, ...) {
-  isSend <- grepl("^UPDATE|^CREATE|^DELETE|^DROP|^INSERT|^ALTER",toupper(sub("^\\s+", "", qu)))
+query <- function(qu, globalConnect=FALSE, conn = NULL, catchError = TRUE, send, ...) {
+  if(missing(send)) {
+    isSend <- grepl("^UPDATE|^CREATE|^DELETE|^DROP|^INSERT|^ALTER",toupper(sub("^\\s+", "", qu)))
+  } else {
+    isSend <- send
+  }
   closeConnectionOnWaytOut <- !globalConnect & is.null(conn)
   on.exit({if(closeConnectionOnWaytOut) {DBI::dbDisconnect(conn)}})
   if(is.null(conn)) {
@@ -48,9 +52,14 @@ query <- function(qu, globalConnect=FALSE, conn = NULL, catchError = TRUE, ...) 
   }
   jdbcConn <- class(conn)=="JDBCConnection"
   result <- tryCatch({
-    if(isSend && jdbcConn) {
-      result <- RJDBC::dbSendUpdate(conn, qu)
-      return(TRUE)
+    if(isSend) {
+      if(jdbcConn) {
+        result <- RJDBC::dbSendUpdate(conn, qu)
+        return(TRUE)
+      } else {
+        result <- DBI::dbSendQuery(conn, qu)
+        return(TRUE)
+      }
     } else {
       result <- DBI::dbGetQuery(conn,qu)
       return(result)

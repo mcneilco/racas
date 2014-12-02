@@ -63,3 +63,4 @@ Collate:
     'summaryStatistics.R'
     'tsvSave.R'
     'updateExperimentMetadata.R'
+    'utilities.R'

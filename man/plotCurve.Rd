@@ -9,7 +9,8 @@ plotCurve(curveData, params, fitFunction, paramNames = c("ec50", "min", "max",
   xmax = NA, height = 300, width = 300, showGrid = FALSE,
   showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE,
   drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE,
-  drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...)
+  drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE,
+  curveXrn = c(NA, NA), ...)
 }
 \arguments{
 \item{curveData}{a data frame with the points with column names curveid, dose, response, flag}

@@ -424,7 +424,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' plotData(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -450,13 +450,17 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   curveData$color <- plotColors[match(curveData$curveid,params$curveid)] 
   curveData$coloralpha <- plotColorsAlpha[match(curveData$curveid,params$curveid)] 
   
-  #Add shapres
+  #Add shapes
   if(addShapes) {
     pchs <- 1:24
     pchs <- rep(pchs[-c(4)],100, replace = TRUE)
     params$pch <- pchs[1:nrow(params)]
     curveData$pch <- params$pch[match(curveData$curveid,params$curveid)]
   }
+  
+  #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
+  #If the function can't 
+  curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   
   #Determine axes ranges
   plot_limits <- get_plot_window(curveData, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
@@ -467,6 +471,12 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   yrn <- plot_limits[c(4,2)]
   if(logResponse) {
     yrn <- 10^(yrn)
+  }
+  if(is.na(curveXrn[1])) {
+    curveXrn[1] <- xrn[1]
+  }
+  if(length(curveXrn) == 1 | is.na(curveXrn[2])) {
+    curveXrn[2] <- xrn[2]
   }
   
   
@@ -593,7 +603,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = xrn[1], to = xrn[2], add = TRUE, col = curveParams$color)  
+      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color)  
     }
   }
   #Actually Draw Curves
@@ -671,4 +681,27 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
 is.NULLorNA <- function(value) {
   if(is.null(value)) return(TRUE)
   return(is.na(value))
+}
+
+modify_or_remove_zero_dose_points <- function(points, logDose) {
+  points <- as.data.table(points)
+  setkey(points, dose)
+  points[dose==0, dose := rep(
+    points[ , {
+      doses <- unique(dose)
+      if(length(doses) > 2) {
+        values <- unique(doses)[2:3]
+        if(logDose) {
+          answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
+        } else {
+          answer <- values[1] - (values[2] - values[1])
+        }
+      } else {
+        answer <- 0
+      }
+      answer
+      },
+      by = curveid]$V1,
+    .N)]
+  return(points[dose!=0,])
 }
