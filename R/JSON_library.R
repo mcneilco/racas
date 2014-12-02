@@ -1651,15 +1651,18 @@ flattenLabels <- function(lsLabels) {
 #' @param errorEnv the environment where errors will be stored to
 #' @param lsServerURL the url for the roo server
 #'   
-#' @details \code{include} can be in the list: \itemize{ \item{analysisgroups:
-#'   returns the experiment stub with analysis group stubs} \item{fullobject:
-#'   returns the full experiment object (warning: this may be slow if there is a
-#'   lot of data)} \item{prettyjsonstub: returns the experiment stub in pretty
-#'   json format} \item{prettyjsons: returns the full experiment in pretty json 
-#'   format} \item{analysisgroupvalues: returns the experiment stub with full
-#'   analysis groups}} If left blank, an experiment stub (with states and
-#'   values) is returned. The codeName will do the same as
-#'   include=analysisgroups.
+#' @details \code{include} can be in the list: \itemize{ 
+#' \item{analysisgroups: returns the experiment stub with analysis group stubs} 
+#' \item{fullobject: returns the full experiment object (warning: this may be 
+#' slow if there is a lot of data)}
+#' \item{prettyjsonstub: returns the experiment stub in pretty json format}
+#' \item{prettyjson: returns the full experiment in pretty json format}
+#' \item{analysisgroupvalues: returns the experiment stub with full analysis
+#' groups}
+#' \item{analysisgroupstates: returns the experiment stub with analysis group
+#' states}}
+#' If left blank, an experiment stub (with states and values) is returned. The
+#' codeName will do the same as include=analysisgroups.
 #'   
 #' @return the experiment object, or if it does not exist, \code{addError} is
 #'   run and NULL is returned
@@ -1667,7 +1670,7 @@ flattenLabels <- function(lsLabels) {
 #' @export
 #' 
 getExperimentById <- function(experimentId, include=NULL, errorEnv=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  experiment <- getEntityById(experimentId, "experiments", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
+  experiment <- getEntityById(experimentId, "experiments/stub", include = include, errorEnv = errorEnv, lsServerURL = lsServerURL)
   return(experiment)
 }
 
