@@ -1,10 +1,3 @@
-body, td {
-   font-family: sans-serif;
-   background-color: white;
-   font-size: 13px;
-   padding-top: 20px;
-   padding-bottom: 40px;
-}
 
 .racas_container {
   max-width: 800px;
@@ -40,9 +33,9 @@ body, td {
    font-size:0.8em; 
 }
 
-.racas_container a:visited {
+/*.racas_container a:visited {
    color: rgb(50%, 0%, 50%);
-}
+}*/
 
 .racas_container pre, img {
   max-width: 100%;

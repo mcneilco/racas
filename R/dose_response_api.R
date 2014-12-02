@@ -17,7 +17,7 @@
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' recordedBy <- "bbolt"
 #' experimentCode <- "EXPT-00000441"
-#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
+#' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
 #' 
 #' #Loading fake data first
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
@@ -28,8 +28,8 @@
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
-#' api_doseResponse.experiment(simpleFitSettings, recordedBy, experimentCode)
-api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
+#' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
+api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
   #     cat("Using fake data")
 #   file <- "inst/docs/example-simple-fitsettings-ll4.json"
 #   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
@@ -42,6 +42,9 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
+  
+  myMessenger$logger$debug("updating experiment model fit status status value to running")
+  experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
@@ -58,11 +61,11 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger$logger$debug("saving the curve data")
   savedStates <- save_dose_response_data(fitData, recordedBy)
  
-  myMessenger$logger$debug("updating experiment model fit status")
-  experiment <- update_experiment_status(experimentCode, "complete")
- 
+  myMessenger$logger$debug("updating experiment model fit status value to complete")
+  experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "complete")
+  
   #Convert the fit data to a response for acas
-  myMessenger$logger$debug("responding to acas")
+  myMessenger$logger$debug("getting acas response")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
     response <- fit_data_to_acas_experiment_response(fitData, experimentCode, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   } else {
@@ -70,6 +73,10 @@ api_doseResponse.experiment <- function(simpleFitSettings, recordedBy, experimen
     myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
     response <- fit_data_to_acas_experiment_response(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   }
+  myMessenger$logger$debug("saving experiment value model fit result html")
+  experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
+  
+  myMessenger$logger$debug("responding to acas")
   return(response)
 }
 
@@ -105,8 +112,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                         list(code = "SST", name = "SST"),
                         list(code = "SSE", name = "SSE"),
                         list(code = "rsquare", name = "R^2"),
-                        list(code = "userApproved", name = "User Approved"),
-                        list(code = "algorithmApproved", name = "Algorithm Approved"))
+                        list(code = "flagUser", name = "User Flag"),
+                        list(code = "flagAlgorithm", name = "Algorithm FLag"))
   } else {
     msg <- paste0("Model Hint '", modelHint, "' unimplemented for sort options")
     myMessenger$logger$error(msg)
@@ -135,14 +142,14 @@ api_doseResponse_get_curve_stubs <- function(GET) {
 }
 
 api_doseResponse_update_flag <- function(POST) {
-  fitData <- get_fit_data_curveid(POST$curveid)
+  fitData <- get_fit_data_curve_id(POST$curveid)
   simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
   analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
-  fitData <- get_fit_data_analysisgroupid2(analysisgroupid, full_object = TRUE)
+  fitData <- get_fit_data_analysis_group_id(analysisgroupid, full_object = TRUE)
   
   fitData[ , curves := list(list(list(curveid = curveid[[1]], 
                                       flagAlgorithm = flag_algorithm,
@@ -170,9 +177,9 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
     stop(msg)
   } else {
     if(!is.null(GET$id)) {
-      fitData <- get_fit_data_curveid(GET$id, full_object = TRUE)
+      fitData <- get_fit_data_curve_id(GET$id, full_object = TRUE)
     } else {
-      fitData <- get_fit_data_analysisgroupid2(GET$analysisgroupid, full_object = TRUE)
+      fitData <- get_fit_data_analysis_group_id(GET$analysisgroupid, full_object = TRUE)
     }
   }
   

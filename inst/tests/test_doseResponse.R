@@ -15,20 +15,23 @@ rdaTest <- function(newResults, acceptedResultsPath, updateResults = FALSE) {
 
 # if(updateResults) {
 #   experimentCode <- load_dose_response_test_data()
-#   fitData <- get_fit_data(experimentCode)
+#   fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
 #   save(fitData, file = file.path("data","doseResponse", "data", "fitData_ll4.rda"))
 #   file <- system.file("tests","data", "doseResponse","conf","default_fitSettings_ll4.json", package = "racas")
 #   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
 #   fitData <- dose_response(fitSettings, fitData)
 #   save(fitData, file = file.path("data","doseResponse","data","fitData_ll4_fitted.rda"))
 # }
+importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category", "reportedParameters")
+
 
 test_that("LL4 dose_response output has not changed",{
   file <- system.file("tests","data", "doseResponse","conf","default_fitSettings_ll4.json", package = "racas")
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
   load(system.file("tests","data","doseResponse","data","fitData_ll4.rda", package = "racas"))
-  acceptedResultsPath <- file.path("data","doseResponse", "acceptedresults", "dose_response_ll4.rda")
   newResults <- dose_response(fitSettings, fitData)
+  newResults <- newResults[ , importantFitDataColumns,]
+  acceptedResultsPath <- file.path("data","doseResponse", "acceptedresults", "dose_response_ll4.rda")
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
@@ -75,17 +78,17 @@ test_that("doseResponse basic test",{
   }
 })
 
-test_that("predict_drc_points basic test",{
+test_that("predict_drm_points basic test",{
   load(system.file("tests","data", "doseResponse","data", "fitData_ll4_fitted.rda", package = "racas"))
-  acceptedResultsPath <- file.path("data","doseResponse", "acceptedresults", "predict_drc_points.rda")
-  newResults <- predict_drc_points(fitData[1]$points[[1]], fitData[1]$model[[1]])
+  acceptedResultsPath <- file.path("data","doseResponse", "acceptedresults", "predict_drm_points.rda")
+  newResults <- predict_drm_points(fitData[1]$points[[1]], fitData[1]$model[[1]])
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
 test_that("get_plot_window basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","get_plot_window.rda")
-  newResults <- predict_drc_points(fitData[1]$points[[1]], fitData[1]$model[[1]])
+  newResults <- get_plot_window(fitData[1]$points[[1]], logDose = TRUE)
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
@@ -126,39 +129,50 @@ test_that("dose_response_fit basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","dose_response_fit.rda")
   newResults <- dose_response_fit(fitData)
+  newResults <- newResults[ , importantFitDataColumns,]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
 test_that("apply_parameter_rules_limits basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse","acceptedResults","apply_parameter_rules_limits.rda")
-  newResults <- fitData[ 1, list(list(apply_parameter_rules_limits(fittedParameters[[1]],
+  fittedParams <- list("ec50" = 10000000)
+  newResults <- fitData[ 1, list(list(apply_parameter_rules_limits(fittedParams,
                                                                       pointStats[[1]],
                                                                       parameterRules[[1]]$limits))), by = curveid]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
-
 test_that("apply_parameter_rules_goodness_of_fits basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults", "apply_parameter_rules_goodness_of_fits.rda")
-  newResults <- fitData[ 1, list(list(apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]],
-                                                                 parameterRules[[1]]$parameterRules))), by = curveid]
+  goodnessOFFITS <- list(max.stdErr = 1000)
+  newResults <- fitData[ 1, list(list(apply_parameter_rules_goodness_of_fits(goodnessOFFITS,
+                                                                 parameterRules[[1]]$goodnessOfFits))), by = curveid]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 test_that("apply_inactive_rules basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))
-  acceptedResultsPath <- file.path("data","doseResponse","acceptedResults","apply_inactive_rules.rda")
+  acceptedResultsPath <- file.path("data","doseResponse","acceptedResults","apply_inactive_rules_inactive.rda")
+  fitData$points[[1]][ , response := 0]
   newResults <- fitData[ 1, list(list(apply_inactive_rules(pointStats[[1]],
                                                         points[[1]],
                                                         inactiveRule[[1]],
                                                         TRUE))), by = curveid]
+  rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
+  load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))
+  acceptedResultsPath <- file.path("data","doseResponse","acceptedResults","apply_inactive_rules_potent.rda")
+  fitData$points[[1]][ , response := 10000]
+  newResults <- fitData[ 1, list(list(apply_inactive_rules(pointStats[[1]],
+                                                           points[[1]],
+                                                           inactiveRule[[1]],
+                                                           TRUE))), by = curveid]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
 test_that("categorize_fit_data basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))  
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","categorize_fit_data.rda")
-  newResults <-   fitData[ , categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]]), by = curveid]
+  newResults <-   fitData[ , categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveid]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
@@ -205,7 +219,7 @@ test_that("get_goodness_of_fit_parameters_drc_object basic test",{
 test_that("fit_data_to_acas_experiment_response basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))  
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","fit_data_to_acas_experiment_response.rda")
-  newResults <- fit_data_to_acas_experiment_response(fitData, status = "completed", hasWarning = FALSE, hasError = FALSE)
+  newResults <- fit_data_to_acas_experiment_response(fitData, experimentCode = "EXPT-00001", status = "completed", hasWarning = FALSE, hasError = FALSE)
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
@@ -213,21 +227,11 @@ test_that("knit2html_bug_fix basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))  
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","knit2html_bug_fix.rda")
   rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
+  experimentCode <- "blah"
   newResults <- knit2html_bug_fix(input = rmd, 
                                   options = c("base64_images", "mathjax"),
                                   template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
                                   stylesheet = system.file("rmd", "racas_container.css", package="racas"))  
-  rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
-})
-
-test_that("knit2html_bug_fix basic test",{
-  load(system.file("tests","data", "doseResponse","data","fitData_ll4_fitted.rda", package = "racas"))    
-  acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","knit2html_bug_fix.rda")
-  rmd <- system.file("rmd", "fitDataToResponse_acas.rmd", package="racas")
-  newResults <- knit2html_bug_fix(input = rmd, 
-                                 options = c("base64_images", "mathjax"),
-                                 template =  system.file("rmd", "fitDataToResponse_acas.html", package="racas"),
-                                 stylesheet = system.file("rmd", "racas_container.css", package="racas"))  
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
