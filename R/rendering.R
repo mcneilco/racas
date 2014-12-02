@@ -463,7 +463,6 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   
   #Determine axes ranges
-  saveSession("~/Desktop/blah")
   plot_limits <- get_plot_window(curveData, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
   xrn <- plot_limits[c(1,3)]
   if(logDose) {
