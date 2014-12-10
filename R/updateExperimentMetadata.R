@@ -13,13 +13,13 @@
 #' @export
 setExperimentStatus <- function(status, experiment, recordedBy, dryRun = F, lsTransaction = NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   if (dryRun) {
-    lsKind <- "dryrun status"
+    lsKind <- "dry run status"
   } else {
     lsKind <- "analysis status"
   }
   
   updateValueByTypeAndKind(status, "experiment", experiment$id, "metadata", 
-                           "experiment metadata", "stringValue", "analysis status", 
+                           "experiment metadata", "codeValue", lsKind, 
                            lsServerURL = lsServerURL)
 }
 
@@ -38,7 +38,7 @@ setExperimentStatus <- function(status, experiment, recordedBy, dryRun = F, lsTr
 #' @export
 setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTransaction = NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   if (dryRun) {
-    lsKind <- "dryrun result html"
+    lsKind <- "dry run result html"
   } else {
     lsKind <- "analysis result html"
   }
