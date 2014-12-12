@@ -19,9 +19,8 @@ cat("<p style='margin-bottom:20px;'>", "Total number of calculated results: ", p
 ```
 
 ```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE, dpi=300}
-if (is.null(analysis) && is.null(subjects) &&
-      is.null(values)) {
-  cat("No statistics to display")
+if (is.null(analysis) | nrow(analysis) == 1 && is.null(subjects) && is.null(values)) {
+  cat("Not enough statistics yet to display chart")
 } else if (is.null(analysis)) {
   cat("")
 } else {
