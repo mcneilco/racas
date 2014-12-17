@@ -44,12 +44,31 @@ saveAllViaTsv <- function(analysisGroupData, treatmentGroupData, subjectData, ap
     sendFiles$subjectCsvFilePath <- subjectDataCsv
   }
   
+  response <- analysis_group_save_from_tsv(sendFiles$analysisGroupCsvFilePath, sendFiles$treatmentGroupCsvFilePath, sendFiles$subjectCsvFilePath)
+  return(response)
+}
+#' Save file paths using tsv loader
+#' 
+#' Saves tsv files all in one transaction
+#' 
+#' @param analysisGroupCsvFilePath A file path to analysis group values tsv file
+#' @param optional treatmentGroupCsvFilePath A file path to treatment group values tsv file
+#' @param optional subjectCsvFilePath A file path to subject group values tsv file
+#' @details files must be a full path reachable to the acas roo services
+#' 
+#' @export
+analysis_group_save_from_tsv <- function(analysisGroupCsvFilePath, treatmentGroupCsvFilePath = NULL, subjectCsvFilePath = NULL) {
+  filePaths <- list(analysisGroupCsvFilePath = analysisGroupCsvFilePath)
+  filePaths$treatmentGroupCsvFilePath <- treatmentGroupCsvFilePath
+  filePaths$subjectCsvFilePath <- subjectCsvFilePath  
+  return(filePaths)
   response <- postURLcheckStatus(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, 
            "api/v1/experiments/analysisgroup/savefromtsv"),
-    postfields=toJSON(sendFiles),
+    postfields=toJSON(filePaths),
     requireJSON = TRUE
   )
+  return(response)
 }
 
 #' Appends code names to supplied valueKinds
