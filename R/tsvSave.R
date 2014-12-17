@@ -48,7 +48,7 @@ saveAllViaTsv <- function(analysisGroupData, treatmentGroupData, subjectData, ap
     paste0(racas::applicationSettings$client.service.persistence.fullpath, 
            "api/v1/experiments/analysisgroup/savefromtsv"),
     postfields=toJSON(sendFiles),
-    httpheader=c('Content-Type'='application/json')
+    requireJSON = TRUE
   )
 }
 
@@ -110,9 +110,12 @@ formatEntityAsTsvAndUpload <- function(entityData) {
     clobValue = naIfNull(entityData$clobValue),
     urlValue = naIfNull(entityData$urlValue),
     fileValue = naIfNull(entityData$fileValue),
-    codeType = NA,
-    codeKind = NA,
+    codeOrigin = naIfNull(entityData$codeOrigin),
+    codeType = naIfNull(entityData$codeType),
+    codeKind = naIfNull(entityData$codeKind),
     codeValue = naIfNull(entityData$codeValue),
+    concentration = naIfNull(entityData$concentration),
+    concUnit = naIfNull(entityData$concUnit),
     unitType = NA,
     unitKind = naIfNull(entityData$unitKind),
     operatorType = NA,
@@ -135,7 +138,7 @@ formatEntityAsTsvAndUpload <- function(entityData) {
   )
   
   # Create temporary file to send to persistence server
-  csvFile <- tempfile(pattern = "csvUpload", tmpdir = "", fileext = ".csv")
+  csvFile <- tempfile(pattern = "csvUpload", tmpdir = "", fileext = ".tsv")
   csvLocalLocation <- paste0(tempdir(), csvFile)
   
   write.table(entityDataFormatted, file = csvLocalLocation, sep="\t", na = "", row.names = FALSE)

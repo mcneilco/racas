@@ -1965,5 +1965,5 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
   #url <- "acas/api/v1/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
   url <- paste0(lsServerURL, "api/v1/", entityKind, "/", parentId, "/bystate/", 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
-  putURLcheckStatus(URLencode(url), postfields = newValue)
+  putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
 }
