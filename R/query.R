@@ -6,7 +6,7 @@
 #' @param qu a sql query character string
 #' @param globalConnect should the query assume a global conn variable and return one to the global namespace?
 #' @param conn a database connection to use for the query instead of opening a new connection
-#' @param catchErro logical on error throw error or return list object with success = false, message = character
+#' @param catchError logical on error throw error or return list object with success = false, message = character
 #' @param ... expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}
 #' @return A data frame result from the query
 #' @keywords query
@@ -126,11 +126,37 @@ getDBString <- function(driverString) {
   return(dbString)
 }
 sqliz <- function(vector) {
-  if (class(vector)=="numeric") {
+  if (class(vector) %in% c("numeric","integer")) {
     sql <- paste(vector, collapse = ',')
     return(sql)
   }  else {
     sql <- paste0("'",paste(vector, collapse = "','"), "'")
     return(sql)
   }
+}
+#' Replace character in query string with values over n times ceiling(values/limit) and return query results for each resulting query
+#'
+#' Function originally created to get around oracle in clause query (1000).  Calls \code{\link{query}} after replacing a specified character with a subset of values
+#'
+#' @param qu a sql query character string that contains the character given in string parameter
+#' @param string a character string to replace with values parameter
+#' @param values a list of values to replace in string parameter
+#' @param ... expressions fed to \code{\link{query}}
+#' @return A list objects with results from query
+#' @keywords query, inclause, oracle, workaround
+#' @export
+#' @examples
+#' query_replace_string_with_values(qu = "select * from analysis_group_value where id in (REPLACEME)", string = "REPLACEME", values = c(1:1001))
+#' 
+query_replace_string_with_values <- function(qu, string, values, limit = 999, ...) {
+  # Queries DNET instead of DNS's ACAS
+  if(!missing(string)) {
+    subString <- string
+    valueList <- values
+    split <- split(valueList, ceiling(seq_along(valueList)/limit))
+    results <- lapply(split, function(x) query(qu = gsub(subString,sqliz(x), qu), ...))
+  } else {
+    results <- list(query(qu, ...))
+  }
+  return(results)
 }

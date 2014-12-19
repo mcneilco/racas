@@ -61,7 +61,7 @@ analysis_group_save_from_tsv <- function(analysisGroupCsvFilePath, treatmentGrou
   filePaths <- list(analysisGroupCsvFilePath = analysisGroupCsvFilePath)
   filePaths$treatmentGroupCsvFilePath <- treatmentGroupCsvFilePath
   filePaths$subjectCsvFilePath <- subjectCsvFilePath  
-  return(filePaths)
+
   response <- postURLcheckStatus(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, 
            "api/v1/experiments/analysisgroup/savefromtsv"),
