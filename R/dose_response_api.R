@@ -284,6 +284,8 @@ api_doseResponse_save_session <- function(sessionID, user) {
     response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
   } else {
 # If the model does exist then we have fit, so save the data
+    # delete the session because we don't need it anymore and will be returning a new one
+    deleteSession(sessionID)
     myMessenger$logger$debug("adding clob values to fit data")
     fitData <- add_clob_values_to_fit_data(fitData)
     myMessenger$logger$debug("saving the curve data")

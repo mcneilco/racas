@@ -2,13 +2,14 @@
 saveSession <- function(id = NA) {
   if(is.na(id)) {
     id <- basename(tempfile(pattern = "rSe-"))
-    temps <- lapply(c('TMPDIR', 'TMP', 'TEMP', '/tmp'), Sys.getenv)
+    temps <- lapply(c('TMPDIR', 'TMP', 'TEMP'), Sys.getenv)
+    temps <- c(temps, "/tmp")
     for(t in temps) { 
-      if( t != "")
+      if( t != "") {
         id <- file.path(t, id)
         break()
+      }
     }
-    
   }
   if(!is.null(dev.list()))
     warning("Open graphics devices will not be saved or restored.")
@@ -59,18 +60,20 @@ loadSession <- function(id, envir = parent.frame()) {
 }
 
 
-deleteSession <- function(id) {
+deleteSession <- function(id, warn = TRUE) {
   if(is.null(id)) {
     stop("id cannot be null")
   }
   #Check if exits
   if(!file.exists(id)) {
-    stop(paste0("\'", id, "\' cannot be found.  Session may have been deleted"))
+    if(warn) warning(paste0("\'", id, "\' cannot be found.  Session may have been deleted"))
+  } else {
+    #Check writeable
+    if(file.access(id, mode = 2) != 0) {
+      stop(paste0("\'", id , "\' is not writeable"))
+    }
   }
-  #Check writeable
-  if(file.access(id, mode = 2) != 0) {
-    stop(paste0("\'", id , "\' is not writeable"))
-  }
+
   unlink(id)
-  return(paste0(id, " deleted"))
+  return(TRUE)
 }
