@@ -13,9 +13,9 @@ query(qu, globalConnect = FALSE, conn = NULL, catchError = TRUE, send,
 
 \item{conn}{a database connection to use for the query instead of opening a new connection}
 
-\item{...}{expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}}
+\item{catchError}{logical on error throw error or return list object with success = false, message = character}
 
-\item{catchErro}{logical on error throw error or return list object with success = false, message = character}
+\item{...}{expressions fed to \code{\link{dbGetQuery}} or \code{\link{dbDisconnect}}}
 }
 \value{
 A data frame result from the query

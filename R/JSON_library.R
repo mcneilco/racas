@@ -158,7 +158,23 @@ createLsTransaction <- function(comments="", lsServerURL = racas::applicationSet
     postfields=toJSON(newLsTransaction)))
   return(response)
 }
+#to create a list of ls transactions
+createLsTransactions <- function(transactionList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  response <- fromJSON(getURL(
+    paste(lsServerURL, "api/v1/lstransactions/jsonArray", sep=""),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=toJSON(transactionList)))
+  return(response)
+}
 
+generateLsTransaction <- function(comments, recordedDate = as.numeric(format(Sys.time(), "%s"))*1000) {
+  lsTransaction = list(
+    comments=comments,
+    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+  )
+  return(lsTransaction)
+}
 
 ##to create a new basic thing
 createThing <- function(thingType="thingType List Object", thingKind="thingKind List Object", recordedBy="author List Object", lsTransaction=NULL, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
@@ -608,7 +624,7 @@ createProtocol <- function(codeName=NULL, lsType="default", lsKind="default", sh
 
 
 createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsKind="default", shortDescription="Experiment Short Description text limit 255", 
-                             lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list()){
+                             lsTransaction=NULL, recordedBy="userName", experimentLabels=list(), experimentStates=list(), lsTags=list(), recordedDate = as.numeric(format(Sys.time(), "%s"))*1000, modifiedBy = recordedBy, modifiedDate = as.numeric(format(Sys.time(), "%s"))*1000){
   if (is.null(codeName) ) {
     codeName <- getAutoLabels(thingTypeAndKind="document_experiment", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
   }
@@ -618,12 +634,14 @@ createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsK
     lsType=lsType,
     lsKind=lsKind,
     shortDescription=shortDescription,
-    recordedBy=recordedBy,
     lsTransaction=lsTransaction,
+    recordedBy=recordedBy,
+    recordedDate=recordedDate,
+    modifiedBy=modifiedBy,
+    modifiedDate=modifiedDate,
     lsLabels=experimentLabels,
     lsStates=experimentStates,
-    lsTags=lsTags,
-    recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
+    lsTags=lsTags
   )
   
   return(experiment)	
