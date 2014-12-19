@@ -146,6 +146,7 @@ api_doseResponse_update_flag <- function(POST) {
   simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
+  deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
   analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
