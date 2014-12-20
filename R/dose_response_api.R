@@ -246,7 +246,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
-  plotData <- list(plotWindow = get_plot_window(fitData[1]$points[[1]]),
+  plotData <- list(plotWindow = log10(get_plot_window(fitData[1]$points[[1]])),
                    points  = points,
                    curve = c(type = fitData[1]$modelHint,
                              reported_ec50 = curveAttributes$EC50,
