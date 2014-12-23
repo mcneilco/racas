@@ -631,7 +631,6 @@ tsv_url_to_data_table <- function(url, type = c("simple", "complex"), ...) {
   return(tsv_data_table)
 }
 get_dose_response_values <- function(id, type = c("analysisgroupvalues", "treatmentgroupvalues", "subjectgroupvalues"), by = c("experiment", "analysisgroup")) {
-  apiRoute <- "api/v1/"
   type <- match.arg(type)
   by <- match.arg(by)
   typeRoute <- switch(type,
@@ -648,7 +647,7 @@ get_dose_response_values <- function(id, type = c("analysisgroupvalues", "treatm
                     experiment = "experiments/",
                     analysisgroup = "analysisgroups/"
   )
-  urls <- lapply(paste0(racas::applicationSettings$client.service.persistence.fullpath, apiRoute, byRoute, id, typeRoute), URLencode)
+  urls <- lapply(paste0(racas::applicationSettings$client.service.persistence.fullpath, byRoute, id, typeRoute), URLencode)
   values <- lapply(urls, tsv_url_to_data_table, type = outputType)
   values <- rbindlist(values)
   return(values)  
@@ -1370,7 +1369,7 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
     create_ls_kind(lsType = type, kindName = lsKind)
   }
   if(missing(experimentCode)) experimentCode <- experimentID
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"api/v1/values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
   response <- getURL(
     url,
     customrequest='PUT',
