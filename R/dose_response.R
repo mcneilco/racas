@@ -455,15 +455,25 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
   if(nrow(pts)==0) {
     return(NULL)
   } else {
-    maxDose <- max(pts$dose)
-    minDose <- min(pts$dose)
-    maxResponse <- max(pts$response)
-    minResponse <- min(pts$response)
+    if(logDose) {
+      maxDose <- max(pts$dose[pts$dose > 0])
+      minDose <- min(pts$dose[pts$dose > 0])
+    } else {
+      maxDose <- max(pts$dose)
+      minDose <- min(pts$dose)
+    }
+    if(logResponse) {
+      maxResponse <- max(pts$response[pts$response > 0])
+      minResponse <- min(pts$response[pts$response > 0])
+    } else {
+      maxResponse <- max(pts$response)
+      minResponse <- min(pts$response)
+    }
     responseRange <- abs(maxResponse-minResponse)
     doseRange <- abs(maxDose-minDose)
     if(is.na(ymin)) {
       if(logResponse) {
-        ymin <- floor(log10(maxResponse))
+        ymin <- 10^(log10(minResponse) - 0.5)        
       } else {
         if(responseRange != 0) {
           ymin <- (minResponse - 0.030*responseRange)
@@ -471,13 +481,10 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
           ymin <- floor(maxResponse)
         }
       }
-      if(ymin > 0) {
-        ymin  <- 0 - responseRange*0.1
-      }
     }
     if(is.na(ymax)) {
       if(logResponse) {
-        ymax <- ceiling(log10(maxResponse))
+        ymax <- 10^(log10(maxResponse) + 0.5)        
       } else {
         if(responseRange != 0) {
           ymax <- (maxResponse + 0.030*responseRange)
@@ -488,14 +495,14 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
     }
     if(is.na(xmax)) {
       if(logDose) {
-        xmax <- ceiling(log10(maxDose))
+        xmax <- 10^(log10(maxDose) + 0.5)        
       } else {
         xmax <- maxDose + abs(0.02 * doseRange)
       }  
     }
     if(is.na(xmin)) {
       if(logDose) {
-        xmin <- floor(log10(minDose))
+        xmin <- 10^(log10(minDose) - 0.5)        
       } else {
         xmin <- minDose - abs(0.02 * doseRange)
       }
@@ -1623,3 +1630,4 @@ add_clob_values_to_fit_data <- function(fitData) {
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
+

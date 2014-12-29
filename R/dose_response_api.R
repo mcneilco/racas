@@ -146,6 +146,7 @@ api_doseResponse_update_flag <- function(POST) {
   simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
   doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
+  deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
   analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
@@ -245,7 +246,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$response_sv_id)
   names(points) <- NULL
-  plotData <- list(plotWindow = get_plot_window(fitData[1]$points[[1]]),
+  plotData <- list(plotWindow = log10(get_plot_window(fitData[1]$points[[1]])),
                    points  = points,
                    curve = c(type = fitData[1]$modelHint,
                              reported_ec50 = curveAttributes$EC50,
@@ -284,6 +285,8 @@ api_doseResponse_save_session <- function(sessionID, user) {
     response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
   } else {
 # If the model does exist then we have fit, so save the data
+    # delete the session because we don't need it anymore and will be returning a new one
+    deleteSession(sessionID)
     myMessenger$logger$debug("adding clob values to fit data")
     fitData <- add_clob_values_to_fit_data(fitData)
     myMessenger$logger$debug("saving the curve data")

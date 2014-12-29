@@ -61,16 +61,18 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.subject_state_id ELSE NULL END) AS response_ss_id,
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.id ELSE NULL END) AS response_sv_id,
                 MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN ss.version ELSE NULL END) AS response_ss_version,
-                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN s.treatment_group_id ELSE NULL END) AS tg_id,
+                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN tg.id ELSE NULL END) AS tg_id,
                 MAX(ag.id) AS ag_id
-                FROM
-                analysis_GROUP ag 
+                FROM analysis_group ag
                 JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
                 JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
-                JOIN treatment_GROUP tg ON ag.id=tg.analysis_GROUP_id
-                JOIN experiment e ON ag.experiment_id=e.id
+                JOIN analysisgroup_treatmentgroup agtg on ag.id = agtg.analysis_group_id
+                JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
+                JOIN experiment_analysisgroup eag on eag.analysis_group_id=ag.id
+                JOIN experiment e ON eag.experiment_id=e.id
                 JOIN experiment_label el ON e.id=el.experiment_id
-                JOIN subject s ON tg.id=s.treatment_GROUP_id
+                JOIN treatmentgroup_subject tgs on tgs.treatment_group_id=tg.id
+                JOIN subject s ON s.id=tgs.subject_id
                 JOIN subject_state ss ON ss.subject_id = s.id
                 JOIN subject_value sv ON sv.subject_state_id = ss.id
                 JOIN itx_subject_container itxsc ON s.id = itxsc.subject_id
@@ -102,11 +104,14 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                   max(api_agsvb.AG_ID) AS ag_id,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration') then 'PO' WHEN tv.ls_kind in ('IV - PK_Concentration') then 'IV' else null end) as Route
-                  FROM api_analysis_group_results api_agsvb JOIN treatment_GROUP tg on api_agsvb.ag_id=tg.analysis_GROUP_id
+                  FROM api_analysis_group_results api_agsvb 
+                  JOIN analysisgroup_treatmentgroup agtg on api_agsvb.ag_id = agtg.analysis_group_id
+                  JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
                   JOIN api_experiment e on api_agsvb.experiment_id=e.id
                   JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
                   JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
-                  JOIN subject s on tg.id=s.treatment_GROUP_id
+                  JOIN treatmentgroup_subject tgs on tgs.treatment_group_id=tg.id
+                  JOIN subject s ON s.id=tgs.subject_id
                   JOIN subject_state ss ON ss.subject_id = s.id
                   JOIN subject_value sv ON sv.subject_state_id = ss.id
                   JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
@@ -121,8 +126,8 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                   SELECT tv.numeric_value || tv.unit_kind as Dose,
                   tg.id AS s_id
                   FROM api_analysis_group_results api_agsvb
-                  JOIN treatment_GROUP tg
-                  ON api_agsvb.ag_id=tg.analysis_GROUP_id
+                   JOIN analysisgroup_treatmentgroup agtg on api_agsvb.ag_id = agtg.analysis_group_id
+                  JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
                   JOIN treatment_group_state ts
                   ON ts.treatment_group_id = tg.id
                   JOIN treatment_group_value tv
@@ -383,10 +388,10 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' data(curveData)
 #' params <- curveData$parameters
 #' curveData <- curveData$points
-#' plotData(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
-#' plotData(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE)
-#' plotData(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE)
-#' plotData(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = TRUE)
+#' plotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE)
+#' plotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE)
+#' plotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE)
+#' plotCurve(curveData, params, paramNames = c("ec50", "min", "max", "hill"), LL4, outFile = NA, ymin = NA, logDose = TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = TRUE, connectPoints = TRUE, drawCurve = FALSE, drawStdDevs = TRUE)
 #' 
 #' #Ki Data (using raw data)
 #' data(kiData)
@@ -463,15 +468,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   
   #Determine axes ranges
-  plot_limits <- get_plot_window(curveData, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
+  plot_limits <- get_plot_window(curveData, logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
   xrn <- plot_limits[c(1,3)]
-  if(logDose) {
-    xrn <- 10^(xrn)
-  }
   yrn <- plot_limits[c(4,2)]
-  if(logResponse) {
-    yrn <- 10^(yrn)
-  }
   if(is.na(curveXrn[1])) {
     curveXrn[1] <- xrn[1]
   }
