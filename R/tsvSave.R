@@ -64,7 +64,7 @@ analysis_group_save_from_tsv <- function(analysisGroupCsvFilePath, treatmentGrou
 
   response <- postURLcheckStatus(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, 
-           "api/v1/experiments/analysisgroup/savefromtsv"),
+           "experiments/analysisgroup/savefromtsv"),
     postfields=toJSON(filePaths),
     requireJSON = TRUE
   )

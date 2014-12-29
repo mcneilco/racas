@@ -25,7 +25,7 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
   )
   cat(toJSON(labelSequenceDTO))
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/labelsequences/getNextLabelSequences", sep=""),
+    paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(labelSequenceDTO)))
@@ -40,7 +40,7 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
     labelTypeAndKind=labelTypeAndKind,
     numberOfLabels=numberOfLabels
   )
-  url <- paste0(lsServerURL, "api/v1/labelsequences/getLabels")
+  url <- paste0(lsServerURL, "labelsequences/getLabels")
   response <- postURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
@@ -71,7 +71,7 @@ createLabelKind <- function(labelType="labelType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/labelkinds", sep=""),
+    paste(lsServerURL, "labelkinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(labelKind)))
@@ -84,7 +84,7 @@ createStateType <- function(typeName="typeName", lsServerURL = racas::applicatio
     typeName=typeName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/statetypes", sep=""),
+    paste(lsServerURL, "statetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(stateType)))
@@ -98,7 +98,7 @@ createStateKind <- function(stateType="stateType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/statekinds", sep=""),
+    paste(lsServerURL, "statekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(stateKind)))
@@ -111,7 +111,7 @@ createValueType <- function(typeName="typeName", lsServerURL = racas::applicatio
     typeName=typeName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/valuetypes", sep=""),
+    paste(lsServerURL, "valuetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(valueType)))
@@ -125,7 +125,7 @@ createValueKind <- function(valueType="valueType List Object", kindName="kindNam
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/valuekinds", sep=""),
+    paste(lsServerURL, "valuekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(valueKind)))
@@ -139,7 +139,7 @@ createInteractionKind <- function(interactionType="interactionType List Object",
     kindName=kindName
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/interactionkinds/", sep=""),
+    paste(lsServerURL, "interactionkinds/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(interactionKind)))
@@ -161,7 +161,7 @@ createLsTransaction <- function(comments="", lsServerURL = racas::applicationSet
 #to create a list of ls transactions
 createLsTransactions <- function(transactionList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/lstransactions/jsonArray", sep=""),
+    paste(lsServerURL, "lstransactions/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(transactionList)))
@@ -186,7 +186,7 @@ createThing <- function(thingType="thingType List Object", thingKind="thingKind 
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/lsthings", sep=""),
+    paste(lsServerURL, "lsthings", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(newThing)))
@@ -210,7 +210,7 @@ createThingLabel <- function(thing, labelText, author, lsType, lsKind, lsTransac
 
 saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/thinglabels/jsonArray", sep=""),
+    paste(lsServerURL, "thinglabels/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(thingLabels)))
@@ -384,7 +384,7 @@ createSubjectContainerInteractionState <- function(itxSubjectContainer=NULL, lsV
 
 saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
   response <- fromJSON(getURL(
-    paste(lsServerURL, "api/v1/interactions/lsinteraction/jsonArray", sep=""),
+    paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(lsInteractions)))
@@ -890,7 +890,7 @@ saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSet
 saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   message <- toJSON(entity)
-  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/")
+  url <- paste0(lsServerURL, acasCategory, "/")
   response <- postURLcheckStatus(url, message, requireJSON = TRUE)
   response <- fromJSON(response)
   return(response)
@@ -922,7 +922,7 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   
   message <- toJSON(entities)
-  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/jsonArray")
+  url <- paste0(lsServerURL, acasCategory, "/jsonArray")
   response <- postURLcheckStatus(
     url,
     postfields=message,
@@ -1201,7 +1201,7 @@ interpretJSONBoolean <- function(JSONBoolean) {
 getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   searchText <- unique(searchText)
   labelList <- lapply(searchText, function(x) {list(labelText=x)})
-  url <- paste0(lsServerURL, "api/v1/containers/findByLabels/jsonArray")
+  url <- paste0(lsServerURL, "containers/findByLabels/jsonArray")
   postfields <- toJSON(labelList)
   response <- postURLcheckStatus(url, postfields = postfields, requireJSON = TRUE)
   tryCatch({
@@ -1347,7 +1347,7 @@ deleteURLcheckStatus <- function(url, ..., requireJSON=FALSE) {
 #' @export
 getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
   url <- paste0(lsServerURL, 
-                "/api/v1/protocols?FindByProtocolName&protocolName=", 
+                "protocols?FindByProtocolName&protocolName=", 
                 URLencode(protocolName, reserved = TRUE))
   protocols <- getURLcheckStatus(url)
   tryCatch({
@@ -1376,7 +1376,7 @@ getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSet
 #' @export
 getExperimentsByName <- function(experimentName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
   url <- paste0(lsServerURL, 
-                "/api/v1/experiments?FindByExperimentName&experimentName=", 
+                "experiments?FindByExperimentName&experimentName=", 
                 URLencode(experimentName, reserved = TRUE))
   experiments <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
@@ -1562,7 +1562,7 @@ flattenState <- function(lsState, includeFromState) {
 
 #' @rdname saveAcasEntities
 updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  url <- paste0(lsServerURL, "api/v1/", acasCategory, "/")
+  url <- paste0(lsServerURL, acasCategory, "/")
   putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
 }
 
@@ -1852,9 +1852,9 @@ getEntityById <- function(id, entityKind, include="", errorEnv=NULL, lsServerURL
   logName <- "com.acas.racas.getEntityById"
   logFileName <- "racas.log"
   if(is.null(include) || include == "") {
-    url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id)
+    url <- paste0(lsServerURL, entityKind, "/", id)
   } else {
-    url <- paste0(lsServerURL, "api/v1/", entityKind, "/", id, "?with=", include)
+    url <- paste0(lsServerURL, entityKind, "/", id, "?with=", include)
   }
   response <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
@@ -1874,7 +1874,7 @@ getEntityByCodeName <- function(codeName, entityKind, include="", errorEnv=NULL,
   } else {
     include = paste0("?with=", include)
   }
-  url <- paste0(lsServerURL, "api/v1/", entityKind, "/codename/", codeName, include)
+  url <- paste0(lsServerURL, entityKind, "/codename/", codeName, include)
   response <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
     entity <- fromJSON(response)
@@ -1891,7 +1891,7 @@ getAcasEntity <- function() {
 
 #' @rdname saveAcasEntities
 getAcasEntities <- function(acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  return(getURLcheckStatus(paste0(lsServerURL, "api/v1/", acasCategory)))
+  return(getURLcheckStatus(paste0(lsServerURL, acasCategory)))
 }
 
 #' Update a value
@@ -1981,7 +1981,7 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
 updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, stateKind, valueType, valueKind, 
                                      lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   #url <- "acas/api/v1/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
-  url <- paste0(lsServerURL, "api/v1/", entityKind, "/", parentId, "/bystate/", 
+  url <- paste0(lsServerURL, entityKind, "/", parentId, "/bystate/", 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
   putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
 }
