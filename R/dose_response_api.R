@@ -51,7 +51,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
   fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
-  fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveid]
+  fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
   myMessenger$logger$debug("fitting the data")
   fitData <- dose_response(fitSettings, fitData)
   
