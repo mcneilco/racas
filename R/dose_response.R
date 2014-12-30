@@ -1225,6 +1225,7 @@ create_analysis_group_values_from_fitData <- function(reportedParameters, fixedP
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   lsTypes <- unlist(lapply(x, function(x) ifelse(class(x$value) %in% c("numeric","integer"), "numericValue", "stringValue")))
   lsTypes[names(lsTypes) == "tested_lot"] <- "codeValue"
+  lsTypes[names(lsTypes) %in% c("min", "max", "slope", "ec50")] <- "numericValue"
   lsTypes[names(lsTypes)  %in% c("algorithmFlag", "userFlag")] <- "comments"
   lsTypes[names(lsTypes) %in% c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob", "simpleFitSettings")] <- "clobValue"
   valueUnits <- rep(list(NULL),length(lsTypes))
@@ -1250,11 +1251,11 @@ create_analysis_group_values_from_fitData <- function(reportedParameters, fixedP
   matches <- match(names(kindMap), names(x))
   names(x)[matches[!is.na(matches)]] <- kindMap[which(!is.na(matches))]
   lsKinds <- names(x)
-  stringValues <- ifelse(lsTypes=="stringValue", lapply(x, function(x) x$value), list(NULL))
+  stringValues <- ifelse(lsTypes=="stringValue" | unlist(lapply(1:length(x), function(v) names(x)[[v]] %in% c("Min", "Max", "EC50", "Slope") && class(x[[v]]$value) == "character" )), lapply(x, function(x) x$value), list(NULL))
   stringValues$userFlag <- "user"
   stringValues$algorithmFlag <- "algorithm"
   codeValues <- ifelse(lsTypes=="codeValue", lapply(x, function(x) x$value), list(NULL))
-  numericValues <- ifelse(lsTypes=="numericValue", lapply(x, function(x) x$value), list(NULL))
+  numericValues <- ifelse(lsTypes=="numericValue" & !unlist(lapply(1:length(x), function(v) names(x)[[v]] %in% c("Min", "Max", "EC50", "Slope") && class(x[[v]]$value) == "character" )), lapply(x, function(x) x$value), list(NULL))
   clobValues <- ifelse(lsTypes=="clobValue", lapply(x, function(x) x$value), list(NULL))
   comments <- ifelse(lsTypes=="comments", lapply(x, function(x) x$value), list(NULL))
   operatorValues <- lapply(x, function(x) x$operator)
