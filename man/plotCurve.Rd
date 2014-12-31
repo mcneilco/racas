@@ -13,7 +13,7 @@ plotCurve(curveData, params, fitFunction, paramNames = c("ec50", "min", "max",
   curveXrn = c(NA, NA), ...)
 }
 \arguments{
-\item{curveData}{a data frame with the points with column names curveid, dose, response, flag}
+\item{curveData}{a data frame with the points with column names curveId, dose, response, flag}
 
 \item{params}{the set of parameters used to enumerate the curve}
 
