@@ -123,13 +123,13 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   fitData[ , curves := list(list(list(curveid = curveId[[1]], 
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
                                       userFlagStatus = userFlagStatus[[1]],
-                                      category = Category,
+                                      category = Category[[1]],
                                       curveAttributes = list(
-                                        EC50 = ec50,
-                                        SST =  sst,
-                                        SSE =  sse,
+                                        EC50 = ec50[[1]],
+                                        SST =  sst[[1]],
+                                        SSE =  sse[[1]],
                                         rsquare = rSquared[[1]],
-                                        compoundCode = batchCode,
+                                        compoundCode = batchCode[[1]],
                                         algorithmFlagStatus = algorithmFlagStatus[[1]],
                                         userFlagStatus = userFlagStatus[[1]]
                                       )
@@ -253,7 +253,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   if(length(fittedParametersList) == 0) {
     plotData$curve <- NULL
   }
-  return(toJSON(list(curveid = curveid,
+  return(toJSON(list(id = curveid,
+                     curveid = curveid,
                      reportedValues = reportedValues,
                      fitSummary = fitSummary,
                      parameterStdErrors = parameterStdErrors,
@@ -307,7 +308,6 @@ api_doseResponse_refit <- function(POST) {
   fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points)
   
   myMessenger$logger$debug("fitting the dose response model")
-  saveSession("~/Desktop/blah")
   doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user)
   
   myMessenger$logger$debug("converting the fitted data to a response json object")

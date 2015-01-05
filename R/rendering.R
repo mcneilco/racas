@@ -480,7 +480,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
-  flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" & preprocessFlagStatus=="knocked out" & algorithmFlagStatus=="knocked out" & tempFlagStatus=="knocked out")
+  flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
   goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
   
   ##Calculate Means and SDs

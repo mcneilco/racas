@@ -1285,6 +1285,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
     ans
   })), by = curveId]
   dtos <- toJSON(fitData$dto)
+  curveids <- lapply(fitData$dto,function(x) x$curveId)
   response <- getURL(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit"),
     customrequest='POST',
@@ -1293,8 +1294,6 @@ save_dose_response_data <- function(fitData, recorded_by) {
   if(response != "") {
     stop(response)
   }
-  saveSession("~/Desktop/blah")
-  stop()
   changedPoints <- rbindlist(fitData$points)[flagchanged == TRUE,]
   changedPoints[ , dto := list(list({
     list(      
@@ -1323,7 +1322,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
   if(response != "") {
     stop(response)
   }
-  return(lapply(fitData$dto,function(x) x$curveId))
+  return(curveids)
 }
 get_ls_type <- function(valueType) {
   valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
