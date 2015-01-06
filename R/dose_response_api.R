@@ -143,29 +143,28 @@ api_doseResponse_get_curve_stubs <- function(GET) {
 
 api_doseResponse_update_flag <- function(POST) {
   fitData <- get_fit_data_curve_id(POST$curveid)
-  simpleFitSettings <- fromJSON(fitData$ag_values[[1]][lsKind=='fitSettings']$clobValue)
+  simpleFitSettings <- fromJSON(fitData$fitSettings)
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
-  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$flagUser, simpleFitSettings = simpleFitSettings)
+  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$userFlagStatus, simpleFitSettings = simpleFitSettings)
   deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
-  savedStates <- save_dose_response_data(fitData, recorded_by = POST$user)
-  analysisgroupid <- rbindlist(lapply(savedStates$lsStates, function(x) list_to_data.table(x)))$analysisGroup[[1]]$id
-  fitData <- get_fit_data_analysis_group_id(analysisgroupid, full_object = TRUE)
+  savedCurveID <- save_dose_response_data(fitData, recorded_by = POST$user)
+  fitData <- get_fit_data_curve_id(savedCurveID, full_object = TRUE)
   
   fitData[ , curves := list(list(list(curveid = curveId[[1]], 
-                                      algorithmFlagStatus = algorithmFlagStatus,
-                                      userFlagStatus = userFlagStatus,
-                                      category = ag_values[[1]][lsKind == "category", ]$stringValue,
+                                      algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                      userFlagStatus = userFlagStatus[[1]],
+                                      category = Category[[1]],
                                       curveAttributes = list(
-                                        EC50 = ag_values[[1]][lsKind == "EC50"]$numericValue,
-                                        SST =  ag_values[[1]][lsKind == "SST"]$numericValue,
-                                        SSE =  ag_values[[1]][lsKind == "SSE"]$numericValue,
-                                        rsquare = ag_values[[1]][lsKind == "rSquared"]$numericValue,
-                                        compoundCode = ag_values[[1]][lsKind == "batch code"]$codeValue,
-                                        algorithmFlagStatus = algorithmFlagStatus,
-                                        userFlagStatus = userFlagStatus
+                                        EC50 = ec50[[1]],
+                                        SST =  sst[[1]],
+                                        SSE =  sse[[1]],
+                                        rsquare = rSquared[[1]],
+                                        compoundCode = batchCode[[1]],
+                                        algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                        userFlagStatus = userFlagStatus[[1]]
                                       )
-  ))), by = curveid]
+  ))), by = curveId]
   return(toJSON(fitData$curves[[1]]))
 }
 api_doseResponse_get_curve_detail <- function(GET, ...) {  
@@ -321,24 +320,24 @@ api_doseResponse_refit <- function(POST) {
   return(response)
 }
 
-api_doseResponse_update_user_flag <- function(sessionID, flagUser, user) {
-  myMessenger <- messenger()$reset()
-  myMessenger$devMode <- FALSE
-  myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.flag")
-  myMessenger$logger$debug(paste0("loading session ", sessionID))
-  myMessenger$logger$debug(paste0("setting flag to ", flagUser))
-  myMessenger$logger$debug(paste0("setting user to ", user))
-  loadSession(sessionID)
-  if(flagUser == "NA") {
-    flagUser <- as.character(NA)
-  }
-  updated <- doseResponse_update_user_flag(fitData, flagUser, user)
-  if(!myMessenger$hasErrors()) {
-    GET <- list()
-    GET$analysisgroupid <- fitData$analysisGroupId
-    response <- api_doseResponse_get_curve_detail(GET)
-  } else {
-    response <- myMessenger$toJSON()
-  }
-  return(response)
-}
+# api_doseResponse_update_user_flag <- function(sessionID, userFlagStatus, user) {
+#   myMessenger <- messenger()$reset()
+#   myMessenger$devMode <- FALSE
+#   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.flag")
+#   myMessenger$logger$debug(paste0("loading session ", sessionID))
+#   myMessenger$logger$debug(paste0("setting flag to ", userFlagStatus))
+#   myMessenger$logger$debug(paste0("setting user to ", user))
+#   loadSession(sessionID)
+#   if(flagUser == "NA") {
+#     flagUser <- as.character(NA)
+#   }
+#   updated <- doseResponse_update_user_flag(fitData, flagUser, user)
+#   if(!myMessenger$hasErrors()) {
+#     GET <- list()
+#     GET$analysisgroupid <- fitData$analysisGroupId
+#     response <- api_doseResponse_get_curve_detail(GET)
+#   } else {
+#     response <- myMessenger$toJSON()
+#   }
+#   return(response)
+# }

@@ -1246,19 +1246,19 @@ save_dose_response_data <- function(fitData, recorded_by) {
                  "max" = reportedParameters[[1]]$max$value,
                  "maxOperatorKind" = reportedParameters[[1]]$max$operator,
                  "maxUncertainty" = reportedParameters[[1]]$max$stdErr,
-                 "maxUncertaintyType" = ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error"),
+                 "maxUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error")),
                  "min" = reportedParameters[[1]]$min$value,
                  "minOperatorKind" = reportedParameters[[1]]$min$operator,
                  "minUncertainty" = reportedParameters[[1]]$min$stdErr,
-                 "minUncertaintyType" = ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error"),
+                 "minUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error")),
                  "ec50" = reportedParameters[[1]]$ec50$value,
                  "ec50OperatorKind" = reportedParameters[[1]]$ec50$operator,
                  "ec50Uncertainty" = reportedParameters[[1]]$ec50$stdErr,
-                 "ec50UncertaintyType" = ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error"),
+                 "ec50UncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
                  "slope" = reportedParameters[[1]]$slope$value,
                  "slopeOperatorKind" = reportedParameters[[1]]$slope$operator,
                  "slopeUncertainty" = reportedParameters[[1]]$slope$stdErr,
-                 "slopeUncertaintyType" = ifelse(is.null(reportedParameters[[1]]$slope$stdErr), NA,"standard error"),
+                 "slopeUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$slope$stdErr), NA,"standard error")),
                  "recordedBy" = recorded_by,
                  "curveId" = paste0(analysisGroupCode,"_", lsTransaction),
                  "analysisGroupCode" = analysisGroupCode[[1]],
@@ -1285,7 +1285,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
     ans
   })), by = curveId]
   dtos <- toJSON(fitData$dto)
-  curveids <- lapply(fitData$dto,function(x) x$curveId)
+  curveids <- unlist(lapply(fitData$dto,function(x) x$curveId))
   response <- getURL(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit"),
     customrequest='POST',
@@ -1295,33 +1295,36 @@ save_dose_response_data <- function(fitData, recorded_by) {
     stop(response)
   }
   changedPoints <- rbindlist(fitData$points)[flagchanged == TRUE,]
-  changedPoints[ , dto := list(list({
-    list(      
-          "userFlagStatus"= userFlagStatus,
-          "algorithmFlagStatus" = algorithmFlagStatus,
-          "responseSubjectValueId" = responseSubjectValueId,
-          "algorithmFlagObservation" = algorithmFlagObservation,
-          "algorithmFlagReason" = algorithmFlagReason,
-          "algorithmFlagComment" = algorithmFlagComment,
-          "preprocessFlagStatus" = preprocessFlagStatus,
-          "preprocessFlagObservation" = preprocessFlagObservation,
-          "preprocessFlagReason" = preprocessFlagReason,
-          "preprocessFlagComment" = preprocessFlagComment,
-          "userFlagObservation" = userFlagObservation,
-          "userFlagReason" = userFlagReason,
-          "userFlagComment" = userFlagComment,
-          "recordedBy" = recorded_by
-    )
-  })), by = responseSubjectValueId]
-  dtos <- toJSON(changedPoints$dto)
-  response <- getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/flagWells"),
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=dtos)
-  if(response != "") {
-    stop(response)
-  }
+  if(nrow(changedPoints) > 0)
+    {
+    changedPoints[ , dto := list(list({
+      list(      
+        "userFlagStatus"= userFlagStatus,
+        "algorithmFlagStatus" = algorithmFlagStatus,
+        "responseSubjectValueId" = responseSubjectValueId,
+        "algorithmFlagObservation" = algorithmFlagObservation,
+        "algorithmFlagReason" = algorithmFlagReason,
+        "algorithmFlagComment" = algorithmFlagComment,
+        "preprocessFlagStatus" = preprocessFlagStatus,
+        "preprocessFlagObservation" = preprocessFlagObservation,
+        "preprocessFlagReason" = preprocessFlagReason,
+        "preprocessFlagComment" = preprocessFlagComment,
+        "userFlagObservation" = userFlagObservation,
+        "userFlagReason" = userFlagReason,
+        "userFlagComment" = userFlagComment,
+        "recordedBy" = recorded_by
+      )
+    })), by = responseSubjectValueId]
+    dtos <- toJSON(changedPoints$dto)
+    response <- getURL(
+      paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/flagWells"),
+      customrequest='POST',
+      httpheader=c('Content-Type'='application/json'),
+      postfields=dtos)
+    if(response != "") {
+      stop(response)
+    }
+}
   return(curveids)
 }
 get_ls_type <- function(valueType) {
