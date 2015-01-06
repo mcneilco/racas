@@ -573,7 +573,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   getDrawValues <- function(params) {
     reportedValueColumns <- match(paramNames, names(params))
     reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
-    reportedValues <- params[,reportedValueColumns]
+    reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
     reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
     
     tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
@@ -638,7 +638,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   ##If only one curve then draw ac50 lines
   #Get coordinates to draw lines through curve at AC50
   #Vertical
-  if(!is.na(drawIntercept)) {
+  if(!is.na(drawIntercept) && is.numeric(params[,drawIntercept])) {
     if(nrow(params) == 1) {
       drawValues <- getDrawValues(params = params[1,])
       for(i in 1:ncol(drawValues)) {

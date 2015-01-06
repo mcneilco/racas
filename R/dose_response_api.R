@@ -67,7 +67,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("getting acas response")
   if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
-    response <- fit_data_to_acas_experiment_response(fitData, experimentCode, savedStates$lsTransaction, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+    response <- fit_data_to_acas_experiment_response(fitData, experimentCode, -1, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
   } else {
     myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
     myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
@@ -128,7 +128,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
                                         EC50 = ec50[[1]],
                                         SST =  sst[[1]],
                                         SSE =  sse[[1]],
-                                        rsquare = rSquared[[1]],
+                                        rsquare = rsquared[[1]],
                                         compoundCode = batchCode[[1]],
                                         algorithmFlagStatus = algorithmFlagStatus[[1]],
                                         userFlagStatus = userFlagStatus[[1]]
@@ -159,7 +159,7 @@ api_doseResponse_update_flag <- function(POST) {
                                         EC50 = ec50[[1]],
                                         SST =  sst[[1]],
                                         SSE =  sse[[1]],
-                                        rsquare = rSquared[[1]],
+                                        rsquare = rsquared[[1]],
                                         compoundCode = batchCode[[1]],
                                         algorithmFlagStatus = algorithmFlagStatus[[1]],
                                         userFlagStatus = userFlagStatus[[1]]
@@ -213,7 +213,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                             Operator = length0_or_na_to_null(fitData[1]$ec50OperatorKind),
                             SST = length0_or_na_to_null(fitData[1]$sst),
                             SSE =  length0_or_na_to_null(fitData[1]$sse),
-                            rSquared =  length0_or_na_to_null(fitData[1]$rSquared),
+                            rSquared =  length0_or_na_to_null(fitData[1]$rsquared),
                             compoundCode = length0_or_na_to_null(fitData[1]$batchCode)
     )
     category <- fitData[1]$Category

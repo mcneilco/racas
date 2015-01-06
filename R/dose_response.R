@@ -739,7 +739,7 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                                               fittedSlope = "numeric",
                                               sse = "numeric",
                                               sst = "numeric",
-                                              rSquared = "numeric",
+                                              rsquared = "numeric",
                                               curveErrorsClob = "character",
                                               reportedValuesClob = "character",
                                               parameterStdErrorsClob = "character",
@@ -806,7 +806,7 @@ get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ..
     curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
     rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
     rawData[ ,tempFlagStatus := ""]
-    rawData[ ,flachanged := FALSE]
+    rawData[ ,flagchanged := FALSE]
     rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
     setnames(rawData, "V1", "points")
     fitData <- fitData[rawData]
@@ -1200,43 +1200,6 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   return(experimentCode)
 }
 save_dose_response_data <- function(fitData, recorded_by) {
-  myMessenger <- messenger()
-  myMessenger$logger <- logger(logName = "com.acas.api.doseresponse.save")
-  
-  myMessenger$logger$debug("getting transaction id")
-  transactionID <- createLsTransaction()$id
-  myMessenger$logger$debug("getting analysis group values from fit data")
-  fitData[ , analysisGroupValues := list(list(create_analysis_group_values_from_fitData(reportedParameters[[1]],
-                                                                                        fixedParameters[[1]],
-                                                                                        fittedParameters[[1]],
-                                                                                        goodnessOfFit.model[[1]],
-                                                                                        category[[1]],
-                                                                                        flag_algorithm[[1]],
-                                                                                        flag_user[[1]],
-                                                                                        tested_lot = ag_values[[1]][lsKind=="batch code",]$codeValue,
-                                                                                        recorded_by[[1]],
-                                                                                        transactionID,
-                                                                                        doseUnits = as.character(points[[1]][1]$doseunits), 
-                                                                                        responseUnits = as.character(points[[1]][1]$responseunits), 
-                                                                                        analysisGroupCode = analysisGroupCode[[1]], 
-                                                                                        as.character(ag_values[[1]][lsKind=="Rendering Hint"]$stringValue),
-                                                                                        reportedValuesClob = reportedValuesClob[[1]],
-                                                                                        fitSummaryClob = fitSummaryClob[[1]],
-                                                                                        parameterStdErrorsClob = parameterStdErrorsClob[[1]],
-                                                                                        curveErrorsClob = curveErrorsClob[[1]],
-                                                                                        simpleFitSettings = simpleFitSettings[[1]]
-  )  
-  ))
-  , by = curveid]
-  myMessenger$logger$debug("saving dose response parameter data")
-  savedStates <- save_fit_data(fitData, recorded_by, transactionID)
-  myMessenger$logger$debug("saving dose response point data")
-  savedPoints <- fitData[,  list(update_point_flags(points, recorded_by, transactionID))][[1]]  
-  myMessenger$logger$debug("returning response")
-  return(list(lsStates = savedStates, lsTransaction = transactionID))
-  
-}
-save_dose_response_data <- function(fitData, recorded_by) {
   lsTransaction <- createLsTransaction()$id
   fitData[ , dto := list(list({
     ans <- switch(modelHint,
@@ -1273,6 +1236,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
                  "fittedSlope" = fittedParameters[[1]]$slope,
                  "sse" = goodnessOfFit.model[[1]]$SSE,
                  "sst" = goodnessOfFit.model[[1]]$SST,
+                 "rsquared" = goodnessOfFit.model[[1]]$rSquared,
                  "curveErrorsClob" = curveErrorsClob[[1]],
                  "reportedValuesClob" = reportedValuesClob[[1]],
                  "parameterStdErrorsClob" = parameterStdErrorsClob[[1]],
@@ -1284,13 +1248,13 @@ save_dose_response_data <- function(fitData, recorded_by) {
            })
     ans
   })), by = curveId]
-  dtos <- toJSON(fitData$dto)
+  fitDataSaveRequest <- toJSON(fitData$dto)
   curveids <- unlist(lapply(fitData$dto,function(x) x$curveId))
   response <- getURL(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=dtos)
+    postfields=fitDataSaveRequest)
   if(response != "") {
     stop(response)
   }
