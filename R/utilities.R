@@ -42,7 +42,9 @@ data.table_to_html_table <- function(dataTable, ...) {
                            timestamp = FALSE, 
                            rotate.rownames = TRUE, 
                            html.table.attributes = "",
-                           print.results = FALSE, ...)
+                           print.results = FALSE, 
+                           ...)
+  htmlTableString <- gsub("\\\n","",htmlTableString)
   return(htmlTableString)
 }
 capture_output <- function(obj, ...) {
