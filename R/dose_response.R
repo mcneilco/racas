@@ -476,7 +476,7 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         ymin <- 10^(log10(minResponse) - 0.5)        
       } else {
         if(responseRange != 0) {
-          ymin <- (minResponse - 0.030*responseRange)
+          ymin <- (minResponse - 0.10*responseRange)
         } else {
           ymin <- floor(maxResponse)
         }
@@ -487,7 +487,7 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         ymax <- 10^(log10(maxResponse) + 0.5)        
       } else {
         if(responseRange != 0) {
-          ymax <- (maxResponse + 0.030*responseRange)
+          ymax <- (maxResponse + 0.10*responseRange)
         } else {
           ymax <- ceiling(maxResponse)
         }
@@ -497,14 +497,14 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
       if(logDose) {
         xmax <- 10^(log10(maxDose) + 0.5)        
       } else {
-        xmax <- maxDose + abs(0.02 * doseRange)
+        xmax <- maxDose + abs(0.1 * doseRange)
       }  
     }
     if(is.na(xmin)) {
       if(logDose) {
         xmin <- 10^(log10(minDose) - 0.5)        
       } else {
-        xmin <- minDose - abs(0.02 * doseRange)
+        xmin <- minDose - abs(0.1 * doseRange)
       }
     }
     return(c(xmin,ymax,xmax,ymin))
