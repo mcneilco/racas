@@ -1985,3 +1985,20 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
   putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
 }
+
+load_value_type_and_kinds <- function(requiredModules = NA) {
+  valueTypeAndKindsFile <- system.file("docs", "value_type_and_kinds.csv", package = "racas")
+  valueTypeAndKinds <- fread(valueTypeAndKindsFile)
+  if(!is.na(requiredModules)) {
+    valueTypeAndKinds <- valueTypeAndKinds[Module %in% requiredModules]
+  }
+  valueTypeAndKinds[ , Module:= NULL]
+  valueTypeAndKinds <- unique(valueTypeAndKinds)
+  setnames(valueTypeAndKinds, c("lsType", "lsKind"))
+  valueTypeAndKindsJSON <- jsonlite::toJSON(valueTypeAndKinds)
+  response <- fromJSON(getURL(
+    paste0(lsServerURL, "valuekinds/getOrCreate/jsonArray"),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=valueTypeAndKindsJSON))
+}
