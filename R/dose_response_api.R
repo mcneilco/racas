@@ -30,9 +30,7 @@
 #' recordedBy <- "bbolt"
 #' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
 api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
-  #     cat("Using fake data")
-#   file <- "inst/docs/example-simple-fitsettings-ll4.json"
-#   file <- system.file("docs", "example-simple-fitsettings-ll4.json", package = "racas" )
+#   file <- system.file("docs", "example-simple-fitsettings-ki.json", package = "racas" )
 #   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #   recordedBy <- "bbolt"
@@ -45,13 +43,14 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug("updating experiment model fit status status value to running")
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
-  
-  myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings)
-  
+    
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
   fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
+
+  myMessenger$logger$debug("converting simple fit settings to advanced settings")
+  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, modelHint = fitData[1]$modelHint)
+
   myMessenger$logger$debug("fitting the data")
   fitData <- dose_response(fitSettings, fitData)
   
