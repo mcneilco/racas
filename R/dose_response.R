@@ -996,7 +996,7 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   ###Fit
   fitData[model.synced == FALSE, model := list(model = list(switch(modelHint,
                                                                    "LL.4" = get_drc_model(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
-                                                                   "Ki" = get_drc_model(points[[1]], drcFunction = ki_fct.5, paramNames = c("min", "max", "ki", "kd", "ligandConc"), fixed = c(fixedParameters[[1]],list(kd = kd[[1]], ligandConc = ligandConc[[1]]))),
+                                                                   "Ki" = get_drc_model(points[[1]], drcFunction = ki_fct.5, paramNames = c("min", "max", "ki", "ligandConc", "kd"), fixed = c(fixedParameters[[1]],list(kd = kd[[1]], ligandConc = ligandConc[[1]]))),
                                                                    "MM.2" = get_drc_model(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
   ))
   ), by = curveId]
@@ -1283,7 +1283,6 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
     parmMat <- matrix(parmVec, nrow(parm), numParm, byrow = TRUE)
     parmMat[, notFixed] <- parm
     cParm <- parmMat[, 2]
-    #c("min", "max", "ki", "ligandConc", "kd")
     #Bottom + (Top-Bottom)/(1+10^(X-log(10^logKi*(1+HotNM/HotKdNM))))
     cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))    
   }
@@ -1382,6 +1381,22 @@ kiNamesFree <- c("min", "ec50", "max")
 kifctFree <- function(x, param) {
   #Bottom + (Top-Bottom)/(1+10^(X-log(10^logKi*(1+HotNM/HotKdNM))))
   param[,3] + (param[,1]-param[,3])/(1+10^(log10(x)-log10(param[,2]*(1+HotNM/HotKdNM))))
+  param[,3] + (param[,1]-param[,3])/(1+10^(x-log10(10^param[,2]*(1+HotNM/HotKdNM))))
+  max + (min - max) /(1+10^(x-log10(10^k*(1+ligandConc/kd))))
+  OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
+  cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))    
+  parms <- data$parameters
+  max <- parms$max
+  min <- parms$min
+  x <- parms$ki
+  ki <- parms$ki
+  ligandConc <- parms$ligandConc
+  kd <- parms$kd
+  
+  #New 41.17744
+  
+  
+  
 }
 kissfctFree <- function(data) {
   Top <- max(data[,2])
@@ -1962,7 +1977,10 @@ add_clob_values_to_fit_data <- function(fitData) {
 }
 
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
-OneSiteKi <- 'min + (max-min)/(1+10^(x-log10((10^Log10Ki)*(1+ligandConc/kd))))'
+OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
+
+
+
 MM2 <- '(max*x)/(kd + x)'
 
 
