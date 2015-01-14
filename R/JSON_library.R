@@ -1985,3 +1985,49 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
   putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
 }
+#' Get Or Create Value Kind
+#' 
+#' Gets or creates a set of value kinds given a data frame of lsType (name only) and lsKind (name)
+#' 
+#' @param a data frame (or data table) with columns lsType and lsKind
+#' @return a list object of returned lsKinds
+#' @export
+get_or_create_value_kinds <- function(df) {
+  valueTypeAndKindsJSON <- jsonlite::toJSON(df)
+  response <- fromJSON(getURL(
+    paste0(lsServerURL, "valuekinds/getOrCreate/jsonArray"),
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=valueTypeAndKindsJSON))
+  return(response)
+}
+#' Loads a set of default lsKinds per module
+#' 
+#' There are a set of required lsKinds that need to be loaded in modules. This function loads them all if given no input or a subset if provied
+#' 
+#' @param requiredModules a character vector of modules to load see \link{modules}
+#' @return a list object of returned lsKinds
+#' @export
+load_value_type_and_kinds <- function(requiredModules = NA) {
+  valueTypeAndKindsFile <- system.file("docs", "value_type_and_kinds.csv", package = "racas")
+  valueTypeAndKinds <- fread(valueTypeAndKindsFile)
+  if(!is.na(requiredModules)) {
+    valueTypeAndKinds <- valueTypeAndKinds[Module %in% requiredModules]
+  }
+  valueTypeAndKinds[ , Module:= NULL]
+  valueTypeAndKinds <- unique(valueTypeAndKinds)
+  setnames(valueTypeAndKinds, c("lsType", "lsKind"))
+  return(get_or_create_value_kinds(valueTypeAndKinds))
+}
+#' Known acas modules which require lsKinds to exist
+#' 
+#' There are a set of required lsKinds that need to be loaded in modules. This function returns the module names for which there are required lsKinds that need to be registered
+#' See \link{load_value_type_and_kinds} to load lsKinds
+#' 
+#' @return a list of modules which require lsKinds to be registered
+#' @export
+modules <- function() {
+  valueTypeAndKindsFile <- system.file("docs", "value_type_and_kinds.csv", package = "racas")
+  valueTypeAndKinds <- fread(valueTypeAndKindsFile)
+  return(unique(valueTypeAndKinds$Module))
+}

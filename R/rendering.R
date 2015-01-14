@@ -21,11 +21,11 @@ getCurveData <- function(curveids, ...) {
   #There are cases where getParametersByRenderingHint return curveids (See PK), in this case we call getParametersByRenderingHint again with those curveids 3_AG-00000040
   if(class(renderingHintParameters)=="list") {
     points <- getPoints(curveids, renderingHint = renderingHintParameters$renderingHint, ...)
-    points$oldcurveid <- points$curveid
-    points$curveid <- paste0(points$curveid,"_s_id_",points$s_id)
+    points$oldcurveid <- points$curveId
+    points$curveId <- paste0(points$curveId,"_s_id_",points$s_id)
     renderingHintParameters <- renderingHintParameters$parameters
-    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id, curveid=points$oldcurveid)))
-    renderingHintParameters$curveid <- paste0(renderingHintParameters$curveid,"_s_id_",renderingHintParameters$s_id)
+    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id, curveId=points$oldcurveid)))
+    renderingHintParameters$curveId <- paste0(renderingHintParameters$curveId,"_s_id_",renderingHintParameters$s_id)
     renderingHintParameters$name <- renderingHintParameters$name
   } else {
     points <- getPoints(curveids, ...)
@@ -155,7 +155,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
   }
   points <- switch(renderingHint,
                    "PO IV pk curve id" = {
-                     data.frame(  curveid = as.character(points$curveid),
+                     data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.character(points$dosetype), 
@@ -172,7 +172,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                      )
                    },
                    "IV pk curve id" = {
-                     data.frame(  curveid = as.character(points$curveid),
+                     data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.character(points$dosetype), 
@@ -191,7 +191,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                      )
                    },
                    "PO pk curve id" = {
-                     data.frame(  curveid = as.character(points$curveid),
+                     data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
                                   doseType = as.character(points$dosetype), 
@@ -209,7 +209,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   ag_id = as.integer(points$ag_id)
                      )
                    },
-                   data.frame(  curveid = as.character(points$curveid),
+                   data.frame(  curveId = as.character(points$curveid),
                                 name = as.character(points$curveid),
                                 dose = as.numeric(points$dose), 
                                 doseUnits = as.character(points$doseunits), 
@@ -297,7 +297,7 @@ getLL4ParametersFromWideFormat <- function(wideFormat) {
   wideName = c("ag_code_name","tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
                "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
                "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50", "comments.flag_algorithm", "comments.flag_user")
-  newName = c("ag_code_name","tested_lot", "curveid", "renderingHint", "min", "fitted_min",
+  newName = c("ag_code_name","tested_lot", "curveId", "renderingHint", "min", "fitted_min",
               "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslope",
               "ec50", "fitted_ec50", "operator","flag_algorithm","flag_user")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
@@ -307,7 +307,7 @@ getLL4ParametersFromWideFormat <- function(wideFormat) {
 getPKParametersFromWideFormat <- function(wideFormat, renderingHint) {
   parameters <- list(renderingHint = renderingHint)
   wideName = c("ag_code_name","tested_lot", paste0("string_value.",renderingHint))
-  newName = c("ag_code_name", "tested_lot", "curveid")
+  newName = c("ag_code_name", "tested_lot", "curveId")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
   return(parameters)
@@ -317,14 +317,14 @@ getPOIVPKParametersFromLongFormat <- function(longFormat) {
   curveIDList <- c('PO pk curve id','IV pk curve id')
   parameters <- list(curveids = longFormat$string_value[longFormat$ls_kind %in% curveIDList])
   parameters$parameters <- subset(longFormat, ls_kind %in% curveIDList, select = c("ag_id", "tested_lot", "string_value") )
-  names(parameters$parameters) <- c("ag_id","ag_code_name", "tested_lot", "curveid")
+  names(parameters$parameters) <- c("ag_id","ag_code_name", "tested_lot", "curveId")
   return(parameters)  
 }
 
 getPOIVPKParametersFromWideFormat <- function(wideFormat) {
   parameters <- list(curveids = c(longFormat$"string_value.PO pk curve id",wideFormat$"string_value.IV pk curve id"))
   wideName = c("ag_code_name", "tested_lot", "string_value.PO IV pk curve id", "string_value.PO pk curve id", "string_value.IV pk curve id")
-  newName = c("ag_code_name", "tested_lot", "curveid", "poPKCurveID", "ivPKCurveID")
+  newName = c("ag_code_name", "tested_lot", "curveId", "poPKCurveID", "ivPKCurveID")
   valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
   parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
   return(parameters)  
@@ -360,7 +360,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #'
 #' This function takes in a set of data points, curve parameters, and an equation and plots the data
 #'
-#' @param curveData a data frame with the points with column names curveid, dose, response, flag
+#' @param curveData a data frame with the points with column names curveId, dose, response, flag
 #' @param params the set of parameters used to enumerate the curve
 #' @param outFile file to plot image to, if not specified then the function plots to graphic device
 #' @param ymin specify the ymin axes location
@@ -452,15 +452,15 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   plotColorsAlpha <- add.alpha(plotColors, alpha=0.3)
   params$color <- plotColors[1:nrow(params)]
-  curveData$color <- plotColors[match(curveData$curveid,params$curveid)] 
-  curveData$coloralpha <- plotColorsAlpha[match(curveData$curveid,params$curveid)] 
+  curveData$color <- plotColors[match(curveData$curveId,params$curveId)] 
+  curveData$coloralpha <- plotColorsAlpha[match(curveData$curveId,params$curveId)] 
   
   #Add shapes
   if(addShapes) {
     pchs <- 1:24
     pchs <- rep(pchs[-c(4)],100, replace = TRUE)
     params$pch <- pchs[1:nrow(params)]
-    curveData$pch <- params$pch[match(curveData$curveid,params$curveid)]
+    curveData$pch <- params$pch[match(curveData$curveId,params$curveId)]
   }
   
   #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
@@ -480,14 +480,14 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
-  flaggedPoints <- subset(curveData, !is.na(curveData$flag_user) | !is.na(curveData$flag_algorithm) | !is.na(curveData$flag_on.load) | !is.na(curveData$flag_temp))
-  goodPoints <- subset(curveData, is.na(curveData$flag_user) & is.na(curveData$flag_algorithm) & is.na(curveData$flag_on.load) & is.na(curveData$flag_temp))
+  flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
+  goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
   
   ##Calculate Means and SDs
   if(nrow(goodPoints) > 0) {
-    sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), sd)
+    sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveId=goodPoints$curveId, color = goodPoints$color), sd)
     names(sds)[ncol(sds)] <- "sd"
-    means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveid=goodPoints$curveid, color = goodPoints$color), mean)
+    means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveId=goodPoints$curveId, color = goodPoints$color), mean)
     names(means)[ncol(means)] <- "mean"
   }
   
@@ -536,7 +536,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     #legendYPosition <- 10 ^ par("usr")[2]
     #legendXPosition <- par("usr")[4]
     if(is.null(params$name)) {
-      legendText <- params$curveid
+      legendText <- params$curveId
     } else {
       legendText <- params$name
     }
@@ -552,10 +552,10 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
   }
   if(connectPoints && exists("means")) {
-    cids <- unique(means$curveid)
+    cids <- unique(means$curveId)
     for(c in 1:length(cids)) {
       cid <- cids[c]
-      lineData <- subset(means, means$curveid == cid)
+      lineData <- subset(means, means$curveId == cid)
       lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
     }
   }
@@ -573,31 +573,31 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   getDrawValues <- function(params) {
     reportedValueColumns <- match(paramNames, names(params))
     reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
-    reportedValues <- params[,reportedValueColumns]
+    reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
     reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
     
     tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
     names(tmp) <- paramNames
     tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
     
-    fittedColumnNames <- paste0("fitted_",paramNames)
-    fittedValueColumns <- match(fittedColumnNames,names(params))
+    fittedColumnNames <- paste0("fitted",paramNames)
+    fittedValueColumns <- match(fittedColumnNames,tolower(names(params)))
     fittedValueColumns <- fittedValueColumns[!is.na(fittedValueColumns)]
     
     if(length(fittedValueColumns) > 0) {
       fittedValues <-  params[,fittedValueColumns]
       fittedValues <- fittedValues[sapply(fittedValues, function(x) !any(is.na(x)))] 
-      tmp[1,match(names(fittedValues),fittedColumnNames)] <- fittedValues
+      tmp[1,match(tolower(names(fittedValues)),fittedColumnNames)] <- fittedValues
     }
     return(tmp)
   }
   #Curve Drawing Function
   drawCurveID <- function(cid) {
-    flagged <- any(!is.na(params$flag_user), !is.na(params$flag_algorithm)) && any(identical(params$flag_user, "rejected", identical(params$flag_algorithm,"no fit")))
+    flagged <- any(params$userFlagStatus == "rejected" && params$algorithmFlagStatus != "no fit")
     if(drawFlagged == FALSE && !flagged) {
       drawValues <- getDrawValues(params = params[cid,])
-      curveID <- params$curveid[cid]
-      curveParams <- subset(params, params$curveid == curveID)
+      curveID <- params$curveId[cid]
+      curveParams <- subset(params, params$curveId == curveID)
       for(i in 1:ncol(drawValues)) {
         assign(names(drawValues)[i], drawValues[,i])
       }
@@ -607,7 +607,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   #Actually Draw Curves
   if(drawCurve) {
-    null <- lapply(1:length(params$curveid),drawCurveID)
+    null <- lapply(1:length(params$curveId),drawCurveID)
   }
   ##DO axes and Grid
   box()
@@ -638,7 +638,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   ##If only one curve then draw ac50 lines
   #Get coordinates to draw lines through curve at AC50
   #Vertical
-  if(!is.na(drawIntercept)) {
+  if(!is.na(drawIntercept) && is.numeric(params[,drawIntercept])) {
     if(nrow(params) == 1) {
       drawValues <- getDrawValues(params = params[1,])
       for(i in 1:ncol(drawValues)) {
@@ -700,7 +700,7 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
       }
       answer
       },
-      by = curveid]$V1,
+      by = curveId]$V1,
     .N)]
   return(points[dose!=0,])
 }

@@ -12,8 +12,8 @@ cat(modelEquation)
 
 ***Fit Summary***
 * Attempted Fits: `r nrow(fitData)`
-* Successful Fits: `r nrow(fitData[is.na(flag_algorithm),])`
-* Failed Fits: `r nrow(fitData[is.na(flag_algorithm)==FALSE,])`
+* Successful Fits: `r nrow(fitData["algorithm flag status" != "",])`
+* Failed Fits: `r nrow(fitData[algorithmFlagStatus == "",])`
 
 ***Categories***
 
