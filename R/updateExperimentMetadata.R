@@ -146,7 +146,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     # TODO: figure out if need to update code for client to respect deleteOldFile
-    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
+    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, entity, recordedBy)
   } else {
     stopUser("Invalid file service type")
   }
