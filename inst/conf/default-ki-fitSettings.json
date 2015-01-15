@@ -21,7 +21,7 @@
          "maxUncertaintyRule":{
             "parameter":"max",
             "type":"stdErr",
-            "value":20,
+            "value":3.8,
             "operator":">",
             "displayName":"Max uncertainty exceeded"
          },

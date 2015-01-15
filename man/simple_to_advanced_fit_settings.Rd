@@ -4,12 +4,12 @@
 \title{Convert a simple dose response request to an advanced dose response request}
 \usage{
 simple_to_advanced_fit_settings(simpleSettings, updateFlags = NULL,
-  modelHint = "LL.4")
+  renderingHint = "4 parameter D-R")
 }
 \arguments{
 \item{simpleSettings}{a list object of simple fit settings}
 
-\item{modelHint}{a character string to identify the dose response model to fit}
+\item{renderingHint}{a character string to identify the dose response model to fit}
 }
 \value{
 an advanced fit settings list object
