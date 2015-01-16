@@ -338,6 +338,11 @@ simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, 
     return(fitSettings)
   }
   modifiedSettings <- defaultSettings
+  if(simpleSettings$inactiveThresholdMode) {
+    modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
+  } else {
+    modifiedSettings$inactiveRule <- list()    
+  }
   modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold
   modifiedSettings$inverseAgonistMode <- simpleSettings$inverseAgonistMode
   if(!is.null(simpleSettings$biphasicRule)) {
