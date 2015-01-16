@@ -64,9 +64,13 @@ readConfigFile <- function(configLocation, ...) {
   logicals <- suppressWarnings(unlist(lapply(applicationSettings, as.logical)))
   applicationSettings[!is.na(logicals)] <- logicals[!is.na(logicals)]
   
-  #Convert coercible "8080" values to integers
-  integers <- suppressWarnings(unlist(lapply(applicationSettings, as.integer)))
-  applicationSettings[!is.na(integers) & is.na(logicals)] <- integers[!is.na(integers) & is.na(logicals)]
+  #Convert coercible "8080" values to integers and coercible "1.234" to numeric
+  coercibleNumeric <- suppressWarnings(unlist(sapply(applicationSettings, as.numeric)))
+  numerics <- which(!is.na(coercibleNumeric) & is.na(logicals) & coercibleNumeric%%1!=0)
+  intergers <- which(!is.na(coercibleNumeric) & is.na(logicals) & coercibleNumeric%%1==0)
+  applicationSettings[numerics] <- as.numeric(applicationSettings[numerics])
+  applicationSettings[intergers] <- as.integer(applicationSettings[intergers])
+  
   
   #Convert "null" to ""
   nulls <- applicationSettings=="null"
