@@ -26,7 +26,8 @@ Imports:
     ggplot2,
     jsonlite,
     grid,
-    utils
+    utils,
+    Hmisc
 Suggests:
     RPostgreSQL,
     ROracle,
