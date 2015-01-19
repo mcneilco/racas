@@ -1980,8 +1980,8 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
 #' @export
 updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, stateKind, valueType, valueKind, 
                                      lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  #url <- "acas/api/v1/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
-  url <- paste0(lsServerURL, entityKind, "/", parentId, "/bystate/", 
+  #url <- "acas/api/v1/values/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
+  url <- paste0(lsServerURL, "values/", entityKind, "/", parentId, "/bystate/", 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
   putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
 }
