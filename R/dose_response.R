@@ -341,10 +341,21 @@ simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, 
     return(fitSettings)
   }
   modifiedSettings <- defaultSettings
-  modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold
-  modifiedSettings$inverseAgonistMode <- simpleSettings$inverseAgonistMode
-  if(!is.null(simpleSettings$biphasicRule)) {
-    modifiedSettings$biphasicRule <- simpleSettings$biphasicRule
+  if(!is.null(simpleSettings$smartMode) && simpleSettings$smartMode) {
+    if(simpleSettings$inactiveThresholdMode) {
+      modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
+    } else {
+      modifiedSettings$inactiveRule <- list()    
+    }
+    modifiedSettings$inverseAgonistMode <- simpleSettings$inverseAgonistMode
+    if(!is.null(simpleSettings$biphasicRule)) {
+      modifiedSettings$biphasicRule <- simpleSettings$biphasicRule
+    }    
+  } else {
+    modifiedSettings$biphasicRule <- list()
+    modifiedSettings$inactiveRule <- list()
+    modifiedSettings$parameterRules$goodnessOfFits <- list()
+    modifiedSettings$parameterRules$limits <- list()
   }
   if(!is.null(simpleSettings$userFlagStatus)) {
     modifiedSettings$userFlagStatus <- simpleSettings$userFlagStatus
