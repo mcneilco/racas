@@ -482,34 +482,25 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
   
   fileName <- basename(fileStartLocation)
   
-  experimentCodeName <- experiment$codeName
-  
-  if (fileServiceType == "blueimp") {
-    experimentFolderLocation <- file.path(dirname(fileStartLocation), "experiments")
+  if(fileServinceType == "blueimp") {
+    experimentCodeName <- experiment$codeName
+    
+    experimentFolderLocation <- getUploadedFilePath("experiments")
     dir.create(experimentFolderLocation, showWarnings = FALSE)
     
     fullFolderLocation <- file.path(experimentFolderLocation, experimentCodeName)
     dir.create(fullFolderLocation, showWarnings = FALSE)
     
-    # Move the file
-    file.rename(from=fileStartLocation, to=file.path(fullFolderLocation, fileName))
-    
-    serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
-  } else if (fileServiceType == "custom") {
-    if(!exists('customSourceFileMove')) {
-      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
-    }
-    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy)
-  } else {
-    stopUser("Invalid file service type")
+    targetPath <- file.path("experiments", experimentCodeName, fileName)
   }
   
-  locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="raw results locations"]
+  serverFileLocation <- moveFileToFileServer(fileStartLocation, targetPath, 
+                                             fileServiceType, fileService, experiment, recordedBy)
+  
+  locationStates <- Filter(function(x) {x$"lsKind"=="raw results locations"}, experiment$lsStates)
   
   # Record the location
-  if (length(locationState)> 0) {
-    locationState <- locationState[[1]]
-  } else {
+  if (length(locationStates) == 0) {
     locationState <- createExperimentState(
       recordedBy=recordedBy,
       experiment = experiment,
@@ -524,20 +515,8 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
     })
   }
   
-  tryCatch({
-    locationValue <- createStateValue(
-      recordedBy = recordedBy,
-      lsType = "fileValue",
-      lsKind = "source file",
-      fileValue = serverFileLocation,
-      comments = fileName,
-      lsState = locationState,
-      lsTransaction = lsTransaction)
-    
-    saveExperimentValues(list(locationValue))
-  }, error = function(e) {
-    stopUser("Internal Error: Could not save the source file location")
-  })
+  updateValueByTypeAndKind(serverFileLocation, "experiment", experiment$id, 
+                           "metadata", "raw results locations", "fileValue", "source file")
   
   return(serverFileLocation)
 }
@@ -571,5 +550,34 @@ get_text_file_contents <- function(file_path) {
   return(text)
 }
 
-
-
+#' Move file to file server
+#'
+#' @param fileServiceType "blueimp" or "custom"
+#' @param fileStartLocation current location of file, relative from privateUploads
+#' @param targetPath path to new file location, not currently used when fileServiceType == "custom"
+#' @param fileService path to file service, not used when fileServiceType == "blueimp"
+#' @param experiment experiment object, not used when fileServiceType == "blueimp"
+#' @param recordedBy logged in username, not used when fileServiceType == "blueimp"
+#' @return character file code or path relative from privateUploads
+#' @keywords custom, file, blueimp
+#' @export
+#' 
+moveFileToFileServer <- function (fileStartLocation, targetPath=NULL, 
+                                  fileServiceType = racas::applicationSettings$server.service.external.file.type, 
+                                  fileService=racas::applicationSettings$server.service.external.file.service.url, 
+                                  experiment=NULL, recordedBy=NULL) {
+  # moves a file to file server
+  if (fileServiceType == "blueimp") {
+    # Move the file
+    file.rename(from=fileStartLocation, to=getUploadedFilePath(targetPath))
+    return(targetPath)
+  } else if (fileServiceType == "custom") {
+    if(!exists('customSourceFileMove')) {
+      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+    }
+    fileName <- basename(fileStartLocation)
+    return(customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy))
+  } else {
+    stopUser("Configuration error: Invalid file service type")
+  }
+}
