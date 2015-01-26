@@ -747,7 +747,7 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                                               analysisGroupCode = "integer",
                                               recordedBy = "character",
                                               batchCode = "character",
-                                              Category = "character",
+                                              category = "character",
                                               renderingHint = "character",
                                               min = "numeric",
                                               max = "numeric",

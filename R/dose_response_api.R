@@ -123,7 +123,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   fitData[ , curves := list(list(list(curveid = curveId[[1]], 
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
                                       userFlagStatus = userFlagStatus[[1]],
-                                      category = Category[[1]],
+                                      category = category[[1]],
                                       curveAttributes = list(
                                         EC50 = ec50[[1]],
                                         SST =  sst[[1]],
@@ -154,7 +154,7 @@ api_doseResponse_update_flag <- function(POST) {
   fitData[ , curves := list(list(list(curveid = curveId[[1]], 
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
                                       userFlagStatus = userFlagStatus[[1]],
-                                      category = Category[[1]],
+                                      category = category[[1]],
                                       curveAttributes = list(
                                         EC50 = ec50[[1]],
                                         SST =  sst[[1]],
@@ -216,7 +216,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                             rSquared =  length0_or_na_to_null(fitData[1]$rsquared),
                             compoundCode = length0_or_na_to_null(fitData[1]$batchCode)
     )
-    category <- fitData[1]$Category
+    category <- fitData[1]$category
   } else {
     reportedValues <- fitData[1]$reportedValuesClob[[1]]
     fitSummary <- fitData[1]$fitSummaryClob[[1]]
