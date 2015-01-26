@@ -83,7 +83,7 @@ dose_response <- function(fitSettings, fitData) {
 
 biphasic_detection <- function(fitData) {
   returnCols <- copy(names(fitData))
-  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, category, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
+  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, fittedParameters, category, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun) {    
     points <- copy(points)
     if(!continueBiphasicDetection) {
       testConc <- as.numeric(NA)
@@ -100,31 +100,42 @@ biphasic_detection <- function(fitData) {
         biphasicParameterPreviousValue <- as.numeric(NA)
         return(list(points = list(points), model.synced = model.synced, biphasicParameterPreviousValue = biphasicParameterPreviousValue, testConc = testConc, continueBiphasicDetection = continueBiphasicDetection))
       } else {
-        if(biphasicRule$type == "percentage") {
-          biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
-          #           ifelse(!is.finite(max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))), , TRUE)
-          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
-          points[dose == testConc, tempFlagStatus := "possible biphasic"]
-          model.synced <- FALSE
-          continueBiphasicDetection <- TRUE
-        } else {
-          stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
-        }
+        biphasicParameterPreviousValue <- switch(biphasicRule$type,
+                                                 "goodnessOfFit.percentage" =  as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]]),
+                                                 "parameter.percentage" =  as.numeric(fittedParameters[biphasicRule$parameter][[1]]),
+                                                 stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
+        )
+        testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+        points[dose == testConc, tempFlagStatus := "possible biphasic"]
+        model.synced <- FALSE
+        continueBiphasicDetection <- TRUE
       }
     } else {      
       stillASigmoid <- category == "sigmoid"
       if(stillASigmoid) {
-        canCompareAgainstLastFit <- is.finite(goodnessOfFit.model[biphasicRule$parameter][[1]])
+        canCompareAgainstLastFit <- switch(biphasicRule$type,
+                                                 "goodnessOfFit.percentage" =  is.finite(as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])),
+                                                 "parameter.percentage" =  is.finite(as.numeric(fittedParameters[biphasicRule$parameter][[1]])),
+                                                 stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
+        )        
       } else {
         canCompareAgainstLastFit <- FALSE
       }
       if(canCompareAgainstLastFit) {
-        better <- eval(parse(text = paste('(biphasicParameterPreviousValue - goodnessOfFit.model[biphasicRule$parameter][[1]])/biphasicParameterPreviousValue',biphasicRule$operator,'biphasicRule$value')))
-      } else {
+        better <- switch(biphasicRule$type,
+                                           "goodnessOfFit.percentage" =  eval(parse(text = paste('(biphasicParameterPreviousValue - goodnessOfFit.model[biphasicRule$parameter][[1]])/biphasicParameterPreviousValue',biphasicRule$operator,'biphasicRule$value'))),
+                                           "parameter.percentage" =  eval(parse(text = paste('min(abs(biphasicParameterPreviousValue),abs(fittedParameters[biphasicRule$parameter][[1]]))/max(abs(biphasicParameterPreviousValue),abs(fittedParameters[biphasicRule$parameter][[1]]))', biphasicRule$operator, 'biphasicRule$value'))),
+                                           stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
+        )
+       } else {
         better <- FALSE
       } 
       if(better) {
-        biphasicParameterPreviousValue <- as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]])
+        biphasicParameterPreviousValue <- switch(biphasicRule$type,
+                                                 "goodnessOfFit.percentage" =  as.numeric(goodnessOfFit.model[biphasicRule$parameter][[1]]),
+                                                 "parameter.percentage" =  as.numeric(fittedParameters[biphasicRule$parameter][[1]]),
+                                                 stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
+        )
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
         points[dose == testConc, algorithmFlagStatus := "knocked out"]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
@@ -156,7 +167,7 @@ biphasic_detection <- function(fitData) {
   fitData[ , firstRun := TRUE]
   fitData[ , biphasicParameterPreviousValue := as.numeric(NA)]
   fitData[ ,  tempCategory := categorize_fit_data(modelHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
-  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun), by = curveId]
+  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], fittedParameters[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun), by = curveId]
   fitData[ , firstRun := FALSE]
   while(any(!fitData$model.synced)) {
     fitData <- dose_response_fit(fitData)  
@@ -166,6 +177,7 @@ biphasic_detection <- function(fitData) {
                                                                                                                                          pointStats[[1]], 
                                                                                                                                          model.synced,
                                                                                                                                          goodnessOfFit.model[[1]], 
+                                                                                                                                         fittedParameters[[1]],
                                                                                                                                          tempCategory,
                                                                                                                                          biphasicParameterPreviousValue,
                                                                                                                                          testConc,
