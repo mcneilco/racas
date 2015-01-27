@@ -12,7 +12,7 @@ saveAcasFile(fileStartLocation, entity, entityKind, stateType, stateKind,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
-\item{fileStartLocation}{path to file}
+\item{fileStartLocation}{path to file, relative from privateUploads}
 
 \item{entity}{an entity object, such as an experiment}
 

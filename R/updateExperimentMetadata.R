@@ -90,7 +90,7 @@ saveAcasFileToExperiment <- function(
 #' Saves a file into a file service and saves a reference to it in the provided
 #' entity
 #' 
-#' @param fileStartLocation path to file
+#' @param fileStartLocation path to file, relative from privateUploads
 #' @param entity an entity object, such as an experiment
 #' @param entityKind the kind of entity, such as "experiment" or
 #'   "analysisgroup", see \link{acasEntityHierarchy}
@@ -129,6 +129,8 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     }
   }
   
+  sourceLocation <- getUploadedFilePath(fileStartLocation)
+  
   if (fileServiceType == "blueimp") {
     if (additionalPath == "") {
       folderLocation <- file.path("experiments", experimentCodeName)
@@ -140,18 +142,23 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     
     # Move the file
     serverFileLocation <- file.path(folderLocation, fileName)
+    targetLocation <- getUploadedFilePath(serverFileLocation)
+    dir.create(targetLocation, showWarnings = FALSE, recursive = TRUE)
     if (deleteOldFile) {
-      file.rename(from = fileStartLocation, to = getUploadedFilePath(serverFileLocation))
+      if (!file.rename(from = sourceLocation, to = targetLocation)) {
+        warnUser(paste("could not rename file", fileName))
+      }
     } else {
-      file.copy(from = fileStartLocation, to = getUploadedFilePath(serverFileLocation))
+      if (!file.copy(from = sourceLocation, to = targetLocation)) {
+        warnUser(paste("could not copy file", fileName))
+      }
     }
-    
     
   } else if (fileServiceType == "custom") {
     if(!exists('customSourceFileMove')) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
-    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, 
+    serverFileLocation <- customSourceFileMove(sourceLocation, fileName, fileService, 
                                                entity, recordedBy, deleteOldFile)
   } else {
     stopUser("Invalid file service type")
@@ -175,6 +182,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
 #' @return a url
 #' @details The getting equivalent of \code{\link{saveAcasFile}}. In
 #'   updateExperimentMetadata.R
+#' @export
 getAcasFileLink <- function(fileCode) {
   fileServiceType <- racas::applicationSettings$server.service.external.file.type
   if (fileServiceType == "blueimp") {

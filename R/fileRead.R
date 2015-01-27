@@ -482,7 +482,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
   
   fileName <- basename(fileStartLocation)
   
-  if(fileServinceType == "blueimp") {
+  if(fileServiceType == "blueimp") {
     experimentCodeName <- experiment$codeName
     
     experimentFolderLocation <- getUploadedFilePath("experiments")
