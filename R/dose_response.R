@@ -109,7 +109,7 @@ biphasic_detection <- function(fitData) {
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
         testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
-        points[dose == testConc, tempFlagStatus := "possible biphasic"]
+        points[dose == testConc, tempFlagStatus := "knocked out"]
         model.synced <- FALSE
         continueBiphasicDetection <- TRUE
       }
@@ -147,7 +147,7 @@ biphasic_detection <- function(fitData) {
         points[dose == testConc, tempFlagStatus := ""]
         if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
-          points[dose == testConc, tempFlagStatus := "possible biphasic"]
+          points[dose == testConc, tempFlagStatus := "knocked out"]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
         } else {

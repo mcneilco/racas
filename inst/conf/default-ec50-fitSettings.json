@@ -14,7 +14,7 @@
    "biphasicRule":{
       "type":"parameter.percentage",
       "parameter":"max",
-      "operator":">",
+      "operator":"<",
       "value":0.90
    },
    "parameterRules":{
