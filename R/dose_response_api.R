@@ -188,7 +188,8 @@ api_doseResponse_update_flag <- function(POST) {
                                         rsquare = rsquared[[1]],
                                         compoundCode = batchCode[[1]],
                                         algorithmFlagStatus = algorithmFlagStatus[[1]],
-                                        userFlagStatus = userFlagStatus[[1]]
+                                        userFlagStatus = userFlagStatus[[1]],
+                                        renderingHint = renderingHint[[1]]
                                       )
   ))), by = curveId]
   return(toJSON(fitData$curves[[1]]))
