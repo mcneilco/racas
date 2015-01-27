@@ -1231,7 +1231,7 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
 
 get_point_stats <- function(pts) {
   pts <- copy(pts)
-  pts[ , knockedOut := userFlagStatus=="knocked out" & preprocessFlagStatus=="knocked out" & algorithmFlagStatus=="knocked out" & tempFlagStatus=="knocked out"]
+  pts[ , knockedOut := userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus!=""]
   pts[, meanByDose := as.numeric(NA)]
   pts[ knockedOut == FALSE, meanByDose := mean(response), by = dose ]
   dose.count <- nrow(pts[ knockedOut == FALSE, .N, by = dose])
