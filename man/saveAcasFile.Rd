@@ -50,6 +50,7 @@ entity
 }
 \details{
 sets the "status" value in state "analysis status" (or "dryrun
-  status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
+  status" if \code{dryRun == TRUE}). Mostly used by
+  \code{\link{saveAcasFileToExperiment}}. In updateExperimentMetadata.R
 }
 

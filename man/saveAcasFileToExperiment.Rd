@@ -47,6 +47,7 @@ experiment
 }
 \details{
 sets the "status" value in state "analysis status" (or "dryrun
-  status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
+  status" if \code{dryRun == TRUE}). Get the file back with
+  \code{\link{getAcasFileLink}}. In updateExperimentMetadata.R
 }
 

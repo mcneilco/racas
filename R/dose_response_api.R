@@ -156,7 +156,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
     list(list(list(curveid = curveId[[1]], 
                    algorithmFlagStatus = algorithmFlagStatus[[1]],
                    userFlagStatus = userFlagStatus[[1]],
-                   category = Category[[1]],
+                   category = category[[1]],
                    curveAttributes = curveAttributes)))
   }, by = curveId]
 
@@ -177,36 +177,20 @@ api_doseResponse_update_flag <- function(POST) {
   savedCurveID <- save_dose_response_data(fitData, recorded_by = POST$user)
   fitData <- get_fit_data_curve_id(savedCurveID, full_object = TRUE)
   
-  fitData[ , curves := {
-    curveAttributes <- switch(
-      renderingHint[[1]],
-      "4 parameter D-R" = list(
-        EC50 = ec50[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderintHint = renderingHint[[1]]
-      ),
-      "Ki Fit" = list(
-        Ki = ki[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderingHint = renderingHint[[1]]
-      )
-    )
-    list(list(list(curveid = curveId[[1]], 
-                   algorithmFlagStatus = algorithmFlagStatus[[1]],
-                   userFlagStatus = userFlagStatus[[1]],
-                   category = Category[[1]],
-                   curveAttributes = curveAttributes)))
-  }, by = curveId]
+  fitData[ , curves := list(list(list(curveid = curveId[[1]], 
+                                      algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                      userFlagStatus = userFlagStatus[[1]],
+                                      category = category[[1]],
+                                      curveAttributes = list(
+                                        EC50 = ec50[[1]],
+                                        SST =  sst[[1]],
+                                        SSE =  sse[[1]],
+                                        rsquare = rsquared[[1]],
+                                        compoundCode = batchCode[[1]],
+                                        algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                        userFlagStatus = userFlagStatus[[1]]
+                                      )
+  ))), by = curveId]
   return(toJSON(fitData$curves[[1]]))
 }
 api_doseResponse_get_curve_detail <- function(GET, ...) {  
@@ -270,7 +254,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                                                compoundCode = length0_or_na_to_null(fitData[1]$batchCode)
                                    )
     )
-    category <- fitData[1]$Category
+    category <- fitData[1]$category
   } else {
     reportedValues <- fitData[1]$reportedValuesClob[[1]]
     fitSummary <- fitData[1]$fitSummaryClob[[1]]

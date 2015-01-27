@@ -65,11 +65,12 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
 #' @param fileServiceType "blueimp" for internal, "custom" for custom
 #' @param fileService only required if fileServiceType is "custom", path to
 #'   custom file service
-#' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted
+#' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted 
 #'   after a copy is made
 #' @param lsServerURL the url for the roo server
-#' @details sets the "status" value in state "analysis status" (or "dryrun
-#'   status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
+#' @details sets the "status" value in state "analysis status" (or "dryrun 
+#'   status" if \code{dryRun == TRUE}). Get the file back with 
+#'   \code{\link{getAcasFileLink}}. In updateExperimentMetadata.R
 #' @export
 saveAcasFileToExperiment <- function(
   fileStartLocation, experiment, stateType, stateKind, 
@@ -99,16 +100,17 @@ saveAcasFileToExperiment <- function(
 #' @param recordedBy username of current user
 #' @param lsTransaction the id of the transaction
 #' @param valueType usually fileValue, could also be inlineFileValue
-#' @param additionalPath if saving to a file system and not a service,
+#' @param additionalPath if saving to a file system and not a service, 
 #'   additional file organization, i.e. "analysis/final"
 #' @param fileServiceType "blueimp" for internal, "custom" for custom
-#' @param fileService only required if fileServiceType is "custom", path to
+#' @param fileService only required if fileServiceType is "custom", path to 
 #'   custom file service
-#' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted
+#' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted 
 #'   after a copy is made
 #' @param lsServerURL the url for the roo server
-#' @details sets the "status" value in state "analysis status" (or "dryrun
-#'   status" if \code{dryRun == TRUE}). In updateExperimentMetadata.R
+#' @details sets the "status" value in state "analysis status" (or "dryrun 
+#'   status" if \code{dryRun == TRUE}). Mostly used by
+#'   \code{\link{saveAcasFileToExperiment}}. In updateExperimentMetadata.R
 #' @export
 saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, stateKind, valueKind, recordedBy, 
                          lsTransaction, valueType = "fileValue", additionalPath = "", experimentCodeName = NULL,
@@ -128,16 +130,20 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
   }
   
   if (fileServiceType == "blueimp") {
-    folderLocation <- file.path(dirname(fileStartLocation), "experiments", 
-                                experimentCodeName, additionalPath)
-    dir.create(folderLocation, showWarnings = FALSE, recursive = TRUE)
+    if (additionalPath == "") {
+      folderLocation <- file.path("experiments", experimentCodeName)
+    } else {
+      folderLocation <- file.path("experiments", experimentCodeName, additionalPath)
+    }
+
+    dir.create(getUploadedFilePath(folderLocation), showWarnings = FALSE, recursive = TRUE)
     
     # Move the file
     serverFileLocation <- file.path(folderLocation, fileName)
     if (deleteOldFile) {
-      file.rename(from = fileStartLocation, to = serverFileLocation)
+      file.rename(from = fileStartLocation, to = getUploadedFilePath(serverFileLocation))
     } else {
-      file.copy(from = fileStartLocation, to = serverFileLocation)
+      file.copy(from = fileStartLocation, to = getUploadedFilePath(serverFileLocation))
     }
     
     
@@ -145,7 +151,8 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     if(!exists('customSourceFileMove')) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
-    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, entity, recordedBy, deleteOldFile)
+    serverFileLocation <- customSourceFileMove(fileStartLocation, fileName, fileService, 
+                                               entity, recordedBy, deleteOldFile)
   } else {
     stopUser("Invalid file service type")
   }
@@ -154,4 +161,29 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
                            stateKind, valueType, valueKind)
   
   return(serverFileLocation)
+}
+
+#' Get url for ACAS file
+#' 
+#' Gets a url from an ACAS filecode. This deals with issues of whether the file
+#' is stored internally or on an external file system, so you just get a link to
+#' wherever the file is stored.
+#' 
+#' @param fileCode A file code of some custom type like "FILE1234" or a path
+#' link like "experiment/EXPT-3/this.txt"
+#' 
+#' @return a url
+#' @details The getting equivalent of \code{\link{saveAcasFile}}. In
+#'   updateExperimentMetadata.R
+getAcasFileLink <- function(fileCode) {
+  fileServiceType <- racas::applicationSettings$server.service.external.file.type
+  if (fileServiceType == "blueimp") {
+    urlLocation <- paste0(racas::applicationSettings$server.nodeapi.path, "/", 
+                          "dataFiles", "/", 
+                          URLencode(fileCode))
+  } else if (fileServiceType == "custom") {
+    urlLocation <- paste0(racas::applicationSettings$client.service.external.file.service.url, 
+                          URLencode(fileCode))
+  }
+  return(urlLocation)
 }
