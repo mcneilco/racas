@@ -21,16 +21,9 @@
          "maxUncertaintyRule":{
             "parameter":"max",
             "type":"stdErr",
-            "value":3.8,
+            "value":10,
             "operator":">",
             "displayName":"Max uncertainty exceeded"
-         },
-         "kiPValue":{
-            "parameter":"ki",
-            "type":"pValue",
-            "value":1,
-            "operator":">",
-            "displayName":"Ki uncertainty exceeded"
          }
       },
       "limits":{
@@ -50,7 +43,6 @@
             "operator":"<",
             "displayName":"Ki low threshold exceeded"
          }
-
       }
    }
 }

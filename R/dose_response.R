@@ -34,34 +34,12 @@ dose_response <- function(fitSettings, fitData) {
   
   #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(fitSettings$updateFlags)
-  if(nrow(updateFlags) > 0) {
-    #updateFlags[flag=="NA", flag := as.character(NA)]
-    setkey(updateFlags,"responseSubjectValueId" )
-    update_point_flags <- function(pts, updateFlags) {  
-      #save the column to return
-      pts <- copy(pts)
-      returnCols <- names(pts)
-      setkey(pts, "responseSubjectValueId")
-      pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
-      pts[ , flagchanged :=  
-            !identical(userFlagStatus,userFlagStatus.y) |
-            !identical(userFlagObservation,userFlagObservation.y) | 
-            !identical(userFlagReason,userFlagReason.y) | 
-            !identical(userFlagComment,userFlagComment.y) | 
-            !identical(algorithmFlagStatus,algorithmFlagStatus.y) |
-            !identical(algorithmFlagObservation,algorithmFlagObservation.y) | 
-            !identical(algorithmFlagReason,algorithmFlagReason.y) | 
-            !identical(algorithmFlagComment,algorithmFlagComment.y) |          
-            !identical(preprocessFlagStatus,preprocessFlagStatus.y) |
-            !identical(preprocessFlagObservation,preprocessFlagObservation.y) | 
-            !identical(preprocessFlagReason,preprocessFlagReason.y) | 
-            !identical(preprocessFlagComment,preprocessFlagComment.y) |      
-            flagchanged, by = "responseSubjectValueId" ]
-      pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagReason', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagReason', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagReason', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagReason.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagReason.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagReason.y, preprocessFlagComment.y)]
-      return(pts[, returnCols, with = FALSE])
-    }
+  if(nrow(updateFlags) > 0) {   
     fitData[, points := list(list(update_point_flags(points[[1]], updateFlags))) , by = curveId]
   }
+  
+  #need to remove algorithm flags before refitting
+  fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm")))), by = curveId]    
   
   #Fit the data
   fitData <- dose_response_fit(fitData)
@@ -143,7 +121,7 @@ biphasic_detection <- function(fitData) {
         points[dose == testConc, algorithmFlagStatus := "knocked out"]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
         points[dose == testConc, algorithmFlagReason := "biphasic"]
-        
+        points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
         if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
@@ -452,6 +430,7 @@ simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, 
                              "Ki Fit" = updateFitSettings.Ki(modifiedSettings,simpleSettings),
                              warnUser(paste0("Simple to Advanced fit settings not implemented for renderingHint: ",renderingHint))
   )
+  
   if(!is.null(updateFlags)) {
     modifiedSettings$updateFlags <- as.data.table(updateFlags)
   }
@@ -1667,7 +1646,20 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
   return(response)
 }
 
-
+get_experiment_model_fit_status <- function(experimentCodeOrID) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status")
+  return(value)
+}
+get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind) {
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"experiments/", experimentCodeOrID,"/exptvalues/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/json"))  
+  response <- fromJSON(getURL(url))
+  if(length(response) == 0) {
+    value <- NULL
+  } else {
+    value <- response[[1]][[lsType]]
+  }
+  return(value)
+}
 update_experiment_model_fit_status <- function(experimentCodeOrID, status) {
   response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status", value = status)
   return(response)
@@ -1910,6 +1902,43 @@ add_clob_values_to_fit_data <- function(fitData) {
   return(fitData)
 }
 
+remove_point_flags <- function(points, flagKindsToRemove = c("algorithm", "preprocess", "user")) {
+  points <- copy(points)
+  flagKindsToRemove <- match.arg(flagKindsToRemove, several.ok =TRUE)
+  if(length(flagKindsToRemove) > 0) {
+    columnsToReset <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
+    allFlagTypes <- eval(formals(remove_point_flags)$flagKindsToRemove)
+    allFlagColumns <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
+    updateFlags <- points[ , c("responseSubjectValueId", allFlagColumns), with = FALSE]
+    updateFlags[ , columnsToReset := "", with = FALSE]
+    points <- update_point_flags(points, updateFlags)
+  }
+  return(points)
+}
+update_point_flags <- function(pts, updateFlags) {  
+  pts <- copy(pts)
+  returnCols <- names(pts)
+  setkey(pts, "responseSubjectValueId")
+  setkey(updateFlags,"responseSubjectValueId" )
+  
+  pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
+  pts[ , flagchanged :=  
+        !identical(userFlagStatus,userFlagStatus.y) |
+        !identical(userFlagObservation,userFlagObservation.y) | 
+        !identical(userFlagReason,userFlagReason.y) | 
+        !identical(userFlagComment,userFlagComment.y) | 
+        !identical(algorithmFlagStatus,algorithmFlagStatus.y) |
+        !identical(algorithmFlagObservation,algorithmFlagObservation.y) | 
+        !identical(algorithmFlagReason,algorithmFlagReason.y) | 
+        !identical(algorithmFlagComment,algorithmFlagComment.y) |          
+        !identical(preprocessFlagStatus,preprocessFlagStatus.y) |
+        !identical(preprocessFlagObservation,preprocessFlagObservation.y) | 
+        !identical(preprocessFlagReason,preprocessFlagReason.y) | 
+        !identical(preprocessFlagComment,preprocessFlagComment.y) |
+        flagchanged, by = "responseSubjectValueId" ]
+  pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagReason', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagReason', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagReason', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagReason.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagReason.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagReason.y, preprocessFlagComment.y)]
+  return(pts[, returnCols, with = FALSE])
+}
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
 

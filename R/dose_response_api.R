@@ -40,16 +40,31 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
+  on.exit(update_experiment_model_fit_status(experimentCode, "error"))
+  
+  myMessenger$logger$debug("getting current experiment model fit status status to see if this is a refit")
+  experimentStatus <- get_experiment_model_fit_status(experimentCode)
+  if(!is.null(experimentStatus) && experimentStatus!="running") {
+    myMessenger$logger$debug("experiment status is not 'running', this is a refit")
+    refit <- TRUE
+  } else {
+    refit <- FALSE
+  }
   
   myMessenger$logger$debug("updating experiment model fit status status value to running")
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
-    
+  
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
   fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
   fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = fitData[1]$renderingHint)
+  
+  #If refitting, then we want to set the algorithm and user flags back to a blank slate
+  if(refit) {
+    fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm", "user")))), by = curveId]
+  }
 
   myMessenger$logger$debug("fitting the data")
   fitData <- dose_response(fitSettings, fitData)
@@ -59,6 +74,9 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug("saving the curve data")
   savedCurveIds <- save_dose_response_data(fitData, recordedBy)
+  
+  #Removing the on.exit function that updates status model fit status to error
+  on.exit()
   
   myMessenger$logger$debug("updating experiment model fit status value to complete")
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "complete")
