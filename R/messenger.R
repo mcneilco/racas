@@ -120,9 +120,8 @@ Messenger <- setRefClass(Class = "Messenger",
                                                                                           s <- paste0(s,collapse = '\n')
                                                                                           s <- paste0("Traceback:\n",s, collapse = "")
                                                                                           logger$error(s)
-                                                                                          setwd(applicationSettings$server.log.path)
-                                                                                          t <- tempfile(tmpdir = getwd())
-                                                                                          dump.frames(basename(t), to.file = TRUE)
+                                                                                          t <- tempfile()
+                                                                                          dump.frames(t, to.file = TRUE)
                                                                                           logger$error(paste0("R frames dumped to: ", t, ".rda"))
                                  },
                                  warning = function(x) {addWarning(x$message)
