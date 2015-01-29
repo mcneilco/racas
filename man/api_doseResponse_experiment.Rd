@@ -3,8 +3,8 @@
 \alias{api_doseResponse_experiment}
 \title{Fits experiment dose response data}
 \usage{
-api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode,
-  testMode = NULL)
+api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy,
+  experimentCode, testMode = NULL)
 }
 \arguments{
 \item{simpleFitSettings}{list of fit settings (see details)}

@@ -1664,6 +1664,10 @@ update_experiment_model_fit_status <- function(experimentCodeOrID, status) {
   response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status", value = status)
   return(response)
 }
+update_experiment_model_fit_type <- function(experimentCodeOrID, type) {
+  response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit type", value = type)
+  return(response)
+}
 update_experiment_model_fit_html <- function(experimentCodeOrID, html) {
   response <- update_or_replace_experiment_metadata_value(experimentCodeOrID, lsType = "clobValue", lsKind = "model fit result html", value = html)
   return(response)

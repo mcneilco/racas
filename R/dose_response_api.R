@@ -29,7 +29,7 @@
 #' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
 #' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
-api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimentCode, testMode = NULL) {
+api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recordedBy, experimentCode, testMode = NULL) {
 #   file <- system.file("docs", "example-simple-fitsettings-ki.json", package = "racas" )
 #   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
@@ -56,10 +56,11 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
   fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
+  fitData[ , renderingHint := modelFitType]
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = fitData[1]$renderingHint)
+  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = modelFitType)
   
   #If refitting, then we want to set the algorithm and user flags back to a blank slate
   if(refit) {
@@ -80,6 +81,8 @@ api_doseResponse_experiment <- function(simpleFitSettings, recordedBy, experimen
   
   myMessenger$logger$debug("updating experiment model fit status value to complete")
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "complete")
+  myMessenger$logger$debug(paste0("updating experiment model fit type value to ",modelFitType))  
+  experimentStatusValue <- update_experiment_model_fit_type(experimentCode, modelFitType)
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("getting acas response")
