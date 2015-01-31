@@ -83,6 +83,8 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "complete")
   myMessenger$logger$debug(paste0("updating experiment model fit type value to ",modelFitType))  
   experimentStatusValue <- update_experiment_model_fit_type(experimentCode, modelFitType)
+  myMessenger$logger$debug(paste0("updating experiment model fit parameters clob"))  
+  experimentStatusValue <- update_experiment_model_fit_parameters(experimentCode, simpleFitSettings)
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("getting acas response")
