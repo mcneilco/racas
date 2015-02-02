@@ -1,0 +1,14 @@
+{
+  "max":{
+    "limitType":"limit",
+    "value":100
+  },
+  "min":{
+    "limitType":"none",
+    "value":101
+  },
+  "kd":100,
+  "ligandConc":100,
+  "inactiveThreshold":20,
+  "inverseAgonistMode":true
+}

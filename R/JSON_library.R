@@ -1995,7 +1995,7 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
 get_or_create_value_kinds <- function(df) {
   valueTypeAndKindsJSON <- jsonlite::toJSON(df)
   response <- fromJSON(getURL(
-    paste0(lsServerURL, "valuekinds/getOrCreate/jsonArray"),
+    paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/getOrCreate/jsonArray"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=valueTypeAndKindsJSON))

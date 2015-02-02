@@ -4,8 +4,9 @@ Curve Fit Summary
 ***Model Equation***
 
 ```{r modelEquation, message = FALSE, results='asis', echo=FALSE, cache=FALSE}
-modelEquation <- switch(fitData[1]$modelHint,
-                        LL.4 = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4.txt", package = "racas"))
+modelEquation <- switch(fitData[1]$renderingHint,
+                        "4 parameter D-R" = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4.txt", package = "racas")),
+                        "Ki Fit" = get_text_file_contents(system.file(file.path("rmd","equations"), "ki.txt", package = "racas"))
                         )
 cat(modelEquation)
 ```

@@ -10,10 +10,10 @@
       "activeDoses":1
    },
    "biphasicRule":{
-      "type":"percentage",
-      "parameter":"SSE",
+      "type":"parameter.percentage",
+      "parameter":"max",
       "operator":">",
-      "value":0.1
+      "value":0.90
    },
    "parameterRules":{
       "goodnessOfFits":{
