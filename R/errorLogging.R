@@ -1,3 +1,24 @@
+#' Error and warning trapping and logging
+#' 
+#' Traps errors and warnings, logging them out
+#' 
+#' @param expr An expression which will have errors caught
+#' @return A list with value, errorList, and warningList
+#'   
+#' @details Don't nest this- it uses a global Messenger. \code{value} will be
+#' \code{NULL} if there are any caught errors.
+#' 
+tryCatchLog <- function(expr) {
+  output <- NULL
+  MyMessenger <- messenger()
+  MyMessenger$capture_output({output <- expr})
+  return(list(value=output, 
+              errorList = MyMessenger$errors, 
+              warningList = MyMessenger$warnings))
+}
+
+
+
 #' Error and warning trapping
 #' 
 #' Traps errors and warnings, creating lists of each
@@ -49,14 +70,17 @@ addError <- function(errorMessage, errorEnv = NULL) {
 
 #'Fatal error tracking
 #'
-#'Declares an error to be of type "userStop", to distinguish between errors we programmed
+#'Declares an error to be of class \code{userStop}, to distinguish between errors we programmed
 #'into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
 #'
 #'@export
 #'@param message The error message that the user should see
-#'@return Stops the function, and adds the class "userStop" to the error object
+#'@return 
+#'@aliases userStop
 #'
-#'All helpful errors should be thrown using \code{stopUser}. Any error 
+#'@details Stops the function, and adds the class "userStop" to the error object
+#'
+#'All errors intended for users to view should be thrown using \code{stopUser}. Any error 
 #'thrown using \code{stop} will be treated as an internal error by the simple 
 #'experiment loader.
 #'
