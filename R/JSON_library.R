@@ -1141,20 +1141,18 @@ deleteExperimentValue <- function(experimentValue, lsServerURL = racas::applicat
 #' 
 #' @param experiment a list that has an element id for the experiment
 #' @param lsServerURL the URL of the persistence server
-#' 
+#'   
 #' @return empty string
+#' @details Deletes all of the analysis groups, even if they are linked to other
+#'   experiments. This is intended for fully clearing uploaded data. Does not
+#'   mark treatment groups and subjects as deleted, retrieval functions should
+#'   respect parent deletion.
 #' @export
-deleteAnalysisGroupByExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  stop("This function is not currently available")
-  tryCatch({
-    response <- getURLcheckStatus(
-      paste0(lsServerURL, "experiments/", experiment$id, "?with=analysisgroups"),
-      customrequest='DELETE',
-      httpheader=c('Content-Type'='application/json'),
-      postfields=toJSON(experiment))
-  }, error = function(e) {
-    stop(paste0("The loader was unable to delete the experiment's analysis groups. Check the logs at ", Sys.time()))
-  })
+#' 
+deleteAnalysisGroupsByExperiment <- function(experiment, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  response <- deleteURLcheckStatus(
+    paste0(lsServerURL, "experiments/",experiment$id, "/deleteChildren"),
+    requireJSON=TRUE)
   return(response)
 }
 
@@ -2031,3 +2029,5 @@ modules <- function() {
   valueTypeAndKinds <- fread(valueTypeAndKindsFile)
   return(unique(valueTypeAndKinds$Module))
 }
+
+
