@@ -813,20 +813,22 @@ curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, 
   return(response)
 }
 curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv") {
+  curveids <- as.list(unlist(curveids))
   response <- getURL(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/rawdata?format=",format),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(list(curveids))
+    postfields=toJSON(curveids)
   )
   return(response)
 }
 curve_fit_controller_getFitDataByCurveId <- function(curveids, format = "tsv") {
+  curveids <- as.list(unlist(curveids))
   response <- getURL(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/fitdata?format=",format),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(list(curveids))
+    postfields=toJSON(curveids)
   )
   return(response)
 }
