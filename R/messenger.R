@@ -62,11 +62,11 @@
 #' racasMessenger$userErrors
 #' 
 Messenger <- setRefClass(Class = "Messenger", 
-                         fields = list(errors = "character",
+                         fields = list(errors = "list",
                                        userErrors = "character",
-                                       warnings = "character",
+                                       warnings = "list",
                                        userWarnings = "character",
-                                       infos = "character",
+                                       infos = "list",
                                        userInfos = "character",
                                        logger = "Logger",
                                        envir = "environment",
@@ -77,13 +77,22 @@ Messenger <- setRefClass(Class = "Messenger",
                              logger <<- racas:::createLogger()
                            },
                            addError = function(x) {
-                             errors <<- c(errors,as.character(x))
+                             if(!inherits(x, "error")) {
+                               x <- simpleError(x)
+                             }
+                             errors <<- c(errors, x)
                            },
                            addWarning = function(x) {
-                             warnings <<- c(warnings,as.character(x))
+                             if(!inherits(x, "warning")) {
+                               x <- simpleWarning(x)
+                             }
+                             warnings <<- c(warnings, x)
                            },
                            addInfo = function(x) {
-                             infos <<- c(infos,as.character(x))
+                             if(!inherits(x, "message")) {
+                               x <- simpleMessage(x)
+                             }
+                             infos <<- c(infos, x)
                            },
                            addUserError = function(x) {
                              userErrors <<- c(userErrors,as.character(x))
@@ -95,9 +104,9 @@ Messenger <- setRefClass(Class = "Messenger",
                              userInfos <<- c(userInfos,as.character(x))
                            },
                            reset = function() {
-                             errors <<- as.character()
-                             infos <<- as.character()
-                             warnings <<- as.character()
+                             errors <<- list()
+                             infos <<- list()
+                             warnings <<- list()
                              userErrors <<- as.character()
                              userInfos <<- as.character()
                              userWarnings <<- as.character()
@@ -110,29 +119,35 @@ Messenger <- setRefClass(Class = "Messenger",
                              expr <- substitute(expr)
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                if(!devMode) {                                
-                                 outputHandler <- new_output_handler(error = function(x) {currentwd <- getwd()
-                                                                                          on.exit(currentwd)
-                                                                                          addError(x$message)
-                                                                                          logger$error(x$message)                                                                                          
-                                                                                          s <- sys.calls()    
-                                                                                          s <- c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)])
-                                                                                          s <- lapply(1:length(s), function(x) paste0(x,": ", deparse(s[[x]])))
-                                                                                          s <- paste0(s,collapse = '\n')
-                                                                                          s <- paste0("Traceback:\n",s, collapse = "")
-                                                                                          logger$error(s)
-                                                                                          setwd(applicationSettings$server.log.path)
-                                                                                          t <- tempfile(tmpdir = getwd())
-                                                                                          dump.frames(basename(t), to.file = TRUE)
-                                                                                          logger$error(paste0("R frames dumped to: ", t, ".rda"))
-                                 },
-                                 warning = function(x) {addWarning(x$message)
-                                                        logger$warn(x$message)
-                                 },
-                                 message = function(x) {addInfo(x$message)
-                                                        logger$info(x$message)
-                                 },
-                                 value = function(x) {logger$error(names(x))
-                                 },
+                                 outputHandler <- evaluate::new_output_handler(
+                                   error = function(x) {
+                                     currentwd <- getwd()
+                                     on.exit(currentwd)
+                                     if (!inherits(x, "userStop")) {
+                                       addError(x)
+                                       logger$error(x$message)                                                                                          
+                                       s <- sys.calls()    
+                                       s <- c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)])
+                                       s <- lapply(1:length(s), function(x) paste0(x,": ", deparse(s[[x]])))
+                                       s <- paste0(s,collapse = '\n')
+                                       s <- paste0("Traceback:\n",s, collapse = "")
+                                       logger$error(s)
+                                       setwd(applicationSettings$server.log.path)
+                                       t <- tempfile(tmpdir = getwd())
+                                       dump.frames(basename(t), to.file = TRUE)
+                                       logger$error(paste0("R frames dumped to: ", t, ".rda"))
+                                     } else {
+                                       addError(x)
+                                     }
+                                   },
+                                   warning = function(x) {addWarning(x$message)
+                                                          logger$warn(x$message)
+                                   },
+                                   message = function(x) {addInfo(x$message)
+                                                          logger$info(x$message)
+                                   },
+                                   value = function(x) {logger$error(names(x))
+                                   },
                                  )
                                  if(!is.null(userError)) addUserError(userError); errorPos <- length(userErrors)
                                  if(!is.null(userWarning)) addUserWarning(userWarning); warningPos <- length(userWarnings)
