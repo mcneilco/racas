@@ -30,8 +30,17 @@
 #' myMessenger <- Messenger$new(envir = environment())
 #' 
 #' #This is run like normal
-#' myMessenger$capture_output("test <- 1+1")
+#' myMessenger$capture_output({test <- 1+1})
 #' test
+#' 
+#' or
+#' 
+#' myMessenger$capture_output('test <- 1+1')
+#' test
+#' 
+#' or
+#' 
+#' myMessenger$capture_output({test <- 1; test <- 1+test})
 #' 
 #' #This captures the error
 #' myMessenger <- Messenger$new(envir = environment())
@@ -45,6 +54,21 @@
 #' myMessenger$capture_output("test()", userError = "There was an error running test function")
 #' myMessenger$errors
 #' myMessenger$userErrors
+#' 
+#' #stopOnError = TRUE will throw error if error occurs
+#' myMessenger <- Messenger$new()
+#' myMessenger$devMode <-  FALSE
+#' test <- function() stop("there is an error!")
+#' myMessenger$capture_output({test()}, stopOnError = TRUE, userError = "some sort of error to return to user")
+#' myMessenger$errors
+#' myMessenger$userErrors
+#' 
+#' #devMode bypassses logic and just evaluate's the given expression
+#' myMessenger <- Messenger$new()
+#' myMessenger$devMode <-  TRUE
+#' test <- function() stop("there is an error!")
+#' myMessenger$capture_output('{test()}')
+#' myMessenger$errors
 #' 
 #' #Adding a user error within a capture_output Call (use racas messenger)
 #' racasMessenger <- messenger()$reset()
@@ -115,7 +139,7 @@ Messenger <- setRefClass(Class = "Messenger",
                              devMode <<- FALSE
                              return(.self)
                            },
-                           capture_output = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, envir = parent.frame(), ...) {
+                           capture_output = function(expr, userError = NULL, userWarning = NULL, userInfo = NULL, continueOnError = TRUE, stopOnError = FALSE, envir = parent.frame(), ...) {
                              expr <- substitute(expr)
                              if(continueOnError == TRUE | devMode == TRUE | (length(errors)==0 & length(userErrors)==0)) {
                                if(!devMode) {                                
@@ -153,14 +177,21 @@ Messenger <- setRefClass(Class = "Messenger",
                                  if(!is.null(userWarning)) addUserWarning(userWarning); warningPos <- length(userWarnings)
                                  if(!is.null(userInfo)) addUserInfo(userInfo); infoPos <- length(userInfos)
                                  evaledExpr <- evaluate(expr, envir = envir, output_handler = outputHandler, new_device = FALSE, ...)
-                                   if(any(!c("simpleError","error") %in% unlist(lapply(evaledExpr, class)))) {
-                                     if(!is.null(userError)) {
-                                       if(length(userErrors) <= errorPos) {
-                                         userErrors <<- userErrors[-errorPos]
-                                       }
+                                 if(any(!c("simpleError","error") %in% unlist(lapply(evaledExpr, class)))) {
+                                   if(!is.null(userError)) {
+                                     if(length(userErrors) <= errorPos) {
+                                       userErrors <<- userErrors[-errorPos]
                                      }
                                    }
+                                 } else {
+                                   if(stopOnError) {
+                                     erorrIndex <- which(unlist(lapply(lapply(evaledExpr, class), function(x) any(x %in% c("simpleError","error")))))
+                                     stop(evaledExpr[[erorrIndex]])
+                                   }
+                                   
+                                 }
                                } else {
+                                 expr <- as.expression(expr)
                                  eval(parse(text = expr), envir = envir)
                                }
                              } else {
@@ -182,17 +213,17 @@ Messenger <- setRefClass(Class = "Messenger",
                            },
                            toList = function() {
                              return(list("hasError" = hasErrors(),
-                                  "hasWarning" = hasWarnings(),
-                                  "hasInfo" = hasInfos(),
-                                  errors = errors, 
-                                  warnings = warnings,
-                                  infos = infos,
-                                  userError = length(userErrors)!=0,
-                                  userWarning = length(userWarnings)!=0,
-                                  userInfo = length(userInfos)!=0,
-                                  userErrors = userErrors, 
-                                  userWarnings = userWarnings,
-                                  userInfos = userInfos))
+                                         "hasWarning" = hasWarnings(),
+                                         "hasInfo" = hasInfos(),
+                                         errors = errors, 
+                                         warnings = warnings,
+                                         infos = infos,
+                                         userError = length(userErrors)!=0,
+                                         userWarning = length(userWarnings)!=0,
+                                         userInfo = length(userInfos)!=0,
+                                         userErrors = userErrors, 
+                                         userWarnings = userWarnings,
+                                         userInfos = userInfos))
                            },
                            toJSON = function() {
                              return(rjson::toJSON(toList()))
@@ -220,5 +251,6 @@ messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
   }
   return()
 }
+
 
 

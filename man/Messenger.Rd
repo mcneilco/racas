@@ -33,8 +33,17 @@ myMessenger$addUserInfo("my user info")
 myMessenger <- Messenger$new(envir = environment())
 
 #This is run like normal
-myMessenger$capture_output("test <- 1+1")
+myMessenger$capture_output({test <- 1+1})
 test
+
+or
+
+myMessenger$capture_output('test <- 1+1')
+test
+
+or
+
+myMessenger$capture_output({test <- 1; test <- 1+test})
 
 #This captures the error
 myMessenger <- Messenger$new(envir = environment())
@@ -48,6 +57,21 @@ test <- function() stop("there is an error!")
 myMessenger$capture_output("test()", userError = "There was an error running test function")
 myMessenger$errors
 myMessenger$userErrors
+
+#stopOnError = TRUE will throw error if error occurs
+myMessenger <- Messenger$new()
+myMessenger$devMode <-  FALSE
+test <- function() stop("there is an error!")
+myMessenger$capture_output({test()}, stopOnError = TRUE, userError = "some sort of error to return to user")
+myMessenger$errors
+myMessenger$userErrors
+
+#devMode bypassses logic and just evaluate's the given expression
+myMessenger <- Messenger$new()
+myMessenger$devMode <-  TRUE
+test <- function() stop("there is an error!")
+myMessenger$capture_output('{test()}')
+myMessenger$errors
 
 #Adding a user error within a capture_output Call (use racas messenger)
 racasMessenger <- messenger()$reset()
