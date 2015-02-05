@@ -3,6 +3,7 @@
 \alias{stopUser}
 \alias{stopUserAndLogInvalidJSON}
 \alias{stopUserWithTime}
+\alias{userStop}
 \title{Fatal error tracking}
 \usage{
 stopUser(message)
@@ -15,10 +16,14 @@ stopUserAndLogInvalidJSON(logName, logFileName, url, response, method = "GET",
 \arguments{
 \item{message}{The error message that the user should see}
 }
-\value{
+\description{
+Declares an error to be of class \code{userStop}, to distinguish between errors we programmed
+into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
+}
+\details{
 Stops the function, and adds the class "userStop" to the error object
 
-All helpful errors should be thrown using \code{stopUser}. Any error
+All errors intended for users to view should be thrown using \code{stopUser}. Any error
 thrown using \code{stop} will be treated as an internal error by the simple
 experiment loader.
 
@@ -27,9 +32,5 @@ This means using paste. While \code{stop("text ", variable, " text")} is okay sy
 you will get an error if you try \code{stopUser("text ", variable, " text")}. Use paste0
 instead: \code{stopUser(paste0("text ", variable, " text"))} (note that this syntax is also
 perfectly acceptable inside \code{stop})
-}
-\description{
-Declares an error to be of type "userStop", to distinguish between errors we programmed
-into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
 }
 
