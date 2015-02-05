@@ -75,7 +75,6 @@ addError <- function(errorMessage, errorEnv = NULL) {
 #'
 #'@export
 #'@param message The error message that the user should see
-#'@return 
 #'@aliases userStop
 #'
 #'@details Stops the function, and adds the class "userStop" to the error object
