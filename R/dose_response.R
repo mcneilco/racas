@@ -1655,8 +1655,8 @@ get_protocol_curve_display_min_and_max_by_curve_id <- function(curveid) {
     httpheader=c('Content-Type'='application/json'),
     postfields=curveid
   )
-  if(response == "") {
-    return(list())
+  if(response == "[]") {
+    return(list(ymax = as.numeric(NA), ymin = as.numeric(NA)))
   } else {
     values <- jsonlite::fromJSON(response)[, c('lsKind', 'numericValue')]
     displayValues <- list(ymax = values[values$lsKind == 'curve display max',]$numericValue, ymin = values[values$lsKind == 'curve display min',]$numericValue)
