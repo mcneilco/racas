@@ -314,8 +314,10 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$responseSubjectValueId)
   names(points) <- NULL
+  protocol_display_values <- get_protocol_curve_display_min_and_max_by_curve_id(curveid)    
   plotWindow <- get_plot_window(fitData[1]$points[[1]])
   plotWindow[c(1,3)] <- log10(plotWindow[c(1,3)])
+  plotWindow[c(2,4)] <- c(max(protocol_display_values$ymax,plotWindow[2], na.rm = TRUE),min(protocol_display_values$ymin,plotWindow[4], na.rm = TRUE))
   plotData <- switch(fitData[1]$renderingHint,
                      "4 parameter D-R" = list(plotWindow = plotWindow,
                                   points  = points,
