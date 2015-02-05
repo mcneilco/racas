@@ -1647,7 +1647,23 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
   )
   return(response)
 }
-
+get_protocol_curve_display_min_and_max_by_curve_id <- function(curveid) {   
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/displayminmax"))
+  response <- getURL(
+    url,
+    customrequest='POST',
+    httpheader=c('Content-Type'='application/json'),
+    postfields=curveid
+  )
+  if(response == "") {
+    return(list())
+  } else {
+    values <- jsonlite::fromJSON(response)[, c('lsKind', 'numericValue')]
+    displayValues <- list(ymax = values[values$lsKind == 'curve display max',]$numericValue, ymin = values[values$lsKind == 'curve display min',]$numericValue)
+    displayValues[lapply(displayValues,length) == 0] <- NA
+    return(displayValues)
+  }
+}
 get_experiment_model_fit_status <- function(experimentCodeOrID) {
   value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status")
   return(value)
