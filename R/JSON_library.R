@@ -1,6 +1,4 @@
-## R code follows here
-## example R code to interact with LabSynch JSON services
-
+# Solves issues with rjson printing times in scientific notation and losing precision
 options(scipen=99)
 
 #racas::applicationSettings$client.service.persistence.fullpath <- "http://localhost:8080/labseer/"
@@ -8,12 +6,6 @@ options(scipen=99)
 
 
 ############  FUNCTIONS ########################
-
-# http://localhost:8080/labseer/labelsequences?getNextLabelSequences&thingType=document&thingKind=protocol&labelType=id&labelKind=codeName&numberOfLabels=10
-# http://host3.labsynch.com:8080/labseer/labelsequences?getNextLabelSequences&thingType=document&thingKind=protocol&labelType=id&labelKind=codeName&numberOfLabels=10
-
-# curl http://host3.labsynch.com:8080/labseer/protocols/codename/PROT-000101
-# curl http://host3.labsynch.com:8080/labseer/experiments/codename/EXP-000-101
 
 
 #to get system label IDs
@@ -1423,12 +1415,8 @@ checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
 #'
 #' @param lsServerURL url for roo server
 getAllValueKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  tryCatch({
-    valueKindsList <- getURLcheckStatus(paste0(lsServerURL, "valuekinds/"))
-    return(fromJSON(valueKindsList))
-  }, error = function(e) {
-    stopUser("Internal Error: Could not get current value kinds")
-  })
+  valueKindsList <- getURLcheckStatus(paste0(lsServerURL, "valuekinds/"), requireJSON = TRUE)
+  return(fromJSON(valueKindsList))
 }
 #' valueTypes
 #'
@@ -1436,12 +1424,8 @@ getAllValueKinds <- function(lsServerURL = racas::applicationSettings$client.ser
 #'
 #' @param lsServerURL url for roo server
 getAllValueTypes <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  tryCatch({
-    valueTypesList <- getURLcheckStatus(paste0(lsServerURL, "valuetypes/"))
-    return(fromJSON(valueTypesList))
-  }, error = function(e) {
-    stopUser("Internal Error: Could not get current value types")
-  })
+  valueTypesList <- getURLcheckStatus(paste0(lsServerURL, "valuetypes/"), requireJSON = TRUE)
+  return(fromJSON(valueTypesList))
 }
 #' Saves value kinds
 #' 
