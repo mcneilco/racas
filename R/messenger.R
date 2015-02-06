@@ -104,19 +104,19 @@ Messenger <- setRefClass(Class = "Messenger",
                              if(!inherits(x, "error")) {
                                x <- simpleError(x)
                              }
-                             errors <<- c(errors, x)
+                             errors <<- c(errors, list(x))
                            },
                            addWarning = function(x) {
                              if(!inherits(x, "warning")) {
                                x <- simpleWarning(x)
                              }
-                             warnings <<- c(warnings, x)
+                             warnings <<- c(warnings, list(x))
                            },
                            addInfo = function(x) {
                              if(!inherits(x, "message")) {
                                x <- simpleMessage(x)
                              }
-                             infos <<- c(infos, x)
+                             infos <<- c(infos, list(x))
                            },
                            addUserError = function(x) {
                              userErrors <<- c(userErrors,as.character(x))
@@ -164,8 +164,11 @@ Messenger <- setRefClass(Class = "Messenger",
                                        addError(x)
                                      }
                                    },
-                                   warning = function(x) {addWarning(x$message)
-                                                          logger$warn(x$message)
+                                   warning = function(x) {
+                                     addWarning(x)
+                                     if (!inherits(x, "userWarning")) {
+                                       logger$warn(x$message)
+                                     }
                                    },
                                    message = function(x) {addInfo(x$message)
                                                           logger$info(x$message)
