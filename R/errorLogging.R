@@ -117,12 +117,14 @@ stopUserAndLogInvalidJSON <- function (logName, logFileName, url, response, meth
 
 #'Warning tracking
 #'
-#'Declares a warning to be of type "userWarning", to distinguish between warnings we programmed
+#'Declares a warning to be of class "userWarning", to distinguish between warnings we programmed
 #'into the system (e.g. "Found extra meta data") and errors R gives (e.g. "argument has length >1")
 #'
 #'@export
 #'@param message The warning message that the user should see
-#'@return Adds the class "userWarning" to the warning object
+#'@aliases userWarning
+#'
+#'@details Adds the class "userWarning" to the warning object.
 #'
 #'All helpful errors should be thrown using \code{warnUser}. Any warning 
 #'thrown using \code{warning} will be treated as an internal warning by the simple 
