@@ -85,6 +85,7 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
 #' @param lsTransaction An integer that is the transaction id (not used)
 #' @param testMode a boolean used for testing (not used)
 #' @param recordedBy current user (not used)
+#' @return the htmlSummary
 #' @export
 saveAnalysisResults <- function(experiment, hasError, htmlSummary, recordedBy="none", dryRun=F, lsTransaction=NULL, testMode=FALSE) {
   # Saves (replace) the analysis html and status
@@ -98,4 +99,5 @@ saveAnalysisResults <- function(experiment, hasError, htmlSummary, recordedBy="n
   setExperimentStatus(status, experiment, recordedBy, dryRun, lsTransaction)
   
   setExperimentHtml(htmlSummary, experiment, recordedBy, dryRun, lsTransaction)
+  return(htmlSummary)
 }

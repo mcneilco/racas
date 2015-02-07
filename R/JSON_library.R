@@ -1907,7 +1907,8 @@ getAcasEntities <- function(acasCategory, lsServerURL = racas::applicationSettin
 #' @param testMode used for testing
 #' @param recordedBy the current username
 #' @param lsServerURL the url for the roo server
-#' @details This will fail if the entity has more than one non-ignored state of entered stateKind, as it would be unclear which to update.
+#' @details This will fail if the entity has more than one non-ignored state of entered stateKind, 
+#' as it would be unclear which to update. \code{\link{updateValueByTypeAndKind}} is often easier to use.
 #' @return a named list of the lsValue object
 #' @export
 updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, stringValue=NULL, fileValue=NULL,

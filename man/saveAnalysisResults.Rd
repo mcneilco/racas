@@ -19,6 +19,9 @@ saveAnalysisResults(experiment, hasError, htmlSummary, recordedBy = "none",
 
 \item{testMode}{a boolean used for testing (not used)}
 }
+\value{
+the htmlSummary
+}
 \description{
 Saves a summary to the given experiment
 }

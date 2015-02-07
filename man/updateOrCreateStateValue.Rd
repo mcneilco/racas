@@ -77,6 +77,7 @@ a named list of the lsValue object
 If a value with the correct lsType and lsKind exists within the provided lsState, it is updated, otherwise, it is created.
 }
 \details{
-This will fail if the entity has more than one non-ignored state of entered stateKind, as it would be unclear which to update.
+This will fail if the entity has more than one non-ignored state of entered stateKind,
+as it would be unclear which to update. \code{\link{updateValueByTypeAndKind}} is often easier to use.
 }
 
