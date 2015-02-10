@@ -854,9 +854,11 @@ get_subjectgroup_values <- function(experimentID, analysisGroupID) {
   }
   return(tg_values)
 }
-curve_fit_controller_fitData_response_to_data_table <- function(curveFitControllerFitDataResponse) {
-  firstRow <- fread(curveFitControllerFitDataResponse, nrow = 1)
-  fitData <- switch(firstRow$renderingHint,
+curve_fit_controller_fitData_response_to_data_table <- function(curveFitControllerFitDataResponse, modelFitType = NA) {
+  if(is.na(modelFitType)) {
+    modelFitType <- fread(curveFitControllerFitDataResponse, nrow = 1)$renderingHint
+  }
+  fitData <- switch(modelFitType,
                     "4 parameter D-R" = fread(curveFitControllerFitDataResponse,   colClasses = c(curveId = "character",
                                                                                                   analysisGroupCode = "integer",
                                                                                                   recordedBy = "character",
@@ -955,7 +957,7 @@ get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_obje
   myMessenger <- messenger()
   myMessenger$logger$debug("getting fitData")
   curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByExperimentIdOrCodeName(experimentCode, modelFitType)
-  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse)
+  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse, modelFitType)
   if(nrow(serviceFitData) == 0) {
     msg <- "no experiment results found"
     myMessenger$logger$error(msg)
