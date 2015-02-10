@@ -122,7 +122,6 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   myMessenger$logger$debug(paste0("getting model fit status for ",entityID))
   modelFitType <- get_experiment_model_fit_type(entityID)
   myMessenger$logger$debug(paste0("fetting fit data for ",entityID))
-  get_experiment_model_fit_type(experimentCode)
   fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
