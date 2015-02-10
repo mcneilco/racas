@@ -120,7 +120,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
     }
   }
   myMessenger$logger$debug(paste0("getting model fit status for ",entityID))
-  modelFitType <- get_experiment_model_fit_type(experimentCode)
+  modelFitType <- get_experiment_model_fit_type(entityID)
   myMessenger$logger$debug(paste0("fetting fit data for ",entityID))
   get_experiment_model_fit_type(experimentCode)
   fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
