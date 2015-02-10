@@ -1674,6 +1674,10 @@ get_experiment_model_fit_status <- function(experimentCodeOrID) {
   value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status")
   return(value)
 }
+get_experiment_model_fit_type <- function(experimentCodeOrID) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit type")
+  return(value)
+}
 get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind) {
   url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"experiments/", experimentCodeOrID,"/exptvalues/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/json"))  
   response <- fromJSON(getURL(url))
