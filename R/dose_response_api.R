@@ -55,7 +55,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
-  fitData <- get_fit_data_experiment_code(experimentCode, full_object = TRUE)
+  fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE)
   fitData[ , renderingHint := modelFitType]
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
@@ -120,7 +120,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
     }
   }
   myMessenger$logger$debug(paste0("Getting fit data for ",entityID))
-  fitData <- get_fit_data_experiment_code(entityID, full_object = FALSE)
+  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting renderingHint saved parameter"))

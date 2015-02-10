@@ -802,13 +802,17 @@ get_analysisgroup_values <- function(experimentID, analysisGroupID) {
   }
   return(ag_values)
 }
-curve_fit_controller_getFitDataByExperimentIdOrCodeName <- function(experiment, format = "tsv") {
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/fitdata?format=",format,"&experiment=",experiment))
+curve_fit_controller_getFitDataByExperimentIdOrCodeName <- function(experiment, modelFitType, format = "tsv") {
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/fitdata?format=",format,"&experiment=",experiment,"&modelFitType=",modelFitType))
+  myMessenger <- messenger()  
+  myMessenger$logger$debug(paste0("calling fit data service url: ", url))
   response <- getURL(url)
   return(response)
 }
 curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, format = "tsv") {
   url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/rawdata?format=",format,"&experiment=",experiment))
+  myMessenger <- messenger()  
+  myMessenger$logger$debug(paste0("calling raw data service url: ", url))
   response <- getURL(url)
   return(response)
 }
@@ -947,10 +951,10 @@ curve_fit_controller_rawData_response_to_data_table <- function(curveFitControll
   setkey(rawData, "curveId")
   return(rawData)
 }
-get_fit_data_experiment_code <- function(experimentCode, full_object = FALSE, ...) {
+get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, ...) {
   myMessenger <- messenger()
   myMessenger$logger$debug("getting fitData")
-  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByExperimentIdOrCodeName(experimentCode)
+  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByExperimentIdOrCodeName(experimentCode, modelFitType)
   serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse)
   if(nrow(serviceFitData) == 0) {
     msg <- "no experiment results found"
