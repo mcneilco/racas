@@ -248,6 +248,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   names(points) <- NULL
   plotWindow <- get_plot_window(fitData[1]$points[[1]])
   plotWindow[c(1,3)] <- log10(plotWindow[c(1,3)])
+  plotWindow[4] <- min(0-0.01*abs(plotWindow[4]-plotWindow[2]),plotWindow[4])
   plotData <- list(plotWindow = plotWindow,
                    points  = points,
                    curve = c(type = fitData[1]$modelHint,
