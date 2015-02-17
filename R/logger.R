@@ -70,13 +70,13 @@ racasLogger <- Logger$new()
 #'The default call 'logger()' will compare the field racas::racasLogger$envir with the current list of frames in the call stack.
 #'If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
 #'
-#'@param racas  Name for the logger output line within the log file (default: "com.default.logger)
+#'@param racas  Name for the logger output line within the log file (default: "com.default.logger")
 #'@param envir name of the log file to write to (default: "acas.log")
 #'@param ... further arguments to be passed to \code{\link{createLogger}}
 #'@return object of class \code{\link{Logger}}
 #'
 #'@examples
-#' #From a fres
+#' #From a fresh logger (myLogger <- createLogger())
 #' 
 #' #Will write
 #' myLogger$error("a warn statement")

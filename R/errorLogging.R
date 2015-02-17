@@ -49,23 +49,16 @@ tryCatch.W.E <- function(expr) {
 #'Add errors to a list of errors to show a user
 #'
 #'@param errorMessage The message for the user
-#'@param errorEnv
-#'
-#'If the errorEnv is not provided, the search path is used to find an errorList. 
-#'Providing an errorEnv is the preferred method to avoid name collsions.
+#' param errorEnv deprecated
+#' 
+#' The error is added as class \code{userError} to the racasMessenger.
+#' 
+#' @aliases userError
 addError <- function(errorMessage, errorEnv = NULL) {
-  if (is.null(errorEnv)) {
-    if (!exists("errorList")) {
-      stopUser("ErrorList has not been defined on the search path")
-    }
-    errorList <<- c(errorList, errorMessage)
-  } else {
-    if (!exists("errorList", where = errorEnv)) {
-      stopUser(paste0(errorMessage, 
-                  "; and internal error in use of addError function: errorList has not been defined in the given environment"))
-    }
-    assign("errorList", c(errorEnv$errorList, errorMessage), pos = errorEnv)
-  }
+  globalMessenger <- messenger()
+  newError <- simpleError(errorMessage)
+  class(newError) <- c("userError", class(newError))
+  globalMessenger$addError(newError)
 }
 
 #'Fatal error tracking
@@ -139,4 +132,47 @@ warnUser <- function(message) {
   w <- simpleWarning(message)
   class(w) <- c(class(w), "userWarning")
   warning(w)
+}
+
+#' Get error text for users
+#' 
+#' From a list of error objects, get error messages for users, replacing
+#' internal errors with a message to look in the logs.
+#' 
+#' @param errorList a list of items of class "error"
+#'   
+#' @details Error messages with class \code{\link{userStop}} pass just their
+#'   message, future plans to group errors by class if there are very large
+#'   numbers.
+getErrorText <- function (errorList) {
+  internalErrors <- Filter(function (x) {!inherits(x, "userStop")}, errorList)
+  userErrors <- Filter(function (x) {inherits(x, "userStop")}, errorList)
+  allTextErrors <- lapply(userErrors, getElement, "message")
+  if (length(internalErrors) > 0) {
+    internalTextError <- paste0(
+      "We encountered an internal error. Check the logs at ", Sys.time())
+    allTextErrors <- c(internalTextError, allTextErrors)
+  }
+  return(allTextErrors)
+}
+
+#' Get warning text for users
+#' 
+#' From a list of warning objects, get warning messages for users, prefixing
+#' internal errors with a message.
+#' 
+#' @param errorList a list of items of class "warning"
+#'   
+#' @details Warning messages with class \code{\link{userWarning}} pass just
+#'   their message, future plans to group warnings by class if there are very
+#'   large numbers.
+getWarningText <- function (warningList) {
+  lapply(warningList, function(x) {
+    if (inherits(x, "userWarning")) {
+      x$message
+    } else {
+      paste0("The system has encountered an internal warning, ", 
+             "give this message to your system administrator: ", x$message)
+    }
+  })
 }

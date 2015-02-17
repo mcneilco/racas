@@ -146,7 +146,7 @@ Messenger <- setRefClass(Class = "Messenger",
                                  outputHandler <- evaluate::new_output_handler(
                                    error = function(x) {
                                      currentwd <- getwd()
-                                     on.exit(currentwd)
+                                     on.exit(setwd(currentwd))
                                      if (!inherits(x, "userStop")) {
                                        addError(x)
                                        logger$error(x$message)                                                                                          

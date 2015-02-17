@@ -6,7 +6,7 @@
 logger(racas = TRUE, envir = parent.frame(), ...)
 }
 \arguments{
-\item{racas}{Name for the logger output line within the log file (default: "com.default.logger)}
+\item{racas}{Name for the logger output line within the log file (default: "com.default.logger")}
 
 \item{envir}{name of the log file to write to (default: "acas.log")}
 
@@ -21,7 +21,7 @@ The default call 'logger()' will compare the field racas::racasLogger$envir with
 If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
 }
 \examples{
-#From a fres
+#From a fresh logger (myLogger <- createLogger())
 
 #Will write
 myLogger$error("a warn statement")
