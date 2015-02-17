@@ -21,7 +21,8 @@ Declares an error to be of class \code{userStop}, to distinguish between errors 
 into the system (e.g. "Unrecognized scientist") and errors R gives (e.g. "object not found")
 }
 \details{
-Stops the function, and adds the class "userStop" to the error object
+Stops the function, and adds the class "userStop" and "userError" to
+ the error object
 
 All errors intended for users to view should be thrown using \code{stopUser}. Any error
 thrown using \code{stop} will be treated as an internal error by the simple

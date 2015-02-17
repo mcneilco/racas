@@ -70,8 +70,9 @@ addError <- function(errorMessage, errorEnv = NULL) {
 #'@param message The error message that the user should see
 #'@aliases userStop
 #'
-#'@details Stops the function, and adds the class "userStop" to the error object
-#'
+#'@details Stops the function, and adds the class "userStop" and "userError" to
+#'  the error object
+#'  
 #'All errors intended for users to view should be thrown using \code{stopUser}. Any error 
 #'thrown using \code{stop} will be treated as an internal error by the simple 
 #'experiment loader.
@@ -83,7 +84,7 @@ addError <- function(errorMessage, errorEnv = NULL) {
 #'perfectly acceptable inside \code{stop})
 stopUser <- function(message) {
   e <- simpleError(message)
-  class(e) <- c(class(e), "userStop")
+  class(e) <- c("userStop", "userError", class(e))
   stop(e)
 }
 
@@ -145,8 +146,8 @@ warnUser <- function(message) {
 #'   message, future plans to group errors by class if there are very large
 #'   numbers.
 getErrorText <- function (errorList) {
-  internalErrors <- Filter(function (x) {!inherits(x, "userStop")}, errorList)
-  userErrors <- Filter(function (x) {inherits(x, "userStop")}, errorList)
+  internalErrors <- Filter(function (x) {!inherits(x, "userError")}, errorList)
+  userErrors <- Filter(function (x) {inherits(x, "userError")}, errorList)
   allTextErrors <- lapply(userErrors, getElement, "message")
   if (length(internalErrors) > 0) {
     internalTextError <- paste0(

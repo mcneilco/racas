@@ -170,8 +170,10 @@ Messenger <- setRefClass(Class = "Messenger",
                                        logger$warn(x$message)
                                      }
                                    },
-                                   message = function(x) {addInfo(x$message)
-                                                          logger$info(x$message)
+                                   message = function(x) {
+                                     addInfo(x)
+                                     # This causes an error on packageStartupMessage... so we no longer log infos
+                                     #logger$info(x$message)
                                    },
                                    value = function(x) {logger$error(names(x))
                                    },
