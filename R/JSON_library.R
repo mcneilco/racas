@@ -427,7 +427,7 @@ createExperimentState <- function(experimentValues=NULL, recordedBy="userName", 
   return(experimentState)
 }
 
-createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, testMode=FALSE){
+createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, testMode=FALSE){
   analysisGroupState = list(
     analysisGroup=analysisGroup, #This will fail if not given an id and version (but the version does not matter)
     lsValues=analysisGroupValues,
@@ -442,7 +442,7 @@ createAnalysisGroupState <- function(analysisGroup = NULL, analysisGroupValues=N
   return(analysisGroupState)
 }
 
-createTreatmentGroupState <- function(treatmentGroup=NULL, treatmentGroupValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
+createTreatmentGroupState <- function(treatmentGroup=NULL, treatmentGroupValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
   treatmentGroupState = list(
     treatmentGroup=treatmentGroup,
     lsValues=treatmentGroupValues,
@@ -456,7 +456,7 @@ createTreatmentGroupState <- function(treatmentGroup=NULL, treatmentGroupValues=
   )
   return(treatmentGroupState)
 }
-createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroupStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", comments="", lsTransaction=NULL){
+createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroupStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", lsTransaction=NULL){
   
   if (is.null(codeName) ) {
     codeName <- getAutoLabels(thingTypeAndKind="document_treatment group", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
@@ -470,14 +470,13 @@ createTreatmentGroup <- function(analysisGroup=NULL,subjects=NULL,treatmentGroup
     subjects=subjects,
     lsStates=treatmentGroupStates,
     recordedBy=recordedBy,
-    comments=comments,
     lsTransaction=lsTransaction,
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
   return(treatmentGroup)
 }
-createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", comments="", lsTransaction=NULL){
+createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="default", lsKind="default", codeName=NULL, recordedBy="userName", lsTransaction=NULL){
 
 	if (is.null(codeName) ) {
 		codeName <- getAutoLabels(thingTypeAndKind="document_subject", labelTypeAndKind="id_codeName", numberOfLabels=1)[[1]][[1]]						
@@ -490,7 +489,6 @@ createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="defau
     codeName=codeName,
     lsStates=subjectStates,
     recordedBy=recordedBy,
-    comments=comments,
     lsTransaction=lsTransaction,
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
@@ -498,7 +496,7 @@ createSubject <- function(treatmentGroup=NULL, subjectStates=NULL, lsType="defau
   return(subject)
 }
 
-createSubjectState <- function(subject=NULL, subjectValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
+createSubjectState <- function(subject=NULL, subjectValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL){
   sampleState = list(
     subject=subject,
     lsValues=subjectValues,
@@ -897,8 +895,9 @@ saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicatio
 #' @param acasCategory e.g. "experiments", "subjectlabels", etc.
 #' @param lsServerURL url of ACAS server
 #' @return a list, sometimes empty
-#' @details \code{updateAcasEntities} replaces the entity that is at the URL with
-#'   the one sent. Sub-entities (label, state, value) must have a parent object
+#' @details \code{updateAcasEntities} replaces the entity that is at the URL
+#'   with the one sent. Sub-entities (label, state, value) must have a parent
+#'   object. \code{deleteAcasEntities} is not implemented for states and values.
 #' @export
 saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   if (length(entities) > 1000) {
@@ -915,12 +914,7 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
   
   message <- toJSON(entities)
   url <- paste0(lsServerURL, acasCategory, "/jsonArray")
-  response <- postURLcheckStatus(
-    url,
-    postfields=message,
-    httpheader=c('Content-Type'='application/json'),
-    requireJSON = TRUE
-  )
+  response <- postURLcheckStatus(url, postfields=message, requireJSON = TRUE)
   
   if (grepl("^\\s*$", response)) {
     return("")

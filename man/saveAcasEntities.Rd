@@ -41,7 +41,8 @@ a list, sometimes empty
 Save protocols, labels, experiments, etc.
 }
 \details{
-\code{updateAcasEntities} replaces the entity that is at the URL with
-  the one sent. Sub-entities (label, state, value) must have a parent object
+\code{updateAcasEntities} replaces the entity that is at the URL
+  with the one sent. Sub-entities (label, state, value) must have a parent
+  object. \code{deleteAcasEntities} is not implemented for states and values.
 }
 

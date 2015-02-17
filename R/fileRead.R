@@ -497,24 +497,6 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
   serverFileLocation <- moveFileToFileServer(fileStartLocation, targetPath, 
                                              fileServiceType, fileService, experiment, recordedBy)
   
-  locationStates <- Filter(function(x) {x$"lsKind"=="raw results locations"}, experiment$lsStates)
-  
-  # Record the location
-  if (length(locationStates) == 0) {
-    locationState <- createExperimentState(
-      recordedBy=recordedBy,
-      experiment = experiment,
-      lsType="metadata",
-      lsKind="raw results locations",
-      lsTransaction=lsTransaction)
-    
-    tryCatch({
-      locationState <- saveExperimentState(locationState)
-    }, error = function(e) {
-      stopUser("Internal Error: Could not save the source file state")
-    })
-  }
-  
   updateValueByTypeAndKind(serverFileLocation, "experiment", experiment$id, 
                            "metadata", "raw results locations", "fileValue", "source file")
   
