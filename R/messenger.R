@@ -243,9 +243,10 @@ messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
     if(length(racasMessengerObj) > 0) {
       allEnvironments <- as.list(c(sys.frames(),globalenv()))
       messengerObject <- get("racasMessenger", envir = as.environment("package:racas"))
-      if(any(unlist(lapply(allEnvironments, identical, messengerObject$envir)))) {
-        return(messengerObject)
-      }
+      return(messengerObject)
+#       if(any(unlist(lapply(allEnvironments, identical, messengerObject$envir)))) {
+#         return(messengerObject)
+#       }
     }
     unlockBinding( "racasMessenger", as.environment("package:racas") ) 
     assign("racasMessenger", Messenger$new(envir = envir, ...), as.environment("package:racas"))
@@ -254,6 +255,5 @@ messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
   }
   return()
 }
-
 
 
