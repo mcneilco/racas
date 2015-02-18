@@ -104,9 +104,10 @@ logger <- function(racas = TRUE, envir = parent.frame(), ...) {
     if(length(racasLoggerObj) > 0) {
       allEnvironments <- as.list(c(sys.frames(),globalenv()))
       loggerObject <- get("racasLogger", envir = as.environment("package:racas"))
-      if(any(unlist(lapply(allEnvironments, identical, loggerObject$envir)))) {
-        return(loggerObject)
-      }
+      return(loggerObject)
+#       if(any(unlist(lapply(allEnvironments, identical, loggerObject$envir)))) {
+#         return(loggerObject)
+#       }
     }
     unlockBinding( "racasLogger", as.environment("package:racas") ) 
     assign("racasLogger", createLogger(envir = envir, ...), as.environment("package:racas"))

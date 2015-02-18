@@ -135,7 +135,7 @@ Messenger <- setRefClass(Class = "Messenger",
                              userInfos <<- as.character()
                              userWarnings <<- as.character()
                              envir <<- parent.frame()
-                             logger <<- Logger$new()
+                             logger <<- racas:::createLogger()
                              devMode <<- FALSE
                              return(.self)
                            },
@@ -172,8 +172,7 @@ Messenger <- setRefClass(Class = "Messenger",
                                    },
                                    message = function(x) {
                                      addInfo(x)
-                                     # This causes an error on packageStartupMessage... so we no longer log infos
-                                     #logger$info(x$message)
+                                     logger$info(x$message)
                                    },
                                    value = function(x) {logger$error(names(x))
                                    },
