@@ -46,7 +46,12 @@
                      "\t",ex),call.=FALSE)
     })
   }
+  racasLogger <- createLogger()
+  assignInNamespace("racasLogger",racasLogger, ns="racas")
   racasMessenger <- Messenger$new(envir = environment())
+  racasMessenger$logger <- racasLogger
   assignInNamespace("racasMessenger",racasMessenger, ns="racas")
+
+  
   
 }

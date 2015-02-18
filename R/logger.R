@@ -62,7 +62,7 @@ createLogger <- function(logName = "com.default.logger", logFileName = "racas.lo
   return(logger)
 }
 
-racasLogger <- Logger$new()
+racasLogger <- ""
 
 #'Creates a new logger object or returns the "racasLogger"
 #'
