@@ -1193,8 +1193,6 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
 }
 
 get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
-  opt <- options()
-  on.exit(options(opt)) 
   fixedParams <- data.frame(matrix(NA,1,length(paramNames)))
   names(fixedParams) <- paramNames
   fixed[unlist(lapply(fixed, is.null))] <- NULL
@@ -1899,6 +1897,9 @@ get_entity_by_id <- function(id, acasCategory, lsServerURL = racas::applicationS
 }
 
 add_clob_values_to_fit_data <- function(fitData) {
+  opt <- options()
+  on.exit(options(opt))
+  options(scipen = 2)
   fitData <- copy(fitData)
   addingColumns <- c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob")
   removeColumns <- addingColumns[ addingColumns %in% names(fitData)]
@@ -1909,23 +1910,69 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValuesClob <- list(NULL)
       } else {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
+        setkey(reportedValues, "name")
+        reportedValues[ , value :=prettyNum(value, digits = 4)]
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
             paste(ifelse(is.na(operator), "",operator), value)
           } else {
             value
           }}]
-        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value"), with = FALSE], include.colnames = FALSE) 
+        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value"), with = FALSE], 
+                                                       include.rownames = FALSE, 
+                                                       comment = FALSE, 
+                                                       timestamp = FALSE, 
+                                                       align = paste0(rep("r",ncol(reportedValues[ , c("name", "value"), with = FALSE]) + 1), collapse = ""),
+                                                       rotate.rownames = TRUE, 
+                                                       html.table.attributes = "",
+                                                       print.results = FALSE, 
+                                                       include.colnames = FALSE) 
       }
       if(fitConverged) {
-        fitSummaryClob <- capture_output(suppressWarnings(summary(model[[1]])), collapse = "<br>")
+        modelSummary <- summary(model[[1]])
+        fitSummaryClob <- paste0("Model fitted: ",modelSummary$text,"<br>",
+               "<br>",
+               "Parameter Estimates: ","<br>",
+               "<br>",
+               data.table_to_html_table(apply(modelSummary$coef, 2,prettyNum, digits = 6)[order(rownames(modelSummary$coef)),],
+                                        include.rownames = TRUE, 
+                                        comment = FALSE, 
+                                        timestamp = FALSE, 
+                                        align = paste0(rep("r",ncol(modelSummary$coef) + 1), collapse = ""),
+                                        html.table.attributes = "table-bordered'",
+                                        print.results = FALSE),
+               "<br>",
+               "Residual standard error:","<br>",
+               "<br>",
+               modelSummary$rseMat[,"rse"], "(",modelSummary$rseMat[,"df"], " degrees of freedom",")",
+               "<br>")
+
         goodnessOfFit.parameters <- flatten_list_to_data.table(goodnessOfFit.parameters[[1]])
         goodnessOfFit.parameters[ , c("name", "type") := {sp <- strsplit(name, "\\.")[[1]]
                                                           list(name = sp[[1]], type = sp[[2]])}, by = c("V1", "name")]
+        goodnessOfFit.parameters[ , V1 := prettyNum(V1, digits = 4)]
         goodnessOfFit.parameters <- dcast.data.table(goodnessOfFit.parameters, name ~ type, value.var = "V1")
-        parameterStdErrors <- data.table_to_html_table(goodnessOfFit.parameters)
+        parameterStdErrors <- data.table_to_html_table(goodnessOfFit.parameters,
+                                                       align = paste0(rep("r",ncol(goodnessOfFit.parameters) + 1), collapse = ""),
+                                                       include.rownames = FALSE, 
+                                                       comment = FALSE, 
+                                                       timestamp = FALSE, 
+                                                       rotate.rownames = TRUE, 
+                                                       html.table.attributes = "",
+                                                       print.results = FALSE
+                                                       )
         parameterStdErrorsClob <- parameterStdErrors
-        curveErrorsClob <- data.table_to_html_table(flatten_list_to_data.table(goodnessOfFit.model[[1]])[, c("name", "V1"), with = FALSE], include.colnames = FALSE)
+        curveErrors <- flatten_list_to_data.table(goodnessOfFit.model[[1]])[, c("name", prettyNum("V1", digits = 4)), with = FALSE]
+        setkey(curveErrors, "name")
+        curveErrorsClob <- data.table_to_html_table(curveErrors, 
+                                                    align = paste0(rep("r",ncol(curveErrors) + 1), collapse = ""),
+                                                    include.rownames = FALSE, 
+                                                    comment = FALSE, 
+                                                    timestamp = FALSE, 
+                                                    rotate.rownames = TRUE, 
+                                                    html.table.attributes = "",
+                                                    print.results = FALSE, 
+                                                    include.colnames = FALSE)
         list(reportedValuesClob = list(reportedValuesClob), fitSummaryClob = list(fitSummaryClob), parameterStdErrorsClob = list(parameterStdErrorsClob), curveErrorsClob = list(curveErrorsClob))
       } else {
         list(reportedValuesClob = list(reportedValuesClob), fitSummaryClob = list(NULL), parameterStdErrorsClob= list(NULL), curveErrorsClob = list(NULL))

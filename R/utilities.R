@@ -35,14 +35,8 @@ data.table_to_html_table <- function(dataTable, ...) {
   if(nrow(dataTable) == 0) {
     return(htmlTableString)
   }
-  htmlTableString <- print(xtable(dataTable), 
-                           type = "html", 
-                           include.rownames = FALSE, 
-                           comment = FALSE, 
-                           timestamp = FALSE, 
-                           rotate.rownames = TRUE, 
-                           html.table.attributes = "",
-                           print.results = FALSE, 
+  htmlTableString <- print(xtable(dataTable, ...), 
+                           type = "html",
                            ...)
   htmlTableString <- gsub("\\\n","",htmlTableString)
   return(htmlTableString)
