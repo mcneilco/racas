@@ -1478,7 +1478,7 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   return(experimentCode)
 }
 save_dose_response_data <- function(fitData, recorded_by) {
-  lsTransaction <- createLsTransaction()$id
+  lstrans <- createLsTransaction()$id
   fitData[ , dto := list(list({
     ans <- switch(renderingHint,
                   "4 parameter D-R" = {
@@ -1501,7 +1501,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "slopeUncertainty" = reportedParameters[[1]]$slope$stdErr,
                       "slopeUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$slope$stdErr), NA,"standard error")),
                       "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lsTransaction),
+                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
                       "analysisGroupCode" = analysisGroupCode[[1]],
                       "batchCode" = batchCode[[1]],
                       "category" = category[[1]],
@@ -1521,7 +1521,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "fitSettings" = simpleFitSettings[[1]],
                       "fitSummaryClob" = fitSummaryClob[[1]],
                       "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]]
+                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
+                      lsTransaction = lstrans
                     )
                   },
                   "Ki Fit" = {
@@ -1540,7 +1541,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "kiUncertainty" = reportedParameters[[1]]$ec50$stdErr,
                       "kiUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
                       "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lsTransaction),
+                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
                       "analysisGroupCode" = analysisGroupCode[[1]],
                       "batchCode" = batchCode[[1]],
                       "category" = category[[1]],
@@ -1563,7 +1564,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "fitSettings" = simpleFitSettings[[1]],
                       "fitSummaryClob" = fitSummaryClob[[1]],
                       "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]]
+                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
+                      lsTransaction = lstrans
                     )
                   },{
                     warning(paste0("saving not implemented for ",renderingHint))
@@ -1603,7 +1605,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
         "userFlagObservation" = userFlagObservation,
         "userFlagReason" = userFlagReason,
         "userFlagComment" = userFlagComment,
-        "recordedBy" = recorded_by
+        "recordedBy" = recorded_by,
+        lsTransaction = lstrans
       )
     })), by = responseSubjectValueId]
     dtos <- toJSON(changedPoints$dto)
