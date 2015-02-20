@@ -87,3 +87,17 @@ list_to_data.table <- function(l) {
   dt[ , V1 := NULL]
   return(dt)
 }
+
+parse_command_line_args <- function(args) {
+  #args <- c("--tables", "api_curve_params", "api_dose_response")
+  hh <- paste(unlist(args),collapse=' ')
+  listoptions <- unlist(strsplit(hh,'--'))[-1]
+  options.args <- sapply(listoptions,function(x){
+    unlist(strsplit(x, ' '))[-1]
+  }, simplify=FALSE)
+  options.names <- sapply(listoptions,function(x){
+    option <-  unlist(strsplit(x, ' '))[1]
+  })
+  names(options.args) <- unlist(options.names)
+  return(options.args)  
+}
