@@ -95,24 +95,35 @@ getDatabaseConnection <- function(applicationSettings = racas::applicationSettin
   return(conn)
 }
 
-getDBType <- function(server.database.r.driver = racas::applicationSettings$server.database.r.driver) {
-  
-  driver <- eval(parse(text = server.database.r.driver))
-  dbType <- switch(class(driver),
-                   "OraDriver" = "Oracle",
-                   "PostgreSQLDriver" = "Postgres",
-                   "MySQLDriver" = "MySQL",
-                   "JDBCDriver" = "JDBC",
-  )
-  if(!is.null(dbType)){
-    if(dbType=="JDBC") {
-      supportedDBs <- c("oracle", "postgres", "mysql")
-      db <- supportedDBs[unlist(lapply(supportedDBs, grepl, x = paste(unlist(capture.output(driver)), collapse = " "), ignore.case = TRUE))][1]
-      dbType <- switch(db,
-                       "oracle" = "Oracle",
-                       "postgres" = "Postgres",
-                       "mysql" = "MySQL"
-      )
+getDBType <- function(server.database.r.driver = racas::applicationSettings$server.database.r.driver, conn = NULL) {
+  if(is.null(conn)) {
+    driver <- eval(parse(text = server.database.r.driver))
+    dbType <- switch(class(driver),
+                     "OraDriver" = "Oracle",
+                     "PostgreSQLDriver" = "Postgres",
+                     "MySQLDriver" = "MySQL",
+                     "JDBCDriver" = "JDBC",
+    )
+    if(!is.null(dbType)){
+      if(dbType=="JDBC") {
+        supportedDBs <- c("oracle", "postgres", "mysql")
+        db <- supportedDBs[unlist(lapply(supportedDBs, grepl, x = paste(unlist(capture.output(driver)), collapse = " "), ignore.case = TRUE))][1]
+        dbType <- switch(db,
+                         "oracle" = "Oracle",
+                         "postgres" = "Postgres",
+                         "mysql" = "MySQL"
+        )
+      }
+    }
+  } else {
+    dbType <- switch(class(conn),
+           "OraConnection" = "Oracle",
+           "PostgreSQLConnection" = "Postgres",
+           "MySQLConnection" = "MySQL",
+           "JDBCConnection" = "JDBC"
+           )
+    if(is.null(dbType)){
+      stop("determination of db connection type not implmented for JDBC connections")
     }
   }
   return(dbType)
@@ -159,4 +170,28 @@ query_replace_string_with_values <- function(qu, string, values, limit = 999, ..
     results <- list(query(qu, ...))
   }
   return(results)
+}
+
+dbExistsTable <- function(conn, name, schema = NA) {
+  dbType <- getDBType(conn = conn)
+  exists <- switch(dbType,
+         "Postgres" = {
+           if(is.na(schema)) schema <- dbGetQuery(conn, "SELECT current_schema()")[[1]]  
+           dbGetQuery(conn,paste0("SELECT EXISTS (
+                                        SELECT 1
+                                        FROM   information_schema.tables 
+                                        WHERE  lower(table_schema) = '",tolower(schema),"'
+                                        AND    lower(table_name) = '",tolower(name),"')"
+                                  ))[[1]]
+         },
+         "Oracle" = {
+           if(is.na(schema)) schema <- dbGetQuery(conn, "select sys_context( 'userenv', 'current_schema' ) from dual")[[1]]  
+           DBI::dbExistsTable(conn, name, schema) || DBI::dbExistsTable(conn, toupper(name), toupper(schema)) || DBI::dbExistsTable(conn, tolower(name), tolower(schema))
+         },
+         "MySQL" = {
+           if(is.na(schema)) schema <- dbGetQuery(conn, "SELECT SCHEMA()")[[1]]  
+           DBI::dbExistsTable(conn, name, schema) || DBI::dbExistsTable(conn, toupper(name), toupper(schema)) || DBI::dbExistsTable(conn, tolower(name), tolower(schema))           
+         }      
+  )
+  return(exists)
 }
