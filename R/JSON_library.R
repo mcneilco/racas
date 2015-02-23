@@ -527,6 +527,8 @@ createSubjectState <- function(subject=NULL, subjectValues=list(), recordedBy="u
 #'@param dateValue date in milliseconds
 #'@param clobValue clob
 #'@param blobValue blob
+#'@param concentration numeric
+#'@param concUnit character
 #'@param valueOperator ">" or "<"
 #'@param operatorType "comparison", not yet implemented
 #'@param numericValue numeric
@@ -550,7 +552,8 @@ createSubjectState <- function(subject=NULL, subjectValues=list(), recordedBy="u
 #'@export
 createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL, fileValue=NULL,
                              urlValue=NULL, publicData=TRUE, ignored=FALSE,
-                             dateValue=NULL, clobValue=NULL, blobValue=NULL, valueOperator=NULL, operatorType=NULL, numericValue=NULL,
+                             dateValue=NULL, clobValue=NULL, blobValue=NULL, concentration=NULL,
+                             concUnit=NULL, valueOperator=NULL, operatorType=NULL, numericValue=NULL,
                              sigFigs=NULL, uncertainty=NULL, uncertaintyType=NULL,
                              numberOfReplicates=NULL, valueUnit=NULL, unitType=NULL, comments=NULL, 
                              lsTransaction=NULL, codeValue=NULL, recordedBy="username",
@@ -567,6 +570,8 @@ createStateValue <- function(lsType="lsType", lsKind="lsKind", stringValue=NULL,
     dateValue=dateValue,
     clobValue=clobValue,
     blobValue=blobValue,
+    concentration=concentration,
+    concUnit=concUnit,
     operatorKind=valueOperator,
     operatorType=if(is.null(valueOperator)) NULL else "comparison",
     numericValue=numericValue,

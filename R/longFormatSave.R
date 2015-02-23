@@ -339,6 +339,8 @@ meltTimes <- function(entityData, entityKind = "treatmentGroup") {
 #'     \item{valueUnit}{String: The units for each value (optional)}
 #'     \item{clobValue}{String: for very long strings (optional)}
 #'     \item{blobValue}{Anything: no case that exists right now (optional)}
+#'     \item{concentration}{Numeric: concentration, usually of a batch code (optional)}
+#'     \item{concUnit}{String: unit of concentration (optional)}
 #'     \item{numberOfReplicates}{Integer: The number of replicates (optional)}
 #'     \item{uncertainty}{Numeric: the uncertainty (optional)}
 #'     \item{uncertaintyType}{String: the type of uncertainty, such as standard deviation (optional)}
@@ -400,6 +402,8 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
       codeValue = if(is.character(entityData$codeValue) && !is.na(entityData$codeValue)) {entityData$codeValue} else {NULL},
       fileValue = if(is.character(entityData$fileValue) && !is.na(entityData$fileValue)) {entityData$fileValue} else {NULL},
       urlValue = if(is.character(entityData$urlValue) && !is.na(entityData$urlValue)) {entityData$urlValue} else {NULL},
+      concentration = if(is.numeric(entityData$concentration) && !is.na(entityData$concentration)) {entityData$concentration} else {NULL},
+      concUnit = if(is.character(entityData$concUnit) && !is.na(entityData$concUnit)) {entityData$concUnit} else {NULL},
       valueOperator = if(is.character(entityData$valueOperator) && !is.na(entityData$valueOperator)) {entityData$valueOperator} else {NULL},
       operatorType = if(is.character(entityData$operatorType) && !is.na(entityData$operatorType)) {entityData$operatorType} else {NULL},
       numericValue = if(is.numeric(entityData$numericValue) && !is.na(entityData$numericValue)) {entityData$numericValue} else {NULL},

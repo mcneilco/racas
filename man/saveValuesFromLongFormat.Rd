@@ -27,6 +27,8 @@ saveValuesFromLongFormat(entityData, entityKind, stateGroups = NULL,
  \item{valueUnit}{String: The units for each value (optional)}
  \item{clobValue}{String: for very long strings (optional)}
  \item{blobValue}{Anything: no case that exists right now (optional)}
+ \item{concentration}{Numeric: concentration, usually of a batch code (optional)}
+ \item{concUnit}{String: unit of concentration (optional)}
  \item{numberOfReplicates}{Integer: The number of replicates (optional)}
  \item{uncertainty}{Numeric: the uncertainty (optional)}
  \item{uncertaintyType}{String: the type of uncertainty, such as standard deviation (optional)}
