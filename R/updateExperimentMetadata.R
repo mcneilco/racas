@@ -52,7 +52,7 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
 #' Saves a file into a file service and saves a reference to it in the
 #' experiment
 #' 
-#' @param fileStartLocation path to file
+#' @param fileStartLocation path to file, relative from privateUploads
 #' @param experiment an experiment object
 #' @param stateType the stateType of save location, e.g. "metadata"
 #' @param stateKind the stateKind of save location, e.g. "experiment metadata"
@@ -143,7 +143,6 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     # Move the file
     serverFileLocation <- file.path(folderLocation, fileName)
     targetLocation <- getUploadedFilePath(serverFileLocation)
-    dir.create(targetLocation, showWarnings = FALSE, recursive = TRUE)
     if (deleteOldFile) {
       if (!file.rename(from = sourceLocation, to = targetLocation)) {
         warnUser(paste("could not rename file", fileName))
@@ -176,19 +175,24 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
 #' is stored internally or on an external file system, so you just get a link to
 #' wherever the file is stored.
 #' 
-#' @param fileCode A file code of some custom type like "FILE1234" or a path
-#' link like "experiment/EXPT-3/this.txt"
-#' 
+#' @param fileCode A file code of some custom type like \code{"FILE1234"} or a
+#'   path link like \code{"experiment/EXPT-3/this.txt"}
+#' @param login boolean to decide if login is required to reach link. Paths for 
+#'   use by R should have this \code{FALSE}, but paths displayed to users should
+#'   be \code{TRUE}.
+#'   
 #' @return a url
 #' @details The getting equivalent of \code{\link{saveAcasFile}}. In
 #'   updateExperimentMetadata.R
 #' @export
-getAcasFileLink <- function(fileCode) {
+getAcasFileLink <- function(fileCode, login = FALSE) {
   fileServiceType <- racas::applicationSettings$server.service.external.file.type
   if (fileServiceType == "blueimp") {
-    urlLocation <- paste0(racas::applicationSettings$server.nodeapi.path, "/", 
-                          "dataFiles", "/", 
-                          URLencode(fileCode))
+    fileRootPath <- ifelse(login, 
+                           paste0(racas::applicationSettings$client.host, ":",
+                                         racas::applicationSettings$client.path),
+                           racas::applicationSettings$server.nodeapi.path)
+    urlLocation <- paste0(fileRootPath, "/dataFiles/", URLencode(fileCode))
   } else if (fileServiceType == "custom") {
     urlLocation <- paste0(racas::applicationSettings$client.service.external.file.service.url, 
                           URLencode(fileCode))

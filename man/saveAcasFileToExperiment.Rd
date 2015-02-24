@@ -12,7 +12,7 @@ saveAcasFileToExperiment(fileStartLocation, experiment, stateType, stateKind,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
-\item{fileStartLocation}{path to file}
+\item{fileStartLocation}{path to file, relative from privateUploads}
 
 \item{experiment}{an experiment object}
 

@@ -3,11 +3,15 @@
 \alias{getAcasFileLink}
 \title{Get url for ACAS file}
 \usage{
-getAcasFileLink(fileCode)
+getAcasFileLink(fileCode, login = FALSE)
 }
 \arguments{
-\item{fileCode}{A file code of some custom type like "FILE1234" or a path
-link like "experiment/EXPT-3/this.txt"}
+\item{fileCode}{A file code of some custom type like \code{"FILE1234"} or a
+path link like \code{"experiment/EXPT-3/this.txt"}}
+
+\item{login}{boolean to decide if login is required to reach link. Paths for
+  use by R should have this \code{FALSE}, but paths displayed to users should
+  be \code{TRUE}.}
 }
 \value{
 a url
