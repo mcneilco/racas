@@ -461,19 +461,24 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
   }
   return(suppressWarnings(as.numeric(gsub(",", "", as.character(inputValue)))))
 }
-#' File Saving
+#' File Saving (deprecated)
 #' 
-#' Moves a file to the location for files and saves a reference to that location in the experiment
+#' Moves a file to the location for files and saves a reference to that location
+#' in the experiment
 #' 
-#' @param fileStartLocation Path to location to find the source file
+#' @param fileStartLocation Path to location to find the source file, relative
+#'   from working directory
 #' @param experiment experiment object to save file to
 #' @param recordedBy username of person saving
 #' @param lsTransaction integer of transaction
 #' @param fileServiceType "blueimp" or "custom"
-#' @param fileService url path to custom file service (will be passed to customSourceFileMove, which should be defined in customFunctions)
-#' 
-#' @details fileRead.R
-#' 
+#' @param fileService url path to custom file service (will be passed to
+#'   customSourceFileMove, which should be defined in customFunctions)
+#'   
+#' @details Mostly deprecated in favor of
+#'   \code{\link{saveAcasFileToExperiment}}, where the fileStartLocation is
+#'   relative from privateUploads. In fileRead.R.
+#'   
 #' @return New file location (or code)
 moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
                                        fileServiceType = racas::applicationSettings$server.service.external.file.type, 
@@ -535,7 +540,7 @@ get_text_file_contents <- function(file_path) {
 #' Move file to file server
 #'
 #' @param fileServiceType "blueimp" or "custom"
-#' @param fileStartLocation current location of file, relative from privateUploads
+#' @param fileStartLocation current location of file, relative from working directory
 #' @param targetPath path to new file location, not currently used when fileServiceType == "custom"
 #' @param fileService path to file service, not used when fileServiceType == "blueimp"
 #' @param experiment experiment object, not used when fileServiceType == "blueimp"

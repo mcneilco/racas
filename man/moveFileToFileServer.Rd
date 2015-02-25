@@ -9,7 +9,7 @@ moveFileToFileServer(fileStartLocation, targetPath = NULL,
   experiment = NULL, recordedBy = NULL)
 }
 \arguments{
-\item{fileStartLocation}{current location of file, relative from privateUploads}
+\item{fileStartLocation}{current location of file, relative from working directory}
 
 \item{targetPath}{path to new file location, not currently used when fileServiceType == "custom"}
 
