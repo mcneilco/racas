@@ -430,7 +430,6 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' 
 
 plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), ...) {
-  saveSession("~/Desktop/pts")
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
