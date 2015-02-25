@@ -430,6 +430,7 @@ extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
 #' 
 
 plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), ...) {
+  saveSession("~/Desktop/pts")
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -668,7 +669,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     }
   }
   if(labelAxes) {
-    xlabel <- paste0(curveData$doseType[1], " (",curveData$doseUnits[1],")")
+    xlabel <- paste0('Concentration ', " (",curveData$doseUnits[1],")")
     ylabel <- paste0(curveData$responseType[1], " (",curveData$responseUnits[1],")")
     title(xlab = xlabel, ylab = ylabel)
   }
