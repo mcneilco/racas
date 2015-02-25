@@ -836,6 +836,70 @@ curve_fit_controller_getFitDataByCurveId <- function(curveids, format = "tsv") {
   )
   return(response)
 }
+get_cached_curve_fit_parameters <- function(curveids, ...) {
+  curveids <- as.list(unlist(curveids))
+  qu <- "select codekind,
+                codeorigin,
+                codetype,
+                codevalue,
+                comments,
+                concunit,
+                concentration,
+                lskind,
+                lstransaction,
+                lstype,
+                numericvalue,
+                operatorkind,
+                operatortype,
+                recordedby,
+                recordeddate,
+                stringvalue,
+                uncertainty,
+                uncertaintytype,
+                unitkind,
+                unittype,
+                curveid
+                from pp_api_curve_params where curveId in (REPLACEME)"
+  curve_params <- rbindlist(query_replace_string_with_values(qu, string = "REPLACEME", curveids, 
+                                                             ...))
+  if(nrow(curve_params) == 0) {
+    stop("got 0 results from pp_api_curve_params table query for the following curvids: ", paste0(curveids, collapse = ","))
+  }
+  setnames(curve_params, tolower(names(curve_params)))
+  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid ~ lskind", value.var = "numericvalue")
+  dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
+  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint"),], "curveid ~ lskind", value.var = "stringvalue")
+  setkey(dt1, "curveid")
+  setkey(dt2, "curveid")
+  setkey(dt3, "curveid")
+  parameters <- dt1[dt2][dt3]
+  flagAndRenderingColumnNames <- c("Rendering Hint", "user flag status", "algorithm flag status")
+  parameters[ , flagAndRenderingColumnNames[!flagAndRenderingColumnNames %in% names(parameters)] := ""]
+  setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
+  renderingParameters <- switch(parameters[1]$renderingHint,
+         "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
+         "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max"), stringsAsFactors = FALSE))
+         )
+  setnames(parameters, renderingParameters$names$dbNames, renderingParameters$names$renderNames)
+  operator <- curve_params[lskind == renderingParameters$value, c('curveid', 'operatorkind'), with = FALSE]
+  setnames(operator, "operatorkind", "operator")
+  setkey(operator, "curveid")  
+  parameters <- parameters[operator]
+  setnames(parameters, "curveid", "curveId")  
+  return(parameters)
+}
+get_cached_raw_data <- function(curveids, ...) {
+  curveids <- as.list(unlist(curveids))
+  points <- rbindlist(query_replace_string_with_values("select curveid, dose, doseUnits, response, responsekind, responseUnits, userFlagStatus, algorithmFlagStatus, preprocessFlagStatus
+                                                             from pp_api_dose_response where curveid in (REPLACEME)", string = "REPLACEME", curveids, 
+                                                       ))
+  setnames(points, c('curveId', 'dose', 'doseUnits', 'response', 'responseType', 'responseUnits', 'userFlagStatus', 'algorithmFlagStatus', 'preprocessFlagStatus'))
+  points[ is.na(userFlagStatus), userFlagStatus := ""]
+  points[ is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
+  points[ is.na(preprocessFlagStatus), preprocessFlagStatus := ""]
+  points[ , tempFlagStatus := ""]
+  return(points)
+}
 get_treatmentgroup_values <- function(experimentID, analysisGroupID) {
   myMessenger <- messenger()
   if(missing(experimentID)) {
@@ -1002,6 +1066,14 @@ get_fit_data_curve_id <- function(curveids, full_object = TRUE) {
   }
   return(fitData)
 }
+get_cached_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
+  parameters <- get_cached_curve_fit_parameters(curveids, ...)
+  if(full_object == TRUE) {
+    points <- get_cached_raw_data(curveids, ...)
+  }
+  return(list(parameters = parameters, points = points))
+}
+
 dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   ###Fit
