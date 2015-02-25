@@ -858,7 +858,9 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
                 uncertaintytype,
                 unitkind,
                 unittype,
-                curveid
+                curveid,
+                curvedisplaymin,
+                curvedisplaymax
                 from pp_api_curve_params where curveId in (REPLACEME)"
   curve_params <- rbindlist(query_replace_string_with_values(qu, string = "REPLACEME", curveids, 
                                                              ...))
@@ -866,7 +868,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     stop("got 0 results from pp_api_curve_params table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
-  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid ~ lskind", value.var = "numericvalue")
+  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
   dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
   dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint"),], "curveid ~ lskind", value.var = "stringvalue")
   setkey(dt1, "curveid")
