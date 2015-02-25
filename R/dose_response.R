@@ -880,7 +880,9 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
          "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
          "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max"), stringsAsFactors = FALSE))
          )
-  setnames(parameters, renderingParameters$names$dbNames, renderingParameters$names$renderNames)
+  namesExist <- renderingParameters$names$dbNames %in% names(parameters)
+  
+  setnames(parameters, renderingParameters$names$dbNames[namesExist], renderingParameters$names$renderNames[namesExist])
   operator <- curve_params[lskind == renderingParameters$value, c('curveid', 'operatorkind'), with = FALSE]
   setnames(operator, "operatorkind", "operator")
   setkey(operator, "curveid")  
