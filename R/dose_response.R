@@ -892,11 +892,13 @@ get_cached_raw_data <- function(curveids, ...) {
   curveids <- as.list(unlist(curveids))
   points <- rbindlist(query_replace_string_with_values("select curveid, dose, doseUnits, response, responsekind, responseUnits, userFlagStatus, algorithmFlagStatus, preprocessFlagStatus
                                                              from pp_api_dose_response where curveid in (REPLACEME)", string = "REPLACEME", curveids, 
-                                                       ))
+                                                       ...))
   setnames(points, c('curveId', 'dose', 'doseUnits', 'response', 'responseType', 'responseUnits', 'userFlagStatus', 'algorithmFlagStatus', 'preprocessFlagStatus'))
   points[ is.na(userFlagStatus), userFlagStatus := ""]
   points[ is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
   points[ is.na(preprocessFlagStatus), preprocessFlagStatus := ""]
+  points[ is.na(responseUnits), responseUnits := ""]
+  points[ is.na(doseUnits), doseUnits := ""]
   points[ , tempFlagStatus := ""]
   return(points)
 }
