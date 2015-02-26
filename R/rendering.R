@@ -441,7 +441,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   
   #Yay Pythagoras
-  scaleFactor <- sqrt(height^2+width^2)/sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
+  defaultDiagonal <- sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
+  scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
+  scaleFactor <- max(scaleFactor, 0.7)
   
   #Assign Colors
   plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
