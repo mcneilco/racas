@@ -440,6 +440,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     drawIntercept <- NA
   }
   
+  #Yay Pythagoras
+  scaleFactor <- sqrt(height^2+width^2)/sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
+  
   #Assign Colors
   plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
   #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
@@ -516,9 +519,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   plotPoints <- function(yrn, pts, ...) {
     if(!plotMeans) {
       #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     } else {
-      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     }
     if(drawStdDevs) {
       plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
@@ -543,13 +546,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     legendTextColor <- params$color
     legendPCH <- params$pch
     legendLineWidth <- 1
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
     if(nrow(goodPoints) > 0) {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
     } else {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
     }
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
   }
   if(connectPoints && exists("means")) {
     cids <- unique(means$curveId)
@@ -562,7 +565,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   #If grid, then add grid
   if(showGrid) {
-    grid(lwd = 1.7)
+    grid(lwd = 1.7*scaleFactor)
   }
   #Now Plot Flagged Points
   if(nrow(goodPoints) > 0) {
@@ -602,7 +605,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color)  
+      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
     }
   }
   #Actually Draw Curves
@@ -663,8 +666,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       } else {
         col <- '#808080'
       }
-      lines(ylin,lty = 2, lwd = 2.0,col= col)
-      lines(xlin, lty = 2, lwd = 2.0,col= col)
+      lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
+      lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
     }
   }
   if(labelAxes) {
