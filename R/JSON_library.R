@@ -706,7 +706,7 @@ createLabelSequence <- function(labelPrefix = "PREF", labelSeparator="-", groupD
     labelTypeAndKind=labelTypeAndKind)
 }
 
-createContainerState <- function(container=NULL,containerValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
+createContainerState <- function(container=NULL,containerValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", 
                                  comments="", lsTransaction=NULL){
   containerState = list(
     container=container,
@@ -723,7 +723,7 @@ createContainerState <- function(container=NULL,containerValues=NULL, recordedBy
 }
 
 createContainerLabel <- function(container=NULL,labelText, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
-                                 lsTransaction=NULL, preferred=TRUE, imageFile=NULL, labelTypeAndKind=NULL, physicallyLabeled=FALSE,
+                                 lsTransaction=NULL, preferred=TRUE, imageFile=NULL, physicallyLabeled=FALSE,
                                  modifiedDate=NULL,version=NULL){
   containerLabel = list(
     container=container,
@@ -734,8 +734,7 @@ createContainerLabel <- function(container=NULL,labelText, recordedBy="userName"
     lsTransaction=lsTransaction,
     preferred=preferred,
     imageFile=imageFile,
-    labelTypeAndKind=labelTypeAndKind,
-    physicallyLabeled=physicallyLabeled,
+    physicallyLabled=physicallyLabeled, # Roo has it spelled wrong, so we have to match that
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
     modifiedDate=modifiedDate,
