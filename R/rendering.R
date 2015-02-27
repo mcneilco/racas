@@ -440,6 +440,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     drawIntercept <- NA
   }
   
+  #Yay Pythagoras
+  defaultDiagonal <- sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
+  scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
+  scaleFactor <- max(scaleFactor, 0.7)
+  
   #Assign Colors
   plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
   #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
@@ -516,9 +521,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   plotPoints <- function(yrn, pts, ...) {
     if(!plotMeans) {
       #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     } else {
-      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     }
     if(drawStdDevs) {
       plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
@@ -543,13 +548,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     legendTextColor <- params$color
     legendPCH <- params$pch
     legendLineWidth <- 1
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
     if(nrow(goodPoints) > 0) {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
     } else {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
     }
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
   }
   if(connectPoints && exists("means")) {
     cids <- unique(means$curveId)
@@ -562,7 +567,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   #If grid, then add grid
   if(showGrid) {
-    grid(lwd = 1.7)
+    grid(lwd = 1.7*scaleFactor)
   }
   #Now Plot Flagged Points
   if(nrow(goodPoints) > 0) {
@@ -602,7 +607,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color)  
+      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
     }
   }
   #Actually Draw Curves
@@ -663,13 +668,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       } else {
         col <- '#808080'
       }
-      lines(ylin,lty = 2, lwd = 2.0,col= col)
-      lines(xlin, lty = 2, lwd = 2.0,col= col)
+      lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
+      lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
     }
   }
   if(labelAxes) {
-    xlabel <- paste0(curveData$doseType[1], " (",curveData$doseUnits[1],")")
-    ylabel <- paste0(curveData$responseType[1], " (",curveData$responseUnits[1],")")
+    xlabel <- paste0('Concentration ', " (",curveData$doseUnits[1],")")
+    ylabel <- paste0(curveData$responseType[1], ifelse(is.na(curveData$responseUnits[1]) || curveData$responseUnits[1] == "", "",paste0(" (",curveData$responseUnits[1],")")))
     title(xlab = xlabel, ylab = ylabel)
   }
   if(!is.na(outFile)) {
@@ -703,4 +708,103 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
       by = curveId]$V1,
     .N)]
   return(points[dose!=0,])
+}
+
+get_rendering_hint_options <- function(renderingHint) {
+  renderingOptions <- switch(renderingHint,
+                             "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
+                             "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
+  )
+  return(renderingOptions)
+}
+
+parse_params_curve_render_dr <- function(getParams = GET) {
+  # Get data
+  if(is.null(getParams$ymin)) {
+    yMin <- NA
+  } else {
+    yMin <- as.numeric(getParams$ymin)
+  }
+  if(!is.null(getParams$yNormMin)) {
+    yMin <- as.numeric(getParams$yNormMin)
+  }
+  if(is.null(getParams$ymax)) {
+    yMax <- NA
+  } else {
+    yMax <- as.numeric(getParams$ymax)
+  }
+  if(!is.null(getParams$yNormMax)) {
+    yMax <- as.numeric(getParams$yNormMax)
+  }
+  if(is.null(getParams$xmin)) {
+    xMin <- NA
+  } else {
+    xMin <- as.numeric(getParams$xmin)
+  }
+  if(!is.null(getParams$xNormMin)) {
+    xMin <- as.numeric(getParams$xNormMin)
+  }
+  if(is.null(getParams$xmax)) {
+    xMax <- NA
+  } else {
+    xMax <- as.numeric(getParams$xmax)
+  }
+  if(!is.null(getParams$xNormMax)) {
+    xMax <- as.numeric(getParams$xNormMax)
+  }
+  if(is.null(getParams$height)) {
+    height <- 500
+  } else {
+    height <- as.numeric(getParams$height)
+  }
+  if(!is.null(getParams$cellHeight)) {
+    height <- as.numeric(getParams$cellHeight)
+  }
+  if(is.null(getParams$width)) {
+    width <- 700
+  } else {
+    width <- as.numeric(getParams$width)
+  }
+  if(!is.null(getParams$cellWidth)) {
+    width <- as.numeric(getParams$cellWidth)
+  }
+  if(is.null(getParams$inTable)) {
+    inTable <- FALSE
+  } else {
+    inTable <- as.logical(getParams$inTable)
+  }
+  if(is.null(getParams$showAxes)) {
+    showAxes <- TRUE
+  } else {
+    showAxes <- as.logical(getParams$showAxes)
+  }
+  if(is.null(getParams$showGrid)) {
+    showGrid <- !inTable
+  } else {
+    showGrid <- as.logical(getParams$showGrid)
+  }
+  if(is.null(getParams$labelAxes)) {
+    labelAxes <- !inTable
+  } else {
+    labelAxes <- as.logical(getParams$labelAxes)
+  }
+  if(is.null(getParams$legend)) {
+    legend <- !inTable
+  } else {
+    legend <- as.logical(getParams$legend)
+  }
+  
+  if(is.null(getParams$curveIds)) {
+    stop("curveIds not provided, provide curveIds")
+    DONE
+  } else {
+    curveIds <- getParams$curveIds
+    curveIdsStrings <- strsplit(curveIds,",")[[1]]
+    curveIds <- suppressWarnings(as.integer(curveIds))
+    if(is.na(curveIds)) {
+      curveIds <- curveIdsStrings
+    }
+  }
+  
+  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds))
 }
