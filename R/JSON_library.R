@@ -770,6 +770,12 @@ createContainerContainerInteraction <- function(codeName=NULL, ignored = FALSE, 
   return(containerContainerInteraction)	
 }			
 
+#' create subject container interaction 
+#' @details interactionStates is ignored for now,
+#' could add back later (as lsStates) with roo update.
+#' 
+#' This is super sensitive to subject and container being nested- only known to
+#' work with containers and subjects that only have an id and version.
 createSubjectContainerInteraction <- function(subject, container, lsType, lsKind="interaction", codeName=NULL, ignored = FALSE,
                                               lsTransaction=NULL, recordedBy="userName", interactionStates=NULL){
   #lsType = c("added to","removed from","operated on", "created by", "destroyed by", "refers to", "member of")
@@ -782,7 +788,6 @@ createSubjectContainerInteraction <- function(subject, container, lsType, lsKind
     ignored=ignored,
     recordedBy=recordedBy,
     lsTransaction=lsTransaction,
-    interactionStates=interactionStates,
     recordedDate=sysDateTime,
     modifiedBy=recordedBy,
     modifiedDate=sysDateTime,
@@ -873,7 +878,11 @@ saveContainerContainerInteractions <- function(containerContainerInteractions, l
 }
 
 saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  return(saveAcasEntities(subjectContainerInteraction, "itxsubjectcontainers"))
+  return(saveAcasEntity(subjectContainerInteraction, "itxsubjectcontainers"))
+}
+
+saveSubjectContainerInteractions <- function(subjectContainerInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  return(saveAcasEntities(subjectContainerInteractions, "itxsubjectcontainers"))
 }
 
 saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
