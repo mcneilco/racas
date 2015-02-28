@@ -1974,10 +1974,10 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
 #' @param a data frame (or data table) with columns lsType and lsKind
 #' @return a list object of returned lsKinds
 #' @export
-get_or_create_value_kinds <- function(df) {
+get_or_create_value_kinds <- function(df, persistence_full_path = racas::applicationSettings$client.service.persistence.fullpath) {
   valueTypeAndKindsJSON <- jsonlite::toJSON(df)
   response <- fromJSON(getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/getOrCreate/jsonArray"),
+    paste0(persistence_full_path, "valuekinds/getOrCreate/jsonArray"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=valueTypeAndKindsJSON))
@@ -1990,7 +1990,7 @@ get_or_create_value_kinds <- function(df) {
 #' @param requiredModules a character vector of modules to load see \link{modules}
 #' @return a list object of returned lsKinds
 #' @export
-load_value_type_and_kinds <- function(requiredModules = NA) {
+load_value_type_and_kinds <- function(requiredModules = NA, ...) {
   valueTypeAndKindsFile <- system.file("docs", "value_type_and_kinds.csv", package = "racas")
   valueTypeAndKinds <- fread(valueTypeAndKindsFile)
   if(!is.na(requiredModules)) {
@@ -1999,7 +1999,7 @@ load_value_type_and_kinds <- function(requiredModules = NA) {
   valueTypeAndKinds[ , Module:= NULL]
   valueTypeAndKinds <- unique(valueTypeAndKinds)
   setnames(valueTypeAndKinds, c("lsType", "lsKind"))
-  return(get_or_create_value_kinds(valueTypeAndKinds))
+  return(get_or_create_value_kinds(valueTypeAndKinds, ...))
 }
 #' Known acas modules which require lsKinds to exist
 #' 
