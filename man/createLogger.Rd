@@ -6,7 +6,7 @@
 createLogger(logName = "com.default.logger", logFileName = "racas.log",
   logDir = racas:::applicationSettings$server.log.path,
   logLevel = racas:::applicationSettings$server.log.level,
-  envir = environment(), logToConsole = TRUE, ...)
+  envir = environment(), logToConsole = FALSE, ...)
 }
 \arguments{
 \item{logName}{Name for the logger output line within the log file (default: "com.default.logger)}
