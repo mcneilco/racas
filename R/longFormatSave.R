@@ -674,10 +674,10 @@ meltBatchCodes2 <- function(entityData) {
   if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
     return(output)
   }
+  optionalColumns <- c("lsTransaction", "recordedBy", "tempId", "parentId", "analysisGroupID", 
+                       "treatmentGroupID", "subjectID")
   
-  optionalColumns <- c("lsTransaction", "recordedBy")
-  
-  neededColumns <- c("batchCode", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
+  neededColumns <- c("batchCode", "tempStateId", "stateType", "stateKind")
   if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
