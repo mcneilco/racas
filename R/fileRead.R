@@ -11,6 +11,9 @@
 #' @details Right now, this turns dates into "A_date_was_in_Excel_Date_format" 
 #' and does not treat headers as column names.
 #' in fileRead.R
+#' Hidden sheets in xls and xlsx files are ignored.
+
+
 
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
@@ -24,7 +27,8 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   if (grepl("\\.xlsx?$",filePath)) {
     tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
-      output <- XLConnect::readWorksheet(wb, sheet = sheet, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
+      sheetToRead <- which(!unlist(lapply(XLConnect::getSheets(wb), isSheetHidden, object = wb)))[sheet]
+      output <- XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="A_date_was_in_Excel_Date_format")
     }, error = function(e) {
       stopUser("Cannot read input excel file")
     })
