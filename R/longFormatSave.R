@@ -721,6 +721,7 @@ meltConcentrations2 <- function(entityData) {
     }
     output$numericValue <- output$concentration
     output$unitKind <- output$concentrationUnit
+    output$valueUnit <- output$concentrationUnit
     output$valueKind <- "tested concentration"
     output$valueType <- "numericValue"
     output$publicData <- TRUE
@@ -759,6 +760,7 @@ meltTimes2 <- function(entityData) {
     }
     output$numericValue <- output$time
     output$unitKind <- output$timeUnit
+    output$valueUnit <- output$timeUnit
     output$valueKind <- "time"
     output$valueType <- "numericValue"
     output$publicData <- TRUE
