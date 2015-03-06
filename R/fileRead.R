@@ -570,5 +570,37 @@ get_text_file_contents <- function(file_path) {
   return(text)
 }
 
+#' Move file to file server
+#'
+#' @param fileServiceType "blueimp" or "custom"
+#' @param fileStartLocation current location of file, relative from working directory
+#' @param targetPath path to new file location, not currently used when fileServiceType == "custom"
+#' @param fileService path to file service, not used when fileServiceType == "blueimp"
+#' @param experiment experiment object, not used when fileServiceType == "blueimp"
+#' @param recordedBy logged in username, not used when fileServiceType == "blueimp"
+#' @return character file code or path relative from privateUploads
+#' @keywords custom, file, blueimp
+#' @export
+#' 
+moveFileToFileServer <- function(fileStartLocation, targetPath=NULL, 
+                                 fileServiceType = racas::applicationSettings$server.service.external.file.type, 
+                                 fileService=racas::applicationSettings$server.service.external.file.service.url, 
+                                 experiment=NULL, recordedBy=NULL) {
+  # moves a file to file server
+  if (fileServiceType == "blueimp") {
+    # Move the file
+    file.rename(from=fileStartLocation, to=getUploadedFilePath(targetPath))
+    return(targetPath)
+  } else if (fileServiceType == "custom") {
+    if(!exists('customSourceFileMove')) {
+      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+    }
+    fileName <- basename(fileStartLocation)
+    return(customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy))
+  } else {
+    stopUser("Configuration error: Invalid file service type")
+  }
+}
+
 
 
