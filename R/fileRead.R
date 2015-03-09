@@ -12,7 +12,7 @@
 #' and does not treat headers as column names.
 #' In fileRead.R
 
-readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
+readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE, fileEncoding="") {
   
   if (is.na(filePath)) {
     stopUser("Need Excel file path as input")
@@ -30,13 +30,13 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
-      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE)
+      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
     }, error = function(e) {
       stopUser("Cannot read input csv file")
     })
   } else if (grepl("\\.txt$",filePath)){
     tryCatch({
-      output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE)
+      output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
     }, error = function(e) {
       stopUser("Cannot read input txt file")
     })
