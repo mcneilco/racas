@@ -45,7 +45,7 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), logToConsole = TRUE, ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), logToConsole = FALSE, ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
   logReset()
   logger <- getLogger(logName)
@@ -66,12 +66,13 @@ racasLogger <- ""
 
 #'Creates a new logger object or returns the "racasLogger"
 #'
-#'Optionally creates a new logger or returns a logger stored in the racas namespace.
+#'Optionally creates a new logger or returns a logger stored in the racas namespace. Most inputs are passed through to \code{\link{createLogger}}.
 #'The default call 'logger()' will compare the field racas::racasLogger$envir with the current list of frames in the call stack.
 #'If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
 #'
-#'@param racas  Name for the logger output line within the log file (default: "com.default.logger")
+#'@param racas Boolean marking if racasLogger should be used, or if it is just passed to \code{createLogger}
 #'@param envir name of the log file to write to (default: "acas.log")
+#'@param reset Boolean marking if racasLogger should be reset. Ignored if \code{racas} is \code{FALSE}
 #'@param ... further arguments to be passed to \code{\link{createLogger}}
 #'@return object of class \code{\link{Logger}}
 #'
@@ -95,13 +96,13 @@ racasLogger <- ""
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-logger <- function(racas = TRUE, envir = parent.frame(), ...) {
+logger <- function(racas = TRUE, reset = FALSE, envir = parent.frame(), ...) {
   if(!racas) {
     return(createLogger(envir = envir, ...))
   } else {
     allEnvironments <- as.list(sys.frames())
     racasLoggerObj <- Filter( function(x) 'Logger' %in% class( get(x) ), ls(pattern = "racasLogger", envir = as.environment("package:racas")) )    
-    if(length(racasLoggerObj) > 0) {
+    if(length(racasLoggerObj) > 0 && !reset) {
       allEnvironments <- as.list(c(sys.frames(),globalenv()))
       loggerObject <- get("racasLogger", envir = as.environment("package:racas"))
       return(loggerObject)

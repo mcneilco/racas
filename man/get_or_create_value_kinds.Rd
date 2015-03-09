@@ -3,7 +3,8 @@
 \alias{get_or_create_value_kinds}
 \title{Get Or Create Value Kind}
 \usage{
-get_or_create_value_kinds(df)
+get_or_create_value_kinds(df,
+  persistence_full_path = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
 \item{a}{data frame (or data table) with columns lsType and lsKind}

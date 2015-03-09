@@ -3,10 +3,12 @@
 \alias{logger}
 \title{Creates a new logger object or returns the "racasLogger"}
 \usage{
-logger(racas = TRUE, envir = parent.frame(), ...)
+logger(racas = TRUE, reset = FALSE, envir = parent.frame(), ...)
 }
 \arguments{
-\item{racas}{Name for the logger output line within the log file (default: "com.default.logger")}
+\item{racas}{Boolean marking if racasLogger should be used, or if it is just passed to \code{createLogger}}
+
+\item{reset}{Boolean marking if racasLogger should be reset. Ignored if \code{racas} is \code{FALSE}}
 
 \item{envir}{name of the log file to write to (default: "acas.log")}
 
@@ -16,9 +18,12 @@ logger(racas = TRUE, envir = parent.frame(), ...)
 object of class \code{\link{Logger}}
 }
 \description{
-Optionally creates a new logger or returns a logger stored in the racas namespace.
+Optionally creates a new logger or returns a logger stored in the racas namespace. Most inputs are passed through to \code{\link{createLogger}}.
 The default call 'logger()' will compare the field racas::racasLogger$envir with the current list of frames in the call stack.
 If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
+}
+\details{
+Only rApache routes should reset the racasLogger by default. Other routes should use default
 }
 \examples{
 #From a fresh logger (myLogger <- createLogger())

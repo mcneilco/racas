@@ -14,26 +14,22 @@
 #' getCurveData(c("126933_AG-00000615", "126933_AG-00000123"), globalConnect=TRUE)
 
 getCurveData <- function(curveids, ...) {
-  parameters <- getCurveIDAnalsysiGroupResults(curveids)
-  
-  renderingHintParameters <- getParametersByRenderingHint(parametersDataFrame = parameters, curveids = curveids)
+  parameters <- getCurveIDAnalsysiGroupResults(curveids, ...)
+  renderingHint <- parameters[stringvalue %in% curveids]$lskind
+  renderingHintParameters <- parameters[ lskind == "batch code", c("codevalue", "curveid", "valueid"), with = FALSE]
   
   #There are cases where getParametersByRenderingHint return curveids (See PK), in this case we call getParametersByRenderingHint again with those curveids 3_AG-00000040
-  if(class(renderingHintParameters)=="list") {
-    points <- getPoints(curveids, renderingHint = renderingHintParameters$renderingHint, ...)
-    points$oldcurveid <- points$curveId
-    points$curveId <- paste0(points$curveId,"_s_id_",points$s_id)
-    renderingHintParameters <- renderingHintParameters$parameters
-    renderingHintParameters <- merge(renderingHintParameters, unique(data.frame(name = points$name,s_id = points$s_id, curveId=points$oldcurveid)))
-    renderingHintParameters$curveId <- paste0(renderingHintParameters$curveId,"_s_id_",renderingHintParameters$s_id)
-    renderingHintParameters$name <- renderingHintParameters$name
-  } else {
-    points <- getPoints(curveids, ...)
-  }
-  
-  if(is.null(renderingHintParameters) && nrow(points)==0) {
-    warning(paste0("No Points or Parameters found for curveids: ", curveids))
-  }
+  points <- as.data.table(getPoints(curveids, renderingHint = renderingHint, ...))
+  points[ , oldcurveid := curveId ]
+  points[ , curveId := paste0(curveId,"_s_id_",s_id)]
+  ptMerge <- unique(points[, c("name","curveId","oldcurveid"), with = FALSE])
+  setkey(ptMerge, oldcurveid)
+  setkey(renderingHintParameters, curveid)
+  renderingHintParameters <- renderingHintParameters[ptMerge]
+  renderingHintParameters[ , curveId := curveId]
+  renderingHintParameters[ , curveid := NULL]
+  #Remove when sam fixes container saving
+#   renderingHintParameters[ , name := curveId]
   
   return (list(
     points = points,
@@ -42,113 +38,116 @@ getCurveData <- function(curveids, ...) {
 }
 getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical = TRUE, ...) {
   
-  drQU <- paste("SELECT curveid, dose, doseunits, response, responseunits, flag as flag_on_load, response_ss_id, response_ss_version, response_sv_id, flag_sv_id, s_id, tg_id, ag_id from api_dose_response where curveid in (",sqliz(curveids),")",sep="")
   ivPO <- function(type)  {
     paste0("SELECT *
-  	FROM
-		  (SELECT s.id    AS S_ID,
-                el.label_text AS experiment_name,
-                'Animal-' || cl.label_text AS name,
-                agv.string_value AS curveid,
-                MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.numeric_value ELSE NULL END)   AS dose,
-                'Time' AS dosetype,
-                MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.unit_kind ELSE NULL END) AS doseunits,
-                MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.numeric_value ELSE NULL END) AS response,
-                'Conc' AS responsetype,
-                MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.unit_kind ELSE NULL END) AS responseunits,
-                MAX(CASE sv.ls_kind WHEN 'flag' then sv.id else null end) as flag_sv_id,
-                MAX(CASE sv.ls_kind WHEN 'flag' THEN sv.string_value ELSE NULL END) AS flag_on_load,
-                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.subject_state_id ELSE NULL END) AS response_ss_id,
-                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.id ELSE NULL END) AS response_sv_id,
-                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN ss.version ELSE NULL END) AS response_ss_version,
-                MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN tg.id ELSE NULL END) AS tg_id,
-                MAX(ag.id) AS ag_id
-                FROM analysis_group ag
-                JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
-                JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
-                JOIN analysisgroup_treatmentgroup agtg on ag.id = agtg.analysis_group_id
-                JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
-                JOIN experiment_analysisgroup eag on eag.analysis_group_id=ag.id
-                JOIN experiment e ON eag.experiment_id=e.id
-                JOIN experiment_label el ON e.id=el.experiment_id
-                JOIN treatmentgroup_subject tgs on tgs.treatment_group_id=tg.id
-                JOIN subject s ON s.id=tgs.subject_id
-                JOIN subject_state ss ON ss.subject_id = s.id
-                JOIN subject_value sv ON sv.subject_state_id = ss.id
-                JOIN itx_subject_container itxsc ON s.id = itxsc.subject_id
-                JOIN container c ON c.id=itxsc.container_id
-                JOIN container_label cl ON cl.container_id    =c.id
-                WHERE agv.ls_kind     = '",type," pk curve id'
-                AND sv.ls_kind       IN ('time', '",type," - PK_Concentration')
-                AND agv.string_value IN (  ",sqliz(curveids)," )
-                GROUP BY s.id, ss.id, agv.string_value, cl.label_text, el.label_text
-                )
-                WHERE response IS NOT NULL
-                ORDER BY tg_id ASC ")
+           FROM
+           (SELECT s.id    AS S_ID,
+           el.label_text AS experiment_name,
+           'Animal-' || cl.label_text AS name,
+           agv.string_value AS curveid,
+           MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.numeric_value ELSE NULL END)   AS dose,
+           'Time' AS dosetype,
+           MAX(CASE WHEN sv.ls_kind = 'time' THEN sv.unit_kind ELSE NULL END) AS doseunits,
+           MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.numeric_value ELSE NULL END) AS response,
+           'Conc' AS responsetype,
+           MAX(CASE WHEN sv.ls_kind = '",type," - PK_Concentration' THEN sv.unit_kind ELSE NULL END) AS responseunits,
+           MAX(CASE sv.ls_kind WHEN 'flag' then sv.id else null end) as flag_sv_id,
+           MAX(CASE sv.ls_kind WHEN 'flag' THEN sv.string_value ELSE NULL END) AS preprocessFlagStatus,
+           MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.subject_state_id ELSE NULL END) AS response_ss_id,
+           MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN sv.id ELSE NULL END) AS response_sv_id,
+           MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN ss.version ELSE NULL END) AS response_ss_version,
+           MAX(CASE sv.ls_kind WHEN '",type," - PK_Concentration' THEN tg.id ELSE NULL END) AS tg_id,
+           MAX(ag.id) AS ag_id
+           FROM analysis_group ag
+           JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
+           JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
+           JOIN analysisgroup_treatmentgroup agtg on ag.id = agtg.analysis_group_id
+           JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
+           JOIN experiment_analysisgroup eag on eag.analysis_group_id=ag.id
+           JOIN experiment e ON eag.experiment_id=e.id
+           JOIN experiment_label el ON e.id=el.experiment_id
+           JOIN treatmentgroup_subject tgs on tgs.treatment_group_id=tg.id
+           JOIN subject s ON s.id=tgs.subject_id
+           JOIN subject_state ss ON ss.subject_id = s.id
+           JOIN subject_value sv ON sv.subject_state_id = ss.id
+           LEFT JOIN itx_subject_container itxsc ON s.id = itxsc.subject_id
+           LEFT JOIN container c ON c.id=itxsc.container_id
+           LEFT JOIN container_label cl ON cl.container_id    =c.id
+           WHERE agv.ls_kind     = '",type," pk curve id'
+           AND sv.ls_kind       IN ('time', '",type," - PK_Concentration')
+           AND agv.string_value IN (  ",sqliz(curveids)," )
+           GROUP BY s.id, ss.id, agv.string_value, cl.label_text, el.label_text
+           )
+           WHERE response IS NOT NULL
+           ORDER BY tg_id ASC ")
   }
   poIVQU <- paste("SELECT a.*, a.Route || '-' || b.Dose as name
                   FROM (
                   select max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as s_id,
-                  api_agsvb.string_value as curveid,
+                  agv.string_value as curveid,
                   cl.label_text as animal,
-                  e.label_text as experiment_name,
+                  el.label_text as experiment_name,
                   max(CASE WHEN tv.ls_kind in ('time') then tv.numeric_value else null end) as dose,
                   'Time' as dosetype,
                   max(CASE WHEN tv.ls_kind in ('time') then tv.unit_kind else null end) as doseunits,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.numeric_value else null end) as response,
                   'Conc' as responsetype,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.unit_kind else null end) as responseunits,
-                  max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as flag_on_load,
+                  max(CASE tv.ls_kind WHEN 'flag' then tv.string_value else null end) as preprocessflagstatus,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.treatment_state_id else null end) as response_ss_id,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration' ) then tg.id else null end) as tg_id,
-                  max(api_agsvb.AG_ID) AS ag_id,
+                  max(ag.id) AS ag_id,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration', 'IV - PK_Concentration') then tv.uncertainty else null end) as standardDeviation,
                   max(CASE WHEN tv.ls_kind in ('PO - PK_Concentration') then 'PO' WHEN tv.ls_kind in ('IV - PK_Concentration') then 'IV' else null end) as Route
-                  FROM api_analysis_group_results api_agsvb 
-                  JOIN analysisgroup_treatmentgroup agtg on api_agsvb.ag_id = agtg.analysis_group_id
+                  FROM analysis_group ag
+                  JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
+                  JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
+                  JOIN analysisgroup_treatmentgroup agtg on ag.id = agtg.analysis_group_id
                   JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
-                  JOIN api_experiment e on api_agsvb.experiment_id=e.id
+                  JOIN experiment_analysisgroup eag on eag.analysis_group_id=ag.id
+                  JOIN experiment e ON eag.experiment_id=e.id
+                  JOIN experiment_label el ON e.id=el.experiment_id
                   JOIN treatment_group_state ts ON ts.treatment_group_id = tg.id
                   JOIN treatment_group_value tv ON tv.treatment_state_id = ts.id
                   JOIN treatmentgroup_subject tgs on tgs.treatment_group_id=tg.id
                   JOIN subject s ON s.id=tgs.subject_id
                   JOIN subject_state ss ON ss.subject_id = s.id
                   JOIN subject_value sv ON sv.subject_state_id = ss.id
-                  JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
-                  JOIN container c on c.id=itxsc.container_id
-                  JOIN container_label cl on cl.container_id=c.id
-                  WHERE api_agsvb.ls_kind like 'PO IV pk curve id'
+                  LEFT JOIN itx_subject_container itxsc on s.id = itxsc.subject_id
+                  LEFT JOIN container c on c.id=itxsc.container_id
+                  LEFT JOIN container_label cl on cl.container_id=c.id
+                  WHERE agv.ls_kind like 'PO IV pk curve id'
                   AND tv.ls_kind in ('time', 'PO - PK_Concentration', 'IV - PK_Concentration')
-                  AND api_agsvb.string_value in (",sqliz(curveids),")
-                  GROUP by tg.id, ts.id, api_agsvb.string_value, cl.label_text, e.label_text
+                  AND agv.string_value in (",sqliz(curveids),")
+                  GROUP by tg.id, ts.id, agv.string_value, cl.label_text, el.label_text
                   ) a
                   LEFT OUTER JOIN (
                   SELECT tv.numeric_value || tv.unit_kind as Dose,
                   tg.id AS s_id
-                  FROM api_analysis_group_results api_agsvb
-                   JOIN analysisgroup_treatmentgroup agtg on api_agsvb.ag_id = agtg.analysis_group_id
+                  FROM analysis_group ag
+                  JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
+                  JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id
+                  JOIN analysisgroup_treatmentgroup agtg on ag.id = agtg.analysis_group_id
                   JOIN treatment_GROUP tg ON tg.id=agtg.treatment_GROUP_id
                   JOIN treatment_group_state ts
                   ON ts.treatment_group_id = tg.id
                   JOIN treatment_group_value tv
                   ON tv.treatment_state_id = ts.id
-                  WHERE api_agsvb.ls_kind LIKE 'PO IV pk curve id'
+                  WHERE agv.ls_kind LIKE 'PO IV pk curve id'
                   AND tv.ls_kind             IN ('Dose')
-                  AND api_agsvb.string_value IN (",sqliz(curveids),")
+                  AND agv.string_value IN (",sqliz(curveids),")
                   ) b
                   ON a.s_id = b.s_id
                   order by tg_id asc"
-  )
+  )  
+  
   qu <- switch(renderingHint,
                "PO IV pk curve id" = poIVQU,
                "PO pk curve id" = ivPO("PO"),
                "IV pk curve id" = ivPO("IV")
   )
-  if(is.null(qu)) {
-    qu <- drQU
-  }
   
-  points <- query(qu)
+  points <- query(qu, ...)
   names(points) <- tolower(names(points))
   if(nrow(points)==0) {
     stop("Got 0 rows of points")
@@ -164,7 +163,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
                                   standardDeviation = as.numeric(points$standarddeviation),
-                                  flag_on.load = as.character(points$flag_on_load),
+                                  preprocessFlagStatus = as.character(points$preprocessflagstatus),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   s_id = as.integer(points$s_id),
                                   tg_id = as.integer(points$tg_id),
@@ -180,7 +179,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   response = as.numeric(points$response),
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
-                                  flag_on.load = as.character(points$flag_on_load),
+                                  preprocessFlagStatus = as.character(points$preprocessflagstatus),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   response_sv_id = as.integer(points$response_sv_id),
                                   response_ss_version = as.integer(points$response_ss_version),
@@ -199,7 +198,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   response = as.numeric(points$response),
                                   responseType = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
-                                  flag_on.load = as.character(points$flag_on_load),
+                                  preprocessFlagStatus = as.character(points$preprocessflagstatus),
                                   response_ss_id = as.integer(points$response_ss_id),
                                   response_ss_version = as.integer(points$response_ss_version),
                                   response_sv_id = as.integer(points$response_sv_id),
@@ -208,151 +207,60 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                                   tg_id = as.integer(points$tg_id),
                                   ag_id = as.integer(points$ag_id)
                      )
-                   },
-                   data.frame(  curveId = as.character(points$curveid),
-                                name = as.character(points$curveid),
-                                dose = as.numeric(points$dose), 
-                                doseUnits = as.character(points$doseunits), 
-                                response = as.numeric(points$response),
-                                responseUnits = as.character(points$responseunits),
-                                flag_on.load = as.character(points$flag_on_load),
-                                response_ss_id = as.integer(points$response_ss_id),
-                                response_sv_id = as.integer(points$response_sv_id),
-                                response_ss_version = as.integer(points$response_ss_version),
-                                flag_sv_id = as.integer(points$flag_sv_id),
-                                s_id = as.integer(points$s_id),
-                                tg_id = as.integer(points$tg_id),
-                                ag_id = as.integer(points$ag_id)
-                   )
+                   }
   )
-  if(nrow(points) > 0) {
-    if(flagsAsLogical) {
-      points$flag <- factor(points$flag_on.load, levels = c(levels(points$flag_on.load), TRUE, FALSE))
-      points$flag_user <- as.character(NA)
-      points$flag_algorithm <- as.character(NA)
-      points$flag_temp <- as.character(NA)
-    }
-  }
+  points$preprocessFlagStatus <- as.character(points$preprocessFlagStatus)
+  points[is.na(points$preprocessFlagStatus),]$preprocessFlagStatus <- ""
+  points$userFlagStatus <- ""
+  points$algorithmFlagStatus <- ""
+  points$tempFlagStatus <- ""
   return(points)
-}
+  }
+
 getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
-  parameters <- query(paste("SELECT TESTED_LOT,
-                            AG_ID,
-                            AG_CODE_NAME,
-                            AGV_ID,
-                            LS_KIND,
-                            OPERATOR_KIND,
-                            NUMERIC_VALUE,
-                            STRING_VALUE,
-                            COMMENTS,
-                            UNIT_KIND,
-                            RECORDED_DATE
-                            FROM p_api_analysis_group_results
-                            WHERE ag_id IN
-                            (SELECT ag_id
-                            FROM p_api_analysis_group_results
-                            WHERE LS_KIND like '%curve id'
-                            AND string_value in (",sqliz(curveids),"))
-                            ")
-                      , ...)
-  names(parameters) <- tolower(names(parameters))
-  return(parameters)
-}
-getParametersByRenderingHint <- function(parametersDataFrame, curveids) {
-  longFormat <- parametersDataFrame
-  row.names(longFormat) <- parametersDataFrame$agv_id
-  longFormat <- longFormat[,c("ag_id","ag_code_name","tested_lot","ls_kind","numeric_value","string_value","unit_kind", "comments","operator_kind")]
-  flags <- longFormat[longFormat$ls_kind=="flag",]
-  if(nrow(flags) > 0) {
-    longFormat[longFormat$ls_kind=="flag",]$ls_kind <- paste0(flags$ls_kind,"_",flags$string_value)
-  }
-  wideFormat <- reshape(longFormat,
-                        timevar="ls_kind",
-                        idvar=c("ag_id","ag_code_name","tested_lot"),direction="wide")
-  
-  renderingHint <- wideFormat$"string_value.Rendering Hint"[[1]]
-  #If the rendering hint is null, we will use the ls_kind
-  #BB - adding a case for "PK IV PO Single Dose" because I am only getting one rendering hint from the GDP for the 3 curves uploaded
-  if(!is.null(renderingHint)) {
-    if(renderingHint=="PK IV PO Single Dose") {
-      renderingHint <- parametersDataFrame$ls_kind[which(parametersDataFrame$string_value %in% curveids)][1]
-    }
-  }
-  if(is.null(renderingHint)) {
-    dat <- paste0(capture.output(str(parametersDataFrame)), collapse = "\n")
-    stop(paste0("Could not find ls_kind 'Rendering Hint' for curve id, unable to determine correct curve parameters\n",dat, collapse = "\n"))
-  }
-  parameters <- switch(renderingHint,
-                       "4 parameter D-R" = getLL4ParametersFromWideFormat(wideFormat),
-                       "Ki D-R" = getKiParametersFromWideFormat(wideFormat),
-                       "PO IV pk curve id" = getPKParametersFromWideFormat(wideFormat, renderingHint),
-                       "PO pk curve id" = getPKParametersFromWideFormat(wideFormat, renderingHint),
-                       "IV pk curve id" = getPKParametersFromWideFormat(wideFormat, renderingHint)
-  )
-  parameters$renderingHint <- renderingHint
-  return(parameters)
-}
-
-getLL4ParametersFromWideFormat <- function(wideFormat) {
-  wideName = c("ag_code_name","tested_lot", "string_value.curve id", "string_value.Rendering Hint", "numeric_value.Min","numeric_value.Fitted Min",
-               "numeric_value.Max", "numeric_value.Fitted Max", "numeric_value.Slope", "numeric_value.Fitted Slope", "numeric_value.Hill slope", "numeric_value.Fitted Hill slope", 
-               "numeric_value.EC50", "numeric_value.Fitted EC50", "operator_kind.EC50", "comments.flag_algorithm", "comments.flag_user")
-  newName = c("ag_code_name","tested_lot", "curveId", "renderingHint", "min", "fitted_min",
-              "max", "fitted_max", "slope", "fitted_slope",  "hillslope", "fitted_hillslope",
-              "ec50", "fitted_ec50", "operator","flag_algorithm","flag_user")
-  valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
-  return(extractParametersFromWideFormat(valuesToGet, wideFormat))
-}
-
-getPKParametersFromWideFormat <- function(wideFormat, renderingHint) {
-  parameters <- list(renderingHint = renderingHint)
-  wideName = c("ag_code_name","tested_lot", paste0("string_value.",renderingHint))
-  newName = c("ag_code_name", "tested_lot", "curveId")
-  valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
-  parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
-  return(parameters)
-}
-
-getPOIVPKParametersFromLongFormat <- function(longFormat) {
-  curveIDList <- c('PO pk curve id','IV pk curve id')
-  parameters <- list(curveids = longFormat$string_value[longFormat$ls_kind %in% curveIDList])
-  parameters$parameters <- subset(longFormat, ls_kind %in% curveIDList, select = c("ag_id", "tested_lot", "string_value") )
-  names(parameters$parameters) <- c("ag_id","ag_code_name", "tested_lot", "curveId")
-  return(parameters)  
-}
-
-getPOIVPKParametersFromWideFormat <- function(wideFormat) {
-  parameters <- list(curveids = c(longFormat$"string_value.PO pk curve id",wideFormat$"string_value.IV pk curve id"))
-  wideName = c("ag_code_name", "tested_lot", "string_value.PO IV pk curve id", "string_value.PO pk curve id", "string_value.IV pk curve id")
-  newName = c("ag_code_name", "tested_lot", "curveId", "poPKCurveID", "ivPKCurveID")
-  valuesToGet <- data.frame(wideName = as.character(wideName), newName = as.character(newName))
-  parameters$parameters <- extractParametersFromWideFormat(valuesToGet, wideFormat)
-  return(parameters)  
-}
-
-extractParametersFromWideFormat <- function(valuesToGet, wideFormat) {
-  parameters <- data.frame(ag_id = as.integer(wideFormat$ag_id), stringsAsFactors = FALSE)
-  for(i in 1:nrow(valuesToGet)) {
-    colName <- as.character(valuesToGet$wideName[i])
-    newName <- as.character(valuesToGet$newName[i])
-    if(colName %in% colnames(wideFormat)) {
-      split <- strsplit(colName,"\\.")[[1]]
-      if(length(split)==1) {
-        parameters <- cbind(parameters,  wideFormat[,split])
-      } else {
-        parameters <- cbind(parameters, switch(split[1],
-                                               "numeric_value" = as.numeric(wideFormat[,colName]),
-                                               as.character(wideFormat[,colName]))
-        )        
-      } 
-    } else {
-      parameters <- cbind(parameters, switch(split[1],
-                                             "numeric_value" = as.numeric(rep(NA, times = nrow(parameters))),
-                                             factor(rep(NA, times = nrow(parameters))))
-      )
-    }
-    names(parameters)[ncol(parameters)] <- newName
-  }
+  parameters <- rbindlist(query_replace_string_with_values("SELECT lsvalues0_.analysis_state_id AS stateId,
+                                                           lsvalues0_.id                     AS valueId,
+                                                           lsvalues0_.code_kind              AS codeKind,
+                                                           lsvalues0_.code_origin            AS codeOrigin,
+                                                           lsvalues0_.code_type              AS codeType,
+                                                           lsvalues0_.code_value             AS codeValue,
+                                                           lsvalues0_.comments               AS comments,
+                                                           lsvalues0_.conc_unit              AS concUnit,
+                                                           lsvalues0_.concentration          AS concentration,
+                                                           lsvalues0_.ls_kind                AS lsKind,
+                                                           lsvalues0_.ls_transaction         AS lsTransaction,
+                                                           lsvalues0_.ls_type                AS lsType,
+                                                           lsvalues0_.numeric_value          AS numericValue,
+                                                           lsvalues0_.operator_kind          AS operatorKind,
+                                                           lsvalues0_.operator_type          AS operatorType,
+                                                           lsvalues0_.public_data            AS publicData,
+                                                           lsvalues0_.recorded_by            AS recordedBy,
+                                                           lsvalues0_.recorded_date          AS recordedDate,
+                                                           lsvalues0_.string_value           AS stringValue,
+                                                           lsvalues0_.uncertainty            AS uncertainty,
+                                                           lsvalues0_.uncertainty_type       AS uncertaintyType,
+                                                           lsvalues0_.unit_kind              AS unitKind,
+                                                           lsvalues0_.unit_type              AS unitType,
+                                                           lsvalues0_.url_value              AS urlValue,
+                                                           lsvalues0_.version                AS version,
+                                                           analysisgr0_.string_value         AS curveId
+                                                           FROM analysis_group_value analysisgr0_
+                                                           INNER JOIN analysis_group_state analysisgr1_
+                                                           ON analysisgr0_.analysis_state_id=analysisgr1_.id
+                                                           INNER JOIN analysis_group analysisgr2_
+                                                           ON analysisgr1_.analysis_group_id=analysisgr2_.id
+                                                           INNER JOIN experiment_analysisgroup expt_ag_group
+                                                           ON analysisgr2_.id=expt_ag_group.analysis_group_id
+                                                           INNER JOIN analysis_group_value lsvalues0_
+                                                           ON analysisgr1_.id         =lsvalues0_.analysis_state_id
+                                                           WHERE analysisgr0_.ls_type ='stringValue'
+                                                           AND analysisgr0_.ls_kind in ('PO IV pk curve id','IV pk curve id','PO pk curve id')
+                                                           AND analysisgr0_.ignored = '0'
+                                                           AND analysisgr1_.ignored = '0'
+                                                           AND analysisgr2_.ignored = '0'
+                                                           AND analysisgr1_.ls_type ='data'
+                                                           AND analysisgr0_.string_value in (REPLACEME)", string = "REPLACEME", values = curveids, ...))
+  setnames(parameters, tolower(names(parameters)))
   return(parameters)
 }
 
@@ -440,6 +348,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     drawIntercept <- NA
   }
   
+  #Yay Pythagoras
+  defaultDiagonal <- sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
+  scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
+  scaleFactor <- max(scaleFactor, 0.7)
+  
   #Assign Colors
   plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
   #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
@@ -516,9 +429,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   plotPoints <- function(yrn, pts, ...) {
     if(!plotMeans) {
       #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     } else {
-      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", ...)
+      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
     }
     if(drawStdDevs) {
       plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
@@ -543,13 +456,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     legendTextColor <- params$color
     legendPCH <- params$pch
     legendLineWidth <- 1
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
     if(nrow(goodPoints) > 0) {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
     } else {
       plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
     }
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7, box.lwd = 0)
+    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
   }
   if(connectPoints && exists("means")) {
     cids <- unique(means$curveId)
@@ -562,7 +475,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   #If grid, then add grid
   if(showGrid) {
-    grid(lwd = 1.7)
+    grid(lwd = 1.7*scaleFactor)
   }
   #Now Plot Flagged Points
   if(nrow(goodPoints) > 0) {
@@ -602,7 +515,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color)  
+      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
     }
   }
   #Actually Draw Curves
@@ -663,8 +576,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       } else {
         col <- '#808080'
       }
-      lines(ylin,lty = 2, lwd = 2.0,col= col)
-      lines(xlin, lty = 2, lwd = 2.0,col= col)
+      lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
+      lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
     }
   }
   if(labelAxes) {
@@ -699,8 +612,8 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
         answer <- 0
       }
       answer
-      },
-      by = curveId]$V1,
+    },
+    by = curveId]$V1,
     .N)]
   return(points[dose!=0,])
 }

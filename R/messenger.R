@@ -6,6 +6,12 @@
 #' @name Messenger
 #' @include logger.R
 #' @export
+#' @details
+#' The racasMessenger (called with \code{messenger}) should be reset at the 
+#' beginning of rApache routes and by utility functions that are called by 
+#' node.js. Prefix these utility functions with "\code{external.}" Other
+#' functions should not reset the racasMessenger, but can define their own local
+#' Messenger objects.
 #' @examples
 #' #Basic Messenger
 #' myMessenger <- Messenger$new(envir = environment())
@@ -85,6 +91,21 @@
 #' racasMessenger$capture_output("answer <- test()", userError = "Outer error")
 #' racasMessenger$userErrors
 #' 
+#' # At the top of an rApache file
+#' globalMessenger <- messenger()
+#' globalMessenger$reset()
+#' globalMessenger$logger <- logger(logName = "com.acas.name.of.big.module", reset=TRUE)
+#' 
+#' # An R function that is called by node.js
+#' external.runBigModule <- function(request) {
+#'   globalMessenger <- messenger()
+#'   globalMessenger$reset()
+#'   globalMessenger$logger <- logger(logName = "com.acas.name.of.big.module", reset=TRUE)
+#' }
+#' 
+#' # While coding interactively, the logger can be changed to log to console
+#' globalMessenger <- messenger()
+#' globalMessenger$logger <- logger(logName = "com.acas.name.of.big.module", logToConsole=TRUE, reset=TRUE)
 Messenger <- setRefClass(Class = "Messenger", 
                          fields = list(errors = "list",
                                        userErrors = "character",
@@ -235,6 +256,7 @@ Messenger <- setRefClass(Class = "Messenger",
                          )
 )
 racasMessenger <- ""
+#' @rdname Messenger
 messenger <- function(racas = TRUE, envir = parent.frame(), ...) {
   if(!racas) {
     return(Messenger$new(envir = envir, ...))

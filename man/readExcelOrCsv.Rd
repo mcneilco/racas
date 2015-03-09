@@ -22,5 +22,6 @@ Read in xls, xlsx, csv, or txt (tab delimited) files and output a data frame of 
 Right now, this turns dates into "A_date_was_in_Excel_Date_format"
 and does not treat headers as column names.
 In fileRead.R
+Hidden sheets in xls and xlsx files are ignored.
 }
 

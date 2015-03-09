@@ -706,7 +706,7 @@ createLabelSequence <- function(labelPrefix = "PREF", labelSeparator="-", groupD
     labelTypeAndKind=labelTypeAndKind)
 }
 
-createContainerState <- function(container=NULL,containerValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
+createContainerState <- function(container=NULL,containerValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", 
                                  comments="", lsTransaction=NULL){
   containerState = list(
     container=container,
@@ -723,7 +723,7 @@ createContainerState <- function(container=NULL,containerValues=NULL, recordedBy
 }
 
 createContainerLabel <- function(container=NULL,labelText, recordedBy="userName", lsType="lsType", lsKind="lsKind", 
-                                 lsTransaction=NULL, preferred=TRUE, imageFile=NULL, labelTypeAndKind=NULL, physicallyLabeled=FALSE,
+                                 lsTransaction=NULL, preferred=TRUE, imageFile=NULL, physicallyLabeled=FALSE,
                                  modifiedDate=NULL,version=NULL){
   containerLabel = list(
     container=container,
@@ -734,8 +734,7 @@ createContainerLabel <- function(container=NULL,labelText, recordedBy="userName"
     lsTransaction=lsTransaction,
     preferred=preferred,
     imageFile=imageFile,
-    labelTypeAndKind=labelTypeAndKind,
-    physicallyLabeled=physicallyLabeled,
+    physicallyLabled=physicallyLabeled, # Roo has it spelled wrong, so we have to match that
     ignored=FALSE,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000,
     modifiedDate=modifiedDate,
@@ -771,6 +770,12 @@ createContainerContainerInteraction <- function(codeName=NULL, ignored = FALSE, 
   return(containerContainerInteraction)	
 }			
 
+#' create subject container interaction 
+#' @details interactionStates is ignored for now,
+#' could add back later (as lsStates) with roo update.
+#' 
+#' This is super sensitive to subject and container being nested- only known to
+#' work with containers and subjects that only have an id and version.
 createSubjectContainerInteraction <- function(subject, container, lsType, lsKind="interaction", codeName=NULL, ignored = FALSE,
                                               lsTransaction=NULL, recordedBy="userName", interactionStates=NULL){
   #lsType = c("added to","removed from","operated on", "created by", "destroyed by", "refers to", "member of")
@@ -783,7 +788,6 @@ createSubjectContainerInteraction <- function(subject, container, lsType, lsKind
     ignored=ignored,
     recordedBy=recordedBy,
     lsTransaction=lsTransaction,
-    interactionStates=interactionStates,
     recordedDate=sysDateTime,
     modifiedBy=recordedBy,
     modifiedDate=sysDateTime,
@@ -874,7 +878,11 @@ saveContainerContainerInteractions <- function(containerContainerInteractions, l
 }
 
 saveSubjectContainerInteraction <- function(subjectContainerInteraction, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  return(saveAcasEntities(subjectContainerInteraction, "itxsubjectcontainers"))
+  return(saveAcasEntity(subjectContainerInteraction, "itxsubjectcontainers"))
+}
+
+saveSubjectContainerInteractions <- function(subjectContainerInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  return(saveAcasEntities(subjectContainerInteractions, "itxsubjectcontainers"))
 }
 
 saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
@@ -1974,10 +1982,10 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
 #' @param a data frame (or data table) with columns lsType and lsKind
 #' @return a list object of returned lsKinds
 #' @export
-get_or_create_value_kinds <- function(df) {
+get_or_create_value_kinds <- function(df, persistence_full_path = racas::applicationSettings$client.service.persistence.fullpath) {
   valueTypeAndKindsJSON <- jsonlite::toJSON(df)
   response <- fromJSON(getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuekinds/getOrCreate/jsonArray"),
+    paste0(persistence_full_path, "valuekinds/getOrCreate/jsonArray"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=valueTypeAndKindsJSON))
@@ -1990,7 +1998,7 @@ get_or_create_value_kinds <- function(df) {
 #' @param requiredModules a character vector of modules to load see \link{modules}
 #' @return a list object of returned lsKinds
 #' @export
-load_value_type_and_kinds <- function(requiredModules = NA) {
+load_value_type_and_kinds <- function(requiredModules = NA, ...) {
   valueTypeAndKindsFile <- system.file("docs", "value_type_and_kinds.csv", package = "racas")
   valueTypeAndKinds <- fread(valueTypeAndKindsFile)
   if(!is.na(requiredModules)) {
@@ -1999,7 +2007,7 @@ load_value_type_and_kinds <- function(requiredModules = NA) {
   valueTypeAndKinds[ , Module:= NULL]
   valueTypeAndKinds <- unique(valueTypeAndKinds)
   setnames(valueTypeAndKinds, c("lsType", "lsKind"))
-  return(get_or_create_value_kinds(valueTypeAndKinds))
+  return(get_or_create_value_kinds(valueTypeAndKinds, ...))
 }
 #' Known acas modules which require lsKinds to exist
 #' 

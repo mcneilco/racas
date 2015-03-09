@@ -3,7 +3,7 @@
 \alias{load_value_type_and_kinds}
 \title{Loads a set of default lsKinds per module}
 \usage{
-load_value_type_and_kinds(requiredModules = NA)
+load_value_type_and_kinds(requiredModules = NA, ...)
 }
 \arguments{
 \item{requiredModules}{a character vector of modules to load see \link{modules}}
