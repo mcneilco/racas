@@ -366,7 +366,7 @@ api_doseResponse_save_session <- function(sessionID, user) {
   myMessenger$logger$debug(paste0("got session id: ", sessionID))
   
   loadSession(sessionID)    
-  if(is.null(fitData$model)) {
+  if(!"model" %in% names(fitData)) {
 # If the model is null, then we have not refit the data since loading from the database, just return the object as is
     myMessenger$logger$debug("nothing has changed, returning object without saving")
     response <- api_doseResponse_fitData_to_curveDetail(fitData, sessionID = sessionID)
