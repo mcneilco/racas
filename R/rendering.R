@@ -77,7 +77,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
            AND sv.ls_kind       IN ('time', '",type," - PK_Concentration')
            AND agv.string_value IN (  ",sqliz(curveids)," )
            GROUP BY s.id, ss.id, agv.string_value, cl.label_text, el.label_text
-           )
+           ) foo
            WHERE response IS NOT NULL
            ORDER BY tg_id ASC ")
   }
@@ -122,7 +122,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                   GROUP by tg.id, ts.id, agv.string_value, cl.label_text, el.label_text
                   ) a
                   LEFT OUTER JOIN (
-                  SELECT tv.numeric_value || tv.unit_kind as Dose,
+                  SELECT tv.concentration || tv.conc_unit as Dose,
                   tg.id AS s_id
                   FROM analysis_group ag
                   JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
@@ -134,7 +134,7 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                   JOIN treatment_group_value tv
                   ON tv.treatment_state_id = ts.id
                   WHERE agv.ls_kind LIKE 'PO IV pk curve id'
-                  AND tv.ls_kind             IN ('Dose')
+                  AND tv.ls_kind             IN ('batch code')
                   AND agv.string_value IN (",sqliz(curveids),")
                   ) b
                   ON a.s_id = b.s_id
@@ -581,8 +581,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     }
   }
   if(labelAxes) {
-    xlabel <- paste0('Concentration ', " (",curveData$doseUnits[1],")")
-    ylabel <- paste0(curveData$responseType[1], ifelse(is.na(curveData$responseUnits[1]) || curveData$responseUnits[1] == "", "",paste0(" (",curveData$responseUnits[1],")")))
+    saveSession("/tmp/blah")
+    xlabel <- paste0(ifelse(is.null(curveData$doseType) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
+    ylabel <- paste0(as.character(curveData$responseType[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
     title(xlab = xlabel, ylab = ylabel)
   }
   if(!is.na(outFile)) {
