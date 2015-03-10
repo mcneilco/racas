@@ -581,7 +581,6 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     }
   }
   if(labelAxes) {
-    saveSession("/tmp/blah")
     xlabel <- paste0(ifelse(is.null(curveData$doseType) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
     ylabel <- paste0(as.character(curveData$responseType[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
     title(xlab = xlabel, ylab = ylabel)
