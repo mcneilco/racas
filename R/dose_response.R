@@ -877,6 +877,8 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   parameters <- dt1[dt2][dt3]
   flagAndRenderingColumnNames <- c("Rendering Hint", "user flag status", "algorithm flag status")
   parameters[ , flagAndRenderingColumnNames[!flagAndRenderingColumnNames %in% names(parameters)] := ""]
+  for (j in flagAndRenderingColumnNames)
+    set(parameters,which(is.na(parameters[[j]])),j,"")
   setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
   renderingParameters <- switch(parameters[1]$renderingHint,
          "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
