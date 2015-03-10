@@ -22,9 +22,6 @@ Optionally creates a new logger or returns a logger stored in the racas namespac
 The default call 'logger()' will compare the field racas::racasLogger$envir with the current list of frames in the call stack.
 If the environment in the racasLogger matches one of the environments in the current call stack, then the racasLogger is returned.
 }
-\details{
-Only rApache routes should reset the racasLogger by default. Other routes should use default
-}
 \examples{
 #From a fresh logger (myLogger <- createLogger())
 
