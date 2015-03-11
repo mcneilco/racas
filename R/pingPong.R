@@ -305,10 +305,10 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     }
     logger$info(paste0("creating ",doseResponseMaterializedName))          
     finished <- dbSendQuery(conn, paste0("CREATE table ",doseResponseMaterializedName,ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_dose_response"))
-    existsNow <- dbExistsTable(conn, doseResponseMaterializedName)
-    if(!existsNow) {
-      stop("error creating table")
-    }
+    logger$info(paste0("adding primary key responsesubjectvalueid"))              
+    primaryKey <- dbSendQuery(conn, paste0(" ALTER TABLE ",doseResponseMaterializedName," ADD PRIMARY KEY (responsesubjectvalueid) ", ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    logger$info(paste0("adding index IDX_CURVEID"))              
+    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
   }
   
   logger$info(paste0("commiting transaction"))        
