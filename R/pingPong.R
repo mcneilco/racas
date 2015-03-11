@@ -124,16 +124,24 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
     logger$info("PING-PONG tables successfully updated and committed")
   }
 }
-
+startTransaction <- function(conn) {
+  type <- getDBType(conn=conn)
+  transaction <-switch(type,
+                       "Postgres" = dbSendQuery(conn, "BEGIN TRANSACTION"),
+                       "MySQL" = dbSendQuery(conn, "START TRANSACTION"),
+                       "Oracle" = "NO OP"
+  )
+  return(transaction)
+}
 materialize_dose_response_views <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
   logger <- createLogger(logName = "com.mcneilco.racas.materialize.doseresponse", logToConsole = TRUE)  
   logger$info("materialize dose response initiated")  
   conn <- getDatabaseConnection()
   on.exit({dbRollback(conn);dbDisconnect(conn)})
-  dbSendQuery(conn, "BEGIN TRANSACTION")    
+  transaction <- startTransaction(conn)
   curveParamsMaterializedName <-  "api_curve_params_m"
   doseResponseMaterializedName <-  "api_dose_response_m"
-  apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)  
+  apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)
   apiDoseResponseAlreadyExisted <- dbExistsTable(conn, doseResponseMaterializedName)
   
   #Curve Params
@@ -209,8 +217,8 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             FROM api_curve_params
                                             LEFT OUTER JOIN ",curveParamsMaterializedName,"
                                             ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
-                                            WHERE ",curveParamsMaterializedName," IS NULL
-                                            );"))
+                                            WHERE ",curveParamsMaterializedName,".curveid IS NULL
+                                            )"))
     logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
   } else {
     
@@ -293,7 +301,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             FROM api_dose_response
                                             LEFT OUTER JOIN ",doseResponseMaterializedName,"
                                             ON ",doseResponseMaterializedName,".curveid = api_dose_response.curveid
-                                            WHERE ",doseResponseMaterializedName,"     IS NULL
+                                            WHERE ",doseResponseMaterializedName,".curveid     IS NULL
                                             )"))
                                             
     logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
@@ -308,7 +316,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     logger$info(paste0("adding primary key responsesubjectvalueid"))
     primaryKey <- dbSendQuery(conn, paste0(" ALTER TABLE ",doseResponseMaterializedName," ADD PRIMARY KEY (responsesubjectvalueid) ", ifelse(is.na(createIndexOptions),"",createIndexOptions)))
     logger$info(paste0("adding index IDX_API_DOSE_RESPONSE_M_CURVEID"))
-    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_DOSE_RESPONSE_M_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
   }
   
   logger$info(paste0("commiting transaction"))        
