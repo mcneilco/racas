@@ -139,6 +139,13 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   #Curve Params
   if(apiCurveParamsAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",curveParamsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName," where curveid in (
+                                             SELECT DISTINCT ",curveParamsMaterializedName,".curveid
+                                             FROM ",curveParamsMaterializedName,"
+                                             LEFT OUTER JOIN api_curve_params
+                                             ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
+                                             WHERE api_curve_params.curveid IS NULL)"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
     missingData <- dbSendQuery(conn, paste0("INSERT
                                             INTO ",curveParamsMaterializedName,"
                                             (
@@ -205,13 +212,6 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             WHERE ",curveParamsMaterializedName," IS NULL
                                             );"))
     logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName," where curveid in (
-                                             SELECT DISTINCT ",curveParamsMaterializedName,".curveid
-                                             FROM ",curveParamsMaterializedName,"
-                                             LEFT OUTER JOIN api_curve_params
-                                             ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
-                                             WHERE api_curve_params.curveid IS NULL)"))
-    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
   } else {
     
     if(apiCurveParamsAlreadyExisted) {
@@ -220,15 +220,22 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     }
     logger$info(paste0("creating ",curveParamsMaterializedName))          
     finished <- dbSendQuery(conn, paste0("CREATE table ",curveParamsMaterializedName,ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_curve_params"))
-    existsNow <- dbExistsTable(conn, curveParamsMaterializedName)
-    if(!existsNow) {
-      stop("error creating table")
-    }
+    logger$info(paste0("adding primary key curveid"))              
+    primaryKey <- dbSendQuery(conn, paste0(" ALTER TABLE ",curveParamsMaterializedName," ADD PRIMARY KEY (valueid) ", ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    logger$info(paste0("adding index IDX_API_CURVE_PARAMS_M_CURVEID"))              
+    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_CURVE_PARAMS_M_CURVEID ON ",curveParamsMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))    
   }
   
   #Api Dose Response
   if(apiDoseResponseAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",doseResponseMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName," where curveid in (
+                                             SELECT DISTINCT ",doseResponseMaterializedName,".curveid
+                                             FROM ",doseResponseMaterializedName,"
+                                             LEFT OUTER JOIN api_dose_response
+                                             ON ",doseResponseMaterializedName,".curveid     = api_dose_response.curveid
+                                             WHERE api_dose_response.curveid IS NULL)"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))
     missingData <- dbSendQuery(conn, paste0("INSERT
                                           INTO ",doseResponseMaterializedName,"
                                             (
@@ -290,25 +297,18 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             )"))
                                             
     logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName," where curveid in (
-                                             SELECT DISTINCT ",doseResponseMaterializedName,".curveid
-                                             FROM ",doseResponseMaterializedName,"
-                                             LEFT OUTER JOIN api_dose_response
-                                             ON ",doseResponseMaterializedName,".curveid     = api_dose_response.curveid
-                                             WHERE api_dose_response.curveid IS NULL)"))
-    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
   } else {
     
     if(apiDoseResponseAlreadyExisted) {
-      logger$info(paste0(doseResponseMaterializedName, " already exists, dropping"))      
+      logger$info(paste0(doseResponseMaterializedName, " already exists, dropping"))
       dbSendQuery(conn, paste0("DROP table ",doseResponseMaterializedName))
     }
-    logger$info(paste0("creating ",doseResponseMaterializedName))          
+    logger$info(paste0("creating ",doseResponseMaterializedName))
     finished <- dbSendQuery(conn, paste0("CREATE table ",doseResponseMaterializedName,ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_dose_response"))
-    logger$info(paste0("adding primary key responsesubjectvalueid"))              
+    logger$info(paste0("adding primary key responsesubjectvalueid"))
     primaryKey <- dbSendQuery(conn, paste0(" ALTER TABLE ",doseResponseMaterializedName," ADD PRIMARY KEY (responsesubjectvalueid) ", ifelse(is.na(createIndexOptions),"",createIndexOptions)))
-    logger$info(paste0("adding index IDX_CURVEID"))              
-    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    logger$info(paste0("adding index IDX_API_DOSE_RESPONSE_M_CURVEID"))
+    curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_DOSE_RESPONSE_M_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
   }
   
   logger$info(paste0("commiting transaction"))        
