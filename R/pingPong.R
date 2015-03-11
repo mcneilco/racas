@@ -25,7 +25,7 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
   error_ping_pong_generator <- FALSE
   conn <- getDatabaseConnection(applicationSettings)
   on.exit(disconnected <- dbDisconnect(conn))
-
+  
   if (dbExistsTable(conn, name = paste0(intermediateTablePrefix$name,"_a"), schema = intermediateTablePrefix$schema)){
     pingPongTableNew <- 'b'
     pingPongTableOld <- 'a'
@@ -124,3 +124,196 @@ pingPong <- function(originView, intermediateTablePrefix = list(schema = racas::
     logger$info("PING-PONG tables successfully updated and committed")
   }
 }
+
+materialize_dose_response_views <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
+  logger <- createLogger(logName = "com.mcneilco.racas.materialize.doseresponse", logToConsole = TRUE)  
+  logger$info("materialize dose response initiated")  
+  conn <- getDatabaseConnection()
+  on.exit({dbRollback(conn);dbDisconnect(conn)})
+  dbSendQuery(conn, "BEGIN TRANSACTION")    
+  curveParamsMaterializedName <-  "api_curve_params_m"
+  doseResponseMaterializedName <-  "api_dose_response_m"
+  apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)  
+  apiDoseResponseAlreadyExisted <- dbExistsTable(conn, doseResponseMaterializedName)
+  
+  #Curve Params
+  if(apiCurveParamsAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",curveParamsMaterializedName))
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",curveParamsMaterializedName,"
+                                            (
+                                            stateid,
+                                            valueid,
+                                            codekind,
+                                            codeorigin,
+                                            codetype,
+                                            codevalue,
+                                            comments,
+                                            concunit,
+                                            concentration,
+                                            lskind,
+                                            lstransaction,
+                                            lstype,
+                                            numericvalue,
+                                            operatorkind,
+                                            operatortype,
+                                            publicdata,
+                                            recordedby,
+                                            recordeddate,
+                                            stringvalue,
+                                            uncertainty,
+                                            uncertaintytype,
+                                            unitkind,
+                                            unittype,
+                                            urlvalue,
+                                            version,
+                                            curveid,
+                                            curvedisplaymin,
+                                            curvedisplaymax
+                                            )
+                                            (SELECT api_curve_params.stateid,
+                                            api_curve_params.valueid,
+                                            api_curve_params.codekind,
+                                            api_curve_params.codeorigin,
+                                            api_curve_params.codetype,
+                                            api_curve_params.codevalue,
+                                            api_curve_params.comments,
+                                            api_curve_params.concunit,
+                                            api_curve_params.concentration,
+                                            api_curve_params.lskind,
+                                            api_curve_params.lstransaction,
+                                            api_curve_params.lstype,
+                                            api_curve_params.numericvalue,
+                                            api_curve_params.operatorkind,
+                                            api_curve_params.operatortype,
+                                            api_curve_params.publicdata,
+                                            api_curve_params.recordedby,
+                                            api_curve_params.recordeddate,
+                                            api_curve_params.stringvalue,
+                                            api_curve_params.uncertainty,
+                                            api_curve_params.uncertaintytype,
+                                            api_curve_params.unitkind,
+                                            api_curve_params.unittype,
+                                            api_curve_params.urlvalue,
+                                            api_curve_params.version,
+                                            api_curve_params.curveid,
+                                            api_curve_params.curvedisplaymin,
+                                            api_curve_params.curvedisplaymax
+                                            FROM api_curve_params
+                                            LEFT OUTER JOIN ",curveParamsMaterializedName,"
+                                            ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
+                                            WHERE ",curveParamsMaterializedName," IS NULL
+                                            );"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName," where curveid in (
+                                             SELECT DISTINCT ",curveParamsMaterializedName,".curveid
+                                             FROM ",curveParamsMaterializedName,"
+                                             LEFT OUTER JOIN api_curve_params
+                                             ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
+                                             WHERE api_curve_params.curveid IS NULL)"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+  } else {
+    
+    if(apiCurveParamsAlreadyExisted) {
+      logger$info(paste0(curveParamsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",curveParamsMaterializedName))
+    }
+    logger$info(paste0("creating ",curveParamsMaterializedName))          
+    finished <- dbSendQuery(conn, paste0("CREATE table ",curveParamsMaterializedName,ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_curve_params"))
+    existsNow <- dbExistsTable(conn, curveParamsMaterializedName)
+    if(!existsNow) {
+      stop("error creating table")
+    }
+  }
+  
+  #Api Dose Response
+  if(apiDoseResponseAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",doseResponseMaterializedName))
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                          INTO ",doseResponseMaterializedName,"
+                                            (
+                                            responsesubjectvalueid,
+                                            analysisgroupcode,
+                                            recorded_by,
+                                            lstransaction,
+                                            response,
+                                            responseunits,
+                                            responsekind,
+                                            dose,
+                                            doseunits,
+                                            algorithmflagstatus,
+                                            algorithmflagobservation,
+                                            algorithmflagreason,
+                                            algorithmflagcomment,
+                                            preprocessflagstatus,
+                                            preprocessflagobservation,
+                                            preprocessflagreason,
+                                            algorithmflaglskind,
+                                            preprocessflaglskind,
+                                            userflaglskind,
+                                            preprocessflagcomment,
+                                            userflagstatus,
+                                            userflagobservation,
+                                            userflagreason,
+                                            userflagcomment,
+                                            curveid
+                                            )
+                                            (SELECT api_dose_response.responsesubjectvalueid,
+                                            api_dose_response.analysisgroupcode,
+                                            api_dose_response.recorded_by,
+                                            api_dose_response.lstransaction,
+                                            api_dose_response.response,
+                                            api_dose_response.responseunits,
+                                            api_dose_response.responsekind,
+                                            api_dose_response.dose,
+                                            api_dose_response.doseunits,
+                                            api_dose_response.algorithmflagstatus,
+                                            api_dose_response.algorithmflagobservation,
+                                            api_dose_response.algorithmflagreason,
+                                            api_dose_response.algorithmflagcomment,
+                                            api_dose_response.preprocessflagstatus,
+                                            api_dose_response.preprocessflagobservation,
+                                            api_dose_response.preprocessflagreason,
+                                            api_dose_response.algorithmflaglskind,
+                                            api_dose_response.preprocessflaglskind,
+                                            api_dose_response.userflaglskind,
+                                            api_dose_response.preprocessflagcomment,
+                                            api_dose_response.userflagstatus,
+                                            api_dose_response.userflagobservation,
+                                            api_dose_response.userflagreason,
+                                            api_dose_response.userflagcomment,
+                                            api_dose_response.curveid
+                                            FROM api_dose_response
+                                            LEFT OUTER JOIN ",doseResponseMaterializedName,"
+                                            ON ",doseResponseMaterializedName,".curveid = api_dose_response.curveid
+                                            WHERE ",doseResponseMaterializedName,"     IS NULL
+                                            )"))
+                                            
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName," where curveid in (
+                                             SELECT DISTINCT ",doseResponseMaterializedName,".curveid
+                                             FROM ",doseResponseMaterializedName,"
+                                             LEFT OUTER JOIN api_dose_response
+                                             ON ",doseResponseMaterializedName,".curveid     = api_dose_response.curveid
+                                             WHERE api_dose_response.curveid IS NULL)"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+  } else {
+    
+    if(apiDoseResponseAlreadyExisted) {
+      logger$info(paste0(doseResponseMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",doseResponseMaterializedName))
+    }
+    logger$info(paste0("creating ",doseResponseMaterializedName))          
+    finished <- dbSendQuery(conn, paste0("CREATE table ",doseResponseMaterializedName,ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_dose_response"))
+    existsNow <- dbExistsTable(conn, doseResponseMaterializedName)
+    if(!existsNow) {
+      stop("error creating table")
+    }
+  }
+  
+  logger$info(paste0("commiting transaction"))        
+  commited <- dbCommit(conn)
+  on.exit(dbDisconnect(conn))
+  logger$info(paste0("materialization complete"))            
+}
+
