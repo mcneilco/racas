@@ -3,7 +3,7 @@
 \alias{readExcelOrCsv}
 \title{Reading of Excel or CSV}
 \usage{
-readExcelOrCsv(filePath, sheet = 1, header = FALSE)
+readExcelOrCsv(filePath, sheet = 1, header = FALSE, fileEncoding = "")
 }
 \arguments{
 \item{filePath}{The path the the file to read}

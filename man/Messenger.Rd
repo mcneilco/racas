@@ -113,6 +113,6 @@ external.runBigModule <- function(request) {
 
 # While coding interactively, the logger can be changed to log to console
 globalMessenger <- messenger()
-globalMessenger$logger <- createLogger(logName = "com.acas.name.of.big.module", logToConsole=TRUE)
+globalMessenger$logger <- logger(logName = "com.acas.name.of.big.module", logToConsole=TRUE, reset=TRUE)
 }
 

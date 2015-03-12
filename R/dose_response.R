@@ -861,11 +861,11 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
                 curveid,
                 curvedisplaymin,
                 curvedisplaymax
-                from pp_api_curve_params where curveId in (REPLACEME)"
+                from api_curve_params_m where curveId in (REPLACEME)"
   curve_params <- rbindlist(query_replace_string_with_values(qu, string = "REPLACEME", curveids, 
                                                              ...))
   if(nrow(curve_params) == 0) {
-    stop("got 0 results from pp_api_curve_params table query for the following curvids: ", paste0(curveids, collapse = ","))
+    stop("got 0 results from api_curve_params_m table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
   dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
@@ -877,6 +877,8 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   parameters <- dt1[dt2][dt3]
   flagAndRenderingColumnNames <- c("Rendering Hint", "user flag status", "algorithm flag status")
   parameters[ , flagAndRenderingColumnNames[!flagAndRenderingColumnNames %in% names(parameters)] := ""]
+  for (j in flagAndRenderingColumnNames)
+    set(parameters,which(is.na(parameters[[j]])),j,"")
   setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
   renderingParameters <- switch(parameters[1]$renderingHint,
          "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
@@ -895,7 +897,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
 get_cached_raw_data <- function(curveids, ...) {
   curveids <- as.list(unlist(curveids))
   points <- rbindlist(query_replace_string_with_values("select curveid, dose, doseUnits, response, responsekind, responseUnits, userFlagStatus, algorithmFlagStatus, preprocessFlagStatus
-                                                             from pp_api_dose_response where curveid in (REPLACEME)", string = "REPLACEME", curveids, 
+                                                             from api_dose_response_m where curveid in (REPLACEME)", string = "REPLACEME", curveids, 
                                                        ...))
   setnames(points, c('curveId', 'dose', 'doseUnits', 'response', 'responseType', 'responseUnits', 'userFlagStatus', 'algorithmFlagStatus', 'preprocessFlagStatus'))
   points[ is.na(userFlagStatus), userFlagStatus := ""]
