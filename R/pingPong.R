@@ -169,6 +169,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                                 AND analysisgr0_.ignored           = '0'
                                                 AND analysisgr2_.ignored           = '0'
                                                 AND e.ignored                      = '0'
+                                                AND e.deleted                      = '0'
                                                 ) a ON ",curveParamsMaterializedName,".curveid = a.curveid
                                               WHERE a.curveid                     IS NULL
                                               )")) 
@@ -287,6 +288,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                                 AND analysisgr0_.ignored           = '0'
                                                 AND analysisgr2_.ignored           = '0'
                                                 AND e.ignored                      = '0'
+                                                AND e.deleted                      = '0'
                                                 ) a ON ",doseResponseMaterializedName,".curveid = a.curveid
                                               WHERE a.curveid                     IS NULL
                                               )")) 
