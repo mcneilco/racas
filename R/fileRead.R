@@ -13,7 +13,7 @@
 #' In fileRead.R
 #' Hidden sheets in xls and xlsx files are ignored.
 
-readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE, fileEncoding="") {
+readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
     stopUser("Need Excel file path as input")
@@ -32,12 +32,14 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE, fileEncoding="")
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
+      fileEncoding <- getFileEncoding(filePath)
       output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
     }, error = function(e) {
       stopUser("Cannot read input csv file")
     })
   } else if (grepl("\\.txt$",filePath)){
     tryCatch({
+      fileEncoding <- getFileEncoding(filePath)
       output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
     }, error = function(e) {
       stopUser("Cannot read input txt file")
@@ -47,6 +49,24 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE, fileEncoding="")
   }
   
   return(output)
+}
+
+#' Check file encoding
+#' 
+#' Checks to see the encoding of the input file. 
+#' 
+#' @param filePath The file that needs to be checked, relative to your working directory
+#' 
+#' @return The file encoding for the input file
+#' 
+#' Example UTF-16LE file found in inst/test/data/UTF-16LE-test
+getFileEncoding <- function(filePath) {
+  # "\xff\xfeP" is the byte order mark for "UTF-16LE"
+  # Referenced from the answer by 'roippi' in this question thread:
+  # http://stackoverflow.com/questions/23729151/reading-text-file-into-variable-subsequent-print-returns-escape-characters
+  
+  fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) == "\xff\xfeP", "UTF-16LE", "")
+  return(fileEncoding)
 }
 
 #'Get dataframe sections
