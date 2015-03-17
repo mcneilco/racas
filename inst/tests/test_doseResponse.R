@@ -36,10 +36,9 @@ rdaTest <- function(newResults, acceptedResultsPath, updateResults = FALSE) {
 #   fitData <- dose_response(fitSettings, fitData)
 #   save(fitData, file = file.path("data","doseResponse","data","fitData_ll4_fitted.rda"))
 # }
-importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category", "reportedParameters")
-
 
 test_that("LL4 dose_response output has not changed",{
+  importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category", "reportedParameters")  
   file <- system.file("tests","data", "doseResponse","conf","default-ec50-fitSettings.json", package = "racas")
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
   load(system.file("tests","data","doseResponse","data","fitData_ll4.rda", package = "racas"))
@@ -75,6 +74,9 @@ test_that("doseResponse basic test",{
     save(acceptedResults , file = acceptedResultsRDAPath)
   } else {
     load(system.file(file.path("tests",acceptedResultsRDAPath), package = "racas"))
+    importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category")  
+    
+    
     expect_that(newResults,
                 is_a("list"))
     expect_that("fitData" %in% names(newResults),
@@ -87,8 +89,8 @@ test_that("doseResponse basic test",{
                 is_a("data.table"))
     expect_that(nrow(newResults$fitData) > 0,
                 is_true())
-    expect_that(newResults$fitData,
-                equals(acceptedResults$fitData))    
+    expect_that(newResults$fitData[ , importantFitDataColumns, with = FALSE],
+                equals(acceptedResults$fitData[ , importantFitDataColumns, with = FALSE]))    
   }
 })
 
@@ -134,6 +136,7 @@ test_that("get_reported_parameters basic test",{
 })
 
 test_that("dose_response_fit basic test",{
+  importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category")  
   load(system.file("tests","data", "doseResponse","data","fitData_ll4.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","dose_response_fit.rda")
   newResults <- dose_response_fit(fitData)
