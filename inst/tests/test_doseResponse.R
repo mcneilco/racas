@@ -3,11 +3,25 @@ context("doseResponse.R")
 if(!exists("updateResults")) updateResults <- FALSE
 
 rdaTest <- function(newResults, acceptedResultsPath, updateResults = FALSE) {
+  if("data.frame" %in% class(newResults)) {
+    if("data.table" %in% class(newResults)) {
+      setcolorder(newResults, order(names(newResults)))        
+    } else {
+      newResults <- newResults[order(names(newResults))]
+    }
+  }
   if(updateResults) {
     acceptedResults <- newResults
     return(save(acceptedResults , file = acceptedResultsPath))
-  } else {    
-    load(system.file("tests", acceptedResultsPath, package = "racas"))
+  } else {
+    load(system.file("tests", acceptedResultsPath, package = "racas"))    
+    if("data.frame" %in% class(acceptedResults)) {
+      if("data.table" %in% class(acceptedResults)) {
+        setcolorder(acceptedResults, order(names(newResults)))        
+      } else {
+        acceptedResults <- acceptedResults[order(names(acceptedResults))]
+      }
+    }
     return(expect_that(newResults,
                 equals(acceptedResults)))
   }
@@ -30,7 +44,7 @@ test_that("LL4 dose_response output has not changed",{
   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
   load(system.file("tests","data","doseResponse","data","fitData_ll4.rda", package = "racas"))
   newResults <- dose_response(fitSettings, fitData)
-  newResults <- newResults[ , importantFitDataColumns,]
+  newResults <- newResults[ , importantFitDataColumns, with = FALSE]
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedresults", "dose_response_ll4.rda")
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
@@ -123,7 +137,7 @@ test_that("dose_response_fit basic test",{
   load(system.file("tests","data", "doseResponse","data","fitData_ll4.rda", package = "racas"))
   acceptedResultsPath <- file.path("data","doseResponse", "acceptedResults","dose_response_fit.rda")
   newResults <- dose_response_fit(fitData)
-  newResults <- newResults[ , importantFitDataColumns,]
+  newResults <- newResults[ , importantFitDataColumns, with = FALSE]
   rdaTest(newResults, acceptedResultsPath, updateResults = updateResults)
 })
 
