@@ -1,0 +1,48 @@
+{
+   "inverseAgonistMode":true,
+   "fixedParameters":{
+      "min":null,
+      "max":null,
+      "ki":null
+   },
+   "inactiveRule":{
+      "type":"threshold",
+      "value":20,
+      "activeDoses":2
+   },
+   "biphasicRule":{
+      "type":"parameter.percentage",
+      "parameter":"max",
+      "operator":"<",
+      "value":0.90
+   },
+   "parameterRules":{
+      "goodnessOfFits":{
+         "maxUncertaintyRule":{
+            "parameter":"max",
+            "type":"stdErr",
+            "value":10,
+            "operator":">",
+            "displayName":"Max uncertainty exceeded"
+         }
+      },
+      "limits":{
+         "kiThresholdHigh":{
+            "parameter":"ki",
+            "type":"logReference",
+            "reference":"dose.max",
+            "value":0.5,
+            "operator":">",
+            "displayName":"Ki high threshold exceeded"
+         },
+         "kiThresholdLow":{
+            "parameter":"ki",
+            "type":"logReference",
+            "reference":"dose.min",
+            "value":0.0,
+            "operator":"<",
+            "displayName":"Ki low threshold exceeded"
+         }
+      }
+   }
+}

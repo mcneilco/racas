@@ -517,21 +517,6 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
   return(list(fitData = fitData, sessionID = sessionID))
 }
 
-predict_drm_points <- function(pts, drcObj) {
-  if(nrow(pts)==0 || is.null(drcObj)) {
-    return(NULL)
-  }
-  x <- unique(pts$dose)
-  if(grepl("LOG",toupper(pts$doseunits[1]))) {
-    valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=12*length(x)) ))
-  } else {
-    valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=12*length(x)))
-  }
-  curveData <- data.frame(dose = valuesToPredict$x, response = predict(drcObj, newdata = valuesToPredict))
-  return(curveData)
-}
-
-
 get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA, ymax = NA, xmin = NA, xmax = NA){
   if(nrow(pts)==0) {
     return(NULL)
@@ -1101,13 +1086,12 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
          goodnessOfFit.parameters = list(get_goodness_of_fit_parameters_drc_object(model[[1]]))
     )}
     , by = curveId]
-  #Fail Heuristics  
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveId]
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
   fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(""), "no fit"), by = curveId]
-  returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange", "potent"))
+  returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent"))
   
   fitData[ model.synced == FALSE, model.synced := TRUE]
   return(fitData[, returnCols, with = FALSE])
@@ -1543,6 +1527,8 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   response <- parseGenericData(request)
   if(response$hasError) {
     cat(response$errorMessages[[1]]$message)
+    cat(response$errorMessages[[1]]$htmlSummary)
+    
   }
   if(grepl("explicit",type)) {
     wb <- XLConnect::loadWorkbook(doseResponseSELFile)

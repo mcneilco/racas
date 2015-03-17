@@ -11,6 +11,8 @@
       "limitType":"none",
       "value":0.6
    },
+   "smartMode":true,
+   "inactiveThresholdMode":true,
    "inactiveThreshold":20,
    "inverseAgonistMode":true
 }
