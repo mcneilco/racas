@@ -13,15 +13,15 @@ rdaTest <- function(newResults, acceptedResultsPath, updateResults = FALSE) {
   }
 }
 
-if(updateResults) {
-  experimentCode <- load_dose_response_test_data()
-  fitData <- get_fit_data_experiment_code(experimentCode, modelFitType = "4 parameter D-R", full_object = TRUE)
-  save(fitData, file = file.path("data","doseResponse", "data", "fitData_ll4.rda"))
-  file <- system.file("tests","data", "doseResponse","conf","default-ec50-fitSettings.json", package = "racas")
-  fitSettings <- fromJSON(readChar(file, file.info(file)$size))
-  fitData <- dose_response(fitSettings, fitData)
-  save(fitData, file = file.path("data","doseResponse","data","fitData_ll4_fitted.rda"))
-}
+# if(updateResults) {
+#   experimentCode <- load_dose_response_test_data()
+#   fitData <- get_fit_data_experiment_code(experimentCode, modelFitType = "4 parameter D-R", full_object = TRUE)
+#   save(fitData, file = file.path("data","doseResponse", "data", "fitData_ll4.rda"))
+#   file <- system.file("tests","data", "doseResponse","conf","default-ec50-fitSettings.json", package = "racas")
+#   fitSettings <- fromJSON(readChar(file, file.info(file)$size))
+#   fitData <- dose_response(fitSettings, fitData)
+#   save(fitData, file = file.path("data","doseResponse","data","fitData_ll4_fitted.rda"))
+# }
 importantFitDataColumns <- c("fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent", "category", "reportedParameters")
 
 
