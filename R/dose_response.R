@@ -1069,13 +1069,6 @@ get_cached_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
 
 dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
-  
-  ###Collect Point Stats
-  fitData[ model.synced == FALSE, pointStats := list(list(get_point_stats(points[[1]]))), by = curveId]
-  
-  ###Check categories
-  fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
-  
   ###Fit
   fitData[model.synced == FALSE, model := list(model = list(switch(renderingHint,
                                                                    "4 parameter D-R" = get_drc_model(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
@@ -1086,8 +1079,9 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   
   ###Collect Stats
   fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveId]
-  fitData[ model.synced == FALSE, c("fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
-    list(fittedParameters = list(get_parameters_drc_object(model[[1]])),
+  fitData[ model.synced == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
+    list(pointStats = list(get_point_stats(points[[1]])),
+         fittedParameters = list(get_parameters_drc_object(model[[1]])),
          goodnessOfFit.model = list(get_fit_stats_drc_object(model[[1]], points[[1]])),
          goodnessOfFit.parameters = list(get_goodness_of_fit_parameters_drc_object(model[[1]]))
     )}
@@ -1095,6 +1089,7 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveId]
+  fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
   fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(""), "no fit"), by = curveId]
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent"))
   
