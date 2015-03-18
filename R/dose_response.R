@@ -853,9 +853,9 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     stop("got 0 results from api_curve_params_m table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
-  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
+  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint", "category"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
   dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
-  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint"),], "curveid ~ lskind", value.var = "stringvalue")
+  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint", "category"),], "curveid ~ lskind", value.var = "stringvalue")
   setkey(dt1, "curveid")
   setkey(dt2, "curveid")
   setkey(dt3, "curveid")
