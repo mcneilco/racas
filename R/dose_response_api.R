@@ -254,15 +254,21 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
 #' #FitData object plus the "cars" data to a json string
 #' api_doseResponse_fitData_to_curveDetail(fitData, cars)
 api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
+  if(fitData$category %in% c("inactive","potent")) {
+    overRideMaxMin <- mean(fitData$points[[1]][userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response)    
+  } else {
+    overRideMaxMin <- NA
+  }
   if(saved) {
     reportedValues <- fitData[1]$reportedValuesClob[[1]]
     fitSummary <- fitData[1]$fitSummaryClob[[1]]
     parameterStdErrors <- fitData[1]$parameterStdErrorsClob[[1]]
     curveErrors <- fitData[1]$curveErrorsClob[[1]]
     fitSettings <- fromJSON(fitData[1]$fitSettings)
+    
     fittedParametersList <- switch(fitData[1]$renderingHint,
-                                   "4 parameter D-R" = list(min = fitData[1]$fittedMin,  max = fitData[1]$fittedMax, ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope),
-                                   "Ki Fit" = list(min = fitData[1]$fittedMin,  max = fitData[1]$fittedMax, ki = fitData[1]$fittedKi, ligandConc = fitData[1]$ligandConc, kd = fitData[1]$kd)
+                                   "4 parameter D-R" = list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope),
+                                   "Ki Fit" = list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$ligandConc, kd = fitData[1]$kd)
            )
     curveAttributes <- switch(fitData[1]$renderingHint,
                               "4 parameter D-R" = list(EC50 = length0_or_na_to_null(fitData[1]$ec50),
@@ -288,6 +294,12 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     curveErrors <- fitData[1]$curveErrorsClob[[1]]
     fitSettings = fromJSON(fitData[1]$simpleFitSettings)
     fittedParametersList <- fitData$fittedParameters[[1]]
+    if(!is.null(fittedParametersList$max) && !is.na(overRideMaxMin)) {
+      fittedParametersList$max <- overRideMaxMin
+    }
+    if(!is.null(fittedParametersList$min) && !is.na(overRideMaxMin)) {
+      fittedParametersList$min <- overRideMaxMin
+    }
     curveAttributes <- switch(fitData[1]$renderingHint,
                               "4 parameter D-R" = list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
                                                 Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
