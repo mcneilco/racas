@@ -10,9 +10,10 @@
 #'   should have the code name appended to the front
 #
 #' @details each of the data frames must have these columns: unitKind, 
-#'   valueType, valueKind, numericValue, publicData, 
-#'   stateType, stateKind, tempStateId, tempId, lsType, lsKind. Other optional
-#'   columns can be found in \link{formatEntityAsTsvAndUpload}
+#'   valueType, valueKind, numericValue, publicData, stateType, stateKind,
+#'   tempStateId, tempId, lsType, lsKind. Other optional columns can be found in
+#'   \code{\link{formatEntityAsTsvAndUpload}}. You can get faster saving using
+#'   \code{\link{saveAllViaDirectDatabase}}, but it includes fewer checks.
 #' 
 #' @export
 saveAllViaTsv <- function(analysisGroupData, treatmentGroupData, subjectData, appendCodeName = list()) {
@@ -179,13 +180,18 @@ formatEntityAsTsvAndUpload <- function(entityData) {
 #' Useful for changing objects to data frames
 #' 
 #' @param x input
+#' @param naType NA value, e.g.\code{NA_character_}
 #' 
 #' @details will return the input for any value other than NULL
 #' 
 #' @export
-naIfNull <- function(x) {
+naIfNull <- function(x, naType = NULL) {
   if (is.null(x)) {
-    return(NA)
+    if (is.null(naType)) {
+      return(NA)
+    } else {
+      return(naType)
+    }
   } else {
     return(x)
   }
