@@ -561,6 +561,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
                               "(select id from treatment_group", limitQuery, ")"))
       dbSendQuery(conn, paste("delete from analysisgroup_treatmentgroup where analysis_group_id in ", 
                               "(select id from analysis_group", limitQuery, ")"))
+      dbSendQuery(conn, paste("delete from subject", limitQuery))
       dbSendQuery(conn, paste("delete from treatment_group", limitQuery))
       dbSendQuery(conn, paste("delete from experiment_analysisgroup where analysis_group_id in ", 
                               "(select id from analysis_group", limitQuery, ")"))
