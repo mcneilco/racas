@@ -11,7 +11,11 @@ getFileEncoding(filePath)
 \value{
 The file encoding for the input file
 
-Example UTF-16LE file found in inst/test/data/UTF-16LE-test
+Two example UTF-16LE file can be found in inst/tests/data/:
+
+UTF-16LE-test.txt
+
+UTF-16LE-test2.txt
 }
 \description{
 Checks to see the encoding of the input file.
