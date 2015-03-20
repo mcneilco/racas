@@ -59,13 +59,22 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
 #' 
 #' @return The file encoding for the input file
 #' 
-#' Example UTF-16LE file found in inst/test/data/UTF-16LE-test
+#' Two example UTF-16LE file can be found in inst/tests/data/:
+#' @return UTF-16LE-test.txt
+#' @return UTF-16LE-test2.txt
 getFileEncoding <- function(filePath) {
-  # "\xff\xfeP" is the byte order mark for "UTF-16LE"
+  # "\xff\xfe" is the byte order mark for "UTF-16LE"
   # Referenced from the answer by 'roippi' in this question thread:
   # http://stackoverflow.com/questions/23729151/reading-text-file-into-variable-subsequent-print-returns-escape-characters
   
-  fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) == "\xff\xfeP", "UTF-16LE", "")
+  # TODO: Change "paste0("\xff\xfe",LETTERS)" to something a bit more elegant.
+  #       The problem is that "grepl("\xff\xfe","\xff\xfeA", fixed=TRUE)" returns
+  #       "regular expression is invalid in this locale"
+  #       and "substring("\xff\xfeA", 1)" returns
+  #       "invalid multibyte string at '<ff><fe>A'"
+  fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) %in% paste0("\xff\xfe",LETTERS), 
+                         "UTF-16LE", 
+                         "")
   return(fileEncoding)
 }
 
