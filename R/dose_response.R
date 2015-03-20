@@ -517,21 +517,6 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
   return(list(fitData = fitData, sessionID = sessionID))
 }
 
-predict_drm_points <- function(pts, drcObj) {
-  if(nrow(pts)==0 || is.null(drcObj)) {
-    return(NULL)
-  }
-  x <- unique(pts$dose)
-  if(grepl("LOG",toupper(pts$doseunits[1]))) {
-    valuesToPredict <- data.frame(x = exp( seq(log(min(x)), log(max(x)), length.out=12*length(x)) ))
-  } else {
-    valuesToPredict <- data.frame(x = seq(min(x), max(x), length.out=12*length(x)))
-  }
-  curveData <- data.frame(dose = valuesToPredict$x, response = predict(drcObj, newdata = valuesToPredict))
-  return(curveData)
-}
-
-
 get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA, ymax = NA, xmin = NA, xmax = NA){
   if(nrow(pts)==0) {
     return(NULL)
@@ -868,9 +853,9 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     stop("got 0 results from api_curve_params_m table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
-  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
+  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint", "category"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
   dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
-  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint"),], "curveid ~ lskind", value.var = "stringvalue")
+  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint", "category"),], "curveid ~ lskind", value.var = "stringvalue")
   setkey(dt1, "curveid")
   setkey(dt2, "curveid")
   setkey(dt3, "curveid")
@@ -1084,31 +1069,33 @@ get_cached_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
 
 dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
-  ###Fit
+  
+  # Get Point Stats and Inactive, Insufficient Range and Potent Categories
+  fitData[ model.synced == FALSE, pointStats := list(list(get_point_stats(points[[1]]))), by = curveId]
+  fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
+  
+  # Fit the model
   fitData[model.synced == FALSE, model := list(model = list(switch(renderingHint,
                                                                    "4 parameter D-R" = get_drc_model(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
                                                                    "Ki Fit" = get_drc_model(points[[1]], drcFunction = ki_fct.5, paramNames = c("min", "max", "ki", "ligandConc", "kd"), fixed = fixedParameters[[1]]),
                                                                    "MM.2" = get_drc_model(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
   ))
   ), by = curveId]
-  
-  ###Collect Stats
+  # Extract model paramaeters and fit heuristics
   fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveId]
-  fitData[ model.synced == FALSE, c("pointStats","fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
-    list(pointStats = list(get_point_stats(points[[1]])),
-         fittedParameters = list(get_parameters_drc_object(model[[1]])),
+  fitData[ model.synced == FALSE, c("fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
+    list(fittedParameters = list(get_parameters_drc_object(model[[1]])),
          goodnessOfFit.model = list(get_fit_stats_drc_object(model[[1]], points[[1]])),
          goodnessOfFit.parameters = list(get_goodness_of_fit_parameters_drc_object(model[[1]]))
     )}
     , by = curveId]
-  #Fail Heuristics  
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveId]
-  fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
   fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(""), "no fit"), by = curveId]
-  returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "inactive", "insufficientRange", "potent"))
-  
+
+  # Return the fitData object
+  returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent"))
   fitData[ model.synced == FALSE, model.synced := TRUE]
   return(fitData[, returnCols, with = FALSE])
 }
@@ -1286,6 +1273,7 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
   drcObj <- NULL
   tryCatch({
     options(show.error.messages=FALSE)
+    on.exit(options(show.error.messages=TRUE))
     drcObj <- drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
@@ -1542,6 +1530,8 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   response <- parseGenericData(request)
   if(response$hasError) {
     cat(response$errorMessages[[1]]$message)
+    cat(response$errorMessages[[1]]$htmlSummary)
+    
   }
   if(grepl("explicit",type)) {
     wb <- XLConnect::loadWorkbook(doseResponseSELFile)
@@ -2105,14 +2095,8 @@ update_point_flags <- function(pts, updateFlags) {
   pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagReason', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagReason', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagReason', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagReason.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagReason.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagReason.y, preprocessFlagComment.y)]
   return(pts[, returnCols, with = FALSE])
 }
+
+
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
-
-
-
 MM2 <- '(max*x)/(kd + x)'
-
-
-
-
-

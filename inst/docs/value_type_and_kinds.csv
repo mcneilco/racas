@@ -36,7 +36,7 @@ Dose Response,numericValue,rSquared
 Dose Response,numericValue,Slope
 Dose Response,numericValue,SSE
 Dose Response,numericValue,SST
-Dose Response,numericValue,transformed efficacy
+Dose Response,numericValue,efficacy
 Dose Response,stringValue,category
 Dose Response,stringValue,comment
 Dose Response,stringValue,curve id

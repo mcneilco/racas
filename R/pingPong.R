@@ -143,16 +143,36 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   doseResponseMaterializedName <-  "api_dose_response_m"
   apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)
   apiDoseResponseAlreadyExisted <- dbExistsTable(conn, doseResponseMaterializedName)
-  
   #Curve Params
   if(apiCurveParamsAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",curveParamsMaterializedName))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName," where curveid in (
-                                             SELECT DISTINCT ",curveParamsMaterializedName,".curveid
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName,
+                                             " where curveid IN 
+                                            ( SELECT DISTINCT ",curveParamsMaterializedName,".curveid
                                              FROM ",curveParamsMaterializedName,"
-                                             LEFT OUTER JOIN api_curve_params
-                                             ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
-                                             WHERE api_curve_params.curveid IS NULL)"))
+                                              LEFT OUTER JOIN
+                                                (SELECT DISTINCT string_value AS curveid
+                                                FROM analysis_group_value analysisgr0_
+                                                INNER JOIN analysis_group_state analysisgr1_
+                                                ON analysisgr0_.analysis_state_id=analysisgr1_.id
+                                                INNER JOIN analysis_group analysisgr2_
+                                                ON analysisgr1_.analysis_group_id=analysisgr2_.id
+                                                INNER JOIN analysis_group analysisgr3_
+                                                ON analysisgr1_.analysis_group_id=analysisgr3_.id
+                                                INNER JOIN EXPERIMENT_ANALYSISGROUP eag
+                                                ON eag.analysis_group_id=analysisgr3_.id
+                                                INNER JOIN EXPERIMENT e
+                                                ON e.id                            =eag.experiment_id
+                                                WHERE analysisgr1_.ignored         = '0'
+                                                AND analysisgr0_.ls_type           ='stringValue'
+                                                AND analysisgr0_.ls_kind           ='curve id'
+                                                AND analysisgr0_.ignored           = '0'
+                                                AND analysisgr2_.ignored           = '0'
+                                                AND e.ignored                      = '0'
+                                                AND e.deleted                      = '0'
+                                                ) a ON ",curveParamsMaterializedName,".curveid = a.curveid
+                                              WHERE a.curveid                     IS NULL
+                                              )")) 
     logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
     missingData <- dbSendQuery(conn, paste0("INSERT
                                             INTO ",curveParamsMaterializedName,"
@@ -245,12 +265,33 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   #Api Dose Response
   if(apiDoseResponseAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",doseResponseMaterializedName))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName," where curveid in (
-                                             SELECT DISTINCT ",doseResponseMaterializedName,".curveid
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName,
+                                            " where curveid IN 
+                                            ( SELECT DISTINCT ",doseResponseMaterializedName,".curveid
                                              FROM ",doseResponseMaterializedName,"
-                                             LEFT OUTER JOIN api_dose_response
-                                             ON ",doseResponseMaterializedName,".curveid     = api_dose_response.curveid
-                                             WHERE api_dose_response.curveid IS NULL)"))
+                                              LEFT OUTER JOIN
+                                                (SELECT DISTINCT string_value AS curveid
+                                                FROM analysis_group_value analysisgr0_
+                                                INNER JOIN analysis_group_state analysisgr1_
+                                                ON analysisgr0_.analysis_state_id=analysisgr1_.id
+                                                INNER JOIN analysis_group analysisgr2_
+                                                ON analysisgr1_.analysis_group_id=analysisgr2_.id
+                                                INNER JOIN analysis_group analysisgr3_
+                                                ON analysisgr1_.analysis_group_id=analysisgr3_.id
+                                                INNER JOIN EXPERIMENT_ANALYSISGROUP eag
+                                                ON eag.analysis_group_id=analysisgr3_.id
+                                                INNER JOIN EXPERIMENT e
+                                                ON e.id                            =eag.experiment_id
+                                                WHERE analysisgr1_.ignored         = '0'
+                                                AND analysisgr0_.ls_type           ='stringValue'
+                                                AND analysisgr0_.ls_kind           ='curve id'
+                                                AND analysisgr0_.ignored           = '0'
+                                                AND analysisgr2_.ignored           = '0'
+                                                AND e.ignored                      = '0'
+                                                AND e.deleted                      = '0'
+                                                ) a ON ",doseResponseMaterializedName,".curveid = a.curveid
+                                              WHERE a.curveid                     IS NULL
+                                              )")) 
     logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))
     missingData <- dbSendQuery(conn, paste0("INSERT
                                           INTO ",doseResponseMaterializedName,"

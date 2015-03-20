@@ -644,7 +644,7 @@ createExperiment <- function(protocol=NULL, codeName=NULL, lsType="default", lsK
 
 
 createAnalysisGroup <- function(experiment=NULL, codeName=NULL, lsType="default", lsKind="default", lsTransaction=NULL, recordedBy="userName",
-                                treatmentGroups=NULL, analysisGroupStates=NULL, testMode=FALSE){
+                                treatmentGroups=NULL, analysisGroupStates=list(), testMode=FALSE){
   if (is.null(codeName) ) {
     if(testMode) {
       codeName <- "AG-TEST"
