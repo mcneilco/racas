@@ -661,27 +661,24 @@ saveValuesFromExplicitFormat <- function(entityData, entityKind, testMode=FALSE)
 #' Turns a batchCode column into rows in a long format
 #' 
 #' @param entityData a data frame with data
-#' 
-#' @details Does not work with data.table.
-#' entityData must have columns "batchCode", 
-#' "tempStateId", "parentId", "tempId", "stateType", "stateKind"
-#' If "batchCode" is missing, will return an empty data.frame.
-#' publicData is always set to TRUE.
-#' In longFormatSave.R.
-#' For use with Tsv saves.
+#'   
+#' @details Does not work with data.table. entityData must have columns 
+#'   "tempStateId", "tempId", "stateType", "stateKind". If "batchCode" is
+#'   missing, will return an empty data.frame. publicData is always set to TRUE.
+#'   For use with Tsv saves.
 #' 
 #' @return A data frame with rows for all code values
 #' 
 meltBatchCodes2 <- function(entityData) {
-  # Check for missing batchCode
+  # Check for empty batchCode
   output <- data.frame()
   if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
     return(output)
   }
   
-  optionalColumns <- c("lsTransaction", "recordedBy")
+  optionalColumns <- c("lsTransaction", "recordedBy", "concentration", "concUnit", "parentId", "tempParentId")
   
-  neededColumns <- c("batchCode", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
+  neededColumns <- c("batchCode", "tempStateId", "tempId", "stateType", "stateKind")
   if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
   
   usedColumns <- c(neededColumns, optionalColumns[optionalColumns %in% names(entityData)])
@@ -694,7 +691,7 @@ meltBatchCodes2 <- function(entityData) {
   batchCodeValues$valueKind <- "batch code"
   batchCodeValues$publicData <- TRUE
   batchCodeValues <- batchCodeValues[!is.na(batchCodeValues$codeValue), ]
-      
+  
   return(batchCodeValues)
 }
 

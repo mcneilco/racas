@@ -15,12 +15,9 @@ A data frame with rows for all code values
 Turns a batchCode column into rows in a long format
 }
 \details{
-Does not work with data.table.
-entityData must have columns "batchCode",
-"tempStateId", "parentId", "tempId", "stateType", "stateKind"
-If "batchCode" is missing, will return an empty data.frame.
-publicData is always set to TRUE.
-In longFormatSave.R.
-For use with Tsv saves.
+Does not work with data.table. entityData must have columns
+  "tempStateId", "tempId", "stateType", "stateKind". If "batchCode" is
+  missing, will return an empty data.frame. publicData is always set to TRUE.
+  For use with Tsv saves.
 }
 

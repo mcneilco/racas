@@ -412,7 +412,7 @@ createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="
   )
   return(protocolState)
 }
-createExperimentState <- function(experimentValues=NULL, recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE, recordedDate=NULL){
+createExperimentState <- function(experimentValues=list(), recordedBy="userName", lsType="lsType", lsKind="lsKind", comments="", lsTransaction=NULL, experiment=NULL, testMode=FALSE, recordedDate=NULL){
   experimentState = list(
     experiment=experiment, #This will fail if not given an id and version (but the version does not matter)
     lsValues=experimentValues,
