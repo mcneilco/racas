@@ -3,10 +3,12 @@
 \alias{naIfNull}
 \title{Turn NULL into NA}
 \usage{
-naIfNull(x)
+naIfNull(x, naType = NULL)
 }
 \arguments{
 \item{x}{input}
+
+\item{naType}{NA value, e.g.\code{NA_character_}}
 }
 \description{
 Useful for changing objects to data frames
