@@ -559,7 +559,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
   })
   
   # If anything fails, roll the transaction back
-  if(is.null(result)){
+  if (is.null(result) || is.null(result$value)){
     dbRollback(conn)
     if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
       # On Oracle, delete everything saved in this transaction
