@@ -119,9 +119,8 @@ readTsvDataFileDD <- function(dataFilePath){
 #' @rdname saveEntitiesDD
 saveAgDataDD <- function(conn, inputDT, experimentId, lsTransactionId, recordedDate){
 #inputDT <- ag_data
-	if(all(is.na(inputDT$parentId))) inputDT[ ,parentId := experimentId ]
-	if(all(is.na(inputDT$tempValueId))) inputDT[ ,tempValueId := seq(1:nrow(inputDT)) ]
-	if(all(is.na(inputDT$lsTransaction))) inputDT[ ,lsTransaction := lsTransactionId ]
+	if(all(is.na(inputDT$parentId))) inputDT[, parentId := experimentId ]
+	if(all(is.na(inputDT$lsTransaction))) inputDT[, lsTransaction := lsTransactionId ]
 
 	inputDT[ ,recordedDate := recordedDate ]
 	inputDT[ ,ignored := FALSE ]
@@ -151,9 +150,8 @@ saveTgDataDD <- function(conn, inputDT, ag_ids, lsTransactionId, recordedDate){
 #inputDT <- tg_data
 #ag_ids <- outputAgDT
 
-	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[ ,parentId := NULL ]
-	if (all(is.na(inputDT$tempValueId))) inputDT[ ,tempValueId := seq(1:nrow(inputDT)) ]
-	if (all(is.na(inputDT$lsTransaction))) inputDT[ ,lsTransaction := lsTransactionId ]
+	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[, parentId := NULL ]
+	if (all(is.na(inputDT$lsTransaction))) inputDT[, lsTransaction := lsTransactionId ]
 	inputDT[ lsType=="", lsType := "default" ]
 	inputDT[ lsKind=="", lsKind := "default" ]
 
@@ -188,9 +186,8 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 #inputDT <- subject_data
 #tg_ids <- outputTgDT
 
-	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[ ,parentId := NULL ]
-	if (all(is.na(inputDT$tempValueId))) inputDT[ ,tempValueId := seq(1:nrow(inputDT)) ]
-	if (all(is.na(inputDT$lsTransaction))) inputDT[ ,lsTransaction := lsTransactionId ]
+	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[, parentId := NULL ]
+	if (all(is.na(inputDT$lsTransaction))) inputDT[, lsTransaction := lsTransactionId ]
 	inputDT[ lsType=="", lsType := "default" ]
 	inputDT[ lsKind=="", lsKind := "default" ]
 	
@@ -299,11 +296,14 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
 }
 #' @rdname saveEntitiesDD
 saveStatesDD <- function( conn, entityType, inputStatesDT ){
-  states <- unique(inputStatesDT[, c("tempStateId", "stateId", "stateType", "stateKind", 
-                                     "lsTransaction", "id", "recordedBy", "ignored", "modifiedBy", 
-                                     "modifiedDate", "recordedDate", "version", "deleted", "comments"), 
-                                 with=FALSE])
-  
+  stateColumns <- c("tempStateId", "stateId", "stateType", "stateKind", 
+                    "lsTransaction", "id", "recordedBy", "ignored", "modifiedBy", 
+                    "modifiedDate", "recordedDate", "version", "deleted", "comments")
+  setkeyv(inputStatesDT, stateColumns) #Set key to all used colums
+  states <- unique(inputStatesDT[!is.na(inputStatesDT$tempStateId), stateColumns, with=FALSE])
+  if (nrow(states) == 0) {
+    return(inputStatesDT)
+  }
   setkey(states, "id")
   numberOfIds <- length(unique(states$tempStateId))
   states[ , stateId := getStateIdsDD(conn, entityType, numberOfIds)]
@@ -357,11 +357,24 @@ saveValuesDD <- function( conn, entityType, inputDT ){
     ifelse(is.na(x), "null", x)
   }
   
-	values <- unique(inputDT[, c("clobValue","codeKind","codeOrigin","codeType","codeValue","comments","concentration","concUnit","dateValue",
-	"fileValue","lsTransaction","numberOfReplicates","numericValue","operatorKind","operatorType","publicData","recordedBy", 
-	"sigFigs","stateId","stringValue","tempValueId","uncertainty","uncertaintyType","unitKind","unitType",
-	"ignored", "modifiedBy", "modifiedDate","recordedDate", "version", "deleted",
-	"urlValue","valueKind","valueType"), with = FALSE])
+  # Assign tempValueId's for rows that have value data, defined by having a valueKind
+  if(all(is.na(inputDT$tempValueId))) {
+    inputDT[!is.na(valueKind), tempValueId := seq(1, sum(!is.na(valueKind))) ]
+  }
+  
+  valueColumns <- c(
+    "clobValue", "codeKind", "codeOrigin", "codeType", "codeValue", "comments",
+    "concentration", "concUnit", "dateValue", "fileValue", "lsTransaction",
+    "numberOfReplicates", "numericValue", "operatorKind", "operatorType", "publicData",
+    "recordedBy", "sigFigs", "stateId", "stringValue", "tempValueId", "uncertainty",
+    "uncertaintyType", "unitKind", "unitType", "ignored", "modifiedBy", "modifiedDate",
+    "recordedDate", "version", "deleted", "urlValue", "valueKind", "valueType")
+  setkeyv(inputDT, valueColumns) #Set key to all used colums
+  values <- unique(inputDT[!is.na(inputDT$tempValueId), valueColumns, with=FALSE])
+  
+  if (nrow(values) == 0) {
+    return(inputDT)
+  }
 	
 	numberOfIds <- length(unique(values$tempValueId))
 	values[, valueId := getValueIdsDD(conn, entityType, numberOfIds)]
@@ -593,7 +606,7 @@ prepareTableForDD <- function(entityData) {
   #     publicData="logical")
   
   entityDataFormatted <- data.table(
-    tempValueId = NA,
+    tempValueId = NA_integer_,
     valueType = entityData$valueType,
     valueKind = entityData$valueKind,
     numericValue = entityData$numericValue,
@@ -612,16 +625,16 @@ prepareTableForDD <- function(entityData) {
     codeValue = naIfNull(entityData$codeValue),
     concentration = naIfNull(entityData$concentration),
     concUnit = naIfNull(entityData$concUnit),
-    unitType = NA,
+    unitType = NA_character_,
     unitKind = naIfNull(entityData$unitKind),
-    operatorType = NA,
+    operatorType = NA_character_,
     operatorKind = naIfNull(entityData$operatorKind),
     publicData = entityData$publicData,
     comments = naIfNull(entityData$comments),
     stateType = entityData$stateType,
     stateKind = entityData$stateKind,
     tempStateId = entityData$tempStateId,
-    stateId = NA,
+    stateId = NA_integer_,
     id = NA_integer_,
     tempId = entityData$tempId,
     parentId = naIfNull(entityData$parentId),
