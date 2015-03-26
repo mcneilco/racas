@@ -517,6 +517,20 @@ saveTsvData <- function(experimentId, lsTransactionId, agDatafile, tgDataFile, s
 #' @param lsTransactionId integer id of transaction
 #' @param experimentId integer id of experiment
 saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId = NA, experimentId = NULL) {
+  if (is.na(lsTransactionId)) {
+    if (is.null(agData$lsTransaction)) {
+      stop("If lsTransactionId is NA, lsTransaction must be defined in input data tables")
+    } else {
+      lsTransactionId <- unique(agData$lsTransaction)
+      if (length(lsTransactionId) > 1) {
+        stop("multiple lsTransaction's found in agData")
+      }
+      if (is.na(lsTransactionId)) {
+        stop("lsTransactionId cannot be NA when all lsTransaction in agData are NA")
+      }
+    }
+  }
+  
   conn <- getDatabaseConnection(racas::applicationSettings)
   on.exit(dbDisconnect(conn))
   result <- tryCatchLog({
