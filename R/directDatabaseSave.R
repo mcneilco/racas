@@ -17,15 +17,33 @@ dbWriteTableMatchCol <- function(conn, name, value, ...) {
   dbWriteTable(conn, name, value, ...)
 }
 #' @rdname saveEntitiesDD
-getEntityIdsDD <- function(conn, entityType, numberOfIds) {
+getEntityIdsDD <- function(conn, numberOfIds) {
 	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
-		entityIdSql <- paste0("select thing_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
+    # Oracle memory limits us to 1 million id's at a time
+    setsOfMillion <- floor(numberOfIds / 1000000)
+    leftOver <- numberOfIds %% 1000000
+    output <- as.integer(as.vector(replicate(setsOfMillion, getEntityIdsDDInternal(conn, 1000000))))
+    if (leftOver > 0) {
+      output <- c(output, getEntityIdsDDInternal(conn, leftOver))
+    }
+    return(as.integer(output))
 	} else {
+    # No chunking tested for Postgreql yet
 		entityIdSql <- paste0("select nextval('thing_pkseq') as id from generate_series(1,", numberOfIds, ")")
+		entityIds <- dbGetQuery(conn, entityIdSql)
+		return(as.integer(entityIds[,1]))
 	}
-
-	entityIds <- dbGetQuery(conn, entityIdSql)
-	return(as.integer(entityIds[,1]))
+}
+#' @rdname saveEntitiesDD
+getEntityIdsDDInternal <- function(conn, numberOfIds) {
+  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    entityIdSql <- paste0("select thing_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
+  } else {
+    entityIdSql <- paste0("select nextval('thing_pkseq') as id from generate_series(1,", numberOfIds, ")")
+  }
+  
+  entityIds <- dbGetQuery(conn, entityIdSql)
+  return(as.integer(entityIds[,1]))
 }
 #' @rdname saveEntitiesDD
 getStateIdsDD <- function(conn, entityType, numberOfIds) {
@@ -239,7 +257,7 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
                                     ignored, modifiedBy, modifiedDate, recordedDate, version, deleted)])
 
 	entities[ ,lsTypeAndKind := paste0(lsType, "_", lsKind)]
-	entities[ is.na(id), id := getEntityIdsDD(conn, entityType, length(id))]
+	entities[ is.na(id), id := getEntityIdsDD(conn, length(id))]
 	entities[ is.na(codeName) | codeName=="", codeName := getEntityCodesBySqlDD(conn, entityType, length(codeName))]
 	merge_ids <- subset(entities, ,c("id", "tempId"))
 	setkey(merge_ids, "tempId")

@@ -3,6 +3,7 @@
 \alias{getEntityCodesBySqlDD}
 \alias{getEntityCodesDD}
 \alias{getEntityIdsDD}
+\alias{getEntityIdsDDInternal}
 \alias{getStateIdsDD}
 \alias{getValueIdsDD}
 \alias{saveAgDataDD}
@@ -12,7 +13,9 @@
 \alias{saveTgDataDD}
 \title{Helper functions for saving direct to database}
 \usage{
-getEntityIdsDD(conn, entityType, numberOfIds)
+getEntityIdsDD(conn, numberOfIds)
+
+getEntityIdsDDInternal(conn, numberOfIds)
 
 getStateIdsDD(conn, entityType, numberOfIds)
 
@@ -35,9 +38,9 @@ saveStatesDD(conn, entityType, inputStatesDT)
 \arguments{
 \item{conn}{database connection object}
 
-\item{entityType}{"ANALYSIS_GROUP", "TREATMENT_GROUP", or "SUBJECT"}
-
 \item{numberOfIds}{number of ids to return}
+
+\item{entityType}{"ANALYSIS_GROUP", "TREATMENT_GROUP", or "SUBJECT"}
 
 \item{numberOfCodes}{number of codes to return}
 
