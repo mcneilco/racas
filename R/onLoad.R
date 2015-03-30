@@ -22,13 +22,13 @@
                    "3) relative path to the config file ",relativeConf),call.=FALSE)
   } else {
     tryCatch({
-      #If app home environment variable is set
-      if(appHome!="") {
-        configFileLocation <- file.path(appHome,"conf/compiled/conf.properties")
+      #if app configuration location
+      if(appConf!="") {
+        configFileLocation <- file.path(appConf)        
       } else {
-        #if app configuration location
-        if(appConf!="") {
-          configFileLocation <- file.path(appConf)
+        #If app home environment variable is set
+        if(appHome!="") {
+          configFileLocation <- file.path(appHome,"conf/compiled/conf.properties")
         } else {
           #if relative path then set home accoridingly
           appHome <- relativeToAppHome
