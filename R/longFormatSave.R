@@ -675,7 +675,6 @@ meltBatchCodes2 <- function(entityData) {
   if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
     return(output)
   }
-  
   optionalColumns <- c("lsTransaction", "recordedBy", "concentration", "concUnit", "parentId", "tempParentId")
   
   neededColumns <- c("batchCode", "tempStateId", "tempId", "stateType", "stateKind")
@@ -704,11 +703,11 @@ meltBatchCodes2 <- function(entityData) {
 #' 
 #' For use with Tsv saves
 meltConcentrations2 <- function(entityData) {
-  if(any(is.na(entityData$concentration))) {
+  if(all(is.na(entityData$concentration))) {
     return(data.frame())
   }
   
-  optionalColumns <- c("lsTransaction", "recordedBy")
+  optionalColumns <- c("lsTransaction", "recordedBy", "time", "timeUnit")
   
   neededColumns <- c("concentration", "concentrationUnit", "tempStateId", "parentId", "tempId", "stateType", "stateKind")
   if (!all(neededColumns %in% names(entityData))) {stop("Internal error: missing needed columns")}
@@ -717,8 +716,12 @@ meltConcentrations2 <- function(entityData) {
   createConcentrationRows <- function(entityData) {
     output <- unique(entityData[, usedColumns])
     if (nrow(output) > 1) stop("Non-unique concentrations in a tempStateId")
+    if(any(is.na(entityData$concentration))) {
+      return(data.frame())
+    }
     output$numericValue <- output$concentration
     output$unitKind <- output$concentrationUnit
+    output$valueUnit <- output$concentrationUnit
     output$valueKind <- "tested concentration"
     output$valueType <- "numericValue"
     output$publicData <- TRUE
@@ -739,7 +742,7 @@ meltConcentrations2 <- function(entityData) {
 #' 
 #' For use with Tsv saves
 meltTimes2 <- function(entityData) {
-  if(any(is.na(entityData$time))) {
+  if(all(is.na(entityData$time))) {
     return(data.frame())
   }
   
@@ -751,9 +754,13 @@ meltTimes2 <- function(entityData) {
   
   createTimeRows <- function(entityData) {
     output <- unique(entityData[, usedColumns])
-    if (nrow(output) > 1) stop("Non-unique concentrations in a tempStateId")
+    if (nrow(output) > 1) stop("Non-unique times in a tempStateId")
+    if(any(is.na(entityData$time))) {
+      return(data.frame())
+    }
     output$numericValue <- output$time
     output$unitKind <- output$timeUnit
+    output$valueUnit <- output$timeUnit
     output$valueKind <- "time"
     output$valueType <- "numericValue"
     output$publicData <- TRUE
@@ -761,4 +768,7 @@ meltTimes2 <- function(entityData) {
     output$timeUnit <- NULL
     return(output)
   }
+  
+  output <- ddply(.data=entityData, .variables = c("tempStateId"), .fun = createTimeRows)
+  return(output)
 }

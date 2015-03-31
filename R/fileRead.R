@@ -580,10 +580,10 @@ get_text_file_contents <- function(file_path) {
 #' @keywords custom, file, blueimp
 #' @export
 #' 
-moveFileToFileServer <- function (fileStartLocation, targetPath=NULL, 
-                                  fileServiceType = racas::applicationSettings$server.service.external.file.type, 
-                                  fileService=racas::applicationSettings$server.service.external.file.service.url, 
-                                  experiment=NULL, recordedBy=NULL) {
+moveFileToFileServer <- function(fileStartLocation, targetPath=NULL, 
+                                 fileServiceType = racas::applicationSettings$server.service.external.file.type, 
+                                 fileService=racas::applicationSettings$server.service.external.file.service.url, 
+                                 experiment=NULL, recordedBy=NULL) {
   # moves a file to file server
   if (fileServiceType == "blueimp") {
     # Move the file
@@ -599,3 +599,6 @@ moveFileToFileServer <- function (fileStartLocation, targetPath=NULL,
     stopUser("Configuration error: Invalid file service type")
   }
 }
+
+
+
