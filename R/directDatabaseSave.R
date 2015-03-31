@@ -19,14 +19,7 @@ dbWriteTableMatchCol <- function(conn, name, value, ...) {
 #' @rdname saveEntitiesDD
 getEntityIdsDD <- function(conn, numberOfIds) {
 	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
-    # Oracle memory limits us to 1 million id's at a time
-    setsOfMillion <- floor(numberOfIds / 1000000)
-    leftOver <- numberOfIds %% 1000000
-    output <- as.integer(as.vector(replicate(setsOfMillion, getEntityIdsDDInternal(conn, 1000000))))
-    if (leftOver > 0) {
-      output <- c(output, getEntityIdsDDInternal(conn, leftOver))
-    }
-    return(as.integer(output))
+    return(chunkMillionIds(conn, numberOfIds, getEntityIdsDDInternal))
 	} else {
     # No chunking tested for Postgreql yet
 		entityIdSql <- paste0("select nextval('thing_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -46,7 +39,34 @@ getEntityIdsDDInternal <- function(conn, numberOfIds) {
   return(as.integer(entityIds[,1]))
 }
 #' @rdname saveEntitiesDD
-getStateIdsDD <- function(conn, entityType, numberOfIds) {
+chunkMillionIds <- function(conn, numberOfIds, FUN) {
+  # applies the FUN to get Ids on sets no greater than 1 million to avoid database 
+  # memory issues on Oracle (postgres untested)
+  # ORA-30009: Not enough memory for CONNECT BY operation
+  limit <- 1000000
+  setsOfMillion <- floor(numberOfIds / limit)
+  leftOver <- numberOfIds %% limit
+  output <- as.integer(as.vector(replicate(setsOfMillion, FUN(conn, limit))))
+  if (leftOver > 0) {
+    output <- c(output, FUN(conn, leftOver))
+  }
+  return(as.integer(output))
+}
+#' @rdname saveEntitiesDD
+getStateIdsDD <- function(conn, numberOfIds) {
+  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    # Oracle memory limits us to 1 million id's at a time
+    return(chunkMillionIds(conn, numberOfIds, getStateIdsDDInternal))
+  } else {
+    stateIdSql <- paste0("select nextval('state_pkseq') as id from generate_series(1,", numberOfIds, ")")
+  }
+  
+  stateIds <- dbGetQuery(conn, stateIdSql)
+  return(as.integer(stateIds[,1]))
+}
+#' @rdname saveEntitiesDD
+getStateIdsDDInternal <- function(conn, numberOfIds) {
+  
 	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
 		stateIdSql <- paste0("select state_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
 	} else {
@@ -57,7 +77,18 @@ getStateIdsDD <- function(conn, entityType, numberOfIds) {
 	return(as.integer(stateIds[,1]))
 }
 #' @rdname saveEntitiesDD
-getValueIdsDD <- function(conn, entityType, numberOfIds) {
+getValueIdsDD <- function(conn, numberOfIds) {
+  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    return(chunkMillionIds(conn, numberOfIds, getValueIdsDDInternal))
+  } else {
+    valueIdSql <- paste0("select nextval('value_pkseq') as id from generate_series(1,", numberOfIds, ")")
+  }
+  
+  valueIds <- dbGetQuery(conn, valueIdSql)
+  return(as.integer(valueIds[,1]))
+}
+#' @rdname saveEntitiesDD
+getValueIdsDDInternal <- function(conn, numberOfIds) {
 	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
 		valueIdSql <- paste0("select value_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
 	} else {
@@ -168,7 +199,7 @@ saveTgDataDD <- function(conn, inputDT, ag_ids, lsTransactionId, recordedDate){
 #inputDT <- tg_data
 #ag_ids <- outputAgDT
 
-	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[, parentId := NULL ]
+	if (("parentId" %in% names(inputDT)) && (all(is.na(inputDT$parentId)))) inputDT[, parentId := NULL ]
 	if (all(is.na(inputDT$lsTransaction))) inputDT[, lsTransaction := lsTransactionId ]
 	inputDT[ lsType=="", lsType := "default" ]
 	inputDT[ lsKind=="", lsKind := "default" ]
@@ -204,9 +235,13 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 #inputDT <- subject_data
 #tg_ids <- outputTgDT
 
-	if ((any(grepl("parentId", names(inputDT)))) && (all(is.na(inputDT$parentId)))) inputDT[, parentId := NULL ]
-	if (all(is.na(inputDT$lsTransaction))) inputDT[, lsTransaction := lsTransactionId ]
-	inputDT[ lsType=="", lsType := "default" ]
+  if (("parentId" %in% names(inputDT)) && all(is.na(inputDT$parentId))) {
+    inputDT[, parentId := NULL ]
+  }
+  if (all(is.na(inputDT$lsTransaction))) {
+    inputDT[, lsTransaction := lsTransactionId ]
+  }
+  inputDT[ lsType=="", lsType := "default" ]
 	inputDT[ lsKind=="", lsKind := "default" ]
 	
 	inputDT <- merge(inputDT, tg_ids, by="tempParentId")
@@ -250,6 +285,7 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 #' @param recordedDate date of save, correctly string formatted for database
 #' @param ag_ids data.table of analysis_group ids with columns tempParentId and id
 #' @param tg_ids data.table of treatment_group ids with columns tempParentId and id
+#' @param FUN function to apply repeatedly
 saveEntitiesDD <- function( conn, entityType, inputDT ){
 #entityType <- "ANALYSIS_GROUP"
 
@@ -262,10 +298,17 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
 	merge_ids <- subset(entities, ,c("id", "tempId"))
 	setkey(merge_ids, "tempId")
 	setkey(inputDT, "tempId")
-	if(any(grepl("id", names(inputDT)))) inputDT[, id := NULL ]
+	if("id" %in% names(inputDT)) {
+    inputDT[, id := NULL ]
+	}
 	inputDT <- inputDT[merge_ids]
-	if(any(grepl("tempId", names(entities))))    entities[, tempId := NULL ]
-	if(any(grepl("parentId", names(entities))))  entities[, parentId := NULL ]
+	if("tempId" %in% names(entities)) {
+	  entities[, tempId := NULL ]
+	}
+	if("parentId" %in% names(entities)) {
+    entities[, parentId := NULL ]
+	}
+  
   ### Create many-to-many table
   childParentDT <- unique(subset(inputDT, , c("id", "parentId")))
   setkey(childParentDT, "id")
@@ -324,14 +367,18 @@ saveStatesDD <- function( conn, entityType, inputStatesDT ){
   }
   setkey(states, "id")
   numberOfIds <- length(unique(states$tempStateId))
-  states[ , stateId := getStateIdsDD(conn, entityType, numberOfIds)]
+  states[ , stateId := getStateIdsDD(conn, numberOfIds)]
   states[ , lsTypeAndKind := paste0(stateType, "_", stateKind)]
-  if(any(grepl("stateId", names(inputStatesDT)))) inputStatesDT[ , stateId := NULL ]
+  if("stateId" %in% names(inputStatesDT)) {
+    inputStatesDT[ , stateId := NULL ]
+  }
   merge_ids <- unique(states[, c("stateId", "tempStateId"), with=FALSE])
   setkey(inputStatesDT, "tempStateId")
   setkey(merge_ids, "tempStateId")
   inputStatesDT <- merge(inputStatesDT, merge_ids, by="tempStateId")
-  if(any(grepl("tempStateId", names(states)))) states[ , tempStateId := NULL ]
+  if("tempStateId" %in% names(states)) {
+    states[ , tempStateId := NULL ]
+  }
   setnames(states, 
            c("stateId", "comments", "ignored", "stateKind", "lsTransaction", "stateType", 
              "lsTypeAndKind", "modifiedBy", "modifiedDate", "recordedBy", 
@@ -395,7 +442,7 @@ saveValuesDD <- function( conn, entityType, inputDT ){
   }
 	
 	numberOfIds <- length(unique(values$tempValueId))
-	values[, valueId := getValueIdsDD(conn, entityType, numberOfIds)]
+	values[, valueId := getValueIdsDD(conn, numberOfIds)]
 	values[, valueTypeAndKind := paste0(nullTextIfNa(valueType), "_", nullTextIfNa(valueKind))]
 	values[, operatorTypeAndKind := paste0(nullTextIfNa(operatorType), "_", nullTextIfNa(operatorKind))]
 	values[, unitTypeAndKind := paste0(nullTextIfNa(unitType), "_", nullTextIfNa(unitKind))]
@@ -408,10 +455,14 @@ saveValuesDD <- function( conn, entityType, inputDT ){
 	}
 	
 	merge_ids <- unique(subset(values, ,c("valueId", "tempValueId")))
-	if(any(grepl("valueId", names(inputDT)))) inputDT[ ,valueId := NULL ]
-	inputDT <- merge(inputDT, merge_ids, by="tempValueId")
-	values$numericValue <- as.numeric(values$numericValue)
-	if(any(grepl("tempValueId", names(values)))) values[ ,tempValueId := NULL ]
+  if("valueId" %in% names(inputDT)) {
+    inputDT[, valueId := NULL ]
+  }
+  inputDT <- merge(inputDT, merge_ids, by="tempValueId")
+  values$numericValue <- as.numeric(values$numericValue)
+  if("tempValueId" %in% names(values)) {
+    values[, tempValueId := NULL ]
+  }
 	values$dateValue <- as.POSIXct(values$dateValue)
 	
 	setnames(values, 
@@ -549,6 +600,8 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
     }
   }
   
+  save(agData, tgData, subjectData, lsTransactionId, experimentId, file="saveDataDirectDatabaseInput.Rda")
+  
   conn <- getDatabaseConnection(racas::applicationSettings)
   on.exit(dbDisconnect(conn))
   result <- tryCatchLog({
@@ -579,6 +632,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
       gc()
     }
     
+    save(subjectData2, outputTgDT, lsTransactionId, recordedDate, file="subjectTestData.Rda")
     if (!is.null(subjectData)) {
       subjectData2 <- prepareTableForDD(subjectData)
       outputSubjectDT <- saveSubjectDataDD(conn, subjectData2, outputTgDT, lsTransactionId, recordedDate)
