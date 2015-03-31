@@ -632,7 +632,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
       gc()
     }
     
-    save(subjectData2, outputTgDT, lsTransactionId, recordedDate, file="subjectTestData.Rda")
+    save(subjectData, outputTgDT, lsTransactionId, recordedDate, file="subjectTestData.Rda")
     if (!is.null(subjectData)) {
       subjectData2 <- prepareTableForDD(subjectData)
       outputSubjectDT <- saveSubjectDataDD(conn, subjectData2, outputTgDT, lsTransactionId, recordedDate)
