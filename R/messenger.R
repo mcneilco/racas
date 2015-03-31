@@ -177,8 +177,10 @@ Messenger <- setRefClass(Class = "Messenger",
                                        s <- paste0(s,collapse = '\n')
                                        s <- paste0("Traceback:\n",s, collapse = "")
                                        logger$error(s)
-                                       setwd(applicationSettings$server.log.path)
-                                       t <- tempfile(tmpdir = getwd())
+                                       currentwd <- getwd()
+                                       on.exit(setwd(currentwd))
+                                       setwd("/tmp")
+                                       t <- tempfile(tmpdir = "/tmp")
                                        dump.frames(basename(t), to.file = TRUE)
                                        logger$error(paste0("R frames dumped to: ", t, ".rda"))
                                      } else {
