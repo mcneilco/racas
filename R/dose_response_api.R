@@ -50,6 +50,10 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
     } else {
       response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = "There was an error fitting curves")
     }
+    
+    myMessenger$logger$debug("saving experiment value model fit result html")
+    experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
+    
     return(response)
   })
   
