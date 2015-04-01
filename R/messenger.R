@@ -253,7 +253,11 @@ Messenger <- setRefClass(Class = "Messenger",
                                          userInfos = userInfos))
                            },
                            toJSON = function() {
-                             return(rjson::toJSON(toList()))
+                             aList <- toList()
+                             aList$errors <- lapply(aList$errors, function(x) x$message)
+                             aList$warnings <- lapply(aList$warnings, function(x) x$message)
+                             aList$infos <- lapply(aList$infos, function(x) x$message)
+                             return(rjson::toJSON(aList))
                            }
                          )
 )
