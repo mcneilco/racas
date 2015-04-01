@@ -17,7 +17,8 @@
 #' simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 #' recordedBy <- "bbolt"
 #' experimentCode <- "EXPT-00000441"
-#' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
+#' modelFitType <- "4 parameter D-R"
+#' api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode)
 #' 
 #' #Loading fake data first
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
@@ -38,9 +39,19 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
 #   #system.time(experimentCode <- load_dose_response_test_data())
 #   experimentCode <- "EXPT-00000427"
   myMessenger <- messenger()$reset()
-  myMessenger$devMode <- TRUE
+  myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
-  on.exit(update_experiment_model_fit_status(experimentCode, "error"))
+  on.exit({
+    update_experiment_model_fit_status(experimentCode, "error")
+    if(myMessenger$hasErrors()) {
+      myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
+      myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = lapply(myMessenger$errors, function(x) {x$message}))  
+    } else {
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = "There was an error fitting curves")
+    }
+    return(response)
+  })
   
   myMessenger$logger$debug("getting current experiment model fit status status to see if this is a refit")
   experimentStatus <- get_experiment_model_fit_status(experimentCode)
@@ -55,7 +66,10 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
-  fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE)
+  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE))
+  if(myMessenger$hasErrors()) {
+    return()
+  }
   fitData[ , renderingHint := modelFitType]
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
@@ -88,13 +102,8 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   
   #Convert the fit data to a response for acas
   myMessenger$logger$debug("getting acas response")
-  if(length(myMessenger$userErrors) == 0 & length(myMessenger$errors) == 0 ) {
-    response <- fit_data_to_acas_experiment_response(fitData, experimentCode, -1, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
-  } else {
-    myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
-    myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
-    response <- fit_data_to_acas_experiment_response(fitData = NULL, -1, status = "error", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
-  }
+  response <- fit_data_to_acas_experiment_response(fitData, experimentCode, -1, status = "complete", hasWarning = FALSE, errorMessages = myMessenger$userErrors)
+  
   myMessenger$logger$debug("saving experiment value model fit result html")
   experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
   
