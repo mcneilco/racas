@@ -913,7 +913,13 @@ get_subjectgroup_values <- function(experimentID, analysisGroupID) {
 }
 curve_fit_controller_fitData_response_to_data_table <- function(curveFitControllerFitDataResponse, modelFitType = NA) {
   if(is.na(modelFitType)) {
-    modelFitType <- fread(curveFitControllerFitDataResponse, nrow = 1)$renderingHint
+    modelFitTypes <- fread(curveFitControllerFitDataResponse, select = "renderingHint")
+    curvesWithRenderingHints <- which(!is.na(modelFitTypes$renderingHint))
+    if(length(curvesWithRenderingHints) > 0) {
+      modelFitType <- modelFitTypes[min(curvesWithRenderingHints)]$renderingHint
+    } else {
+      modelFitType <- "4 parameter D-R"
+    }
   }
   fitData <- switch(modelFitType,
                     "4 parameter D-R" = fread(curveFitControllerFitDataResponse,   colClasses = c(curveId = "character",
