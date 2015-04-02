@@ -853,29 +853,70 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     stop("got 0 results from api_curve_params_m table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
-  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint", "category"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
-  dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
-  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint", "category"),], "curveid ~ lskind", value.var = "stringvalue")
+  
+  codeColumns <- c("algorithm flag status", "user flag status", "batch code")
+  stringColumns <- c("Rendering Hint", "category")
+  noneNumericColumns <- c(codeColumns,stringColumns)
+  parameterDBNames <- c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope")
+  kiDBNames <- c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
+  
+  stringValues <- curve_params[lskind %in% stringColumns,]
+  if(nrow(stringValues) > 0) {
+    dt1 <- dcast.data.table(stringValues, "curveid ~ lskind", value.var = "stringvalue")
+  } else {
+    dt1 <- data.table(curveid = curve_params$curveid)
+    dt1[ , c(stringColumns) := as.character(NA)]
+  }
+  curvesWithRenderingHints <- which(!is.na(dt1$"Rendering Hint"))
+  if(length(curvesWithRenderingHints) > 0) {
+    modelFitType <- modelFitTypes[min(curvesWithRenderingHints)]$renderingHint
+  } else {
+    modelFitType <- "4 parameter D-R"
+  }  
+  numericValues <- curve_params[!lskind %in% noneNumericColumns,]
+  if(nrow(numericValues) > 0) {
+    dt2 <- dcast.data.table(numericValues, "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")    
+  } else {
+    dt2 <- data.table(curveid = curve_params$curveid)
+    paramNames <- switch(modelFitType,
+                         "4 parameter D-R" = parameterDBNames,
+                         "Ki Fit" = kiDBNames)
+    dt2[ , c("curvedisplaymin", "curvedisplaymax", paramNames) := as.numeric(NA)]
+  }
+  codeValues <- curve_params[lskind %in% codeColumns,]
+  if(nrow(codeValues) > 0) {
+    dt3 <- dcast.data.table(codeValues, "curveid ~ lskind", value.var = "codevalue", fill = "")
+  } else {
+    dt3 <- data.table(curveid = curve_params$curveid)
+    dt3[ , c(codeColumns) := as.character(NA)]
+  }
+ 
   setkey(dt1, "curveid")
   setkey(dt2, "curveid")
   setkey(dt3, "curveid")
   parameters <- dt1[dt2][dt3]
+  parameters[ , "Rendering Hint" := modelFitType]
   flagAndRenderingColumnNames <- c("Rendering Hint", "user flag status", "algorithm flag status")
   parameters[ , flagAndRenderingColumnNames[!flagAndRenderingColumnNames %in% names(parameters)] := ""]
   for (j in flagAndRenderingColumnNames)
     set(parameters,which(is.na(parameters[[j]])),j,"")
-  setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
-  renderingParameters <- switch(parameters[1]$renderingHint,
-         "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
-         "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max"), stringsAsFactors = FALSE))
-         )
+    setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
+    renderingParameters <- switch(parameters[1]$renderingHint,
+                                "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
+                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = KiDBNames, stringsAsFactors = FALSE))
+  )
+  
   namesExist <- renderingParameters$names$dbNames %in% names(parameters)
   
   setnames(parameters, renderingParameters$names$dbNames[namesExist], renderingParameters$names$renderNames[namesExist])
   operator <- curve_params[lskind == renderingParameters$value, c('curveid', 'operatorkind'), with = FALSE]
-  setnames(operator, "operatorkind", "operator")
-  setkey(operator, "curveid")  
-  parameters <- parameters[operator]
+  if(nrow(operator) > 0) {
+    setnames(operator, "operatorkind", "operator")
+    setkey(operator, "curveid")  
+    parameters <- parameters[operator]
+  } else {
+    parameters[ , c("operator", "operatorkind") := as.character(NA)]
+  }
   setnames(parameters, "curveid", "curveId")  
   return(parameters)
 }
