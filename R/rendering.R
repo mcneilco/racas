@@ -618,7 +618,7 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
   return(points[dose!=0,])
 }
 
-get_rendering_hint_options <- function(renderingHint) {
+get_rendering_hint_options <- function(renderingHint = NA) {
   renderingOptions <- switch(renderingHint,
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),

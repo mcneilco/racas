@@ -979,6 +979,8 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                                                                                          algorithmFlagStatus = "character"
                     ), sep = "\t")
   )
+  #Set all renderingHints to the thesame modelFitType as we can only render/or fit one curve class at a time
+  fitData[ ,renderingHint := modelFitType]
   setkey(fitData, "curveId")
   return(fitData)
 }
