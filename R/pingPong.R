@@ -174,7 +174,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                              AND analysisgr1_.ls_type ='data'
                                              AND analysisgr1_.ls_kind ='dose response'"
   
-  if(apiCurveIdsRemovedAlreadyExisted | update == TRUE) {
+  if(apiCurveIdsRemovedAlreadyExisted & update == TRUE) {
     if(apiCurveIdsAlreadyExisted) {
       updated <- dbSendQuery(conn, paste0("INSERT INTO ",curveIdsRemovedMaterializedName,"
                   ( curveid, 
@@ -192,13 +192,13 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                   )"))
     }
   } else {
-    if(apiCurveIdsAddedAlreadyExisted) {
+    if(apiCurveIdsRemovedAlreadyExisted) {
       logger$info(paste0(curveIdsRemovedMaterializedName, " already exists, dropping"))            
       dbSendQuery(conn, paste0("drop table ",curveIdsRemovedMaterializedName))
     }
     apiCurveIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",curveIdsRemovedMaterializedName," (curveid VARCHAR2(4000), valueid NUMBER(19)) on commit delete rows"))    
   }
-  if(apiCurveIdsAddedAlreadyExisted | update == TRUE) {
+  if(apiCurveIdsAddedAlreadyExisted & update == TRUE) {
     if(apiCurveIdsAlreadyExisted) {
       updated <- dbSendQuery(conn, paste0("INSERT
                                             INTO ",curveIdsAddedMaterializedName,"
