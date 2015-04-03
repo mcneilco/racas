@@ -869,7 +869,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   }
   curvesWithRenderingHints <- which(!is.na(dt1$"Rendering Hint"))
   if(length(curvesWithRenderingHints) > 0) {
-    modelFitType <- dt1$"Rendering Hint"[min(curvesWithRenderingHints)]$renderingHint
+    modelFitType <- dt1[min(curvesWithRenderingHints)]$renderingHint
   } else {
     modelFitType <- "4 parameter D-R"
   }  
@@ -901,7 +901,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   for (j in flagAndRenderingColumnNames)
     set(parameters,which(is.na(parameters[[j]])),j,"")
     setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
-    renderingParameters <- switch(parameters[1]$renderingHint,
+    renderingParameters <- switch(modelFitType,
                                 "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
                                 "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = KiDBNames, stringsAsFactors = FALSE))
   )
