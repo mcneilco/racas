@@ -453,7 +453,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
 
     logger$info(paste0("adding index IDX_DOSE_RESPONSE_M_VALUEID"))
-    valueidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_VALUEID ON ",doseResponseMaterializedName," (valueid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    valueidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_VALUEID ON ",doseResponseMaterializedName," (curvevalueid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
   }
   
   logger$info(paste0("commiting transaction"))        
