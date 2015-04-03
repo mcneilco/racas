@@ -635,10 +635,10 @@ get_curve_curator_url <- function(curveid, ...) {
 }
 api_get_curve_curator_url <- function(curveid, inTable, ...) {
   if(is.null(inTable) || as.logical(inTable) == TRUE || length(curveid) != 1) {
-    return(list(shouldRedirect = FALSE, redirectURL = ""))
+    return(list(shouldRedirect = FALSE, url = ""))
   } else {
     url <- get_curve_curator_url(curveid, ...)
-    return(list(shouldRedirect = TRUE, redirectURL = url))
+    return(list(shouldRedirect = TRUE, url = url))
   }
 }
 get_rendering_hint_options <- function(renderingHint = NA) {
