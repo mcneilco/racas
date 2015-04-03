@@ -618,6 +618,29 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
   return(points[dose!=0,])
 }
 
+get_curve_curator_url <- function(curveid, ...) {
+  experimentCode <- query(paste0("SELECT e.code_name
+                                       FROM experiment e
+                                       JOIN experiment_analysisgroup eag ON e.id = eag.experiment_id
+                                       JOIN analysis_group ag ON ag.id = eag.analysis_group_id
+                                       JOIN analysis_group_state ags on ags.analysis_group_id=ag.id
+                                       JOIN analysis_group_value agv on agv.analysis_state_id=ags.id
+                                       WHERE agv.string_value = ",sqliz(curveid),"
+                                       AND agv.ls_kind        = 'curve id'"),...)
+  url <- paste(getSSLString(), applicationSettings$client.host, ":",
+                applicationSettings$client.port,
+                "/curveCurator/",experimentCode,"/",curveid,
+                sep = "") 
+  return(url)
+}
+api_get_curve_curator_url <- function(curveid, inTable, ...) {
+  if(is.null(inTable) || as.logical(inTable) == TRUE || length(curveid) != 1) {
+    return(list(shouldRedirect = FALSE, redirectURL = ""))
+  } else {
+    url <- get_curve_curator_url(curveid, ...)
+    return(list(shouldRedirect = TRUE, redirectURL = url))
+  }
+}
 get_rendering_hint_options <- function(renderingHint = NA) {
   renderingOptions <- switch(renderingHint,
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
