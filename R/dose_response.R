@@ -869,7 +869,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   }
   curvesWithRenderingHints <- which(!is.na(dt1$"Rendering Hint"))
   if(length(curvesWithRenderingHints) > 0) {
-    modelFitType <- dt1$"Rendering Hint"[min(curvesWithRenderingHints)]$renderingHint
+    modelFitType <- dt1[min(curvesWithRenderingHints)]$renderingHint
   } else {
     modelFitType <- "4 parameter D-R"
   }  
