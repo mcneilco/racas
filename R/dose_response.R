@@ -903,7 +903,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
     renderingParameters <- switch(modelFitType,
                                 "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
-                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = KiDBNames, stringsAsFactors = FALSE))
+                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
   )
   
   namesExist <- renderingParameters$names$dbNames %in% names(parameters)
