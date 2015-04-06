@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
     if(any(is.na(match(paramNames, names(params))))) {
@@ -354,8 +354,6 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   scaleFactor <- max(scaleFactor, 0.7)
   
   #Assign Colors
-  plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)
-  #plotColors <- rep(c("0x8DD3C7", "0xFFFFB3", "0xBEBADA", "0xFB8072", "0x80B1D3", "0xFDB462", "0xB3DE69", "0xFCCDE5", "0xD9D9D9", "0xBC80BD", "0xCCEBC5", "0xFFED6F"), 100, replace = TRUE)
   add.alpha <- function(col, alpha=1){
     if(missing(col))
       stop("Please provide a vector of colours.")
@@ -363,9 +361,16 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
           function(x) 
             rgb(x[1], x[2], x[3], alpha=alpha))  
   }
-  plotColorsAlpha <- add.alpha(plotColors, alpha=0.3)
-  params$color <- plotColors[1:nrow(params)]
-  curveData$color <- plotColors[match(curveData$curveId,params$curveId)] 
+  plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)  
+  if(nrow(params) > 1 && !is.na(mostRecentCurveColor) && "recordeddate" %in% names(params)) {
+    params <- params[order(params$recordeddate, decreasing = TRUE),]
+    params$color <- mostRecentCurveColor
+    params[2:nrow(params), ]$color <- plotColors[1]
+  } else {
+    params$color <- plotColors[1:nrow(params)]
+  }
+  plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
+  curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
   curveData$coloralpha <- plotColorsAlpha[match(curveData$curveId,params$curveId)] 
   
   #Add shapes
