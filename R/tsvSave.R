@@ -50,10 +50,15 @@ saveAllViaTsv <- function(analysisGroupData, treatmentGroupData, subjectData, ap
   # Delete the files if they are on the same server. Warnings are suppressed
   # because it is expected to fail if they are on different servers (as happens
   # during development)
-  suppressWarnings(file.remove(sendFiles$analysisGroupCsvFilePath))
-  suppressWarnings(file.remove(sendFiles$treatmentGroupCsvFilePath))
-  suppressWarnings(file.remove(sendFiles$subjectCsvFilePath))
-  
+  if (!is.null(sendFiles$analysisGroupCsvFilePath)) {
+    suppressWarnings(file.remove(sendFiles$analysisGroupCsvFilePath))
+  }
+  if (!is.null(sendFiles$treatmentGroupCsvFilePath)) {
+    suppressWarnings(file.remove(sendFiles$treatmentGroupCsvFilePath))
+  }
+  if (!is.null(sendFiles$subjectCsvFilePath)) {
+    suppressWarnings(file.remove(sendFiles$subjectCsvFilePath))
+  }  
   return(response)
 }
 #' Save file paths using tsv loader
