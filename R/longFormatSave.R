@@ -761,4 +761,7 @@ meltTimes2 <- function(entityData) {
     output$timeUnit <- NULL
     return(output)
   }
+  
+  output <- ddply(.data=entityData, .variables = c("tempStateId"), .fun = createTimeRows)
+  return(output)
 }
