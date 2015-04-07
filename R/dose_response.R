@@ -918,6 +918,8 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     parameters[ , c("operator", "operatorkind") := as.character(NA)]
   }
   setnames(parameters, "curveid", "curveId")  
+  setnames(parameters, "recordeddate", "recordedDate")  
+  
   return(parameters)
 }
 get_cached_raw_data <- function(curveids, ...) {
@@ -966,6 +968,7 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                     "4 parameter D-R" = fread(curveFitControllerFitDataResponse,   colClasses = c(curveId = "character",
                                                                                                   analysisGroupCode = "integer",
                                                                                                   recordedBy = "character",
+                                                                                                  recordedDate = "character",
                                                                                                   batchCode = "character",
                                                                                                   category = "character",
                                                                                                   renderingHint = "character",
@@ -1020,6 +1023,7 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                                                                                          algorithmFlagStatus = "character"
                     ), sep = "\t")
   )
+  fitData[ , recordedDate := as.Date(recordedDate)]
   #Set all renderingHints to the thesame modelFitType as we can only render/or fit one curve class at a time
   fitData[ ,renderingHint := modelFitType]
   setkey(fitData, "curveId")

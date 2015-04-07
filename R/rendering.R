@@ -362,8 +362,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
             rgb(x[1], x[2], x[3], alpha=alpha))  
   }
   plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)  
-  if(nrow(params) > 1 && !is.na(mostRecentCurveColor) && "recordeddate" %in% names(params)) {
-    params <- params[order(params$recordeddate, decreasing = TRUE),]
+  if(nrow(params) > 1 && !is.na(mostRecentCurveColor) && "recordedDate" %in% names(params)) {
+    params <- params[order(params$recordedDate, decreasing = TRUE),]
     params$color <- mostRecentCurveColor
     params[2:nrow(params), ]$color <- plotColors[1]
   } else {
