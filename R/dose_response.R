@@ -120,7 +120,7 @@ biphasic_detection <- function(fitData) {
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
         points[dose == testConc, algorithmFlagStatus := "knocked out"]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
-        points[dose == testConc, algorithmFlagReason := "biphasic"]
+        points[dose == testConc, algorithmFlagCause := "biphasic"]
         points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
         if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
@@ -1049,15 +1049,15 @@ curve_fit_controller_rawData_response_to_data_table <- function(curveFitControll
                                                                        responseUnits = "character",
                                                                        algorithmFlagStatus = "character",
                                                                        algorithmFlagObservation = "character",
-                                                                       algorithmFlagReason = "character",
+                                                                       algorithmFlagCause = "character",
                                                                        algorithmFlagComment = "character",
                                                                        preprocessFlagStatus = "character",
                                                                        preprocessFlagObservation = "character",
-                                                                       preprocessFlagReason = "character",
+                                                                       preprocessFlagCause = "character",
                                                                        preprocessFlagComment = "character",
                                                                        userFlagStatus = "character",
                                                                        userFlagObservation = "character",
-                                                                       userFlagReason = "character",
+                                                                       userFlagCause = "character",
                                                                        userFlagComment = "character"
   ))
   setkey(rawData, "curveId")
@@ -1719,14 +1719,14 @@ save_dose_response_data <- function(fitData, recorded_by) {
         "algorithmFlagStatus" = algorithmFlagStatus,
         "responseSubjectValueId" = responseSubjectValueId,
         "algorithmFlagObservation" = algorithmFlagObservation,
-        "algorithmFlagReason" = algorithmFlagReason,
+        "algorithmFlagCause" = algorithmFlagCause,
         "algorithmFlagComment" = algorithmFlagComment,
         "preprocessFlagStatus" = preprocessFlagStatus,
         "preprocessFlagObservation" = preprocessFlagObservation,
-        "preprocessFlagReason" = preprocessFlagReason,
+        "preprocessFlagCause" = preprocessFlagCause,
         "preprocessFlagComment" = preprocessFlagComment,
         "userFlagObservation" = userFlagObservation,
-        "userFlagReason" = userFlagReason,
+        "userFlagCause" = userFlagCause,
         "userFlagComment" = userFlagComment,
         "recordedBy" = recorded_by,
         lsTransaction = lstrans
@@ -2115,9 +2115,9 @@ remove_point_flags <- function(points, flagKindsToRemove = c("algorithm", "prepr
   points <- copy(points)
   flagKindsToRemove <- match.arg(flagKindsToRemove, several.ok =TRUE)
   if(length(flagKindsToRemove) > 0) {
-    columnsToReset <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
+    columnsToReset <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
     allFlagTypes <- eval(formals(remove_point_flags)$flagKindsToRemove)
-    allFlagColumns <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
+    allFlagColumns <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
     updateFlags <- points[ , c("responseSubjectValueId", allFlagColumns), with = FALSE]
     updateFlags[ , columnsToReset := "", with = FALSE]
     points <- update_point_flags(points, updateFlags)
@@ -2134,18 +2134,18 @@ update_point_flags <- function(pts, updateFlags) {
   pts[ , flagchanged :=  
         !identical(userFlagStatus,userFlagStatus.y) |
         !identical(userFlagObservation,userFlagObservation.y) | 
-        !identical(userFlagReason,userFlagReason.y) | 
+        !identical(userFlagCause,userFlagCause.y) | 
         !identical(userFlagComment,userFlagComment.y) | 
         !identical(algorithmFlagStatus,algorithmFlagStatus.y) |
         !identical(algorithmFlagObservation,algorithmFlagObservation.y) | 
-        !identical(algorithmFlagReason,algorithmFlagReason.y) | 
+        !identical(algorithmFlagCause,algorithmFlagCause.y) | 
         !identical(algorithmFlagComment,algorithmFlagComment.y) |          
         !identical(preprocessFlagStatus,preprocessFlagStatus.y) |
         !identical(preprocessFlagObservation,preprocessFlagObservation.y) | 
-        !identical(preprocessFlagReason,preprocessFlagReason.y) | 
+        !identical(preprocessFlagCause,preprocessFlagCause.y) | 
         !identical(preprocessFlagComment,preprocessFlagComment.y) |
         flagchanged, by = "responseSubjectValueId" ]
-  pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagReason', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagReason', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagReason', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagReason.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagReason.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagReason.y, preprocessFlagComment.y)]
+  pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagCause', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagCause', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagCause', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagCause.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagCause.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagCause.y, preprocessFlagComment.y)]
   return(pts[, returnCols, with = FALSE])
 }
 
