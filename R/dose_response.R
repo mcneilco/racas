@@ -1392,7 +1392,9 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
     #Bottom + (Top-Bottom)/(1+10^(X-log(10^logKi*(1+HotNM/HotKdNM))))
     #Max + (Min - Max)/(1+10^(X-log(10^logKi*(1+ligandConc/Kd))))
     #c("min", "max", "ki", "ligandConc", "kd")
-    cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))    
+    #cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))  
+    x  <- log10(dose) #Convert log
+    cParm + (parmMat[,1]-cParm)/(1+10^(x-log10(10^parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))
   }
   retFct <- function(doseScaling, respScaling) {
     fct <- function(dose, parm) {
@@ -1421,7 +1423,7 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
                      names = names, 
 #                      scaleFct = scaleFct, 
                      name = ifelse(missing(fctName),as.character(match.call()[[1]]), fctName), 
-                     text = ifelse(missing(fctText), "Ki Fct (Ki as parameter)", fctText), 
+                     text = ifelse(missing(fctText), "Ki Fct (Ki as parameter)  *note Ki estimate below is in log base 10", fctText), 
                      noParm = sum(is.na(fixed)), 
                      lowerAs = lowerAs, 
                      upperAs = upperAs, 
@@ -1483,7 +1485,9 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fittedParameters <- as.list(coefficients(drcObj))
   names(fittedParameters) <- gsub("\\:\\(Intercept\\)","", names(fittedParameters))
-  
+  if("ki" %in% (names(fittedParameters))) {
+    fittedParameters$ki <- 10^(fittedParameters$ki)
+  }
   fixedParameters <- as.list(drcObj$fct$fixed)
   fixedParameters[is.na(fixedParameters) | names(fixedParameters) == ""] <- NULL
   
