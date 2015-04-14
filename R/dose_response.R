@@ -75,7 +75,7 @@ biphasic_detection <- function(fitData) {
       #If detect biphasic is on and the following
       # there are doses above the empirical max dose with respnoses below empirical max respnose
       # the curve is not inactive, non-converged, insufficient range or potent 
-      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (category == "sigmoid")
+      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid")
       if(!continueBiphasicDetection) {
         testConc <- as.numeric(NA)
         biphasicParameterPreviousValue <- as.numeric(NA)
@@ -86,7 +86,7 @@ biphasic_detection <- function(fitData) {
                                                  "parameter.percentage" =  as.numeric(fittedParameters[biphasicRule$parameter][[1]]),
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
-        testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+        testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
         points[dose == testConc, tempFlagStatus := "knocked out"]
         model.synced <- FALSE
         continueBiphasicDetection <- TRUE
@@ -120,11 +120,11 @@ biphasic_detection <- function(fitData) {
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
         points[dose == testConc, algorithmFlagStatus := "knocked out"]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
-        points[dose == testConc, algorithmFlagCause := "biphasic"]
+        points[dose == testConc, algorithmFlagCause := "curvefit ko"]
         points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
-        if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
-          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+        if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0) {
+          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
           points[dose == testConc, tempFlagStatus := "knocked out"]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
@@ -1347,19 +1347,19 @@ get_point_stats <- function(pts) {
   dose.max <- max(pts[knockedOut == FALSE, ]$dose)
   dose.empiricalMaxResponse <- pts[(knockedOut == FALSE) &  meanByDose == response.empiricalMax, min(dose)]
   dose.empiricalMinResponse <- pts[(knockedOut == FALSE) &  meanByDose == response.empiricalMin, min(dose)]
-  doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax <- pts[(knockedOut == FALSE) & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
-  count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax)
-  doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- pts[(knockedOut == FALSE) & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
-  count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin)
+  doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout <- pts[(knockedOut == FALSE) & (algorithmFlagStatus != "hit") & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
+  count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout)
+  doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- pts[(knockedOut == FALSE) & (algorithmFlagStatus != "hit") & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
+  count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout)
   return(list(dose.count = dose.count,
               response.empiricalMax = response.empiricalMax, 
               response.empiricalMin = response.empiricalMin, 
               dose.min = dose.min, 
               dose.max = dose.max, 
-              doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, 
-              doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin,
-              count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax,
-              count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin))
+              doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, 
+              doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout,
+              count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout,
+              count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout))
 }
 
 ki_fct.5 <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", "f")) {
@@ -2118,8 +2118,13 @@ remove_point_flags <- function(points, flagKindsToRemove = c("algorithm", "prepr
     columnsToReset <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
     allFlagTypes <- eval(formals(remove_point_flags)$flagKindsToRemove)
     allFlagColumns <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
-    updateFlags <- points[ , c("responseSubjectValueId", allFlagColumns), with = FALSE]
-    updateFlags[ , columnsToReset := "", with = FALSE]
+    userColumns <- columnsToReset[grepl("user",columnsToReset)]
+    preprocessColumns <- columnsToReset[grepl("preprocess",columnsToReset)]
+    algorithmColumns <- columnsToReset[grepl("algorithm",columnsToReset)]
+    updateFlags <- points[, c("responseSubjectValueId", allFlagColumns), with = FALSE]
+    updateFlags[  userFlagCause == "curvefit ko", userColumns := "", with = FALSE]
+    updateFlags[  preprocessFlagCause == "curvefit ko", preprocessColumns := "", with = FALSE]
+    updateFlags[  algorithmFlagCause == "curvefit ko", algorithmColumns := "", with = FALSE]
     points <- update_point_flags(points, updateFlags)
   }
   return(points)
@@ -2131,8 +2136,9 @@ update_point_flags <- function(pts, updateFlags) {
   setkey(updateFlags,"responseSubjectValueId" )
   
   pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
-  pts[ , flagchanged :=  
-        !identical(userFlagStatus,userFlagStatus.y) |
+  pts[ , flagchanged :=  {
+        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
+        (!identical(userFlagStatus,userFlagStatus.y) |
         !identical(userFlagObservation,userFlagObservation.y) | 
         !identical(userFlagCause,userFlagCause.y) | 
         !identical(userFlagComment,userFlagComment.y) | 
@@ -2144,7 +2150,8 @@ update_point_flags <- function(pts, updateFlags) {
         !identical(preprocessFlagObservation,preprocessFlagObservation.y) | 
         !identical(preprocessFlagCause,preprocessFlagCause.y) | 
         !identical(preprocessFlagComment,preprocessFlagComment.y) |
-        flagchanged, by = "responseSubjectValueId" ]
+        flagchanged)
+        }, by = "responseSubjectValueId" ]
   pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagCause', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagCause', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagCause', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagCause.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagCause.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagCause.y, preprocessFlagComment.y)]
   return(pts[, returnCols, with = FALSE])
 }
