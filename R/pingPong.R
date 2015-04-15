@@ -152,7 +152,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)
   apiDoseResponseAlreadyExisted <- dbExistsTable(conn, doseResponseMaterializedName)
   
-  currentCurveIdsSQL <- "SELECT analysisgr0_.string_value AS curveid, analysisgr0_.id as valueId
+  currentCurveIdsSQL <- "SELECT /*+ FIRST_ROWS(1) */ analysisgr0_.string_value AS curveid, analysisgr0_.id as valueId
                                              FROM analysis_group_value analysisgr0_
                                              INNER JOIN analysis_group_state analysisgr1_
                                              ON analysisgr0_.analysis_state_id=analysisgr1_.id
