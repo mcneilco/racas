@@ -862,7 +862,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   
   stringValues <- curve_params[lskind %in% stringColumns,]
   if(nrow(stringValues) > 0) {
-    dt1 <- dcast.data.table(stringValues, "curveid ~ lskind", value.var = "stringvalue")
+    dt1 <- dcast.data.table(stringValues, "curveid+recordeddate ~ lskind", value.var = "stringvalue")
   } else {
     dt1 <- data.table(curveid = curve_params$curveid)
     dt1[ , c(stringColumns) := as.character(NA)]
@@ -875,7 +875,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   }  
   numericValues <- curve_params[!lskind %in% noneNumericColumns,]
   if(nrow(numericValues) > 0) {
-    dt2 <- dcast.data.table(numericValues, "curveid+recordeddate+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")    
+    dt2 <- dcast.data.table(numericValues, "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")    
   } else {
     dt2 <- data.table(curveid = curve_params$curveid, recordeddate = curve_params$recordeddate)
     paramNames <- switch(modelFitType,
