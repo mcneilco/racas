@@ -1393,6 +1393,7 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
     #Max + (Min - Max)/(1+10^(X-log(10^logKi*(1+ligandConc/Kd))))
     #c("min", "max", "ki", "ligandConc", "kd")
     #cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))  
+    #Max + (Min - Max)/(1+10^(X-log(10^logKi*(1+ligandConc/Kd))))    
     x  <- log10(dose) #Convert log
     cParm + (parmMat[,1]-cParm)/(1+10^(x-log10(10^parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))
   }
@@ -1473,8 +1474,9 @@ ki.ssf <- function(fixed, useFixed = FALSE) {
     bVal <- bcVal[1]
     cVal <- bcVal[2]
     ## Finding initial values for b and e parameters    
-    eVal <- finde(x, y, bcVal[1], bcVal[2])     
-    return(c(bcVal, eVal[1])[is.na(fixed)])
+    eVal <- finde(x, y, bcVal[1], bcVal[2])
+    predicts <- c(bcVal, log10(eVal[1]))[is.na(fixed)]
+    return(predicts)
   }
 }
 
