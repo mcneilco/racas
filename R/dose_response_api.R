@@ -219,15 +219,27 @@ api_doseResponse_update_flag <- function(POST) {
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
                                       userFlagStatus = userFlagStatus[[1]],
                                       category = category[[1]],
-                                      curveAttributes = list(
-                                        EC50 = ec50[[1]],
-                                        SST =  sst[[1]],
-                                        SSE =  sse[[1]],
-                                        rsquare = rsquared[[1]],
-                                        compoundCode = batchCode[[1]],
-                                        algorithmFlagStatus = algorithmFlagStatus[[1]],
-                                        userFlagStatus = userFlagStatus[[1]],
-                                        renderingHint = renderingHint[[1]]
+                                      curveAttributes = switch(POST$curveAttributes$renderingHint,
+                                                               "4 parameter D-R" = list(
+                                                                 EC50 = ec50[[1]],
+                                                                 SST =  sst[[1]],
+                                                                 SSE =  sse[[1]],
+                                                                 rsquare = rsquared[[1]],
+                                                                 compoundCode = batchCode[[1]],
+                                                                 algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                                                 userFlagStatus = userFlagStatus[[1]],
+                                                                 renderingHint = renderingHint[[1]]
+                                                               ),
+                                                               "Ki Fit" = list(
+                                                                 Ki = ki[[1]],
+                                                                 SST =  sst[[1]],
+                                                                 SSE =  sse[[1]],
+                                                                 rsquare = rsquared[[1]],
+                                                                 compoundCode = batchCode[[1]],
+                                                                 algorithmFlagStatus = algorithmFlagStatus[[1]],
+                                                                 userFlagStatus = userFlagStatus[[1]],
+                                                                 renderingHint = renderingHint[[1]]
+                                                               )
                                       )
   ))), by = curveId]
   return(toJSON(fitData$curves[[1]]))
