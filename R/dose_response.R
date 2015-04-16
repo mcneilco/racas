@@ -283,7 +283,7 @@ apply_limits <- function(fitData, iterations = 20) {
                                                    fixedMin <- NA
                                                  }
                                                }
-                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA)))
+                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA, kd = fixedParameters[[1]]$kd, ligandConc = fixedParameters[[1]]$ligandConc )))
                                              }
     ),
     by = curveId]
@@ -1473,7 +1473,7 @@ ki.ssf <- function(fixed, useFixed = FALSE) {
     bVal <- bcVal[1]
     cVal <- bcVal[2]
     ## Finding initial values for b and e parameters    
-    eVal <- finde(x, y, bcVal[1], bcVal[2])         
+    eVal <- finde(x, y, bcVal[1], bcVal[2])     
     return(c(bcVal, eVal[1])[is.na(fixed)])
   }
 }
@@ -2060,15 +2060,20 @@ add_clob_values_to_fit_data <- function(fitData) {
       }
       if(fitConverged) {
         modelSummary <- summary(model[[1]])
+        coefsMatrix <- rbind(NULL,apply(modelSummary$coef, 2,prettyNum, digits = 6))
+        row.names(coefsMatrix) <- row.names(modelSummary$coef)
+        if(nrow(coefsMatrix) > 1) {
+          coefsMatrix <- coefsMatrix[order(rownames(coefsMatrix)),]          
+        }
         fitSummaryClob <- paste0("Model fitted: ",modelSummary$text,"<br>",
                "<br>",
                "Parameter Estimates: ","<br>",
                "<br>",
-               data.table_to_html_table(apply(modelSummary$coef, 2,prettyNum, digits = 6)[order(rownames(modelSummary$coef)),],
+               data.table_to_html_table(coefsMatrix,
                                         include.rownames = TRUE, 
                                         comment = FALSE, 
                                         timestamp = FALSE, 
-                                        align = paste0(rep("r",ncol(modelSummary$coef) + 1), collapse = ""),
+                                        align = paste0(rep("r",ncol(coefsMatrix) + 1), collapse = ""),
                                         html.table.attributes = "table-bordered'",
                                         print.results = FALSE),
                "<br>",
