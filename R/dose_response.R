@@ -1700,6 +1700,20 @@ save_dose_response_data <- function(fitData, recorded_by) {
                     warning(paste0("saving not implemented for ",renderingHint))
                   }
     )
+    ans <- lapply(ans, function(x) {
+      if(length(x)==1 && !is.na(x) && is.numeric(x)) {
+        if(x >= 1e+125) {
+          x <- 99.99e+124
+        } else if (x <= 1e-125 && x > 0) {
+          x <- 1.0e-124
+        } else if (x >= -1e-125 && x < 0) {
+          x <- -1.0e-124
+        } else if (x <= -1e125) {
+          x <- -1.0e124          
+        }
+      }
+      return(x)      
+    })
     ans
   })), by = curveId]
   fitDataSaveRequest <- toJSON(fitData$dto)
