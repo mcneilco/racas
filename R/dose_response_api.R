@@ -82,7 +82,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   
   #If refitting, then we want to set the algorithm and user flags back to a blank slate
   if(refit) {
-    fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm")))), by = curveId]
+    fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm", "user")))), by = curveId]
   }
 
   myMessenger$logger$debug("fitting the data")
