@@ -511,7 +511,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   #Curve Drawing Function
   drawCurveID <- function(cid) {
-    flagged <- any(params$userFlagStatus == "rejected" && params$algorithmFlagStatus != "no fit")
+    flagged <- any(params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit")
     if(drawFlagged == FALSE && !flagged) {
       drawValues <- getDrawValues(params = params[cid,])
       curveID <- params$curveId[cid]
