@@ -599,6 +599,3 @@ moveFileToFileServer <- function(fileStartLocation, targetPath=NULL,
     stopUser("Configuration error: Invalid file service type")
   }
 }
-
-
-

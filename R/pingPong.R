@@ -139,40 +139,136 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   conn <- getDatabaseConnection()
   on.exit({dbRollback(conn);dbDisconnect(conn)})
   transaction <- startTransaction(conn)
+  
+  curveIdsRemovedMaterializedName <-  "api_removed_curve_ids_tmp"
+  curveIdsAddedMaterializedName <-  "api_added_curve_ids_tmp"
+  curveIdsMaterializedName <-  "api_curve_ids_m"
   curveParamsMaterializedName <-  "api_curve_params_m"
   doseResponseMaterializedName <-  "api_dose_response_m"
+  
+  apiCurveIdsRemovedAlreadyExisted <- dbExistsTable(conn, curveIdsRemovedMaterializedName)
+  apiCurveIdsAddedAlreadyExisted <- dbExistsTable(conn, curveIdsAddedMaterializedName)
+  apiCurveIdsAlreadyExisted <- dbExistsTable(conn, curveIdsMaterializedName)
   apiCurveParamsAlreadyExisted <- dbExistsTable(conn, curveParamsMaterializedName)
   apiDoseResponseAlreadyExisted <- dbExistsTable(conn, doseResponseMaterializedName)
+  
+  currentCurveIdsSQL <- "SELECT /*+ FIRST_ROWS(1) */ analysisgr0_.string_value AS curveid, analysisgr0_.id as valueId
+                                             FROM analysis_group_value analysisgr0_
+                                             INNER JOIN analysis_group_state analysisgr1_
+                                             ON analysisgr0_.analysis_state_id=analysisgr1_.id
+                                             INNER JOIN analysis_group analysisgr2_
+                                             ON analysisgr1_.analysis_group_id=analysisgr2_.id
+                                             INNER JOIN analysis_group analysisgr3_
+                                             ON analysisgr1_.analysis_group_id=analysisgr3_.id
+                                             INNER JOIN EXPERIMENT_ANALYSISGROUP eag
+                                             ON eag.analysis_group_id=analysisgr3_.id
+                                             INNER JOIN EXPERIMENT e
+                                             ON e.id                            =eag.experiment_id
+                                             WHERE analysisgr1_.ignored         = '0'
+                                             AND analysisgr0_.ls_type           ='stringValue'
+                                             AND analysisgr0_.ls_kind           ='curve id'
+                                             AND analysisgr0_.ignored           = '0'
+                                             AND analysisgr2_.ignored           = '0'
+                                             AND e.ignored                      = '0'
+                                             AND e.deleted                      = '0'
+                                             AND analysisgr1_.ls_type ='data'
+                                             AND analysisgr1_.ls_kind ='dose response'"
+  
+  if(apiCurveIdsRemovedAlreadyExisted & update == TRUE) {
+    if(apiCurveIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT INTO ",curveIdsRemovedMaterializedName,"
+                  ( curveid, 
+                    valueId
+                  )
+                  SELECT *
+                    FROM api_curve_ids_m
+                  WHERE NOT EXISTS
+                  (SELECT *
+                     FROM
+                   (",
+                   currentCurveIdsSQL,
+                   ") a
+                   WHERE ",curveIdsMaterializedName,".valueId = a. valueId
+                  )"))
+    }
+  } else {
+    if(apiCurveIdsRemovedAlreadyExisted) {
+      logger$info(paste0(curveIdsRemovedMaterializedName, " already exists, dropping"))            
+      dbSendQuery(conn, paste0("drop table ",curveIdsRemovedMaterializedName))
+    }
+    apiCurveIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",curveIdsRemovedMaterializedName," (curveid VARCHAR2(4000), valueid NUMBER(19)) on commit delete rows"))    
+  }
+  if(apiCurveIdsAddedAlreadyExisted & update == TRUE) {
+    if(apiCurveIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",curveIdsAddedMaterializedName,"
+                                            (
+                                            curveid,
+                                            valueId
+                                            )
+                                            ( SELECT a.curveid,a.valueId
+                                            FROM (",currentCurveIdsSQL,") a
+                                            WHERE NOT EXISTS
+                                            (SELECT *
+                                            FROM ",curveIdsMaterializedName," b
+                                            WHERE b.valueId = a.valueId
+                                            ))"))
+    }
+  } else {
+    if(apiCurveIdsAddedAlreadyExisted) {
+      logger$info(paste0(curveIdsAddedMaterializedName, " already exists, dropping"))            
+      dbSendQuery(conn, paste0("drop table ",curveIdsAddedMaterializedName))
+    }
+    apiCurveIdsAddedCreated <- dbSendQuery(conn, paste0("create global temporary table ",curveIdsAddedMaterializedName," (curveid VARCHAR2(4000), valueid NUMBER(19)) on commit delete rows"))    
+  }
+  #Curve Ids
+  if(apiCurveIdsAlreadyExisted & update == TRUE) {
+    
+    logger$info(paste0("updating ",curveIdsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveIdsMaterializedName,"
+                                             WHERE valueid in (
+                                                select valueid from ",curveIdsRemovedMaterializedName,"
+                                             )"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",curveIdsMaterializedName,"
+                                            (
+                                            curveid,
+                                            valueId
+                                            )
+                                            ( SELECT a.curveid,a.valueId
+                                            FROM (",curveIdsAddedMaterializedName,") a
+                                            )"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+  
+  } else {
+    if(apiCurveIdsAlreadyExisted) {
+      logger$info(paste0(curveIdsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",curveIdsMaterializedName))
+    }
+    logger$info(paste0("creating ",curveIdsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",curveIdsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as ",currentCurveIdsSQL)
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key curveid"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",curveIdsMaterializedName," ADD PRIMARY KEY (curveid) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding index IDX_API_CURVE_IDS_M_VALUEID"))
+    valueidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_CURVE_IDS_M_VALUEID ON ",curveIdsMaterializedName," (valueid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+  
+  }
   #Curve Params
   if(apiCurveParamsAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",curveParamsMaterializedName))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName,
-                                             " where curveid IN 
-                                            ( SELECT DISTINCT ",curveParamsMaterializedName,".curveid
-                                             FROM ",curveParamsMaterializedName,"
-                                              LEFT OUTER JOIN
-                                                (SELECT DISTINCT string_value AS curveid
-                                                FROM analysis_group_value analysisgr0_
-                                                INNER JOIN analysis_group_state analysisgr1_
-                                                ON analysisgr0_.analysis_state_id=analysisgr1_.id
-                                                INNER JOIN analysis_group analysisgr2_
-                                                ON analysisgr1_.analysis_group_id=analysisgr2_.id
-                                                INNER JOIN analysis_group analysisgr3_
-                                                ON analysisgr1_.analysis_group_id=analysisgr3_.id
-                                                INNER JOIN EXPERIMENT_ANALYSISGROUP eag
-                                                ON eag.analysis_group_id=analysisgr3_.id
-                                                INNER JOIN EXPERIMENT e
-                                                ON e.id                            =eag.experiment_id
-                                                WHERE analysisgr1_.ignored         = '0'
-                                                AND analysisgr0_.ls_type           ='stringValue'
-                                                AND analysisgr0_.ls_kind           ='curve id'
-                                                AND analysisgr0_.ignored           = '0'
-                                                AND analysisgr2_.ignored           = '0'
-                                                AND e.ignored                      = '0'
-                                                AND e.deleted                      = '0'
-                                                ) a ON ",curveParamsMaterializedName,".curveid = a.curveid
-                                              WHERE a.curveid                     IS NULL
-                                              )")) 
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",curveParamsMaterializedName,"
+                                             WHERE curveValueId in (
+                                                select valueid from ",curveIdsRemovedMaterializedName,"
+                                             )"))
+    
     logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
     missingData <- dbSendQuery(conn, paste0("INSERT
                                             INTO ",curveParamsMaterializedName,"
@@ -203,6 +299,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             urlvalue,
                                             version,
                                             curveid,
+                                            curvevalueid,
                                             curvedisplaymin,
                                             curvedisplaymax
                                             )
@@ -232,14 +329,17 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             api_curve_params.urlvalue,
                                             api_curve_params.version,
                                             api_curve_params.curveid,
+                                            api_curve_params.curveValueId,
                                             api_curve_params.curvedisplaymin,
                                             api_curve_params.curvedisplaymax
                                             FROM api_curve_params
-                                            LEFT OUTER JOIN ",curveParamsMaterializedName,"
-                                            ON ",curveParamsMaterializedName,".curveid     = api_curve_params.curveid
-                                            WHERE ",curveParamsMaterializedName,".curveid IS NULL
-                                            )"))
+                                            WHERE curveValueId in 
+                                             ( SELECT a.valueId
+                                            FROM (",curveIdsAddedMaterializedName,") a
+                                            ))"))
+    
     logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
   } else {
     
     if(apiCurveParamsAlreadyExisted) {
@@ -250,7 +350,7 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     createTableSQL <- paste0("CREATE table ",curveParamsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_curve_params")
     logger$debug(paste0("executing sql ",createTableSQL))
     finished <- dbSendQuery(conn, createTableSQL)
-    
+  
     logger$info(paste0("adding primary key curveid"))  
     primaryKeySQL <- paste0(" ALTER TABLE ",curveParamsMaterializedName," ADD PRIMARY KEY (valueid) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
     logger$debug(paste0("executing sql ",primaryKeySQL))
@@ -260,38 +360,17 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     indexSQL <- paste0("CREATE INDEX IDX_API_CURVE_PARAMS_M_CURVEID ON ",curveParamsMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions))
     logger$debug(paste0("executing sql ",indexSQL))
     curveidIndex <- dbSendQuery(conn,indexSQL)    
+    
   }
   
   #Api Dose Response
   if(apiDoseResponseAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",doseResponseMaterializedName))
-    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName,
-                                            " where curveid IN 
-                                            ( SELECT DISTINCT ",doseResponseMaterializedName,".curveid
-                                             FROM ",doseResponseMaterializedName,"
-                                              LEFT OUTER JOIN
-                                                (SELECT DISTINCT string_value AS curveid
-                                                FROM analysis_group_value analysisgr0_
-                                                INNER JOIN analysis_group_state analysisgr1_
-                                                ON analysisgr0_.analysis_state_id=analysisgr1_.id
-                                                INNER JOIN analysis_group analysisgr2_
-                                                ON analysisgr1_.analysis_group_id=analysisgr2_.id
-                                                INNER JOIN analysis_group analysisgr3_
-                                                ON analysisgr1_.analysis_group_id=analysisgr3_.id
-                                                INNER JOIN EXPERIMENT_ANALYSISGROUP eag
-                                                ON eag.analysis_group_id=analysisgr3_.id
-                                                INNER JOIN EXPERIMENT e
-                                                ON e.id                            =eag.experiment_id
-                                                WHERE analysisgr1_.ignored         = '0'
-                                                AND analysisgr0_.ls_type           ='stringValue'
-                                                AND analysisgr0_.ls_kind           ='curve id'
-                                                AND analysisgr0_.ignored           = '0'
-                                                AND analysisgr2_.ignored           = '0'
-                                                AND e.ignored                      = '0'
-                                                AND e.deleted                      = '0'
-                                                ) a ON ",doseResponseMaterializedName,".curveid = a.curveid
-                                              WHERE a.curveid                     IS NULL
-                                              )")) 
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",doseResponseMaterializedName,"
+                                             WHERE curveValueId in (
+                                               select valueid from ",curveIdsRemovedMaterializedName,"
+                                             )"))
+
     logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))
     missingData <- dbSendQuery(conn, paste0("INSERT
                                           INTO ",doseResponseMaterializedName,"
@@ -307,20 +386,21 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             doseunits,
                                             algorithmflagstatus,
                                             algorithmflagobservation,
-                                            algorithmflagreason,
+                                            algorithmflagcause,
                                             algorithmflagcomment,
                                             preprocessflagstatus,
                                             preprocessflagobservation,
-                                            preprocessflagreason,
+                                            preprocessflagcause,
                                             algorithmflaglskind,
                                             preprocessflaglskind,
                                             userflaglskind,
                                             preprocessflagcomment,
                                             userflagstatus,
                                             userflagobservation,
-                                            userflagreason,
+                                            userflagcause,
                                             userflagcomment,
-                                            curveid
+                                            curveid,
+                                            curveValueId
                                             )
                                             (SELECT api_dose_response.responsesubjectvalueid,
                                             api_dose_response.analysisgroupcode,
@@ -333,29 +413,30 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
                                             api_dose_response.doseunits,
                                             api_dose_response.algorithmflagstatus,
                                             api_dose_response.algorithmflagobservation,
-                                            api_dose_response.algorithmflagreason,
+                                            api_dose_response.algorithmflagcause,
                                             api_dose_response.algorithmflagcomment,
                                             api_dose_response.preprocessflagstatus,
                                             api_dose_response.preprocessflagobservation,
-                                            api_dose_response.preprocessflagreason,
+                                            api_dose_response.preprocessflagcause,
                                             api_dose_response.algorithmflaglskind,
                                             api_dose_response.preprocessflaglskind,
                                             api_dose_response.userflaglskind,
                                             api_dose_response.preprocessflagcomment,
                                             api_dose_response.userflagstatus,
                                             api_dose_response.userflagobservation,
-                                            api_dose_response.userflagreason,
+                                            api_dose_response.userflagcause,
                                             api_dose_response.userflagcomment,
-                                            api_dose_response.curveid
+                                            api_dose_response.curveid,
+                                            api_dose_response.curvevalueid
                                             FROM api_dose_response
-                                            LEFT OUTER JOIN ",doseResponseMaterializedName,"
-                                            ON ",doseResponseMaterializedName,".curveid = api_dose_response.curveid
-                                            WHERE ",doseResponseMaterializedName,".curveid     IS NULL
-                                            )"))
-                                            
-    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
-  } else {
+                                            WHERE curveValueId in 
+                                             ( SELECT a.valueId
+                                            FROM (",curveIdsAddedMaterializedName,") a
+                                            ))"))
     
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
     if(apiDoseResponseAlreadyExisted) {
       logger$info(paste0(doseResponseMaterializedName, " already exists, dropping"))
       dbSendQuery(conn, paste0("DROP table ",doseResponseMaterializedName))
@@ -364,10 +445,15 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
     createTableSQL <- paste0("CREATE table ",doseResponseMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_dose_response")
     logger$debug(paste0("executing sql ",createTableSQL))
     finished <- dbSendQuery(conn, createTableSQL)
+    
     logger$info(paste0("adding primary key responsesubjectvalueid"))
     primaryKey <- dbSendQuery(conn, paste0(" ALTER TABLE ",doseResponseMaterializedName," ADD PRIMARY KEY (responsesubjectvalueid) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions)))
-    logger$info(paste0("adding index IDX_API_DOSE_RESPONSE_M_CURVEID"))
+
+    logger$info(paste0("adding index IDX_DOSE_RESPONSE_M_CURVEID"))
     curveidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_CURVEID ON ",doseResponseMaterializedName," (curveid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+
+    logger$info(paste0("adding index IDX_DOSE_RESPONSE_M_VALUEID"))
+    valueidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_DOSE_RESPONSE_M_VALUEID ON ",doseResponseMaterializedName," (curvevalueid)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
   }
   
   logger$info(paste0("commiting transaction"))        

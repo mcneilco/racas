@@ -675,6 +675,7 @@ meltBatchCodes2 <- function(entityData) {
   if (is.null(entityData$batchCode) || all(is.na(entityData$batchCode))) {
     return(output)
   }
+  
   optionalColumns <- c("lsTransaction", "recordedBy", "concentration", "concUnit", "parentId", "tempParentId")
   
   neededColumns <- c("batchCode", "tempStateId", "tempId", "stateType", "stateKind")
@@ -760,7 +761,6 @@ meltTimes2 <- function(entityData) {
     }
     output$numericValue <- output$time
     output$unitKind <- output$timeUnit
-    output$valueUnit <- output$timeUnit
     output$valueKind <- "time"
     output$valueType <- "numericValue"
     output$publicData <- TRUE

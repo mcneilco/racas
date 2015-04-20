@@ -75,7 +75,7 @@ biphasic_detection <- function(fitData) {
       #If detect biphasic is on and the following
       # there are doses above the empirical max dose with respnoses below empirical max respnose
       # the curve is not inactive, non-converged, insufficient range or potent 
-      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0 & (category == "sigmoid")
+      continueBiphasicDetection <- (length(biphasicRule) > 0) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid")
       if(!continueBiphasicDetection) {
         testConc <- as.numeric(NA)
         biphasicParameterPreviousValue <- as.numeric(NA)
@@ -86,7 +86,7 @@ biphasic_detection <- function(fitData) {
                                                  "parameter.percentage" =  as.numeric(fittedParameters[biphasicRule$parameter][[1]]),
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
-        testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+        testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
         points[dose == testConc, tempFlagStatus := "knocked out"]
         model.synced <- FALSE
         continueBiphasicDetection <- TRUE
@@ -120,11 +120,11 @@ biphasic_detection <- function(fitData) {
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
         points[dose == testConc, algorithmFlagStatus := "knocked out"]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
-        points[dose == testConc, algorithmFlagReason := "biphasic"]
+        points[dose == testConc, algorithmFlagCause := "curvefit ko"]
         points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
-        if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax > 0) {
-          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, decreasing = TRUE))
+        if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0) {
+          testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
           points[dose == testConc, tempFlagStatus := "knocked out"]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
@@ -283,7 +283,7 @@ apply_limits <- function(fitData, iterations = 20) {
                                                    fixedMin <- NA
                                                  }
                                                }
-                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA)))
+                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA, kd = fixedParameters[[1]]$kd, ligandConc = fixedParameters[[1]]$ligandConc )))
                                              }
     ),
     by = curveId]
@@ -853,30 +853,73 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     stop("got 0 results from api_curve_params_m table query for the following curvids: ", paste0(curveids, collapse = ","))
   }
   setnames(curve_params, tolower(names(curve_params)))
-  dt1 <- dcast.data.table(curve_params[!lskind %in% c("algorithm flag status", "user flag status", "batch code", "Rendering Hint", "category"),], "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")
-  dt2 <- dcast.data.table(curve_params[lskind %in% c("algorithm flag status", "user flag status", "batch code"),], "curveid ~ lskind", value.var = "codevalue", fill = "")
-  dt3 <- dcast.data.table(curve_params[lskind %in% c("Rendering Hint", "category"),], "curveid ~ lskind", value.var = "stringvalue")
+  
+  codeColumns <- c("algorithm flag status", "user flag status", "batch code")
+  stringColumns <- c("Rendering Hint", "category")
+  noneNumericColumns <- c(codeColumns,stringColumns)
+  parameterDBNames <- c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope")
+  kiDBNames <- c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
+  
+  stringValues <- curve_params[lskind %in% stringColumns,]
+  if(nrow(stringValues) > 0) {
+    dt1 <- dcast.data.table(stringValues, "curveid+recordeddate ~ lskind", value.var = "stringvalue")
+  } else {
+    dt1 <- data.table(curveid = curve_params$curveid)
+    dt1[ , c(stringColumns) := as.character(NA)]
+  }
+  curvesWithRenderingHints <- which(!is.na(dt1$"Rendering Hint"))
+  if(length(curvesWithRenderingHints) > 0) {
+    modelFitType <- dt1[min(curvesWithRenderingHints)]$"Rendering Hint"
+  } else {
+    modelFitType <- "4 parameter D-R"
+  }  
+  numericValues <- curve_params[!lskind %in% noneNumericColumns,]
+  if(nrow(numericValues) > 0) {
+    dt2 <- dcast.data.table(numericValues, "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")    
+  } else {
+    dt2 <- data.table(curveid = curve_params$curveid, recordeddate = curve_params$recordeddate)
+    paramNames <- switch(modelFitType,
+                         "4 parameter D-R" = parameterDBNames,
+                         "Ki Fit" = kiDBNames)
+    dt2[ , c("curvedisplaymin", "curvedisplaymax", paramNames) := as.numeric(NA)]
+  }
+  codeValues <- curve_params[lskind %in% codeColumns,]
+  if(nrow(codeValues) > 0) {
+    dt3 <- dcast.data.table(codeValues, "curveid ~ lskind", value.var = "codevalue", fill = "")
+  } else {
+    dt3 <- data.table(curveid = curve_params$curveid)
+    dt3[ , c(codeColumns) := as.character(NA)]
+  }
+ 
   setkey(dt1, "curveid")
   setkey(dt2, "curveid")
   setkey(dt3, "curveid")
   parameters <- dt1[dt2][dt3]
+  parameters[ , "Rendering Hint" := modelFitType]
   flagAndRenderingColumnNames <- c("Rendering Hint", "user flag status", "algorithm flag status")
   parameters[ , flagAndRenderingColumnNames[!flagAndRenderingColumnNames %in% names(parameters)] := ""]
   for (j in flagAndRenderingColumnNames)
     set(parameters,which(is.na(parameters[[j]])),j,"")
-  setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
-  renderingParameters <- switch(parameters[1]$renderingHint,
-         "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope"), stringsAsFactors = FALSE)),
-         "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max"), stringsAsFactors = FALSE))
-         )
+    setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
+    renderingParameters <- switch(modelFitType,
+                                "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
+                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
+  )
+  
   namesExist <- renderingParameters$names$dbNames %in% names(parameters)
   
   setnames(parameters, renderingParameters$names$dbNames[namesExist], renderingParameters$names$renderNames[namesExist])
   operator <- curve_params[lskind == renderingParameters$value, c('curveid', 'operatorkind'), with = FALSE]
-  setnames(operator, "operatorkind", "operator")
-  setkey(operator, "curveid")  
-  parameters <- parameters[operator]
+  if(nrow(operator) > 0) {
+    setnames(operator, "operatorkind", "operator")
+    setkey(operator, "curveid")  
+    parameters <- parameters[operator]
+  } else {
+    parameters[ , c("operator", "operatorkind") := as.character(NA)]
+  }
   setnames(parameters, "curveid", "curveId")  
+  setnames(parameters, "recordeddate", "recordedDate")  
+  
   return(parameters)
 }
 get_cached_raw_data <- function(curveids, ...) {
@@ -913,12 +956,19 @@ get_subjectgroup_values <- function(experimentID, analysisGroupID) {
 }
 curve_fit_controller_fitData_response_to_data_table <- function(curveFitControllerFitDataResponse, modelFitType = NA) {
   if(is.na(modelFitType)) {
-    modelFitType <- fread(curveFitControllerFitDataResponse, nrow = 1)$renderingHint
+    modelFitTypes <- fread(curveFitControllerFitDataResponse, select = "renderingHint")
+    curvesWithRenderingHints <- which(!is.na(modelFitTypes$renderingHint))
+    if(length(curvesWithRenderingHints) > 0) {
+      modelFitType <- modelFitTypes[min(curvesWithRenderingHints)]$renderingHint
+    } else {
+      modelFitType <- "4 parameter D-R"
+    }
   }
   fitData <- switch(modelFitType,
                     "4 parameter D-R" = fread(curveFitControllerFitDataResponse,   colClasses = c(curveId = "character",
                                                                                                   analysisGroupCode = "integer",
                                                                                                   recordedBy = "character",
+                                                                                                  recordedDate = "character",
                                                                                                   batchCode = "character",
                                                                                                   category = "character",
                                                                                                   renderingHint = "character",
@@ -973,6 +1023,9 @@ curve_fit_controller_fitData_response_to_data_table <- function(curveFitControll
                                                                                          algorithmFlagStatus = "character"
                     ), sep = "\t")
   )
+  fitData[ , recordedDate := as.Date(recordedDate)]
+  #Set all renderingHints to the thesame modelFitType as we can only render/or fit one curve class at a time
+  fitData[ ,renderingHint := modelFitType]
   setkey(fitData, "curveId")
   return(fitData)
 }
@@ -996,15 +1049,15 @@ curve_fit_controller_rawData_response_to_data_table <- function(curveFitControll
                                                                        responseUnits = "character",
                                                                        algorithmFlagStatus = "character",
                                                                        algorithmFlagObservation = "character",
-                                                                       algorithmFlagReason = "character",
+                                                                       algorithmFlagCause = "character",
                                                                        algorithmFlagComment = "character",
                                                                        preprocessFlagStatus = "character",
                                                                        preprocessFlagObservation = "character",
-                                                                       preprocessFlagReason = "character",
+                                                                       preprocessFlagCause = "character",
                                                                        preprocessFlagComment = "character",
                                                                        userFlagStatus = "character",
                                                                        userFlagObservation = "character",
-                                                                       userFlagReason = "character",
+                                                                       userFlagCause = "character",
                                                                        userFlagComment = "character"
   ))
   setkey(rawData, "curveId")
@@ -1294,19 +1347,19 @@ get_point_stats <- function(pts) {
   dose.max <- max(pts[knockedOut == FALSE, ]$dose)
   dose.empiricalMaxResponse <- pts[(knockedOut == FALSE) &  meanByDose == response.empiricalMax, min(dose)]
   dose.empiricalMinResponse <- pts[(knockedOut == FALSE) &  meanByDose == response.empiricalMin, min(dose)]
-  doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax <- pts[(knockedOut == FALSE) & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
-  count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax)
-  doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- pts[(knockedOut == FALSE) & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
-  count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin)
+  doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout <- pts[(knockedOut == FALSE) & (algorithmFlagStatus != "hit") & dose > dose.empiricalMaxResponse & meanByDose < response.empiricalMax, unique(dose)]
+  count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout)
+  doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- pts[(knockedOut == FALSE) & (algorithmFlagStatus != "hit") & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
+  count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout)
   return(list(dose.count = dose.count,
               response.empiricalMax = response.empiricalMax, 
               response.empiricalMin = response.empiricalMin, 
               dose.min = dose.min, 
               dose.max = dose.max, 
-              doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax, 
-              doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin,
-              count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax,
-              count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin))
+              doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, 
+              doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout,
+              count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout,
+              count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout))
 }
 
 ki_fct.5 <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", "f")) {
@@ -1339,7 +1392,10 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
     #Bottom + (Top-Bottom)/(1+10^(X-log(10^logKi*(1+HotNM/HotKdNM))))
     #Max + (Min - Max)/(1+10^(X-log(10^logKi*(1+ligandConc/Kd))))
     #c("min", "max", "ki", "ligandConc", "kd")
-    cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))    
+    #cParm + (parmMat[,1]-cParm)/(1+10^(log10(dose)-log10(parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))  
+    #Max + (Min - Max)/(1+10^(X-log(10^logKi*(1+ligandConc/Kd))))    
+    x  <- log10(dose) #Convert log
+    cParm + (parmMat[,1]-cParm)/(1+10^(x-log10(10^parmMat[,3]*(1+parmMat[,4]/parmMat[,5]))))
   }
   retFct <- function(doseScaling, respScaling) {
     fct <- function(dose, parm) {
@@ -1368,7 +1424,7 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
                      names = names, 
 #                      scaleFct = scaleFct, 
                      name = ifelse(missing(fctName),as.character(match.call()[[1]]), fctName), 
-                     text = ifelse(missing(fctText), "Ki Fct (Ki as parameter)", fctText), 
+                     text = ifelse(missing(fctText), "Ki Fct (Ki as parameter)  *note Ki estimate below is in log base 10", fctText), 
                      noParm = sum(is.na(fixed)), 
                      lowerAs = lowerAs, 
                      upperAs = upperAs, 
@@ -1418,8 +1474,9 @@ ki.ssf <- function(fixed, useFixed = FALSE) {
     bVal <- bcVal[1]
     cVal <- bcVal[2]
     ## Finding initial values for b and e parameters    
-    eVal <- finde(x, y, bcVal[1], bcVal[2])         
-    return(c(bcVal, eVal[1])[is.na(fixed)])
+    eVal <- finde(x, y, bcVal[1], bcVal[2])
+    predicts <- c(bcVal, log10(eVal[1]))[is.na(fixed)]
+    return(predicts)
   }
 }
 
@@ -1430,7 +1487,9 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fittedParameters <- as.list(coefficients(drcObj))
   names(fittedParameters) <- gsub("\\:\\(Intercept\\)","", names(fittedParameters))
-  
+  if("ki" %in% (names(fittedParameters))) {
+    fittedParameters$ki <- 10^(fittedParameters$ki)
+  }
   fixedParameters <- as.list(drcObj$fct$fixed)
   fixedParameters[is.na(fixedParameters) | names(fixedParameters) == ""] <- NULL
   
@@ -1577,7 +1636,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "category" = category[[1]],
                       "minUnits" = points[[1]]$responseUnits[[1]],
                       "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "ec50Units" = points[[1]]$responseUnits[[1]],
+                      "ec50Units" = points[[1]]$doseUnits[[1]],
                       "fittedMin" = fittedParameters[[1]]$min,
                       "fittedMax" = fittedParameters[[1]]$max,
                       "fittedEC50" = fittedParameters[[1]]$ec50,
@@ -1617,7 +1676,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
                       "category" = category[[1]],
                       "minUnits" = points[[1]]$responseUnits[[1]],
                       "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "kiUnits" = points[[1]]$responseUnits[[1]],
+                      "kiUnits" = points[[1]]$doseUnits[[1]],
                       "fittedMin" = fittedParameters[[1]]$min,
                       "fittedMax" = fittedParameters[[1]]$max,
                       "fittedKi" = fittedParameters[[1]]$ki,
@@ -1641,6 +1700,20 @@ save_dose_response_data <- function(fitData, recorded_by) {
                     warning(paste0("saving not implemented for ",renderingHint))
                   }
     )
+    ans <- lapply(ans, function(x) {
+      if(length(x)==1 && !is.na(x) && is.numeric(x)) {
+        if(x >= 1e+125) {
+          x <- 99.99e+124
+        } else if (x <= 1e-125 && x > 0) {
+          x <- 1.0e-124
+        } else if (x >= -1e-125 && x < 0) {
+          x <- -1.0e-124
+        } else if (x <= -1e125) {
+          x <- -1.0e124          
+        }
+      }
+      return(x)      
+    })
     ans
   })), by = curveId]
   fitDataSaveRequest <- toJSON(fitData$dto)
@@ -1666,14 +1739,14 @@ save_dose_response_data <- function(fitData, recorded_by) {
         "algorithmFlagStatus" = algorithmFlagStatus,
         "responseSubjectValueId" = responseSubjectValueId,
         "algorithmFlagObservation" = algorithmFlagObservation,
-        "algorithmFlagReason" = algorithmFlagReason,
+        "algorithmFlagCause" = algorithmFlagCause,
         "algorithmFlagComment" = algorithmFlagComment,
         "preprocessFlagStatus" = preprocessFlagStatus,
         "preprocessFlagObservation" = preprocessFlagObservation,
-        "preprocessFlagReason" = preprocessFlagReason,
+        "preprocessFlagCause" = preprocessFlagCause,
         "preprocessFlagComment" = preprocessFlagComment,
         "userFlagObservation" = userFlagObservation,
-        "userFlagReason" = userFlagReason,
+        "userFlagCause" = userFlagCause,
         "userFlagComment" = userFlagComment,
         "recordedBy" = recorded_by,
         lsTransaction = lstrans
@@ -2003,15 +2076,20 @@ add_clob_values_to_fit_data <- function(fitData) {
       }
       if(fitConverged) {
         modelSummary <- summary(model[[1]])
+        coefsMatrix <- rbind(NULL,apply(modelSummary$coef, 2,prettyNum, digits = 6))
+        row.names(coefsMatrix) <- row.names(modelSummary$coef)
+        if(nrow(coefsMatrix) > 1) {
+          coefsMatrix <- coefsMatrix[order(rownames(coefsMatrix)),]          
+        }
         fitSummaryClob <- paste0("Model fitted: ",modelSummary$text,"<br>",
                "<br>",
                "Parameter Estimates: ","<br>",
                "<br>",
-               data.table_to_html_table(apply(modelSummary$coef, 2,prettyNum, digits = 6)[order(rownames(modelSummary$coef)),],
+               data.table_to_html_table(coefsMatrix,
                                         include.rownames = TRUE, 
                                         comment = FALSE, 
                                         timestamp = FALSE, 
-                                        align = paste0(rep("r",ncol(modelSummary$coef) + 1), collapse = ""),
+                                        align = paste0(rep("r",ncol(coefsMatrix) + 1), collapse = ""),
                                         html.table.attributes = "table-bordered'",
                                         print.results = FALSE),
                "<br>",
@@ -2062,11 +2140,16 @@ remove_point_flags <- function(points, flagKindsToRemove = c("algorithm", "prepr
   points <- copy(points)
   flagKindsToRemove <- match.arg(flagKindsToRemove, several.ok =TRUE)
   if(length(flagKindsToRemove) > 0) {
-    columnsToReset <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
+    columnsToReset <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(flagKindsToRemove,x)))
     allFlagTypes <- eval(formals(remove_point_flags)$flagKindsToRemove)
-    allFlagColumns <- unlist(lapply(c("FlagReason","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
-    updateFlags <- points[ , c("responseSubjectValueId", allFlagColumns), with = FALSE]
-    updateFlags[ , columnsToReset := "", with = FALSE]
+    allFlagColumns <- unlist(lapply(c("FlagCause","FlagObservation","FlagStatus","FlagComment"), function(x) paste0(allFlagTypes,x)))
+    userColumns <- columnsToReset[grepl("user",columnsToReset)]
+    preprocessColumns <- columnsToReset[grepl("preprocess",columnsToReset)]
+    algorithmColumns <- columnsToReset[grepl("algorithm",columnsToReset)]
+    updateFlags <- points[, c("responseSubjectValueId", allFlagColumns), with = FALSE]
+    updateFlags[  userFlagCause == "curvefit ko", userColumns := "", with = FALSE]
+    updateFlags[  preprocessFlagCause == "curvefit ko", preprocessColumns := "", with = FALSE]
+    updateFlags[  algorithmFlagCause == "curvefit ko", algorithmColumns := "", with = FALSE]
     points <- update_point_flags(points, updateFlags)
   }
   return(points)
@@ -2078,21 +2161,23 @@ update_point_flags <- function(pts, updateFlags) {
   setkey(updateFlags,"responseSubjectValueId" )
   
   pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
-  pts[ , flagchanged :=  
-        !identical(userFlagStatus,userFlagStatus.y) |
+  pts[ , flagchanged :=  {
+        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
+        (!identical(userFlagStatus,userFlagStatus.y) |
         !identical(userFlagObservation,userFlagObservation.y) | 
-        !identical(userFlagReason,userFlagReason.y) | 
+        !identical(userFlagCause,userFlagCause.y) | 
         !identical(userFlagComment,userFlagComment.y) | 
         !identical(algorithmFlagStatus,algorithmFlagStatus.y) |
         !identical(algorithmFlagObservation,algorithmFlagObservation.y) | 
-        !identical(algorithmFlagReason,algorithmFlagReason.y) | 
+        !identical(algorithmFlagCause,algorithmFlagCause.y) | 
         !identical(algorithmFlagComment,algorithmFlagComment.y) |          
         !identical(preprocessFlagStatus,preprocessFlagStatus.y) |
         !identical(preprocessFlagObservation,preprocessFlagObservation.y) | 
-        !identical(preprocessFlagReason,preprocessFlagReason.y) | 
+        !identical(preprocessFlagCause,preprocessFlagCause.y) | 
         !identical(preprocessFlagComment,preprocessFlagComment.y) |
-        flagchanged, by = "responseSubjectValueId" ]
-  pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagReason', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagReason', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagReason', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagReason.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagReason.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagReason.y, preprocessFlagComment.y)]
+        flagchanged)
+        }, by = "responseSubjectValueId" ]
+  pts[flagchanged==TRUE , c('userFlagStatus', 'userFlagObservation', 'userFlagCause', 'userFlagComment', 'algorithmFlagStatus', 'algorithmFlagObservation', 'algorithmFlagCause', 'algorithmFlagComment', 'preprocessFlagStatus', 'preprocessFlagObservation', 'preprocessFlagCause', 'preprocessFlagComment' ):= list(userFlagStatus.y, userFlagObservation.y, userFlagCause.y, userFlagComment.y, algorithmFlagStatus.y, algorithmFlagObservation.y, algorithmFlagCause.y, algorithmFlagComment.y, preprocessFlagStatus.y, preprocessFlagObservation.y, preprocessFlagCause.y, preprocessFlagComment.y)]
   return(pts[, returnCols, with = FALSE])
 }
 

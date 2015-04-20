@@ -10,7 +10,7 @@ plotCurve(curveData, params, fitFunction, paramNames = c("ec50", "min", "max",
   showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE,
   drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE,
   drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE,
-  curveXrn = c(NA, NA), ...)
+  curveXrn = c(NA, NA), mostRecentCurveColor = NA, ...)
 }
 \arguments{
 \item{curveData}{a data frame with the points with column names curveId, dose, response, flag}
