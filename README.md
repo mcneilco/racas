@@ -4,8 +4,8 @@
 
 ...from a user with install global privs (root)
 
-    curl -O --digest --user username:password https://bitbucket.org/mcneilco/racas/get/dns-avocet-1.0.tar.gz
-    Rscript -e "install.packages(\"dns-avocet-1.0.tar.gz\", repo = NULL)"
+    curl -O --digest --user username:password https://bitbucket.org/mcneilco/racas/get/exampleClient-avocet-1.0.tar.gz
+    Rscript -e "install.packages(\"exampleClient-avocet-1.0.tar.gz\", repo = NULL)"
     
     
 ## Installing customer branch
@@ -26,9 +26,9 @@
 
 ...for a branch (change username/password to your git username/password)...
 
-    install_url(url = "https://bitbucket.org/mcneilco/racas/get/dns.zip", config = authenticate(user = "username", password = "password", type = "basic"))
+    install_url(url = "https://bitbucket.org/mcneilco/racas/get/exampleClient.zip", config = authenticate(user = "username", password = "password", type = "basic"))
         or
-    install_bitbucket(repo = "racas", username = "mcneilco", ref = "dns", auth_user = "username", password = "password")
+    install_bitbucket(repo = "racas", username = "mcneilco", ref = "exampleClient", auth_user = "username", password = "password")
 
 
 ##Notes:
