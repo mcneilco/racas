@@ -2022,4 +2022,48 @@ modules <- function() {
   return(unique(valueTypeAndKinds$Module))
 }
 
+#' Get preferred labels
+#' 
+#' Gets the best label, possibly limited to a labelTypeAndKind. "Best" is 
+#' defined as the preferred label, or if that fails, the most recent one. This
+#' is translated from coffeescript Label.coffee.
+#' 
+#' @param entity a list entity, such as a protocol or experiment.
+#' @param labelTypeAndKind a labelTypeAndKind such as "name_protocol name".
+#' @return A label list object.
+pickBestLabel <- function(entity, labelTypeAndKind = NA) {
+  if (length(entity$lsLabels) == 0) {
+    stop("no labels found")
+  }
+  if (!is.na(labelTypeAndKind)) {
+    correctLabels <- Filter(function(x) x$lsTypeAndKind == labelTypeAndKind, entity$lsLabels)
+  } else {
+    correctLabels <- entity$lsLabels
+  }
+  if (length(correctLabels) == 0) {
+    stop(paste("no labels found with labelTypeAndKind", labelTypeAndKind))
+  }
+  preferredLabels <- Filter(function(x) x$preferred, correctLabels)
+  if (length(preferredLabels) > 1) {
+    dates <- vapply(preferredLabels, getElement, 1, "recordedDate")
+    bestLabelIndex <- which(dates == max(dates))
+    return(preferredLabels[[bestLabelIndex]])
+  } else if (length(preferredLabels) == 1) {
+    return(preferredLabels[[1]])
+  } else {
+    dates <- vapply(correctLabels, getElement, 1, "recordedDate")
+    bestLabelIndex <- which(dates == max(dates))
+    return(correctLabels[[bestLabelIndex]])
+  }
+}
 
+#' Get preferred label text
+#' 
+#' Gets the preferred name of an entity.
+#' 
+#' @param entity a list entity, such as a protocol or experiment.
+#' @param labelTypeAndKind a labelTypeAndKind such as "name_protocol name".
+#' @return A text string.
+getPreferredLabelText <- function(entity, labelTypeAndKind = NA) {
+  pickBestLabel(entity, labelTypeAndKind)$labelText
+}
