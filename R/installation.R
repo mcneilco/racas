@@ -1,13 +1,13 @@
-getRacasPackageDependencies <- function() {
+getPackageDependencies <- function(packages) {
   library(tools)
   recommended_and_base_packages <- as.character(installed.packages()[installed.packages()[,"Priority"] %in% c("recommended", "base"),][, "Package"])
-  racasDirectDependenciesAll <- package_dependencies("racas", installed.packages(), which = c("Depends", "Imports", "LinkingTo", "Suggests"), recursive = FALSE)$racas
-  racasDirectDependenciesAll <- racasDirectDependenciesAll[! (racasDirectDependenciesAll %in% recommended_and_base_packages)]
-  directDependencies_no_suggests <- unique(as.character((unlist(package_dependencies(racasDirectDependenciesAll, installed.packages(), which = c("Depends", "Imports", "LinkingTo"), recursive = TRUE)))))
-  racasReverseDependencies <- directDependencies_no_suggests[! (directDependencies_no_suggests %in% recommended_and_base_packages)]
-  allRacasDependencies <- unique(c(racasDirectDependenciesAll, racasReverseDependencies))
-  allRacasDependenciesWithVersions <- installed.packages()[row.names(installed.packages()) %in% allRacasDependencies,]
-  return(allRacasDependenciesWithVersions)
+  directDependenciesAll <- unlist(package_dependencies(packages, installed.packages(), which = c("Depends", "Imports", "LinkingTo", "Suggests"), recursive = FALSE))
+  directDependenciesAll <- directDependenciesAll[! (directDependenciesAll %in% recommended_and_base_packages)]
+  directDependencies_no_suggests <- unique(as.character((unlist(package_dependencies(directDependenciesAll, installed.packages(), which = c("Depends", "Imports", "LinkingTo"), recursive = TRUE)))))
+  reverseDependencies <- directDependencies_no_suggests[! (directDependencies_no_suggests %in% recommended_and_base_packages)]
+  allDependencies <- unique(c(directDependenciesAll, reverseDependencies))
+  allDependenciesWithVersions <- installed.packages()[row.names(installed.packages()) %in% allDependencies,]
+  return(allDependenciesWithVersions)
 }
 
 downloadRacasDependencies <- function(repos = "http://cran.rstudio.com") {  
@@ -41,4 +41,28 @@ downloadRacasDependencies <- function(repos = "http://cran.rstudio.com") {
   #install.packages(packageSources, repos = NULL, type = "source", lib = lib)
   #unlink(packageSources)
   return(packageSources)
+}
+
+plotDependencies <- function(packages = c("racas")) {
+  pkgdata <- available.packages()
+  pkgList <- unlist(package_dependencies(packages, installed.packages(), which = c("Depends", "Imports"), recursive = FALSE))
+  p <- makeDepGraph(pkgList, availPkgs=pkgdata)
+  library(igraph)
+  
+  plotColours <- c("grey80", "orange")
+  topLevel <- as.numeric(V(p)$name %in% packages)
+  
+  par(mai=rep(0.25, 4))
+  
+  set.seed(50)
+  vColor <- plotColours[1 + topLevel]
+  plot(p, vertex.size=8, edge.arrow.size=0.5, 
+       vertex.label.cex=0.7, vertex.label.color="black", 
+       vertex.color=vColor,
+       main = NULL)
+  legend(x=0.9, y=-0.9, legend=c("Dependencies", "Initial list"), 
+         col=c(plotColours, NA), pch=19, cex=0.9)
+  text(0.9, -0.75, expression(xts %->% zoo), adj=0, cex=0.9)
+  text(0.9, -0.8, "xts depends on zoo", adj=0, cex=0.9)
+  title("Package dependency graph")
 }
