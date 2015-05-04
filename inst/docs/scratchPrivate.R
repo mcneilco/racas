@@ -93,9 +93,9 @@ formatDNETFitData <- function(fitData) {
 }
 getRandomDNETCurves <- function(howManyYouWant) {
   dnetLocalSettings <- racas::applicationSettings
-  dnetLocalSettings$server.database.username <- "kalypsysadmin"
-  dnetLocalSettings$server.database.password <- "***REMOVED***"
-  dnetLocalSettings$server.database.host <- "***REMOVED***"
+  dnetLocalSettings$server.database.username <- "REMOVED"
+  dnetLocalSettings$server.database.password <- "REMOVED"
+  dnetLocalSettings$server.database.host <- "REMOVED"
   dnetLocalSettings$server.database.port <- 1521
   dnetLocalSettings$server.database.name <- "ORADEV"
   dnetLocalSettings$server.database.r.package <- "ROracle"
@@ -110,11 +110,11 @@ getRandomDNETCurves <- function(howManyYouWant) {
 library(racas)
 library(ROracle)
 library(data.table)
-load("/Users/bbolt/Documents/dns/newCurveFitRegression/dns_regression_curveids.rda")
+load("/Users/bbolt/Documents/exampleClient/newCurveFitRegression/exampleClient_regression_curveids.rda")
 dnetLocalSettings <- racas::applicationSettings
-dnetLocalSettings$server.database.username <- "kalypsysadmin"
-dnetLocalSettings$server.database.password <- "***REMOVED***"
-dnetLocalSettings$server.database.host <- "***REMOVED***"
+dnetLocalSettings$server.database.username <- "REMOVED"
+dnetLocalSettings$server.database.password <- "REMOVED"
+dnetLocalSettings$server.database.host <- "REMOVED"
 dnetLocalSettings$server.database.port <- 1521
 dnetLocalSettings$server.database.name <- "ORADEV"
 dnetLocalSettings$server.database.r.package <- "ROracle"
@@ -141,7 +141,7 @@ fitSettings_1572 <- simple_to_advanced_fit_settings(simpleFitSettings_1572)
 
 
 fitted <- dose_response_session(fitSettings = fitSettings, fitData = fitData)[[1]]
-oldRegressionResults <- read.csv("/Users/bbolt/Documents/dns/newCurveFitRegression/old_regression_results.txt", sep = "\t")
+oldRegressionResults <- read.csv("/Users/bbolt/Documents/exampleClient/newCurveFitRegression/old_regression_results.txt", sep = "\t")
 matched <- match(rbindlist(fitted$parameters)$lot, oldRegressionResults$sample)
 dnetCurveClasses <- oldRegressionResults$curveDescription[matched[!is.na(matched)]]
 fitted[!is.na(matched), DNETCategory := as.character(dnetCurveClasses)]

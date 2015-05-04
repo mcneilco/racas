@@ -341,11 +341,11 @@ fitData[fitConverged == TRUE, {
 }, by = curveid]
 
 #KI
-#http://***REMOVED***/r-services-api/curve/render?curveIds=523049
-#http://***REMOVED***/curveFit/index.php?path=TEST0003631
+#http://REMOVED/r-services-api/curve/render?curveIds=523049
+#http://REMOVED/curveFit/index.php?path=TEST0003631
 library(data.table)
 library(drc)
 library(racas)
 load("kiFitData.rda")
-points <- fitData[which(rbindlist(fitData$parameters)$lot=="DNS001557105::1")]$points[[1]]
+points <- fitData[which(rbindlist(fitData$parameters)$lot=="CMPD001557105::1")]$points[[1]]
 
