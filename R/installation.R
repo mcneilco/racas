@@ -67,14 +67,14 @@ plotDependencies <- function(packages = c("racas")) {
   title("Package dependency graph")
 }
 
-makeRepo <- function(package = "racas", path = "./repo") {
+makeRepo <- function(path = "./repo", description = "DESCRIPTION") {
   repos <- "http://cran.r-project.org/"
-  pkgs <- descriptionDeps()
+  pkgs <- descriptionDeps(description)
   if(file.exists(path)) {
     unlink(path, force = TRUE, recursive = TRUE)
   }
   dir.create(path)
-  makeRepo(pkgs, path = path)
+  miniCRAN::makeRepo(pkgs, path = path)
   originalWD <- getwd()
   on.exit(setwd(originalWD))
   setwd(file.path(normalizePath(path), "src", "contrib"))
@@ -83,8 +83,8 @@ makeRepo <- function(package = "racas", path = "./repo") {
   miniCRAN::updateRepoIndex(path)
 }
 
-descriptionDeps <- function() {
-  description <- read.dcf("DESCRIPTION")
+descriptionDeps <- function(descriptionPath) {
+  description <- read.dcf(descriptionPath)
   dependencyString <- as.character(unlist(description[ ,'Imports'],description[,'Suggests']))
   dependencies <- strsplit(dependencyString, '\n')[[1]]
   dependencies <- dependencies[dependencies!=""]
