@@ -66,3 +66,28 @@ plotDependencies <- function(packages = c("racas")) {
   text(0.9, -0.8, "xts depends on zoo", adj=0, cex=0.9)
   title("Package dependency graph")
 }
+
+makeRepo <- function(package = "racas", path = "./repo") {
+  repos <- "http://cran.r-project.org/"
+  pkgs <- descriptionDeps()
+  if(file.exists(path)) {
+    unlink(path, force = TRUE, recursive = TRUE)
+  }
+  dir.create(path)
+  makeRepo(pkgs, path = path)
+  originalWD <- getwd()
+  on.exit(setwd(originalWD))
+  setwd(file.path(normalizePath(path), "src", "contrib"))
+  system(paste0("R CMD BUILD ", originalWD))
+  setwd(originalWD)
+  miniCRAN::updateRepoIndex(path)
+}
+
+descriptionDeps <- function() {
+  description <- read.dcf("DESCRIPTION")
+  dependencyString <- as.character(unlist(description[ ,'Imports'],description[,'Suggests']))
+  dependencies <- strsplit(dependencyString, '\n')[[1]]
+  dependencies <- dependencies[dependencies!=""]
+  dependencies <- dependencies[order(dependencies)]
+  return(dependencies)
+}
