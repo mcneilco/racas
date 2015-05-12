@@ -11,4 +11,4 @@ COPY	. /home/runner/racas
 RUN  Rscript -e 'options(repos = c(CRAN="http://cran.rstudio.com/"));install.packages("miniCRAN");source("/home/runner/racas/R/installation.R");makeRepo(path="/home/runner/repo", description = "/home/runner/racas/DESCRIPTION", racasPath = "/home/runner/racas")'
 RUN	 mkdir /home/runner/r_libs
 RUN  Rscript -e 'install.packages("racas", repos="file://home/runner/repo", lib = "/home/runner/r_libs")'
-RUN  rm -rf /home/runner/repo /home/runner/racas
+RUN  rm -rf /home/runner/repo /home/runner/racas /home/runner/r_libs/racas
