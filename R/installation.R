@@ -67,7 +67,7 @@ plotDependencies <- function(packages = c("racas")) {
   title("Package dependency graph")
 }
 
-makeRepo <- function(path = "./repo", description = "DESCRIPTION") {
+makeRepo <- function(path = "./repo", description = "DESCRIPTION", racasPath = ".") {
   pkgs <- descriptionDeps(description)
   pkgs <- unique(c(unlist(tools::package_dependencies(pkgs, available.packages(type = "source"), recursive = TRUE)), pkgs))
   pkgs <- pkgs[order(pkgs)]
@@ -79,7 +79,7 @@ makeRepo <- function(path = "./repo", description = "DESCRIPTION") {
   originalWD <- getwd()
   on.exit(setwd(originalWD))
   setwd(file.path(normalizePath(path), "src", "contrib"))
-  system(paste0("R CMD build ", originalWD))
+  system(paste0("R CMD build ", normalizePath(racasPath)))
   setwd(originalWD)
   miniCRAN::updateRepoIndex(path)
 }
