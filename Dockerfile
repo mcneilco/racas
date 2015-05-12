@@ -1,4 +1,4 @@
-FROM bbolt/centos-node-r
+FROM mcneilco/centos-node-r
 
 USER	root
 
@@ -12,4 +12,3 @@ RUN  Rscript -e 'options(repos = c(CRAN="http://cran.rstudio.com/"));install.pac
 RUN	 mkdir /home/runner/r_libs
 RUN  Rscript -e 'install.packages("racas", repos="file://home/runner/racas/repo", lib = "/home/runner/r_libs")'
 RUN  rm -rf /home/runner/racas/repo
-
