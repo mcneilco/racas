@@ -68,26 +68,30 @@ plotDependencies <- function(packages = c("racas")) {
 }
 
 makeRepo <- function(path = "./repo", description = "DESCRIPTION") {
-  repos <- "http://cran.r-project.org/"
   pkgs <- descriptionDeps(description)
+  pkgs <- unique(c(unlist(tools::package_dependencies(pkgs, available.packages(type = "source"), recursive = TRUE)), pkgs))
+  pkgs <- pkgs[order(pkgs)]
   if(file.exists(path)) {
     unlink(path, force = TRUE, recursive = TRUE)
   }
   dir.create(path)
-  miniCRAN::makeRepo(pkgs, path = path)
+  miniCRAN::makeRepo(pkgs, path = path, type = "source")
   originalWD <- getwd()
   on.exit(setwd(originalWD))
   setwd(file.path(normalizePath(path), "src", "contrib"))
-  system(paste0("R CMD BUILD ", originalWD))
+  system(paste0("R CMD build ", originalWD))
   setwd(originalWD)
   miniCRAN::updateRepoIndex(path)
 }
 
 descriptionDeps <- function(descriptionPath) {
-  description <- read.dcf(descriptionPath)
-  dependencyString <- as.character(unlist(description[ ,'Imports'],description[,'Suggests']))
-  dependencies <- strsplit(dependencyString, '\n')[[1]]
-  dependencies <- dependencies[dependencies!=""]
+  description <- as.data.frame(read.dcf(descriptionPath))
+  dependencies <- list(as.character(description$Depends), as.character(description$Suggests), as.character(description$Imports))
+  dependencies[unlist(lapply(dependencies, length))==0] <- NULL
+  dependencies <- paste0(dependencies, collapse = "\n")
+  dependencies <- gsub(",","",dependencies)
+  dependencies <- strsplit(dependencies, "\n")[[1]]
+  dependencies <- dependencies[dependencies != ""]
   dependencies <- dependencies[order(dependencies)]
   return(dependencies)
 }
