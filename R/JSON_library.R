@@ -1,8 +1,8 @@
 # Solves issues with rjson printing times in scientific notation and losing precision
 options(scipen=99)
 
-#racas::applicationSettings$client.service.persistence.fullpath <- "http://localhost:8080/labseer/"
-#racas::applicationSettings$client.service.persistence.fullpath <- "http://host3.labsynch.com:8080/acas/"
+# racas::applicationSettings$client.service.persistence.fullpath <- "http://localhost:8080/labseer/"
+# racas::applicationSettings$client.service.persistence.fullpath <- "http://host3.labsynch.com:8080/acas/"
 
 
 ############  FUNCTIONS ########################
