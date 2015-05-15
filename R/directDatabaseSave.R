@@ -53,6 +53,30 @@ chunkMillionIds <- function(conn, numberOfIds, FUN) {
   return(as.integer(output))
 }
 #' @rdname saveEntitiesDD
+getLabelIdsDD <- function(conn, numberOfIds) {
+  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    # Oracle memory limits us to 1 million id's at a time
+    return(chunkMillionIds(conn, numberOfIds, getLabelIdsDDInternal))
+  } else {
+    labelIdSql <- paste0("select nextval('label_pkseq') as id from generate_series(1,", numberOfIds, ")")
+  }
+  
+  labelIds <- dbGetQuery(conn, labelIdSql)
+  return(as.integer(labelIds[,1]))
+}
+#' @rdname saveEntitiesDD
+getLabelIdsDDInternal <- function(conn, numberOfIds) {
+  
+  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    labelIdSql <- paste0("select label_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
+  } else {
+    labelIdSql <- paste0("select nextval('label_pkseq') as id from generate_series(1,", numberOfIds, ")")
+  }
+  
+  labelIds <- dbGetQuery(conn, labelIdSql)
+  return(as.integer(labelIds[,1]))
+}
+#' @rdname saveEntitiesDD
 getStateIdsDD <- function(conn, numberOfIds) {
   if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
     # Oracle memory limits us to 1 million id's at a time
