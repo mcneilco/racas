@@ -124,6 +124,13 @@ getEntityCodesBySqlDD <- function(conn, entityType, numberOfCodes) {
 		} else {
 			entityCodeSql <- paste0("select nextval('lsseq_subj_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 		}
+	} else if (entityType == "CONTAINER"){
+	  entityPrefix <- "CONT-"
+	  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+	    entityCodeSql <- paste0("select lsseq_container_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
+	  } else {
+	    entityCodeSql <- paste0("select nextval('lsseq_container_pkseq') as id from generate_series(1,", numberOfCodes, ")")
+	  }
 	}
 
 	entityCodeIds <- dbGetQuery(conn, entityCodeSql)
