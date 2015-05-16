@@ -353,17 +353,18 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
            c("id", "code_name", "ignored", "ls_kind", "ls_transaction", 
              "ls_type", "ls_type_and_kind", "modified_by", "modified_date", 
              "recorded_by", "recorded_date", "version", "deleted"))
-	if (entityType == "ANALYSIS_GROUP") {
-		entityTable <- "ANALYSIS_GROUP"
-		joinTable <- "EXPERIMENT_ANALYSISGROUP"
-	} else if (entityType == "TREATMENT_GROUP") {
-		entityTable <- "TREATMENT_GROUP"
-		joinTable <- "ANALYSISGROUP_TREATMENTGROUP"
-	} else if (entityType == "SUBJECT") {
-		entityTable <- "SUBJECT"
-		joinTable <- "TREATMENTGROUP_SUBJECT"
-	}
   
+  entityTable <- switch(entityType,
+                        "ANALYSIS_GROUP" = "ANALYSIS_GROUP",
+                        "TREATMENT_GROUP" = "TREATMENT_GROUP",
+                        "SUBJECT" = "SUBJECT",
+                        stop("Unknown Entity Type"))
+  
+  joinTable <- switch(entityType,
+                      "ANALYSIS_GROUP" = "EXPERIMENT_ANALYSISGROUP",
+                      "TREATMENT_GROUP" = "ANALYSISGROUP_TREATMENTGROUP",
+                      "SUBJECT" = "TREATMENTGROUP_SUBJECT",
+                      stop("Unknown Entity Type"))
   
 	if (!grepl("Oracle", applicationSettings$server.database.driver)) {
 	  entityTable <- tolower(entityTable)
