@@ -85,6 +85,7 @@ getFileEncoding <- function(filePath) {
 #'@param genericDataFileDataFrame A data frame of lines 
 #'@param lookFor A string identifier to user as regext for the line before the start of the seciton
 #'@param transpose a boolean to set if the data should be transposed
+#'@param required logical Should the function throw an error if the field does not exist?
 #'@return A dataframe of the of section in the generic excel file
 #'
 #'Intended for data.frames that have been read directly from a csv or xls and have sections with names

@@ -2093,7 +2093,7 @@ getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSet
 }
 #' getOrCreateDDictKinds
 #' 
-#' Register's ddict kinds from json
+#' Registers ddict kinds from json
 #' 
 #' @param typesKindsDataFrame (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))
 #' @return list of types and kinds
@@ -2105,9 +2105,9 @@ getOrCreateDDictKinds <- function(typesKindsDataFrame, lsServerURL = racas::appl
 }
 #' getDdictKinds
 #' 
-#' Get ddict kinds
+#' Get ddict kinds as described by URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
 #' 
-#' @param list (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds")))
+#' @param lsServerURL (racas::applicationSettings$client.service.persistence.fullpath)
 #' @return a data frame of kinds
 getDDictKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   url <- URLencode(paste0(lsServerURL, "ddictkinds"))
@@ -2116,9 +2116,9 @@ getDDictKinds <- function(lsServerURL = racas::applicationSettings$client.servic
 }
 #' createCodeTablesFromJsonArray
 #' 
-#' Create code table (d dict values) from json array
+#' Create code table (d dict values) from json array as described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
 #' 
-#' @param codeTableDataFrame of ddict values (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray")))
+#' @param codeTableDataFrame of ddict values
 #' @return a data frame of kinds
 createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   json <- jsonlite::toJSON(codeTableDataFrame)
