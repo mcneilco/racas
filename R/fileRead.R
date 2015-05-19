@@ -89,7 +89,7 @@ getFileEncoding <- function(filePath) {
 #'
 #'Intended for data.frames that have been read directly from a csv or xls and have sections with names
 
-getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
+getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE, required = TRUE) {
   # Get the first line matching the section
   listMatch <- sapply(genericDataFileDataFrame,grep,pattern = lookFor,ignore.case = TRUE, perl = TRUE)
   firstInstanceInEachColumn <- suppressWarnings(unlist(lapply(listMatch, min)))
@@ -98,7 +98,11 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     return(NULL)
   }
   if(is.na(startSection)) {
-    stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
+    if(required) {
+      stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
+    } else {
+      return(NULL)
+    }
   }
   
   if((startSection+2)>length(genericDataFileDataFrame[[1]])) {
