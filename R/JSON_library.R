@@ -2081,7 +2081,7 @@ getDDictValuesByTypeKindFormat <- function(lsKind, lsType, format = "json", lsSe
 }
 #' getOrCreateDDictTypes
 #' 
-#' Register's ddict types from json
+#' Registers ddict types from json
 #' 
 #' @param list (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))
 #' @return list of types
