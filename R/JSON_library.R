@@ -2098,7 +2098,7 @@ getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSet
 #' @param typesKindsDataFrame (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))
 #' @return list of types and kinds
 getOrCreateDDictKinds <- function(typesKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  json <- jsonlite::toJSON(typesKindsList)
+  json <- jsonlite::toJSON(typesKindsDataFrame)
   url <- URLencode(paste0(lsServerURL, "setup/ddictkinds"))
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
@@ -2126,6 +2126,23 @@ createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = raca
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
 }
+#' validateValueKindsFromDataFrame
+#' 
+#' Get a data table of type names and kind names plus the kind (full object) from a data frame of type names and kind names
+#' 
+#' @param typesAndKindsDataFrame data.frame 2 columns lsType, lsKind
+#' @return a data table type names, kind names and full object kinds
+validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  allValueKinds <- getAllValueKinds()
+  dt <- rbindlist(lapply(allValueKinds, function(x) data.table('lsTypeName'=x$lsType$typeName,'lsKindName'=x$kindName, 'lsKind'=list(list(x)))))
+  setkey(dt,'lsTypeName','lsKindName')
+  typesAndKindsDataTable <- as.data.table(typesAndKindsDataFrame)
+  setkey(typesAndKindsDataTable, 'lsType', 'lsKind')
+  matched <- dt[typesAndKindsDataFrame]
+  matched[ , lsKindExists := !is.null(lsKind[[1]]), by = c('lsTypeName','lsKindName')]
+  return(matched)
+}
+
 
 
 
