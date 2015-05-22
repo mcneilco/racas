@@ -85,11 +85,12 @@ getFileEncoding <- function(filePath) {
 #'@param genericDataFileDataFrame A data frame of lines 
 #'@param lookFor A string identifier to user as regext for the line before the start of the seciton
 #'@param transpose a boolean to set if the data should be transposed
+#'@param required logical Should the function throw an error if the field does not exist?
 #'@return A dataframe of the of section in the generic excel file
 #'
 #'Intended for data.frames that have been read directly from a csv or xls and have sections with names
 
-getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
+getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE, required = TRUE) {
   # Get the first line matching the section
   listMatch <- sapply(genericDataFileDataFrame,grep,pattern = lookFor,ignore.case = TRUE, perl = TRUE)
   firstInstanceInEachColumn <- suppressWarnings(unlist(lapply(listMatch, min)))
@@ -98,7 +99,11 @@ getSection <- function(genericDataFileDataFrame, lookFor, transpose = FALSE) {
     return(NULL)
   }
   if(is.na(startSection)) {
-    stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
+    if(required) {
+      stopUser(paste0("The spreadsheet appears to be missing an important section header. The loader needs '",lookFor,"' to be somewhere in the spreadsheet.",sep=""))
+    } else {
+      return(NULL)
+    }
   }
   
   if((startSection+2)>length(genericDataFileDataFrame[[1]])) {
