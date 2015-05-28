@@ -44,11 +44,13 @@ downloadRacasDependencies <- function(repos = "http://cran.rstudio.com") {
 }
 
 plotDependencies <- function(packages = c("racas")) {
+  library(igraph)
+  library(tools)
+  library(miniCRAN)
   pkgdata <- available.packages()
   pkgList <- unlist(package_dependencies(packages, installed.packages(), which = c("Depends", "Imports"), recursive = FALSE))
   p <- makeDepGraph(pkgList, availPkgs=pkgdata)
-  library(igraph)
-  
+
   plotColours <- c("grey80", "orange")
   topLevel <- as.numeric(V(p)$name %in% packages)
   
