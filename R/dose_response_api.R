@@ -30,7 +30,7 @@
 #' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
 #' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
-api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recordedBy, experimentCode, testMode = NULL) {
+api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recordedBy, experimentCode, testMode = NULL, modelFit) {
 #   file <- system.file("docs", "example-simple-fitsettings-ki.json", package = "racas" )
 #   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
@@ -75,10 +75,11 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
     return()
   }
   fitData[ , renderingHint := modelFitType]
+  fitData[ , modelFit := list(list(modelFit))]
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = modelFitType)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, simpleFitSettings, modelFit$simple_to_advanced_fittings_function)
   
   #If refitting, then we want to set the algorithm and user flags back to a blank slate
   if(refit) {
@@ -205,11 +206,13 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   return(stubs)
 }
 
-api_doseResponse_update_flag <- function(POST) {
+api_doseResponse_update_flag <- function(POST, modelFit) {
   fitData <- get_fit_data_curve_id(POST$curveid)
   simpleFitSettings <- fromJSON(fitData$fitSettings)
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = POST$curveAttributes$renderingHint)
-  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$userFlagStatus, simpleFitSettings = simpleFitSettings)
+  #fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = POST$curveAttributes$renderingHint)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, simpleFitSettings, modelFit$simple_to_advanced_fittings_function)
+  
+  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$userFlagStatus, simpleFitSettings = simpleFitSettings, modelFit = modelFit)
   deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedCurveID <- save_dose_response_data(fitData, recorded_by = POST$user)
@@ -422,7 +425,7 @@ api_doseResponse_save_session <- function(sessionID, user) {
   return(response)
 }
 
-api_doseResponse_refit <- function(POST) {
+api_doseResponse_refit <- function(POST, modelFit) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.fit.curve")
@@ -431,10 +434,12 @@ api_doseResponse_refit <- function(POST) {
   myMessenger$logger$debug("getting updated point flags sent from acas")
   points <- data.table(POST$plotData$points)
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points, renderingHint = POST$renderingHint)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, POST$fitSettings, modelFit$simple_to_advanced_fittings_function, points)
+  
+  #fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points, renderingHint = POST$renderingHint)
   
   myMessenger$logger$debug("fitting the dose response model")
-  doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user)
+  doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user, modelFit = modelFit)
   
   myMessenger$logger$debug("converting the fitted data to a response json object")
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)

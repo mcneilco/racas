@@ -4,8 +4,8 @@
 \alias{simple_to_advanced_fit_settings}
 \title{Convert a simple dose response request to an advanced dose response request}
 \usage{
-simple_to_advanced_fit_settings(simpleSettings, updateFlags = NULL,
-  renderingHint = "4 parameter D-R")
+simple_to_advanced_fit_settings(defaultFitSettings, simpleSettings,
+  update_function, updateFlags = NULL)
 }
 \arguments{
 \item{simpleSettings}{a list object of simple fit settings}

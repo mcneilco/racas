@@ -5,7 +5,7 @@
 \title{Fits experiment dose response data}
 \usage{
 api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy,
-  experimentCode, testMode = NULL)
+  experimentCode, testMode = NULL, modelFit)
 }
 \arguments{
 \item{simpleFitSettings}{list of fit settings (see details)}

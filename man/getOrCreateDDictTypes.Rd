@@ -14,6 +14,6 @@ getOrCreateDDictTypes(typesList,
 list of types
 }
 \description{
-Register's ddict types from json
+Registers ddict types from json
 }
 
