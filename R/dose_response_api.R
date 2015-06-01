@@ -135,6 +135,8 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("getting model fit type for ",entityID))
   modelFitType <- get_experiment_model_fit_type(entityID)
+  modelFit <- get_model_fit_from_type_code(modelFitType)
+  
   myMessenger$logger$debug(paste0("getting fit data for ",entityID))
   fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
@@ -143,60 +145,15 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   renderingHint <- fitData[1]$renderingHint
   myMessenger$logger$debug(paste0("Got renderingHint '",renderingHint,"'"))
   myMessenger$logger$debug(paste0("Getting sort options '",renderingHint,"'"))
-  sortOptions <- switch(fitData[1]$renderingHint,
-                        "4 parameter D-R" = list(list(code = "compoundCode", name = "Compound Code"),
-                                      list(code = "EC50", name = "EC50"),
-                                      list(code = "SST", name = "SST"),
-                                      list(code = "SSE", name = "SSE"),
-                                      list(code = "rsquare", name = "R^2"),
-                                      list(code = "userFlagStatus", name = "User Flag Status"),
-                                      list(code = "userFlagStatus", name = "Algorithm Flag Status")
-                        ),
-                        "Ki Fit" = list(list(code = "compoundCode", name = "Compound Code"),
-                                    list(code = "Ki", name = "Ki"),
-                                    list(code = "SST", name = "SST"),
-                                    list(code = "SSE", name = "SSE"),
-                                    list(code = "rsquare", name = "R^2"),
-                                    list(code = "userFlagStatus", name = "User Flag Status"),
-                                    list(code = "userFlagStatus", name = "Algorithm Flag Status")
-                        ), {
-                          msg <- paste0("Model Hint '", renderingHint, "' unimplemented for sort options")
-                          myMessenger$logger$error(msg)
-                          stop(msg)
-                        }
-                        
-  )
+  sortOptions <- modelFit$sortOptions
                           
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := {
-    curveAttributes <- switch(
-      renderingHint[[1]],
-      "4 parameter D-R" = list(
-        EC50 = ec50[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderingHint = renderingHint[[1]]
-      ),
-      "Ki Fit" = list(
-        Ki = ki[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderingHint = renderingHint[[1]]
-      )
-    )
     list(list(list(curveid = curveId[[1]], 
                    algorithmFlagStatus = algorithmFlagStatus[[1]],
                    userFlagStatus = userFlagStatus[[1]],
                    category = category[[1]],
-                   curveAttributes = curveAttributes)))
+                   curveAttributes = modelFit$get_curve_attributes(.SD))))
   }, by = curveId]
 
   stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
@@ -433,10 +390,9 @@ api_doseResponse_refit <- function(POST, modelFit) {
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
   myMessenger$logger$debug("getting updated point flags sent from acas")
   points <- data.table(POST$plotData$points)
+  
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
   fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, POST$fitSettings, modelFit$simple_to_advanced_fittings_function, points)
-  
-  #fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points, renderingHint = POST$renderingHint)
   
   myMessenger$logger$debug("fitting the dose response model")
   doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user, modelFit = modelFit)
@@ -452,24 +408,50 @@ api_doseResponse_refit <- function(POST, modelFit) {
   return(response)
 }
 
-# api_doseResponse_update_user_flag <- function(sessionID, userFlagStatus, user) {
-#   myMessenger <- messenger()$reset()
-#   myMessenger$devMode <- FALSE
-#   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.flag")
-#   myMessenger$logger$debug(paste0("loading session ", sessionID))
-#   myMessenger$logger$debug(paste0("setting flag to ", userFlagStatus))
-#   myMessenger$logger$debug(paste0("setting user to ", user))
-#   loadSession(sessionID)
-#   if(flagUser == "NA") {
-#     flagUser <- as.character(NA)
-#   }
-#   updated <- doseResponse_update_user_flag(fitData, flagUser, user)
-#   if(!myMessenger$hasErrors()) {
-#     GET <- list()
-#     GET$analysisgroupid <- fitData$analysisGroupId
-#     response <- api_doseResponse_get_curve_detail(GET)
-#   } else {
-#     response <- myMessenger$toJSON()
-#   }
-#   return(response)
-# }
+sortOptions.LL4 <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "EC50", name = "EC50"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
+sortOptions.ki <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "Ki", name = "Ki"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
+get_curve_attributes.LL4 <- function(.SD) {
+  return(list(
+    EC50 = .SD$ec50[[1]],
+    SST =  .SD$sst[[1]],
+    SSE =  .SD$sse[[1]],
+    rsquare = .SD$rsquared[[1]],
+    compoundCode = .SD$batchCode[[1]],
+    algorithmFlagStatus = .SD$algorithmFlagStatus[[1]],
+    userFlagStatus = .SD$userFlagStatus[[1]],
+    renderingHint = .SD$renderingHint[[1]]
+  ))
+}
+get_curve_attributes.ki <- function(.SD) {
+  return(list(
+    Ki = .SD$ki[[1]],
+    SST =  .SD$sst[[1]],
+    SSE =  .SD$sse[[1]],
+    rsquare = .SD$rsquared[[1]],
+    compoundCode = .SD$batchCode[[1]],
+    algorithmFlagStatus = .SD$algorithmFlagStatus[[1]],
+    userFlagStatus = .SD$userFlagStatus[[1]],
+    renderingHint = .SD$renderingHint[[1]]
+  ))
+}
+get_model_fit_from_type_code <- function(modelFitTypeCode) {
+  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes))
+  source(file.path(applicationSettings$appHome,modelFitClasses[code==modelFitTypeCode]$RSource), local = TRUE)
+  return(modelFit)
+}
