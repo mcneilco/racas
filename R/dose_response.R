@@ -360,7 +360,7 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
 #' Calls a tsv service and returns a data.table of results
 #' 
 #' @param url a url encoded string that calls a service that returns a tsv
-#' @param type simple (uses data.table's fread which is fast but can't handle embedded html or \t values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)
+#' @param type simple (uses data.table's fread which is fast but can't handle embedded html or tab seperated values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)
 #' @return a data.table result
 #' @export
 #' @examples

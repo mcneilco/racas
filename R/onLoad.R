@@ -1,5 +1,4 @@
 .onLoad <- function(libname, pkgname) {
-  library("methods") 
   appConfName <- paste0(applicationSettings$appName,"_CONFIG")
   appHomeName <- paste0(applicationSettings$appName,"_HOME")
   relativeToAppHome <- file.path(normalizePath(file.path(libname,"..")))
