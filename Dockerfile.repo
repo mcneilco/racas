@@ -14,7 +14,7 @@ ENV PATH /usr/pgsql-9.4/bin:$PATH
 
 RUN	useradd -u 1000 -ms /bin/bash runner
 
-ADD	. $ACAS_HOME/racas
+COPY	. $ACAS_HOME/racas
 RUN chown -R runner:runner $ACAS_HOME
 USER runner
 RUN  Rscript -e 'options(repos = c(CRAN="http://cran.rstudio.com/")); \
