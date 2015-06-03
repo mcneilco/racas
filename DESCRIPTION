@@ -54,7 +54,6 @@ Collate:
     'dose_response.R'
     'dose_response_api.R'
     'objectHelper.R'
-    'onLoad.R'
     'pingPong.R'
     'preferredBatchCode.R'
     'query.R'
@@ -68,3 +67,5 @@ Collate:
     'utilities.R'
     'directDatabaseSave.R'
     'model_fit.R'
+    'onLoad.R'
+
