@@ -2,23 +2,25 @@ FROM mcneilco/centos-node-r
 
 USER	root
 
-COPY	. /home/runner/racas
-RUN	useradd -u 1000 -ms /bin/bash runner
-RUN chown -R runner:runner /home/runner
-
 RUN yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-6-x86_64/pgdg-centos94-9.4-1.noarch.rpm && \
   yum install -y postgresql94-devel curl-devel libxml2-devel
 
+ENV ACAS_HOME /home/runner
+WORKDIR $ACAS_HOME
+
+ENV R_LIBS $ACAS_HOME/r_libs
+RUN mkdir $ACAS_HOME/r_libs
+ENV PATH /usr/pgsql-9.4/bin:$PATH
+
+RUN	useradd -u 1000 -ms /bin/bash runner
+
+COPY	. $ACAS_HOME/racas
+RUN chown -R runner:runner $ACAS_HOME
 USER runner
-
-WORKDIR /home/runner
-
-RUN mkdir /home/runner/r_libs
-ENV R_LIBS /home/runner/r_libs
-
 RUN  Rscript -e 'options(repos = c(CRAN="http://cran.rstudio.com/")); \
                 install.packages("miniCRAN"); \
                 source("/home/runner/racas/R/installation.R"); \
                 makeRepo(path="/home/runner/repo", description = "/home/runner/racas/DESCRIPTION", racasPath = "/home/runner/racas"); \
+                install.packages("RPostgreSQL", repos="file://home/runner/repo", lib = "/home/runner/r_libs"); \
                 install.packages("racas", repos="file://home/runner/repo", lib = "/home/runner/r_libs");' && \
      rm -rf /home/runner/repo /home/runner/racas /home/runner/r_libs/racas

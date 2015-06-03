@@ -67,3 +67,4 @@ Collate:
     'updateExperimentMetadata.R'
     'utilities.R'
     'directDatabaseSave.R'
+    'model_fit.R'
