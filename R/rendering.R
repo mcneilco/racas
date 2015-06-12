@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
@@ -421,7 +421,14 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     margins[c(1,2)] <- defaultMargins[c(1,2)] + 4
   } else {
     if(showAxes) {
-      margins[c(1,2)] <- defaultMargins[c(1,2)] + 2
+      marginAdd <- c()
+      if("x" %in% axes) {
+        marginAdd <- 1
+      }
+      if("y" %in% axes) {
+        marginAdd <- c(marginAdd,2)
+      }
+      margins[marginAdd] <- defaultMargins[marginAdd] + 2
     }
   }
   par(mar = margins)
@@ -528,27 +535,31 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   ##DO axes and Grid
   box()
   if(showAxes) {
-    if(logDose) {
-      xTickRange <- par("xaxp")[1:2]
-      log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
-      major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {xTickRange[1]*10^(x-1)}))
-      axis(1,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8)
-      intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
-      minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
-      axis(1, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
-    } else {
-      axis(1)
+    if("x" %in% axes) {
+      if(logDose) {
+        xTickRange <- par("xaxp")[1:2]
+        log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
+        major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {xTickRange[1]*10^(x-1)}))
+        axis(1,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8)
+        intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
+        minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
+        axis(1, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
+      } else {
+        axis(1)
+      }
     }
-    if(logResponse) {
-      yTickRange <- par("yaxp")[1:2]
-      log10Range <- log10(abs(yTickRange[2]/yTickRange[1]))+1
-      major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {yTickRange[1]*10^(x-1)}))
-      axis(2,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8,,las=1)
-      intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
-      minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
-      axis(2, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
-    } else {
-      axis(2)
+    if("y" %in% axes) {
+      if(logResponse) {
+        yTickRange <- par("yaxp")[1:2]
+        log10Range <- log10(abs(yTickRange[2]/yTickRange[1]))+1
+        major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {yTickRange[1]*10^(x-1)}))
+        axis(2,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8,,las=1)
+        intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
+        minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
+        axis(2, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
+      } else {
+        axis(2)
+      }
     }
   }
   ##If only one curve then draw ac50 lines
@@ -709,6 +720,11 @@ parse_params_curve_render_dr <- function(getParams = GET) {
   } else {
     showAxes <- as.logical(getParams$showAxes)
   }
+  if(is.null(getParams$axes)) {
+    axes <- c("x","y")
+  } else {
+    axes <- strsplit(getParams$axes, ",")[[1]]
+  }
   if(is.null(getParams$showGrid)) {
     showGrid <- !inTable
   } else {
@@ -737,5 +753,5 @@ parse_params_curve_render_dr <- function(getParams = GET) {
     }
   }
   
-  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds))
+  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds, axes = axes))
 }
