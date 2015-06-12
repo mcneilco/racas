@@ -1162,7 +1162,6 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
 }
 
 create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
-  saveSession("/tmp/blah")
   setkey(typeMap, "name")
   names(fittedParameters) <- typeMap$ls_kind[match(gsub(" ", "", tolower(paste0("Fitted ",names(fittedParameters)))), gsub(" ", "",tolower(typeMap$ls_kind)))]
   reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
@@ -1173,59 +1172,6 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
   
   x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
-#   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
-#   values <- lapply(1:length(x), function(i) {
-#     kindName <- names(x)[[i]]
-#     if(class(x[[i]]$value) %in% c("numeric","integer")) {
-#         if(x[[i]]$value >= 1e+125) {
-#           x[[i]]$value <- 99.99e+124
-#         } else if (x[[i]]$value <= 1e-125 && x[[i]]$value > 0) {
-#           x[[i]]$value <- 1.0e-124
-#         } else if (x[[i]]$value >= -1e-125 && x[[i]]$value < 0) {
-#           x[[i]]$value <- -1.0e-124
-#         } else if (x[[i]]$value <= -1e125) {
-#           x[[i]]$value <- -1.0e124          
-#         }
-#       lsType <- "numericValue"
-#       field <- "numeric_value"
-#     } else {
-#       lsType <- "stringValue"
-#       field <- "string_value"
-#     }
-#     allowedTypes <- typeMap[!is.na(lsType) & ls_kind == kindName]
-#     if(!lsType %in% allowedTypes$field) {
-#       lsType <- allowedTypes[1]$lsType
-#       field <- allowedTypes[1]$field
-#       state_type <- allowedTypes[1]$state_type
-#       state_kind <- allowedTypes[1]$state_kind
-#     } else {
-#       stop("Error type not allowed")
-#     }
-#     names(x[[i]])[names(x[[i]]) == 'value'] <- lsType
-#     names(x[[i]])[names(x[[i]]) == 'stdErr'] <- "uncertainty"
-#     names(x[[i]])[names(x[[i]]) == 'operator'] <- "operatorKind"
-#     if(is.null(x[[i]]$operatorKind)) x[[i]]$operatorKind <- NULL
-#     if(is.null(x[[i]]$uncertainty)) x[[i]]$uncertainty <- NULL
-#     x[[i]][['lsType']] <- lsType
-#     x[[i]][['lsKind']] <- kindName
-#     x[[i]][['publicData']] <- public[[i]]
-#     x[[i]][['stateType']] <- state_type
-#     x[[i]][['stateKind']] <- state_kind
-#     return(x[[i]])
-#   })
-#   values <- rbindlist(values, fill = TRUE)
-#   values[ , unitKind := as.character(NA)]
-#   values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
-#   values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
-#   values[ , uncertaintyType := as.character(NA)]
-#   if(!"uncertaity" %in% names(values)) {
-#     values[ , uncertainty := as.numeric(NA)]
-#   }
-#   values[!is.na(uncertainty) == TRUE, uncertaintyType := "standard error"]
-#   values[ , recordedBy := recordedBy]
-#   values[ , lsTransaction := lsTransaction]
-#   values[ , recordedDate := as.numeric(format(Sys.time(), "%s"))*1000]
-#   values[ , id := analysisGroupId]
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   values <- lapply(x, function(x) {
     if(class(x$value) %in% c("numeric","integer")) {
