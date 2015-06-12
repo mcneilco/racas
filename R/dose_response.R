@@ -1603,19 +1603,26 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValuesClob <- list(NULL)
       } else {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
+        # Not sure why but for some reason running this line:
+        blah <- copy(.SD)
+        # allows this line to wor
+        units <- mget(paste0(reportedValues$name,"Units"))
+        reportedValues[ , "units" := units]
         setkey(reportedValues, "name")
-        reportedValues[ , value :=prettyNum(value, digits = 4)]
+        reportedValues[ , value := prettyNum(value, digits = 4)]
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
             paste(ifelse(is.na(operator), "",operator), value)
           } else {
             value
           }}]
-        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value"), with = FALSE], 
+        reportedValues <- reportedValues[ , c("name", "value", "units"), with = FALSE]
+        reportedValues <- rbind(data.table(name = "Batch Code", value = batchCode, units = ""), reportedValues)
+        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value", "units"), with = FALSE], 
                                                        include.rownames = FALSE, 
                                                        comment = FALSE, 
                                                        timestamp = FALSE, 
-                                                       align = paste0(rep("r",ncol(reportedValues[ , c("name", "value"), with = FALSE]) + 1), collapse = ""),
+                                                       align = paste0(rep("l",ncol(reportedValues[ , c("name", "value", "units"), with = FALSE]) + 1), collapse = ""),
                                                        rotate.rownames = TRUE, 
                                                        html.table.attributes = "",
                                                        print.results = FALSE, 
