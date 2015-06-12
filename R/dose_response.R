@@ -493,7 +493,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   stringColumns <- c("Rendering Hint", "category")
   noneNumericColumns <- c(codeColumns,stringColumns)
   parameterDBNames <- c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope")
-  kiDBNames <- c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
+  kiDBNames <- c("Ki", "Min", "Max", "Fitted Kd", "Fitted Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
   
   stringValues <- curve_params[lskind %in% stringColumns,]
   if(nrow(stringValues) > 0) {
@@ -538,7 +538,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
     renderingParameters <- switch(modelFitType,
                                 "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
-                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
+                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "fittedKd", "fittedLigandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
   )
   
   namesExist <- renderingParameters$names$dbNames %in% names(parameters)
@@ -672,6 +672,8 @@ curve_fit_controller_fitData_dataTable_to_fitData <- function(serviceDataTable) 
                                                                                                                            list(list()),
                                                                                                                            TRUE,
                                                                                                                            list(list()))]
+  serviceDataTable[is.na(userFlagStatus), userFlagStatus := ""]
+  serviceDataTable[is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
   serviceDataTable[ , model.synced := FALSE]
   return(serviceDataTable)
 }
@@ -1158,130 +1160,176 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   #   api_doseResponse.experiment(simpleSettings, recordedBy="bbolt", experimentCode=experimentCode)
   return(experimentCode)
 }
-save_dose_response_data <- function(fitData, recorded_by) {
-  lstrans <- createLsTransaction()$id
-  fitData[ , dto := list(list({
-    ans <- switch(renderingHint,
-                  "4 parameter D-R" = {
-                    list(
-                      "renderingHint" =  renderingHint[[1]],
-                      "max" = reportedParameters[[1]]$max$value,
-                      "maxOperatorKind" = reportedParameters[[1]]$max$operator,
-                      "maxUncertainty" = reportedParameters[[1]]$max$stdErr,
-                      "maxUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error")),
-                      "min" = reportedParameters[[1]]$min$value,
-                      "minOperatorKind" = reportedParameters[[1]]$min$operator,
-                      "minUncertainty" = reportedParameters[[1]]$min$stdErr,
-                      "minUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error")),
-                      "ec50" = reportedParameters[[1]]$ec50$value,
-                      "ec50OperatorKind" = reportedParameters[[1]]$ec50$operator,
-                      "ec50Uncertainty" = reportedParameters[[1]]$ec50$stdErr,
-                      "ec50UncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
-                      "slope" = reportedParameters[[1]]$slope$value,
-                      "slopeOperatorKind" = reportedParameters[[1]]$slope$operator,
-                      "slopeUncertainty" = reportedParameters[[1]]$slope$stdErr,
-                      "slopeUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$slope$stdErr), NA,"standard error")),
-                      "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
-                      "analysisGroupCode" = analysisGroupCode[[1]],
-                      "batchCode" = batchCode[[1]],
-                      "category" = category[[1]],
-                      "minUnits" = points[[1]]$responseUnits[[1]],
-                      "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "ec50Units" = points[[1]]$doseUnits[[1]],
-                      "fittedMin" = fittedParameters[[1]]$min,
-                      "fittedMax" = fittedParameters[[1]]$max,
-                      "fittedEC50" = fittedParameters[[1]]$ec50,
-                      "fittedSlope" = fittedParameters[[1]]$slope,
-                      "sse" = goodnessOfFit.model[[1]]$SSE,
-                      "sst" = goodnessOfFit.model[[1]]$SST,
-                      "rsquared" = goodnessOfFit.model[[1]]$rSquared,
-                      "curveErrorsClob" = curveErrorsClob[[1]],
-                      "reportedValuesClob" = reportedValuesClob[[1]],
-                      "parameterStdErrorsClob" = parameterStdErrorsClob[[1]],
-                      "fitSettings" = simpleFitSettings[[1]],
-                      "fitSummaryClob" = fitSummaryClob[[1]],
-                      "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
-                      lsTransaction = lstrans
-                    )
-                  },
-                  "Ki Fit" = {
-                    list(
-                      "renderingHint" =  renderingHint[[1]],
-                      "max" = reportedParameters[[1]]$max$value,
-                      "maxOperatorKind" = reportedParameters[[1]]$max$operator,
-                      "maxUncertainty" = reportedParameters[[1]]$max$stdErr,
-                      "maxUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error")),
-                      "min" = reportedParameters[[1]]$min$value,
-                      "minOperatorKind" = reportedParameters[[1]]$min$operator,
-                      "minUncertainty" = reportedParameters[[1]]$min$stdErr,
-                      "minUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error")),
-                      "ki" = reportedParameters[[1]]$ki$value,
-                      "kiOperatorKind" = reportedParameters[[1]]$ec50$operator,
-                      "kiUncertainty" = reportedParameters[[1]]$ec50$stdErr,
-                      "kiUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
-                      "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
-                      "analysisGroupCode" = analysisGroupCode[[1]],
-                      "batchCode" = batchCode[[1]],
-                      "category" = category[[1]],
-                      "minUnits" = points[[1]]$responseUnits[[1]],
-                      "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "kiUnits" = points[[1]]$doseUnits[[1]],
-                      "fittedMin" = fittedParameters[[1]]$min,
-                      "fittedMax" = fittedParameters[[1]]$max,
-                      "fittedKi" = fittedParameters[[1]]$ki,
-                      "ligandConc" = fixedParameters[[1]]$ligandConc,
-                      "ligandConcUnits" = 'nM',
-                      "kd" = fixedParameters[[1]]$kd[[1]],
-                      "kdUnits" = 'nM',
-                      "sse" = goodnessOfFit.model[[1]]$SSE,
-                      "sst" = goodnessOfFit.model[[1]]$SST,
-                      "rsquared" = goodnessOfFit.model[[1]]$rSquared,
-                      "curveErrorsClob" = curveErrorsClob[[1]],
-                      "reportedValuesClob" = reportedValuesClob[[1]],
-                      "parameterStdErrorsClob" = parameterStdErrorsClob[[1]],
-                      "fitSettings" = simpleFitSettings[[1]],
-                      "fitSummaryClob" = fitSummaryClob[[1]],
-                      "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
-                      lsTransaction = lstrans
-                    )
-                  },{
-                    warning(paste0("saving not implemented for ",renderingHint))
-                  }
-    )
-    ans <- lapply(ans, function(x) {
-      if(length(x)==1 && !is.na(x) && is.numeric(x)) {
-        if(x >= 1e+125) {
-          x <- 99.99e+124
-        } else if (x <= 1e-125 && x > 0) {
-          x <- 1.0e-124
-        } else if (x >= -1e-125 && x < 0) {
-          x <- -1.0e-124
-        } else if (x <= -1e125) {
-          x <- -1.0e124          
-        }
-      }
-      return(x)      
-    })
-    ans
-  })), by = curveId]
-  fitDataSaveRequest <- toJSON(fitData$dto)
-  curveids <- unlist(lapply(fitData$dto,function(x) x$curveId))
-  url <- switch(fitData$renderingHint[[1]],
-                "4 parameter D-R" = paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit"),
-                "Ki Fit" = paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/ki")
-                )
-  response <- getURL(
-    url,
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=fitDataSaveRequest)
-  if(response != "") {
-    stop(response)
+
+create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
+  saveSession("/tmp/blah")
+  setkey(typeMap, "name")
+  names(fittedParameters) <- typeMap$ls_kind[match(gsub(" ", "", tolower(paste0("Fitted ",names(fittedParameters)))), gsub(" ", "",tolower(typeMap$ls_kind)))]
+  reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
+  publicAnalysisGroupValues <- c(reportedParameters, list('batch code' = list(value = batchCode, operator = NULL), 'curve id' = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
+  names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  tolower(typeMap$ls_kind))]
+  privateAnalysisGroupValues <- c(fittedParameters, goodnessOfFit.model, list('Rendering Hint' = renderingHint), c(list(category = category), list('algorithm flag status' = flag_algorithm)[!is.na(flag_algorithm)],  list('user flag status' = flag_user)[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(fitSettings = simpleFitSettings)))
+  privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is_null_or_na))] <- NULL
+  privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
+  
+  x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
+#   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
+#   values <- lapply(1:length(x), function(i) {
+#     kindName <- names(x)[[i]]
+#     if(class(x[[i]]$value) %in% c("numeric","integer")) {
+#         if(x[[i]]$value >= 1e+125) {
+#           x[[i]]$value <- 99.99e+124
+#         } else if (x[[i]]$value <= 1e-125 && x[[i]]$value > 0) {
+#           x[[i]]$value <- 1.0e-124
+#         } else if (x[[i]]$value >= -1e-125 && x[[i]]$value < 0) {
+#           x[[i]]$value <- -1.0e-124
+#         } else if (x[[i]]$value <= -1e125) {
+#           x[[i]]$value <- -1.0e124          
+#         }
+#       lsType <- "numericValue"
+#       field <- "numeric_value"
+#     } else {
+#       lsType <- "stringValue"
+#       field <- "string_value"
+#     }
+#     allowedTypes <- typeMap[!is.na(lsType) & ls_kind == kindName]
+#     if(!lsType %in% allowedTypes$field) {
+#       lsType <- allowedTypes[1]$lsType
+#       field <- allowedTypes[1]$field
+#       state_type <- allowedTypes[1]$state_type
+#       state_kind <- allowedTypes[1]$state_kind
+#     } else {
+#       stop("Error type not allowed")
+#     }
+#     names(x[[i]])[names(x[[i]]) == 'value'] <- lsType
+#     names(x[[i]])[names(x[[i]]) == 'stdErr'] <- "uncertainty"
+#     names(x[[i]])[names(x[[i]]) == 'operator'] <- "operatorKind"
+#     if(is.null(x[[i]]$operatorKind)) x[[i]]$operatorKind <- NULL
+#     if(is.null(x[[i]]$uncertainty)) x[[i]]$uncertainty <- NULL
+#     x[[i]][['lsType']] <- lsType
+#     x[[i]][['lsKind']] <- kindName
+#     x[[i]][['publicData']] <- public[[i]]
+#     x[[i]][['stateType']] <- state_type
+#     x[[i]][['stateKind']] <- state_kind
+#     return(x[[i]])
+#   })
+#   values <- rbindlist(values, fill = TRUE)
+#   values[ , unitKind := as.character(NA)]
+#   values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
+#   values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
+#   values[ , uncertaintyType := as.character(NA)]
+#   if(!"uncertaity" %in% names(values)) {
+#     values[ , uncertainty := as.numeric(NA)]
+#   }
+#   values[!is.na(uncertainty) == TRUE, uncertaintyType := "standard error"]
+#   values[ , recordedBy := recordedBy]
+#   values[ , lsTransaction := lsTransaction]
+#   values[ , recordedDate := as.numeric(format(Sys.time(), "%s"))*1000]
+#   values[ , id := analysisGroupId]
+  public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
+  values <- lapply(x, function(x) {
+    if(class(x$value) %in% c("numeric","integer")) {
+      names(x)[names(x) == "value"] <- "numeric"
+    } else {
+      names(x)[names(x) == "value"] <- "character"
+    }
+    return(x)
+  })
+  values <- flatten_list_to_data.table(values)
+  values[ , publicData := public]
+  setkey(values, name)
+  setkey(typeMap, ls_kind)
+  values <- values[typeMap[!is.na(lsType)], allow.cartesian = TRUE]
+  values <- values[!(field=="string_value" & is.na(character))]
+  values <- values[!(field=="numeric_value" & is.na(numeric))]
+  setnames(values, c("numeric", "character", "name", "state_kind", "state_type"), c("numericValue", "stringValue", "lsKind", "stateKind", "stateType"))
+  values[lsType == "clobValue", c("stringValue", "clobValue") := list(as.character(NA), stringValue)]
+  values[lsType == "codeValue", c("stringValue", "codeValue") := list(as.character(NA), stringValue)]
+  values[ , unitKind := as.character(NA)]
+  values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
+  values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
+  values[ , uncertaintyType := as.character(NA)]
+  if("stdErr" %in% names(values)) {
+    setnames(values, "stdErr", "uncertainty")
+  } else {
+    values[ , uncertainty := as.numeric(NA)]
   }
+  if("operator" %in% names(values)) {
+    setnames(values, "operator", "operatorKind")
+  } else {
+    values[ , operatorKind := as.character(NA)]
+  }
+  values[!is.na(uncertainty) == TRUE, uncertaintyType := "standard error"]
+  values[ , recordedBy := recordedBy]
+  values[ , lsTransaction := lsTransaction]
+  values[ , recordedDate := as.numeric(format(Sys.time(), "%s"))*1000]
+  values[ , id := analysisGroupId]
+  values[ , c("field", "i.name", "units") := NULL]
+#   agValues <- prepareTableForDD(values)
+  return(values)
+}
+
+save_dose_response_data <- function(fitData, recorded_by) {
+  myMessenger <- messenger()
+  lstrans <- createLsTransaction()$id
+  myMessenger$logger$debug("organizing parameter data for save")
+  fitData[ , analysisGroupValues := {
+    list(list(create_analysis_group_values_from_fitData(analysisGroupId = analysisGroupId,
+                                                        reportedParameters[[1]],
+                                                        fixedParameters[[1]],
+                                                        fittedParameters[[1]],
+                                                        goodnessOfFit.model[[1]],
+                                                        category[[1]],
+                                                        algorithmFlagStatus[[1]],
+                                                        userFlagStatus[[1]],
+                                                        batchCode = batchCode[[1]],
+                                                        recorded_by,
+                                                        lstrans,
+                                                        doseUnits = as.character(points[[1]][1]$doseUnits), 
+                                                        responseUnits = as.character(points[[1]][1]$responseUnits), 
+                                                        analysisGroupCode = analysisGroupCode[[1]], 
+                                                        renderingHint = renderingHint[[1]],
+                                                        reportedValuesClob = reportedValuesClob[[1]],
+                                                        fitSummaryClob = fitSummaryClob[[1]],
+                                                        parameterStdErrorsClob = parameterStdErrorsClob[[1]],
+                                                        curveErrorsClob = curveErrorsClob[[1]],
+                                                        simpleFitSettings = simpleFitSettings[[1]],
+                                                        typeMap = modelFit[[1]]$typeMap
+                                                        )
+  ))
+  }, by = curveId]
+  values <- rbindlist(fitData$analysisGroupValues, fill = TRUE)
+  setkey(values, stateType, stateKind, id)
+  agValues <- values[ , {
+    values <- copy(.SD)
+    lsValues <- unname(lapply(split(values, f = row.names(values)), function(x) {
+      drop <- x[, which(lapply(.SD, is.na)== TRUE)]
+      x <- x[ , !drop, with = FALSE]
+      as.list(x)}))
+    list(lsValues = list(lsValues), recordedBy = unique(recordedBy), lsTransaction = unique(lsTransaction), recordedDate = unique(recordedDate))
+  }, by = key(values), .SDcols = names(values)[!names(values) %in% key(values)]]
+  setkey(agValues, id)
+  agStates <- agValues[ , {
+    states <- copy(.SD)
+    setnames(states, "stateType", "lsType")
+    setnames(states, "stateKind", "lsKind")
+    lsStates <- unname(lapply(split(states, f = row.names(states)), function(x) {
+      x <- as.list(x)
+      x$lsValues <- x$lsValues[[1]]
+      return(x)}))
+    list(lsStates = list(lsStates))
+  }, by = key(agValues), .SDcols = names(agValues)[!names(agValues) %in% key(agValues)]]
+  groups <- unname(lapply(split(agStates, f = row.names(agStates)), function(x) {x <- as.list(x); x$lsStates <- x$lsStates[[1]]; return(x)}))
+  groupJSON <- jsonlite::toJSON(groups, force = TRUE,  auto_unbox = TRUE, na = c("null"))
+
+  myMessenger$logger$debug("ignoring old curve states")
+  done <- query_replace_string_with_values("update analysis_group_state set ignored='1' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
+  
+  myMessenger$logger$debug("calling service to save parameter data")
+  url <- paste0(racas::applicationSettings$client.service.persistence.fullpath, "analysisgroups", "/jsonArray")
+  response <- putURLcheckStatus(url, postfields=groupJSON, requireJSON = TRUE)
+  
+  myMessenger$logger$debug("organizing flag data for save")
   changedPoints <- rbindlist(fitData$points)[flagchanged == TRUE,]
   if(nrow(changedPoints) > 0)
   {
@@ -1314,7 +1362,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
       stop(response)
     }
   }
-  return(curveids)
+  myMessenger$logger$debug("returning after save")
+  return(values[lsKind == 'curve id']$stringValue)
 }
 get_ls_type <- function(valueType) {
   valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
@@ -1666,6 +1715,7 @@ add_clob_values_to_fit_data <- function(fitData) {
                                                        )
         parameterStdErrorsClob <- parameterStdErrors
         curveErrors <- flatten_list_to_data.table(goodnessOfFit.model[[1]])[, c("name", prettyNum("V1", digits = 4)), with = FALSE]
+        curveErrors[ name == "rSquared", name:= "R^2"]
         setkey(curveErrors, "name")
         curveErrorsClob <- data.table_to_html_table(curveErrors, 
                                                     align = paste0(rep("r",ncol(curveErrors) + 1), collapse = ""),
@@ -2187,7 +2237,7 @@ updateFitSettings.Ki <- function(fitSettings, simpleSettings) {
                                                                                               min = "<",
                                                                                               ki = ">",
                                                                                               stop(paste0("Unknown parameter:",name))),
-                                                                            value = ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value),
+                                                                            value = simpleSettingsParameter$value,
                                                                             displayName = paste0(name," threshold exceeded")
       )
       fitSettings$fixedParameters[[name]] <- NULL

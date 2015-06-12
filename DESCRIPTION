@@ -66,6 +66,7 @@ Collate:
     'updateExperimentMetadata.R'
     'utilities.R'
     'directDatabaseSave.R'
+    'entityDefinitions.R'
     'model_fit.R'
     'onLoad.R'
 

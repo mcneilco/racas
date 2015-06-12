@@ -29,7 +29,8 @@ simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
 recordedBy <- "bbolt"
 experimentCode <- "EXPT-00000441"
 modelFitType <- "4 parameter D-R"
-api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode)
+modelFit <- racas::ll4
+api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode, modelFit)
 
 #Loading fake data first
 # requires 1. that a protocol named "Target Y binding") be saved first (see \\code{\\link{api_createProtocol}})

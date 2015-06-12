@@ -4,9 +4,9 @@
 \name{ModelFit-class}
 \alias{ModelFit}
 \alias{ModelFit-class}
-\title{Title}
+\title{ModelFit}
 \description{
-Title
+ModelFit
 }
 \section{Fields}{
 

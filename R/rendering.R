@@ -340,9 +340,6 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
-    if(any(is.na(match(paramNames, names(params))))) {
-      stop("paramNames not found in names of params")
-    }
   } else {
     drawCurve <- FALSE
     drawIntercept <- NA
@@ -497,9 +494,9 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
     names(tmp) <- paramNames
     tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
-    
-    fittedColumnNames <- paste0("fitted",paramNames)
-    fittedValueColumns <- match(fittedColumnNames,tolower(names(params)))
+
+    fittedColumnNames <- tolower(gsub(" ", "", paste0("fitted",paramNames)))
+    fittedValueColumns <- match(fittedColumnNames,gsub(" ", "", tolower(names(params))))
     fittedValueColumns <- fittedValueColumns[!is.na(fittedValueColumns)]
     
     if(length(fittedValueColumns) > 0) {
