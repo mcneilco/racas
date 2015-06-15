@@ -4,7 +4,10 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   }
   getSelect <- function(table,field,alias) {
     if(length(field) > 1) {
-      select <- paste0("COALESCE(",paste0(gsub(" ","_",table),".",field, collapse = ","),") AS \"", alias,"\"")
+      select <- switch(dbType,
+                       "Postgres" = paste0("COALESCE(",paste0(gsub(" ","_",table),".",field, collapse = ","),") AS \"", alias,"\""),
+                       "Oracle" = paste0("COALESCE(",paste0("TO_CHAR(",gsub(" ","_",table),".",field,")", collapse = ","),") AS \"", alias,"\""),
+      )
     } else {
       select <- paste0(gsub(" ","_",table),".",field," AS \"", alias,"\"")
     }
