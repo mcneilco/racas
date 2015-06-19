@@ -155,6 +155,13 @@ getEntityCodesBySqlDD <- function(conn, entityType, numberOfCodes) {
 	  } else {
 	    entityCodeSql <- paste0("select nextval('lsseq_container_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 	  }
+	} else if (entityType == "ITXCONTCONT") {
+    entityPrefix <- "CITX-"
+    if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+      entityCodeSql <- paste0("select lsseq_itxcntrcntr_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
+    } else {
+      entityCodeSql <- paste0("select nextval('lsseq_itxcntrcntr_pkseq') as id from generate_series(1,", numberOfCodes, ")")
+    }
 	}
 
 	entityCodeIds <- dbGetQuery(conn, entityCodeSql)
@@ -319,9 +326,21 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 #' @param FUN function to apply repeatedly
 saveEntitiesDD <- function( conn, entityType, inputDT ){
 #entityType <- "ANALYSIS_GROUP"
+  
+  if (!"parentId" %in% names(inputDT)) {
+    inputDT[ , parentId := NA]
+  }
 
-  entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
-                                    ignored, modifiedBy, modifiedDate, recordedDate, version, deleted)])
+  if(entityType == "CONTAINER") {
+    entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
+                                      ignored, modifiedBy, modifiedDate, recordedDate, version, locationId, deleted)])
+  } else if (entityType == "ITXCONTCONT") {
+    entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
+                                      ignored, modifiedBy, modifiedDate, recordedDate, version, firstContainer, secondContainer, deleted)])
+  } else {
+    entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
+                                      ignored, modifiedBy, modifiedDate, recordedDate, version, deleted)])
+  }
 
 	entities[ ,lsTypeAndKind := paste0(lsType, "_", lsKind)]
 	entities[ is.na(id), id := getEntityIdsDD(conn, length(id))]
@@ -354,16 +373,30 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
              "ls_type", "ls_type_and_kind", "modified_by", "modified_date", 
              "recorded_by", "recorded_date", "version", "deleted"))
   
+  if (entityType == "CONTAINER") {
+    setnames(entities, 
+             c("locationId"),
+             c("location_id"))
+  } else if (entityType == "ITXCONTCONT") {
+    setnames(entities,
+            c("firstContainer"    , "secondContainer"),
+            c("first_container_id", "second_container_id"))
+  }
+  
   entityTable <- switch(entityType,
                         "ANALYSIS_GROUP" = "ANALYSIS_GROUP",
                         "TREATMENT_GROUP" = "TREATMENT_GROUP",
                         "SUBJECT" = "SUBJECT",
+                        "CONTAINER" = "CONTAINER",
+                        "ITXCONTCONT" = "ITX_CONTAINER_CONTAINER",
                         stop("Unknown Entity Type"))
   
   joinTable <- switch(entityType,
                       "ANALYSIS_GROUP" = "EXPERIMENT_ANALYSISGROUP",
                       "TREATMENT_GROUP" = "ANALYSISGROUP_TREATMENTGROUP",
                       "SUBJECT" = "TREATMENTGROUP_SUBJECT",
+                      "CONTAINER" = NA,
+                      "ITXCONTCONT" = NA,
                       stop("Unknown Entity Type"))
   
 	if (!grepl("Oracle", applicationSettings$server.database.driver)) {
@@ -373,6 +406,10 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
   
   ### Save entity table
   dbWriteTableMatchCol(conn, entityTable, entities, append = T, row.names=FALSE, col.names=FALSE)
+  
+  if (is.na(joinTable)) {
+    return(inputDT)
+  }
   
   ### Save join table
 	if (entityType == "ANALYSIS_GROUP") {
@@ -431,6 +468,9 @@ saveStatesDD <- function( conn, entityType, inputStatesDT ){
 	} else if (entityType == "SUBJECT"){
 		stateTable <- "SUBJECT_STATE"
 		setnames(states, "entityId", "subject_id")
+	} else if (entityType == "CONTAINER") {
+    stateTable <- "CONTAINER_STATE"
+    setnames(states, "entityId", "container_id")
 	}
   
   if (!grepl("Oracle", applicationSettings$server.database.driver)) {
@@ -526,6 +566,9 @@ saveValuesDD <- function( conn, entityType, inputDT ){
 	} else if (entityType == "SUBJECT") {
 		valueTable <- "SUBJECT_VALUE"
 		setnames(values, "stateId", "subject_state_id")
+	} else if (entityType == "CONTAINER") {
+    valueTable <- "CONTAINER_VALUE"
+    setnames(values, "stateId", "container_state_id")
 	}
 	
 	if (!grepl("Oracle", applicationSettings$server.database.driver)) {
@@ -538,6 +581,51 @@ saveValuesDD <- function( conn, entityType, inputDT ){
 
 }
 
+#' @rdname saveEntitiesDD
+saveLabelsDD <- function( conn, entityType, inputLabelsDT ){
+  labelColumns <- c("labelType", "labelKind", "labelValue", "imageFile", "physicallyLabled", "preferred",
+                    "lsTransaction", "id", "recordedBy", "ignored", 
+                    "modifiedDate", "recordedDate", "version", "deleted")
+  labels <- unique(inputLabelsDT[ , labelColumns, with=FALSE])
+  setkey(labels, "id")
+  numberOfIds <- nrow(labels)
+  labels[ , labelId := getLabelIdsDD(conn, numberOfIds)]
+  labels[ , lsTypeAndKind := paste0(labelType, "_", labelKind)]
+  if("labelId" %in% names(inputLabelsDT)) {
+    inputLabelsDT[ , labelId := NULL ]
+  }
+  setnames(labels, 
+           c("labelId", "ignored", "labelKind", "lsTransaction", "labelType", 
+             "lsTypeAndKind", "modifiedDate", "recordedBy", 
+             "recordedDate", "version", "id", "deleted", 
+             "imageFile", "labelValue", "physicallyLabled", "preferred"),
+           c("id", "ignored", "ls_kind", "ls_transaction", "ls_type", 
+             "ls_type_and_kind", "modified_date", "recorded_by", 
+             "recorded_date", "version", "entityId", "deleted", 
+             "image_file", "label_text", "physically_labled", "preferred"))
+  
+  if (entityType == "ANALYSIS_GROUP"){
+    labelTable <- "ANALYSIS_GROUP_LABEL"
+    setnames(labels, "entityId", "analysis_group_id")
+  } else if (entityType == "TREATMENT_GROUP"){
+    labelTable <- "TREATMENT_GROUP_LABEL"
+    setnames(labels, "entityId", "treatment_group_id")
+  } else if (entityType == "SUBJECT"){
+    labelTable <- "SUBJECT_LABEL"
+    setnames(labels, "entityId", "subject_id")
+  } else if (entityType == "CONTAINER") {
+    labelTable <- "CONTAINER_LABEL"
+    setnames(labels, "entityId", "container_id")
+  }
+  
+  if (!grepl("Oracle", applicationSettings$server.database.driver)) {
+    labelTable <- tolower(labelTable)
+  }
+  
+  dbWriteTableMatchCol(conn, labelTable, labels, append = T, row.names=FALSE, col.names=FALSE)
+  
+  return(inputLabelsDT)
+}
 
 #' Save from tsv
 #' 
@@ -707,6 +795,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
 #' Prepares a data.frame or data.table for saving with
 #' \code{\link{saveAgDataDD}} or similar. Coerces some columns to the correct
 #' class and fills missing columns with NA.
+#' Date class is not currently being validated
 #' 
 #' @param entityData a data.frame or data.table, see source for columns.
 #' 
@@ -722,9 +811,9 @@ prepareTableForDD <- function(entityData) {
   
   entityDataFormatted <- data.table(
     tempValueId = NA_integer_,
-    valueType = entityData$valueType,
-    valueKind = entityData$valueKind,
-    numericValue = entityData$numericValue,
+    valueType = naIfNull(entityData$valueType),
+    valueKind = naIfNull(entityData$valueKind),
+    numericValue = naIfNull(entityData$numericValue),
     sigFigs = naIfNull(entityData$sigFigs),
     uncertainty = naIfNull(entityData$uncertainty),
     numberOfReplicates = naIfNull(entityData$numberOfReplicates),
@@ -744,11 +833,11 @@ prepareTableForDD <- function(entityData) {
     unitKind = naIfNull(entityData$unitKind),
     operatorType = NA_character_,
     operatorKind = naIfNull(entityData$operatorKind),
-    publicData = entityData$publicData,
+    publicData = naIfNull(entityData$publicData),
     comments = naIfNull(entityData$comments),
-    stateType = entityData$stateType,
-    stateKind = entityData$stateKind,
-    tempStateId = entityData$tempStateId,
+    stateType = naIfNull(entityData$stateType),
+    stateKind = naIfNull(entityData$stateKind),
+    tempStateId = naIfNull(entityData$tempStateId),
     stateId = NA_integer_,
     id = NA_integer_,
     tempId = entityData$tempId,
@@ -758,7 +847,16 @@ prepareTableForDD <- function(entityData) {
     recordedBy = naIfNull(entityData$recordedBy),
     codeName = naIfNull(entityData$codeName, NA_character_),
     lsType = entityData$lsType,
-    lsKind = entityData$lsKind
+    lsKind = entityData$lsKind,
+    locationId = naIfNull(entityData$locationId),
+    firstContainer = naIfNull(entityData$firstContainer),
+    secondContainer = naIfNull(entityData$secondContainer),
+    labelType = naIfNull(entityData$labelType, NA_character_),
+    labelKind = naIfNull(entityData$labelKind, NA_character_),
+    labelValue = naIfNull(entityData$labelValue, NA_character_),
+    imageFile = naIfNull(entityData$imageFile, NA_character_),
+    physicallyLabled = naIfNull(entityData$imageFile, NA_integer_),
+    preferred = naIfNull(entityData$preferred, NA_integer_)
   )
   return(entityDataFormatted)
 }
