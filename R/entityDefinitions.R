@@ -13,6 +13,24 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
     }
     return(select)
   }
+  getWhere <- function(table) {
+    where <- lapply(table$where, function(x) {
+      if(class(x) == "logical") {
+        if(x) {
+          x <- switch(dbType,
+                      "Postgres" = "1",
+                      "Oracle" = 1)
+        } else {
+          x <- switch(dbType,
+                      "Postgres" = "0",
+                      "Oracle" = 0)          
+        }
+      }
+      return(sqliz(x))
+    })
+    where <- paste0(table$name,".",names(where),"=",(where))
+    return(where)
+  }
   getSelects <- function(x) {
     selects <- rbindlist(do.call(c, lapply(x, function(x) lapply(x[["select"]], function(x,parentName) {x$parentName <- parentName;x}, parentName = x$name))), fill = TRUE)
     if(nrow(selects) != 0) {
@@ -56,12 +74,27 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   
   
   if(!is.null(groups$where)) {
-    groupWhere <- paste0(groups$name,".",names(groups$where),"=",groups$where)
+    groupWhere <- getWhere(groups)
   } else {
     groupWhere <- ""
   }
   groupWhere <- groupWhere[groupWhere!=""]
   if(length(groupWhere) != 0 && groupWhere != "")  {
+    logicals <- lapply(groups$where, function(x) {
+      if(class(x) == "logical") {
+        if(x) {
+          x <- switch(dbType,
+                      "Postgres" = "'1'",
+                      "Oracle" = "true")
+        } else {
+          x <- switch(dbType,
+                      "Postgres" = "'0'",
+                      "Oracle" = "false")          
+        }
+      } else {
+        return(x)
+      }
+    })
     groupWhere <- paste0(groupWhere, collapse = " and\n")
   }
   
@@ -76,7 +109,7 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   
   stateWhere <- unlist(lapply(states, function(x) {
     if(!is.null(x$where)) {
-      return(paste0(x$name,".",names(x$where),"=",x$where))
+      return(getWhere(x))
     } else {
       return("")
     }
@@ -91,7 +124,7 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
 
   valueWhere <- unlist(lapply(values, function(x) {
     if(!is.null(x$where)) {
-      return(paste0(x$name,".",names(x$where),"=",x$where))
+      return(getWhere(x))
     } else {
       return("")
     }
@@ -119,73 +152,3 @@ read_json_file <- function(jsonFile) {
   jsonList <- fromJSON(jsonCharacter)
   return(jsonList)
 }
-
-get_fit_data_curve_id2 <- function(curveids, full_object = TRUE, ...) {
-  renderingHint <- get_curve_id_rendering_hint(curveids, ...)
-  modelFit <- racas::get_model_fit_from_type_code(renderingHint)
-  qu <- modelFit$curveid_query
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...)))
-  setkey(fitData,"curveId")
-  if(full_object) {
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ , flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), .SDcols = 1:ncol(rawData), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  return(fitData)
-}
-
-get_curve_id_state_id <- function(curveid, ...) {
-  qu <- paste0("SELECT analysis_state_id
-  FROM analysis_group_value agv
-  INNER JOIN analysis_group_state ags
-  ON agv.analysis_state_id=ags.id
-  WHERE agv.ls_type       = 'stringValue'
-  AND agv.ls_kind         = 'curve id'
-  AND agv.string_value = ",sqliz(curveid),"
-  AND agv.ignored = '0'
-  AND ags.ignored = '0'
-  AND ags.ignored = '0'
-  AND ags.ls_type = 'data'
-  AND ags.ls_kind = 'dose response'")
-  query(qu, ...)[[1]]
-}
-get_curve_id_rendering_hint <- function(curveid, ...) {
-  state_id <- get_curve_id_state_id(curveid, ...)
-  qu <- paste0("select string_value from analysis_group_value where ls_kind = 'Rendering Hint' and analysis_state_id = ", state_id)
-  query(qu, ...)[[1]]
-}
-get_fit_data_experiment_code2 <- function(experimentCode, modelFitType, full_object = FALSE, modelFit,...) {
-  myMessenger <- messenger()
-  myMessenger$logger$debug("getting fitData2")
-  qu <- modelFit$experiment_query
-  queryResults <- rbindlist(query_replace_string_with_values(qu, "REPLACEME", experimentCode, ...))
-  if(nrow(queryResults) == 0) {
-    msg <- "no experiment results found"
-    myMessenger$logger$error(msg)
-    stop(msg)
-  }
-  myMessenger$logger$debug("converting service return to fit_data object") 
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(queryResults)
-  #Treatmeng Groups and Subject Groups
-  setkey(fitData, "curveId")
-  if(full_object) {
-    myMessenger$logger$debug("getting rawData")
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ ,flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  myMessenger$logger$debug(paste0("returning with ", nrow(fitData), " curves"))
-  return(fitData)
-}
-# conn <- getDatabaseConnection()
-# fitData <- get_fit_data_curve_id2(curveids, full_object = TRUE, query = qu, conn = conn)
-# 
-# system.time(get_fit_data_curve_id(curveids))

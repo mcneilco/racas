@@ -71,7 +71,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
-  myMessenger$capture_output(fitData <- get_fit_data_experiment_code2(experimentCode, modelFitType, full_object = TRUE, modelFit = modelFit))
+  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE, modelFit = modelFit))
   if(myMessenger$hasErrors()) {
     return()
   }
@@ -139,7 +139,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   modelFit <- get_model_fit_from_type_code(modelFitType)
   
   myMessenger$logger$debug(paste0("getting fit data for ",entityID))
-  fitData <- get_fit_data_experiment_code2(entityID, modelFitType, full_object = FALSE, modelFit = modelFit)
+  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE, modelFit = modelFit)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting renderingHint saved parameter"))
@@ -165,7 +165,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
 }
 
 api_doseResponse_update_flag <- function(POST, modelFit) {
-  fitData <- get_fit_data_curve_id2(POST$curveid)
+  fitData <- get_fit_data_curve_id(POST$curveid)
   simpleFitSettings <- fromJSON(fitData$fitSettings)
   #fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = POST$curveAttributes$renderingHint)
   fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, simpleFitSettings, modelFit$simple_to_advanced_fittings_function)
@@ -174,7 +174,7 @@ api_doseResponse_update_flag <- function(POST, modelFit) {
   deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedCurveID <- save_dose_response_data(fitData, recorded_by = POST$user)
-  fitData <- get_fit_data_curve_id2(savedCurveID, full_object = TRUE)
+  fitData <- get_fit_data_curve_id(savedCurveID, full_object = TRUE)
   
   fitData[ , curves := list(list(list(curveid = curveId[[1]], 
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
@@ -194,7 +194,7 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
     stop(msg)
   } else {
     if(!is.null(GET$id)) {
-      fitData <- get_fit_data_curve_id2(GET$id, full_object = TRUE)
+      fitData <- get_fit_data_curve_id(GET$id, full_object = TRUE)
     } else {
       fitData <- get_fit_data_analysis_group_id(GET$analysisgroupid, full_object = TRUE)
     }

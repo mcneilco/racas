@@ -700,54 +700,12 @@ curve_fit_controller_rawData_response_to_data_table <- function(curveFitControll
   setkey(rawData, "curveId")
   return(rawData)
 }
-get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, ...) {
-  myMessenger <- messenger()
-  myMessenger$logger$debug("getting fitData")
-  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByExperimentIdOrCodeName(experimentCode, modelFitType)
-  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse, modelFitType)
-  if(nrow(serviceFitData) == 0) {
-    msg <- "no experiment results found"
-    myMessenger$logger$error(msg)
-    stop(msg)
-  }
-  myMessenger$logger$debug("converting service return to fit_data object") 
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(serviceFitData)
-  #Treatmeng Groups and Subject Groups
-  if(full_object) {
-    myMessenger$logger$debug("getting rawData")
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ ,flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  myMessenger$logger$debug(paste0("returning with ", nrow(fitData), " curves"))
-  return(fitData)
-}
 get_analysis_group_id_from_curve_id <- function(curveID) {
   analyisGroupIDOfCurveID <- query(paste0("select ags.analysis_group_id 
                                           from analysis_group_state ags 
                                           join analysis_group_value agv 
                                           on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))
   return(analyisGroupIDOfCurveID)
-}
-get_fit_data_curve_id <- function(curveids, full_object = TRUE) {
-  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByCurveId(curveids)
-  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse)
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(serviceFitData)
-  #Treatmeng Groups and Subject Groups
-  if(full_object) {
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ , flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), .SDcols = 1:ncol(rawData), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  return(fitData)
 }
 get_cached_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
   parameters <- get_cached_curve_fit_parameters(curveids, ...)
@@ -866,7 +824,7 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
   return(list(inactive = inactive, insufficientRange = insufficientRange, potent = potent))  
 }
 
-get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
+get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
   fixedParams <- data.frame(matrix(NA,1,length(paramNames)))
   names(fixedParams) <- paramNames
   fixed[unlist(lapply(fixed, is.null))] <- NULL
@@ -881,7 +839,7 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
   tryCatch({
     options(show.error.messages=FALSE)
     on.exit(options(show.error.messages=TRUE))
-    drcObj <- drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drmc(errorm=TRUE))
+    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)    
@@ -2204,3 +2162,70 @@ updateFitSettings.Ki <- function(fitSettings, simpleSettings) {
   
   return(fitSettings)
 }
+
+get_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
+  renderingHint <- get_curve_id_rendering_hint(curveids[[1]], ...)
+  modelFit <- racas::get_model_fit_from_type_code(renderingHint)
+  qu <- modelFit$curveid_query
+  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...)))
+  setkey(fitData,"curveId")
+  if(full_object) {
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
+    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
+    rawData[ ,tempFlagStatus := ""]
+    rawData[ , flagchanged := FALSE]
+    rawData <- rawData[ , list(list(.SD)), .SDcols = 1:ncol(rawData), keyby = "curveId"]
+    setnames(rawData, "V1", "points")
+    fitData <- fitData[rawData]
+  }
+  return(fitData)
+}
+
+get_curve_id_state_id <- function(curveid, ...) {
+  qu <- paste0("SELECT analysis_state_id
+               FROM analysis_group_value agv
+               INNER JOIN analysis_group_state ags
+               ON agv.analysis_state_id=ags.id
+               WHERE agv.ls_type       = 'stringValue'
+               AND agv.ls_kind         = 'curve id'
+               AND agv.string_value = ",sqliz(curveid),"
+               AND agv.ignored = '0'
+               AND ags.ignored = '0'
+               AND ags.ignored = '0'
+               AND ags.ls_type = 'data'
+               AND ags.ls_kind = 'dose response'")
+  query(qu, ...)[[1]]
+}
+get_curve_id_rendering_hint <- function(curveid, ...) {
+  state_id <- get_curve_id_state_id(curveid, ...)
+  qu <- paste0("select string_value from analysis_group_value where ls_kind = 'Rendering Hint' and analysis_state_id = ", state_id)
+  query(qu, ...)[[1]]
+}
+get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, modelFit,...) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("getting fitData2")
+  qu <- modelFit$experiment_query
+  queryResults <- rbindlist(query_replace_string_with_values(qu, "REPLACEME", experimentCode, ...))
+  if(nrow(queryResults) == 0) {
+    msg <- "no experiment results found"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  }
+  myMessenger$logger$debug("converting service return to fit_data object") 
+  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(queryResults)
+  #Treatmeng Groups and Subject Groups
+  setkey(fitData, "curveId")
+  if(full_object) {
+    myMessenger$logger$debug("getting rawData")
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
+    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
+    rawData[ ,tempFlagStatus := ""]
+    rawData[ ,flagchanged := FALSE]
+    rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
+    setnames(rawData, "V1", "points")
+    fitData <- fitData[rawData]
+  }
+  myMessenger$logger$debug(paste0("returning with ", nrow(fitData), " curves"))
+  return(fitData)
+}
+
