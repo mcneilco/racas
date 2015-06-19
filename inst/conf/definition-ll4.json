@@ -184,6 +184,10 @@
                   "field": "string_value"
                 },
                 {
+                  "name": "slopeUnits",
+                  "field": "unit_kind"
+                },
+                {
                   "name": "slopeUncertainty",
                   "field": "uncertainty"
                 },
