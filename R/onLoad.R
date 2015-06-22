@@ -51,6 +51,11 @@
   racasMessenger$logger <- racasLogger
   assignInNamespace("racasMessenger",racasMessenger, ns="racas")
 
+  if(is.null(applicationSettings$server.database.r.driver)) {
+    dbType <- "Postgres"
+  } else {
+    dbType <- getDBType(applicationSettings$server.database.r.driver)
+  }
   queryDefinition <- read_json_file(system.file("conf", "definition-ll4.json", package = "racas"))
   curveQueryDefinition <- queryDefinition
   experimentQueryDefinition <- queryDefinition
@@ -66,7 +71,6 @@
   ll4 <- ModelFit$new(drc_function = drc::LL.4, 
                       paramNames = c("slope", "min", "max", "ec50"),
                       categorization_function = categorize.LL4,
-                      get_reported_parameters = get_reported_parameters.LL4,
                       apply_limits = apply_limits.LL4,
                       default_fit_settings = get_default_fit_settings("4 parameter D-R"),
                       simple_to_advanced_fittings_function = updateFitSettings.LL4,
@@ -74,8 +78,8 @@
                       sortOptions = sortOptions.LL4,
                       get_curve_attributes = get_curve_attributes.LL4,
                       get_saved_fitted_parameters = get_saved_fitted_parameters.LL4,
-                      curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = getDBType(applicationSettings$server.database.r.driver)),
-                      experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = getDBType(applicationSettings$server.database.r.driver)),
+                      curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
+                      experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
                       typeMap = typeMap
   )
   assignInNamespace("ll4",ll4, ns="racas")
@@ -103,8 +107,8 @@
                         sortOptions = sortOptions.ki,
                         get_curve_attributes = get_curve_attributes.ki,
                         get_saved_fitted_parameters = get_saved_fitted_parameters.ki,
-                        curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = getDBType(applicationSettings$server.database.r.driver)),
-                        experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = getDBType(applicationSettings$server.database.r.driver)),
+                        curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
+                        experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
                         typeMap = typeMap
   )
   assignInNamespace("kifit",kifit, ns="racas")
