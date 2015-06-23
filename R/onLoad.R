@@ -71,6 +71,7 @@
   ll4 <- ModelFit$new(drc_function = drc::LL.4, 
                       paramNames = c("slope", "min", "max", "ec50"),
                       categorization_function = categorize.LL4,
+                      get_reported_parameters = get_reported_parameters.LL4,
                       apply_limits = apply_limits.LL4,
                       default_fit_settings = get_default_fit_settings("4 parameter D-R"),
                       simple_to_advanced_fittings_function = updateFitSettings.LL4,
