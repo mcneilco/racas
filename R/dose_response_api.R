@@ -273,6 +273,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     plotData$curve <- NULL
   }
   return(toJSON(list(id = curveid,
+                     compoundCode = fitData[1]$batchCode,
                      curveid = curveid,
                      reportedValues = reportedValues,
                      fitSummary = fitSummary,

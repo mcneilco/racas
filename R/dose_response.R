@@ -1575,7 +1575,6 @@ add_clob_values_to_fit_data <- function(fitData) {
             value
           }}]
         reportedValues <- reportedValues[ , c("name", "value", "units"), with = FALSE]
-        reportedValues <- rbind(data.table(name = "Batch Code", value = batchCode, units = ""), reportedValues)
         reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value", "units"), with = FALSE], 
                                                        include.rownames = FALSE, 
                                                        comment = FALSE, 
