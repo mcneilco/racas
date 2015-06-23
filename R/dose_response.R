@@ -1674,7 +1674,7 @@ update_point_flags <- function(pts, updateFlags) {
   
   pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
   pts[ , flagchanged :=  {
-        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
+        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (preprocessFlagCause == "" | preprocessFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
         (!identical(userFlagStatus,userFlagStatus.y) |
         !identical(userFlagObservation,userFlagObservation.y) | 
         !identical(userFlagCause,userFlagCause.y) | 
