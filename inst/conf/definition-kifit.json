@@ -9,7 +9,7 @@
     {
       "name": "ag",
       "where": {
-        "ignored": "'0'"
+        "ignored": false
       },
       "select": [
         {
@@ -27,7 +27,7 @@
           "ls_type": "data",
           "ls_kind": "dose response",
           "where": {
-            "ignored": "'0'"
+            "ignored": false
           },
           "select": [
             {
@@ -376,7 +376,7 @@
           "ls_type": "data",
           "ls_kind": "results",
           "where": {
-            "ignored": "'0'"
+            "ignored": false
           },
           "select": [
             {
