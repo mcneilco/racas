@@ -19,6 +19,9 @@ a list of pairs of requested IDs and preferred IDs. On error, empty list
 \description{
 Entered batch codes (ids) are checked against a preferred id service
 }
+\details{
+DEPRECATED: use \code{\link{getPreferredId2}} with \code{entityType="compound"} and \code{entityKind="batch name"}.
+}
 \keyword{batchCode,}
 \keyword{preferred}
 
