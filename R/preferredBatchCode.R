@@ -86,13 +86,14 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
 #' @param preferredIdService the url of the preferred id service. Defaults to
 #'   \code{paste0(racas::applicationSettings$server.nodeapi.path,
 #'   "/api/entitymeta/preferredCodes")}
+#' @param testMode unused testing tool
 #' @return a data.frame with names \code{c("Requested.Name", "Preferred.Code")}
 #' @details Gets preferred id's for a range for inputs. For compound/batch name
 #'   requests, it will use the relevant batch code check. For lsThings, it
 #'   checks those entities for their preferred codes.
 #' @keywords batchCode, preferred
 #' @export
-getPreferredId2 <- function (entityIds, entityType, entityKind, preferredIdService = NULL) {
+getPreferredId2 <- function (entityIds, entityType, entityKind, testMode=FALSE, preferredIdService = NULL) {
   # Put the entityIds in the correct format
   if (is.null(preferredIdService)) {
     preferredIdService <- paste0(racas::applicationSettings$server.nodeapi.path, 

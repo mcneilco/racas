@@ -4,12 +4,15 @@
 \alias{getPreferredId2}
 \title{Gets preferred ids}
 \usage{
-getPreferredId2(entityIds, entityType, entityKind, preferredIdService = NULL)
+getPreferredId2(entityIds, entityType, entityKind, testMode = FALSE,
+  preferredIdService = NULL)
 }
 \arguments{
 \item{entityType}{the type of the id's, e.g. "compound"}
 
 \item{entityKind}{the kind of the id's, e.g. "batch name"}
+
+\item{testMode}{unused testing tool}
 
 \item{preferredIdService}{the url of the preferred id service. Defaults to
 \code{paste0(racas::applicationSettings$server.nodeapi.path,
