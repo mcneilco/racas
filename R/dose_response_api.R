@@ -18,7 +18,8 @@
 #' recordedBy <- "bbolt"
 #' experimentCode <- "EXPT-00000441"
 #' modelFitType <- "4 parameter D-R"
-#' api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode)
+#' modelFit <- racas::ll4
+#' api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode, modelFit)
 #' 
 #' #Loading fake data first
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
@@ -70,7 +71,7 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
-  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE))
+  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE, modelFit = modelFit))
   if(myMessenger$hasErrors()) {
     return()
   }
@@ -138,7 +139,7 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   modelFit <- get_model_fit_from_type_code(modelFitType)
   
   myMessenger$logger$debug(paste0("getting fit data for ",entityID))
-  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
+  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE, modelFit = modelFit)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting renderingHint saved parameter"))
@@ -272,6 +273,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     plotData$curve <- NULL
   }
   return(toJSON(list(id = curveid,
+                     compoundCode = fitData[1]$batchCode,
                      curveid = curveid,
                      reportedValues = reportedValues,
                      fitSummary = fitSummary,
@@ -413,11 +415,11 @@ get_saved_fitted_parameters.LL4 <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
 }
 get_saved_fitted_parameters.ki <- function(fitData, overRideMaxMin = NA) {
-  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$ligandConc, kd = fitData[1]$kd)
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
 }
 get_plot_data_curve.LL4 <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
 }
 get_plot_data_curve.ki <- function(fitData, overRideMaxMin = NA) {
-  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$ligandConc, kd = fitData[1]$kd)
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
 }

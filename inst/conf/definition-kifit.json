@@ -1,0 +1,403 @@
+{
+  "entryPoint": {
+    "analysis_group": "ag",
+    "analysis_group_state": "ags1",
+    "analysis_group_value": "curveId",
+    "field": "string_value"
+  },
+  "analysis_group": [
+    {
+      "name": "ag",
+      "where": {
+        "ignored": false
+      },
+      "select": [
+        {
+          "name": "analysisGroupCode",
+          "field": "code_name"
+        },
+        {
+          "name": "analysisGroupId",
+          "field": "id"
+        }
+      ],
+      "analysis_group_state": [
+        {
+          "name": "ags1",
+          "ls_type": "data",
+          "ls_kind": "dose response",
+          "where": {
+            "ignored": false
+          },
+          "select": [
+            {
+              "name": "analysisStateId_1",
+              "field": "id"
+            }
+          ],
+          "analysis_group_value": [
+            {
+              "name": "curveId",
+              "ls_kind": "curve id",
+              "select": [
+                {
+                  "name": "curveId",
+                  "field": "string_value"
+                },
+                {
+                  "name": "recordedBy",
+                  "field": "recorded_by"
+                },
+                {
+                  "name": "recordedDate",
+                  "field": "recorded_date"
+                },
+                {
+                  "name": "lsTransaction",
+                  "field": "ls_transaction"
+                }
+              ]
+            },
+            {
+              "name": "category",
+              "ls_kind": "category",
+              "select": [
+                {
+                  "name": "category",
+                  "field": "string_value"
+                }
+              ]
+            },
+            {
+              "name": "renderingHint",
+              "ls_kind": "Rendering Hint",
+              "select": [
+                {
+                  "name": "renderingHint",
+                  "field": "string_value"
+                }
+              ]
+            },
+            {
+              "name": "min",
+              "ls_kind": "Min",
+              "select": [
+                {
+                  "name": "min",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "min",
+                  "field": "string_value"
+                },
+                {
+                  "name": "minUnits",
+                  "field": "unit_kind",
+                  "units": "response"
+                },
+                {
+                  "name": "minUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "minUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "minOperatorKind",
+                  "field": "operator_kind"
+                }
+              ]
+            },
+            {
+              "name": "max",
+              "ls_kind": "Max",
+              "select": [
+                {
+                  "name": "max",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "max",
+                  "field": "string_value"
+                },
+                {
+                  "name": "maxUnits",
+                  "field": "unit_kind",
+                  "units": "response"
+                },
+                {
+                  "name": "maxUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "maxUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "maxOperatorKind",
+                  "field": "operator_kind"
+                }
+              ]
+            },
+            {
+              "name": "ki",
+              "ls_kind": "Ki",
+              "select": [
+                {
+                  "name": "ki",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "ki",
+                  "field": "string_value"
+                },
+                {
+                  "name": "kiUnits",
+                  "field": "unit_kind",
+                  "units": "dose"
+                },
+                {
+                  "name": "kiUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "kiUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "ec50OperatorKind",
+                  "field": "operator_kind"
+                }
+              ]
+            },
+            {
+              "name": "fittedLigandConc",
+              "ls_kind": "Fitted Ligand Conc",
+              "select": [
+                {
+                  "name": "fittedLigandConc",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedLigandConcUnits",
+                  "field": "unit_kind",
+                  "units": "nM"
+                }
+              ]
+            },
+            {
+              "name": "fittedKd",
+              "ls_kind": "Fitted Kd",
+              "select": [
+                {
+                  "name": "fittedKd",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedKdUnits",
+                  "field": "unit_kind",
+                  "units": "nM"
+                }
+              ]
+            },
+            {
+              "name": "fittedMin",
+              "ls_kind": "Fitted Min",
+              "select": [
+                {
+                  "name": "fittedMin",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedMinUnits",
+                  "field": "unit_kind",
+                  "units": "response"
+                },
+                {
+                  "name": "fittedMinUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "fittedMinUncertaintyType",
+                  "field": "uncertainty_type"
+                }
+              ]
+            },
+            {
+              "name": "fittedMax",
+              "ls_kind": "Fitted Max",
+              "select": [
+                {
+                  "name": "fittedMax",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedMaxUnits",
+                  "field": "unit_kind",
+                  "units": "response"
+                },
+                {
+                  "name": "fittedMaxUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "fittedMaxUncertaintyType",
+                  "field": "uncertainty_type"
+                }
+              ]
+            },
+            {
+              "name": "fittedKi",
+              "ls_kind": "Fitted Ki",
+              "select": [
+                {
+                  "name": "fittedKi",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedKiUnits",
+                  "field": "unit_kind",
+                  "units": "dose"
+                },
+                {
+                  "name": "fittedKiUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "fittedKiUncertaintyType",
+                  "field": "uncertainty_type"
+                }
+              ]
+            },{
+              "name": "sse",
+              "ls_kind": "SSE",
+              "select": [
+                {
+                  "name": "sse",
+                  "field": "numeric_value"
+                }
+              ]
+            },
+            {
+              "name": "sst",
+              "ls_kind": "SST",
+              "select": [
+                {
+                  "name": "sst",
+                  "field": "numeric_value"
+                }
+              ]
+            },
+            {
+              "name": "rsquared",
+              "ls_kind": "rSquared",
+              "select": [
+                {
+                  "name": "rSquared",
+                  "field": "numeric_value"
+                }
+              ]
+            },
+            {
+              "name": "curveErrorsClob",
+              "ls_kind": "curveErrorsClob",
+              "select": [
+                {
+                  "name": "curveErrorsClob",
+                  "field": "clob_value"
+                }
+              ]
+            },
+            {
+              "name": "reportedValuesClob",
+              "ls_kind": "reportedValuesClob",
+              "select": [
+                {
+                  "name": "reportedValuesClob",
+                  "field": "clob_value"
+                }
+              ]
+            },
+            {
+              "name": "parameterStdErrorsClob",
+              "ls_kind": "parameterStdErrorsClob",
+              "select": [
+                {
+                  "name": "parameterStdErrorsClob",
+                  "field": "clob_value"
+                }
+              ]
+            },
+            {
+              "name": "fitSettings",
+              "ls_kind": "fitSettings",
+              "select": [
+                {
+                  "name": "fitSettings",
+                  "field": "clob_value"
+                }
+              ]
+            },
+            {
+              "name": "fitSummaryClob",
+              "ls_kind": "fitSummaryClob",
+              "select": [
+                {
+                  "name": "fitSummaryClob",
+                  "field": "clob_value"
+                }
+              ]
+            },
+            {
+              "name": "userFlagStatus",
+              "ls_kind": "user flag status",
+              "select": [
+                {
+                  "name": "userFlagStatus",
+                  "field": "code_value"
+                }
+              ]
+            },
+            {
+              "name": "algorithmFlagStatus",
+              "ls_kind": "algorithm flag status",
+              "select": [
+                {
+                  "name": "algorithmFlagStatus",
+                  "field": "code_value"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ags2",
+          "ls_type": "data",
+          "ls_kind": "results",
+          "where": {
+            "ignored": false
+          },
+          "select": [
+            {
+              "name": "analysisStateId_2",
+              "field": "id"
+            }
+          ],
+          "analysis_group_value": [
+            {
+              "name": "batchCode",
+              "ls_kind": "batch code",
+              "select": [
+                {
+                  "name": "batchCode",
+                  "field": "code_value"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

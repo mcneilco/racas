@@ -9,7 +9,7 @@ tsv_url_to_data_table(url, type = c("simple", "complex"), ...)
 \arguments{
 \item{url}{a url encoded string that calls a service that returns a tsv}
 
-\item{type}{simple (uses data.table's fread which is fast but can't handle embedded html or \t values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)}
+\item{type}{simple (uses data.table's fread which is fast but can't handle embedded html or tab seperated values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)}
 }
 \value{
 a data.table result

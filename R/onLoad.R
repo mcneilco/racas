@@ -1,5 +1,4 @@
 .onLoad <- function(libname, pkgname) {
-  library("methods") 
   appConfName <- paste0(applicationSettings$appName,"_CONFIG")
   appHomeName <- paste0(applicationSettings$appName,"_HOME")
   relativeToAppHome <- file.path(normalizePath(file.path(libname,"..")))
@@ -52,6 +51,77 @@
   racasMessenger$logger <- racasLogger
   assignInNamespace("racasMessenger",racasMessenger, ns="racas")
 
+  if(is.null(applicationSettings$server.database.r.driver)) {
+    dbType <- "Postgres"
+  } else {
+    dbType <- getDBType(applicationSettings$server.database.r.driver)
+  }
+  queryDefinition <- read_json_file(system.file("conf", "definition-ll4.json", package = "racas"))
+  curveQueryDefinition <- queryDefinition
+  experimentQueryDefinition <- queryDefinition
+  curveQueryDefinition$entryPoint <- list(analysis_group = "ag", analysis_group_state = "ags1",analysis_group_value = "curveId", field = "string_value")
+  experimentQueryDefinition$entryPoint <- list(experiment = "e", field = "code_name")
+  states <- Reduce(function(x,y) rbind(x,y, fill = TRUE, use.names = TRUE), lapply(queryDefinition$analysis_group[[1]]$analysis_group_state, as.data.table))
+  values <- flatten_list_in_data_table(states, "analysis_group_value", c("ls_type", "ls_kind"), c("state_type", "state_kind"))
+  typeMap <- flatten_list_in_data_table(values, "select", c("state_type", "state_kind","ls_kind"))
+  typeMap[field == 'clob_value', lsType := 'clobValue']
+  typeMap[field == 'string_value', lsType := 'stringValue']
+  typeMap[field == 'code_value', lsType := 'codeValue']
+  typeMap[field == 'numeric_value', lsType := 'numericValue']
+  ll4 <- ModelFit$new(drc_function = drc::LL.4, 
+                      paramNames = c("slope", "min", "max", "ec50"),
+                      categorization_function = categorize.LL4,
+                      get_reported_parameters = get_reported_parameters.LL4,
+                      apply_limits = apply_limits.LL4,
+                      default_fit_settings = get_default_fit_settings("4 parameter D-R"),
+                      simple_to_advanced_fittings_function = updateFitSettings.LL4,
+                      model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4.txt", package = "racas")),
+                      sortOptions = sortOptions.LL4,
+                      get_curve_attributes = get_curve_attributes.LL4,
+                      get_saved_fitted_parameters = get_saved_fitted_parameters.LL4,
+                      curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
+                      experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
+                      typeMap = typeMap
+  )
+  assignInNamespace("ll4",ll4, ns="racas")
   
+  queryDefinition <- read_json_file(system.file("conf", "definition-kifit.json", package = "racas"))
+  curveQueryDefinition <- queryDefinition
+  experimentQueryDefinition <- queryDefinition
+  curveQueryDefinition$entryPoint <- list(analysis_group = "ag", analysis_group_state = "ags1",analysis_group_value = "curveId", field = "string_value")
+  experimentQueryDefinition$entryPoint <- list(experiment = "e", field = "code_name")
+  states <- Reduce(function(x,y) rbind(x,y, fill = TRUE, use.names = TRUE), lapply(queryDefinition$analysis_group[[1]]$analysis_group_state, as.data.table))
+  values <- flatten_list_in_data_table(states, "analysis_group_value", c("ls_type", "ls_kind"), c("state_type", "state_kind"))
+  typeMap <- flatten_list_in_data_table(values, "select", c("state_type", "state_kind","ls_kind"))
+  typeMap[field == 'clob_value', lsType := 'clobValue']
+  typeMap[field == 'string_value', lsType := 'stringValue']
+  typeMap[field == 'code_value', lsType := 'codeValue']
+  typeMap[field == 'numeric_value', lsType := 'numericValue']
+  kifit <- ModelFit$new(drc_function = ki_fct.5, 
+                        paramNames = c("min", "max", "ki", "ligandConc", "kd"), 
+                        categorization_function = categorize.ki, 
+                        get_reported_parameters = get_reported_parameters.ki,
+                        apply_limits = apply_limits.ki,
+                        default_fit_settings = get_default_fit_settings("Ki Fit"),
+                        simple_to_advanced_fittings_function = updateFitSettings.Ki,
+                        model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ki.txt", package = "racas")),
+                        sortOptions = sortOptions.ki,
+                        get_curve_attributes = get_curve_attributes.ki,
+                        get_saved_fitted_parameters = get_saved_fitted_parameters.ki,
+                        curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
+                        experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
+                        typeMap = typeMap
+  )
+  assignInNamespace("kifit",kifit, ns="racas")
+  
+  mm2 <- ModelFit$new(drc_function = drc::MM.2, 
+                      paramNames = c("max", "kd"), 
+                      categorization_function = categorize.MM2, 
+                      get_reported_parameters = get_reported_parameters.MM2,
+                      apply_limits = apply_limits.MM2,
+                      default_fit_settings = get_default_fit_settings("MM.2"),
+                      simple_to_advanced_fittings_function = updateFitSettings.MM2
+  )
+  assignInNamespace("mm2",mm2, ns="racas")
   
 }
