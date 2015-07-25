@@ -387,6 +387,16 @@
                   "field": "code_value"
                 }
               ]
+            },
+           {
+              "name": "batchCode2",
+              "ls_kind": "batch code",
+              "select": [
+                {
+                  "name": "batchCode2",
+                  "field": "code_value"
+                }
+              ]
             }
           ]
         },
