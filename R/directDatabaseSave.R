@@ -830,7 +830,7 @@ prepareTableForDD <- function(entityData) {
     concentration = naIfNull(entityData$concentration),
     concUnit = naIfNull(entityData$concUnit),
     unitType = NA_character_,
-    unitKind = naIfNull(entityData$unitKind),
+    unitKind = entityData$unitKind,
     operatorType = NA_character_,
     operatorKind = naIfNull(entityData$operatorKind),
     publicData = naIfNull(entityData$publicData),
