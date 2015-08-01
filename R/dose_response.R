@@ -795,6 +795,7 @@ apply_parameter_rules_goodness_of_fits <- function(goodnessOfFit.parameters, rul
 apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
   if(is.null(pointStats)) return(NULL)
   if(is.null(points)) return(NULL)
+  if(pointStats$dose.count < 2) (return(NULL))
   if(length(rule) > 0) {
     threshold <- rule$value
     mockControls <- ifelse(is.null(rule$mockControls), FALSE, rule$mockControls)
