@@ -736,7 +736,7 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveId]
-  fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(""), "no fit"), by = curveId]
+  fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse(!pointStats[[1]]$dose.count < 2 && (fitConverged | inactive | insufficientRange | potent), as.character(""), "no fit"), by = curveId]
 
   # Return the fitData object
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent"))
@@ -793,9 +793,9 @@ apply_parameter_rules_goodness_of_fits <- function(goodnessOfFit.parameters, rul
 }
 
 apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
-  if(is.null(pointStats)) return(NULL)
-  if(is.null(points)) return(NULL)
-  if(pointStats$dose.count < 2) (return(NULL))
+  if(is.null(pointStats)) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
+  if(is.null(points)) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
+  if(pointStats$dose.count < 2) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
   if(length(rule) > 0) {
     threshold <- rule$value
     mockControls <- ifelse(is.null(rule$mockControls), FALSE, rule$mockControls)
