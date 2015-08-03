@@ -101,8 +101,8 @@ getPreferredId2 <- function (entityIds, entityType, entityKind, testMode=FALSE, 
   }
   
   if (length(entityIds) > 500) {
-    return(rbind(getPreferredId2(entityIds[1:500], preferredIdService, testMode), 
-                 getPreferredId2(entityIds[501:length(entityIds)], preferredIdService, testMode)))
+    return(rbind(getPreferredId2(entityIds[1:500], entityType, entityKind, testMode, preferredIdService), 
+                 getPreferredId2(entityIds[501:length(entityIds)], entityType, entityKind, testMode, preferredIdService)))
   } else {
     requestIds <- list()
     if (testMode) {
