@@ -269,9 +269,9 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
                                            fittedParametersList)
                      )
                             
-  if(length(fittedParametersList) == 0) {
-    plotData$curve <- NULL
-  }
+#   if(length(fittedParametersList) == 0) {
+#     plotData$curve <- NULL
+#   }
   return(toJSON(list(id = curveid,
                      compoundCode = fitData[1]$batchCode,
                      curveid = curveid,
