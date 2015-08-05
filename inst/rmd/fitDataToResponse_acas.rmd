@@ -47,6 +47,7 @@ for(stat in 1:ncol(gf)) {
   mtext(variable, side = 4, las=1)
 }
 ```
+
 \* Note - this summary is the result of the initial fit; curve curation may alter curves
 
 `r paste0('<a href="', '/curveCurator/', experimentCode, '" target="_blank" class="btn">Curate</a>')`
