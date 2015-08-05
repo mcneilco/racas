@@ -379,7 +379,11 @@ get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
          SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
          SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
          rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
-         compoundCode = fitData[1]$batchCode))
+         compoundCode = fitData[1]$batchCode,
+         algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+         userFlagStatus = fitData$userFlagStatus[[1]],
+         renderingHint = fitData$renderingHint[[1]]
+    ))
   }
 }
 get_curve_attributes.ki <- function(fitData, saved = TRUE) {
@@ -396,13 +400,16 @@ get_curve_attributes.ki <- function(fitData, saved = TRUE) {
     ))
   } else {
     return(list(Ki = fitData[1]$reportedParameters[[1]]$ki$value,
-                Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
+                Operator = fitData[1]$reportedParameters[[1]]$ki$operator,
                 SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
                 SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
                 rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
                 ligandConc = fitData[1]$ligandConc[[1]],
                 kd = fitData[1]$kd[[1]],                                            
-                compoundCode = fitData[1]$batchCode
+                compoundCode = fitData[1]$batchCode,
+                algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+                userFlagStatus = fitData$userFlagStatus[[1]],
+                renderingHint = fitData$renderingHint[[1]]
     ))
   }
 }
