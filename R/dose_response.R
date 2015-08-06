@@ -1149,7 +1149,7 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   values <- values[typeMap[!is.na(lsType)], allow.cartesian = TRUE]
   currentNames <- c("numeric", "character", "name", "state_kind", "state_type")
   missing <- which(!currentNames %in% names(values))
-  values[ , currentNames[missing] := NA]
+  if(length(missing) > 0) values[ , currentNames[missing] := NA]
   values <- values[!(field=="string_value" & is.na(character))]
   values <- values[!(field=="numeric_value" & is.na(numeric))]
   setnames(values, c("numeric", "character", "name", "state_kind", "state_type"), c("numericValue", "stringValue", "lsKind", "stateKind", "stateType"))
