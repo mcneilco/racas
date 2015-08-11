@@ -19,27 +19,39 @@
 
 generateSummaryStatistics <- function(numWeeks = 4) {
   # Get data frames to make plots
-  numExpProtUsers <- usageStatistics()
-  history <- experimentHistoryChart(numWeeks)
-  progress <- detailedExperimentChart()
-  protocols <- protocolsOverTime()
-  experiments <- experimentsOverTime()
-  analysis <- analysisOverTime()
-  subjects <- subjectsOverTime()
-  values <- dataOverTime()
-  numExperiments <- numExperimentsChart()
+  dbType <- getDBType()
+  weeklyStatisticsData <- weeklyStatistics(dbType)
+  usageTotals <- as.data.frame(t(colSums(weeklyStatisticsData[ , c('protocol', 'experiment', 'analysis_group_value', 'subject_value'), with = FALSE])))
+  
+  usageTotals$user <- query("SELECT count(distinct (d.recorded_by)) as \"user\"
+                        FROM protocol p
+                                      JOIN experiment d on p.id=d.protocol_id
+                                      WHERE d.ignored            = '0'
+                                      AND d.deleted            = '0'
+                                      AND p.ignored            = '0'
+                                      AND p.deleted            = '0'")[1,]
+  numWeeks <- 4
+  history <- experimentHistory(numWeeks = numWeeks)
+#   history <- experimentHistoryChart(numWeeks)
+#   progress <- detailedExperimentChart()
+#   protocols <- protocolsOverTime()
+#   experiments <- experimentsOverTime()
+#   analysis <- analysisOverTime()
+#   subjects <- subjectsOverTime()
+#   values <- dataOverTime()
+#   numExperiments <- numExperimentsChart()
   #recentUser <- mostRecent(4)    this function is not used, but may be useful in the future
   
   # Set up a factor to arrange the users in order of 
   # the number of experiments they have loaded
-  if (!is.null(history)) {
-    history$recorded_by <- factor(history$recorded_by, levels = unique(numExperiments$recorded_by))
-    history$isOld <- factor(history$isOld, levels = c(FALSE, TRUE))
-  }
-  if (!is.null(progress)) {
-    progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
-    progress$status <- factor(progress$status, levels = c("Finalized", "Unfinalized"))
-  }
+#   if (!is.null(history)) {
+#     history$recorded_by <- factor(history$recorded_by, levels = unique(history$recorded_by))
+#     history$isOld <- factor(history$isOld, levels = c(FALSE, TRUE))
+#   }
+#   if (!is.null(progress)) {
+#     progress$recorded_by <- factor(progress$recorded_by, levels = unique(numExperiments$recorded_by))
+#     progress$status <- factor(progress$status, levels = c("Finalized", "Unfinalized"))
+#   }
 
   rmdHome <- system.file("rmd", "summaryStatisticsHome.rmd", package="racas")
   htmlSummary <- knit2html_bug_fix(input = rmdHome, 
@@ -64,7 +76,8 @@ generateSummaryStatistics <- function(numWeeks = 4) {
   htmlGraphPath <- file.path(summaryStatisticsFolder, 'summaryStatisticsGraphs.html')
   
   # Get the data and write to CSV
-  summaryTable <- query("select * from api_system_statistics")
+  summaryTable <- weeklyStatisticsData[ , c('date', 'protocol', 'experiment', 'analysis_group_value', 'subject_value'), with = FALSE]
+  setnames(summaryTable, c("WEEK", "PROCOLS_RECORDED", "EXPERIMENTS_RECORDED", "CALCULATED_RESULTS_RECORDED", "RAW_RESULTS_RECORDED"))
   write.csv(summaryTable, csvPath, row.names = FALSE)
   
   writeLines(htmlSummary, con = htmlPath)
@@ -89,15 +102,123 @@ generateSummaryStatistics <- function(numWeeks = 4) {
 # Possible error cases: api_experiment or api_protocol does not exist
 #                      
 
-usageStatistics <- function() {
-  numExperiments <- query("select count(distinct id) from api_experiment")[1,1]
-  numProtocols <- query("select count(distinct protocol_id) from api_protocol")[1,1]
-  numUsers <- query("select count(distinct recorded_by) from api_experiment 
-                    where recorded_by != 'nouser'")[1,1]
-  numSubjects <- query("select count(distinct subject_code_name) from api_subject_results")[1,1]
-  numAnalysisGroups <- query("select count(distinct ag_id) from api_analysis_group_results")[1,1]
-  
-  return(c(numExperiments, numProtocols, numUsers, numSubjects, numAnalysisGroups))
+weeklyStatistics <- function(dbType) {
+  queries <- list(
+    subject_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) as YEAR, EXTRACT(WEEK FROM d.recorded_date) AS WEEK, count(d.id) as subject_value
+                       FROM protocol p
+                       JOIN experiment e on p.id=e.protocol_id
+                       JOIN experiment_analysisgroup eag ON e.id=eag.experiment_id
+                       JOIN analysis_group ag ON eag.analysis_group_id = ag.id
+                       JOIN analysisgroup_treatmentgroup agtg ON agtg.analysis_group_id = ag.id
+                       JOIN treatment_group tg ON tg.id = agtg.treatment_group_id
+                       JOIN treatmentgroup_subject tgs ON tgs.treatment_group_id=agtg.treatment_group_id
+                       JOIN subject s ON s.id = tgs.subject_id
+                       JOIN subject_state ss ON ss.subject_id = s.id
+                       JOIN subject_value d ON d.subject_state_id = ss.id AND d.ls_kind <> 'tested concentration' AND d.ls_kind <> 'batch code' AND d.ls_kind <> 'time'
+                       WHERE ag.ignored         = '0'
+                       AND e.ignored            = '0'
+                       AND e.deleted            = '0'
+                       AND p.ignored            = '0'
+                       AND p.deleted            = '0'
+                       AND d.recorded_date >= TRUNC(sysdate, 'WW')
+                       GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                       order by 1,2 desc",
+    analysis_group_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as analysis_group_value
+                                  FROM protocol p
+                                  JOIN experiment e on p.id=e.protocol_id
+                                  JOIN experiment_analysisgroup eag ON e.id=eag.experiment_id
+                                  JOIN analysis_group ag ON eag.analysis_group_id = ag.id
+                                  JOIN analysis_group_state ags ON ags.analysis_group_id = ag.id
+                                  JOIN analysis_group_value d ON d.analysis_state_id = ags.id AND d.ls_kind NOT IN ('batch code','time')
+                                  WHERE ag.ignored         = '0'
+                                  AND ags.ignored          = '0'
+                                  AND d.ignored          = '0'
+                                  AND e.ignored            = '0'
+                                  AND e.deleted            = '0'
+                                  AND p.ignored            = '0'
+                                  AND p.deleted            = '0'
+                                  AND d.recorded_date >= TRUNC(sysdate, 'WW')
+                                  GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                                  order by 1,2 desc
+                                  ",
+    experiment = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as experiment
+                        FROM protocol p
+                        JOIN experiment d on p.id=d.protocol_id
+                        WHERE d.ignored            = '0'
+                        AND d.deleted            = '0'
+                        AND p.ignored            = '0'
+                        AND p.deleted            = '0'
+                        AND d.recorded_date >= TRUNC(sysdate, 'WW')
+                        GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                        order by 1,2 desc",
+   protocol = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as protocol
+                      FROM protocol d
+                      WHERE d.ignored            = '0'
+                      AND d.deleted            = '0'
+                      AND d.recorded_date >= TRUNC(sysdate, 'WW')
+                      GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                      order by 1,2 desc"
+    )
+  if(dbType == "Oracle") {
+    queries <- lapply(queries, function(x) gsub("EXTRACT\\(WEEK FROM d.recorded_date\\)", "to_char(d.recorded_date - 7/24,'WW')", x))
+  }
+#   if(!update) {
+  if(TRUE) {
+      queries <- lapply(queries, function(x) gsub("AND d.recorded_date >= TRUNC\\(sysdate, 'WW'\\)\n", "", x))
+  }
+  #queries <- queries[-c(1:2)]
+  answers <- lapply(queries, function(x) {
+    answer <- query(x)
+    answer <- as.data.table(answer)
+    
+    if(nrow(answer) == 0) return(NULL)
+    setnames(answer, tolower(names(answer)))
+    answer[ , c('week', 'year') := list(as.character(week), as.character(year))]
+    setkey(answer, "year", "week")
+    return(answer)
+  })
+  expectedColumns <- c("subject_value", "analysis_group_value", "experiment", "protocol")
+  isNULLColumns <- sapply(answers, is.null)
+  answers <- answers[!isNULLColumns]
+  hasColumn <-  c("subject_value", "analysis_group_value", "experiment", "protocol") %in% names(isNULLColumns)[!isNULLColumns]
+  hasColumns <- expectedColumns[hasColumn]
+  missingColumns <- expectedColumns[!hasColumn]
+  if(length(hasColumns) == 0) {
+    answers <- as.data.table(matrix(0, length(expectedColumns),  nrow = 1))
+    setnames(answers, expectedColumns)
+    answers[  , c("year", "week") :=  list(format(Sys.time(), foramt = "%Y"), format(Sys.time(), foramt = "%W"))]
+  } else {
+    answers <- Reduce(function(x,y) {
+      ans <- merge(x,y, all = TRUE)
+      setkey(ans, 'week', 'year')
+      return(ans)
+    }
+    ,answers)
+    if(length(missingColumns) > 0) {
+      answers[ , missingColumns := 0, with = FALSE]
+    }
+  }
+  answers[ , date := as.Date(paste(paste0(year,"-",week,"-1")),"%Y-%U-%u")]
+  setkey(answers,"date", "year", "week")
+  regularSequence <- data.table(date = seq(answers[1]$date, answers[nrow(answers)]$date, by='1 week'))
+  regularSequence[ , c('year', 'week') := list(format(date, "%Y"), strftime(date,format="%W")) ]
+  setkey(regularSequence, "date", "year", "week")
+  answers <- answers[regularSequence, allow.cartesian = TRUE]
+  answers[is.na(answers)] <- 0
+#   min <- answers[1, c("year", "week"), with = FALSE]
+#   max <- answers[nrow(answers), c("year", "week"), with = FALSE]
+  #answers[ , c("year","week") := NULL]
+  #answers[ , date:= NULL]
+#   timeSeries <- ts(answers,frequency = 52, start = c(min$year, as.numeric(min$week)), end = c(max$year, as.numeric(max$week)))
+
+#   plot(timeSeries, nc = 1)
+#   
+#   numProtocols <- query("select count(id) from protocol where deleted = '0' and ignored = '0'")[1,1]
+#   numExperiments <- query("select count(id) from exeriment  where deleted = '0' and ignored = '0'")[1,1]
+#   numUsers <- query("select count(distinct ev.code_value) from experiment_value ev join experiment_state es on ev.experiment_state_id=es.id join experiment e on es.experiment_id=e.id where ev.ls_kind = 'scientist' and ev.deleted='0' and ev.ignored = '0' and es.deleted = '0' and es.ignored = '0' and e.deleted = '0' and e.ignored = '0'")[1,1]
+#   numSubjects <- query("select count(id) from subject where subject.deleted = '0'")[1,1]
+#   numAnalysisGroups <- query("select count(agv.id) from api_analysis_group_results")[1,1]
+  return(answers)
 }
 
 
@@ -119,7 +240,42 @@ usageStatistics <- function() {
 #   Returns nothing if there is no data in api_experiment
 # Possible error cases: api_experiment does not exist, or does not contain
 #   columns "recorded_by" and "recorded_date"
+experimentHistory <- function(numWeeks) {
+  experiments <-  as.data.table(query("SELECT d.id, d.recorded_date, MAX( CASE ev.ls_kind WHEN 'experiment status' THEN ev.code_value ELSE null END ) AS status, d.recorded_by
+                                      FROM protocol p
+                                      JOIN experiment d on p.id=d.protocol_id
+                                      JOIN experiment_state es on es.experiment_id = d.id
+                                      JOIN experiment_value ev on ev.experiment_state_id = es.id
+                                      WHERE d.ignored            = '0'
+                                      AND d.deleted            = '0'
+                                      AND p.ignored            = '0'
+                                      AND p.deleted            = '0'
+                                      GROUP BY d.id, d.recorded_date, d.recorded_by
+                                      "))
+  if(nrow(experiments) == 0) {
+    return(NULL)
+  }
+  setnames(experiments,tolower(names(experiments)))
+  
+  #Get a time/date format that was numWeeks ago
+  cutoffDate <- Sys.time() - as.difftime(numWeeks, units = "weeks")
+  
+  experiments[ , week := as.numeric(format(experiments$recorded_date, "%U"))]
+  experiments[ , year := as.numeric(format(experiments$recorded_date, "%Y"))]
+  experiments[ , userCount := .N, by = recorded_by]
+  experiments[ , isOld := TRUE]
+  experiments[recorded_date >= cutoffDate, isOld := FALSE]
+  
+  experiments[ , finalizationStatus := "Unfinalized"]
+  experiments[ status %in% c("approved", "rejected", "deleted"), finalizationStatus := "Finalized"]
 
+  setorder(experiments, -userCount)
+  experiments$recorded_by <- factor(experiments$recorded_by, levels = unique(experiments$recorded_by))
+  experiments$isOld <- factor(experiments$isOld, levels = c(FALSE, TRUE))
+  
+  
+  return(experiments)
+}
 experimentHistoryChart <- function(numWeeks = 4) {
   userFrame <- query("select recorded_by, recorded_date from api_experiment")
   
