@@ -59,7 +59,7 @@ graphLink <- paste(getSSLString(), racas::applicationSettings$client.host, ":",
 
 ```{r goToGraphs, echo=FALSE, results='asis', cache=FALSE}
 cat("<p style='margin-top:30px;'>For more graphs, <a href='",
-    graphLink, "'>click here</a>", "</p>", sep="")
+    graphLink, "' target='_blank' >click here</a>", "</p>", sep="")
 ```
 
 ```{r details, echo=FALSE, results='asis', cache=FALSE}
@@ -69,5 +69,5 @@ if (is.na(Sys.timezone())) {
   timezone <- Sys.timezone()
 }
 cat("Summary statistics generated on ", date(), " ", timezone, ". Data can be downloaded at <a href='",
-    link, "'>this link</a>", sep="")
+    link, "' target='_blank' >this link</a>", sep="")
 ```

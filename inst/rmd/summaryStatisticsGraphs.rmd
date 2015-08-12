@@ -170,5 +170,5 @@ if (is.na(Sys.timezone())) {
   timezone <- Sys.timezone()
 }
 cat("Summary statistics generated on ", date(), " ", timezone, ". Data can be downloaded at <a href='",
-    link, "'>this link</a>", sep="")
+    link, "' target='_blank' >this link</a>", sep="")
 ```
