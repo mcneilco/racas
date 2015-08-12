@@ -17,10 +17,12 @@ RUN	useradd -u 1000 -ms /bin/bash runner
 COPY	. $ACAS_HOME/racas
 RUN chown -R runner:runner $ACAS_HOME
 USER runner
-RUN  Rscript -e 'options(repos = c(CRAN="http://cran.rstudio.com/")); \
-                install.packages("miniCRAN"); \
-                source("/home/runner/racas/R/installation.R"); \
-                makeRepo(path="/home/runner/repo", description = "/home/runner/racas/DESCRIPTION", racasPath = "/home/runner/racas"); \
-                install.packages("RPostgreSQL", repos="file://home/runner/repo", lib = "/home/runner/r_libs"); \
-                install.packages("racas", repos="file://home/runner/repo", lib = "/home/runner/r_libs");' && \
-     rm -rf /home/runner/repo /home/runner/racas /home/runner/r_libs/racas
+RUN   RACAS_PATH=/home/runner/racas && \
+      TMP_REPO_PATH=./repo && \
+      Rscript -e "options(repos = c(CRAN='http://cran.rstudio.com/')); \
+                install.packages('miniCRAN', lib = \"$R_LIBS\"); \
+                source(\"$RACAS_PATH/R/installation.R\"); \
+                makeRepo(path=\"$TMP_REPO_PATH\", description = \"$RACAS_PATH/DESCRIPTION\", racasPath = \"$RACAS_PATH\"); \
+                install.packages(\"RPostgreSQL\", repos=paste0('file:',normalizePath(\"$TMP_REPO_PATH\")), lib = \"$R_LIBS\", type = 'source'); \
+                install.packages(\"racas\", repos=paste0('file:',normalizePath(\"$TMP_REPO_PATH\")), lib = \"$R_LIBS\", type = 'source');" && \
+     rm -rf $TMP_REPO_PATH $RACAS_PATH $R_LIBS/racas
