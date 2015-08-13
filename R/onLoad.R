@@ -54,7 +54,11 @@
   if(is.null(applicationSettings$server.database.r.driver)) {
     dbType <- "Postgres"
   } else {
-    dbType <- getDBType(applicationSettings$server.database.r.driver)
+    dbType <- tryCatch({
+      getDBType(applicationSettings$server.database.r.driver)
+    }, error = function(ex ){
+      "Postgres"
+    })
   }
   queryDefinition <- read_json_file(system.file("conf", "definition-ll4.json", package = "racas"))
   curveQueryDefinition <- queryDefinition
