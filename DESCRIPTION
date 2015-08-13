@@ -68,5 +68,6 @@ Collate:
     'directDatabaseSave.R'
     'entityDefinitions.R'
     'model_fit.R'
+    'entityMeta.R'
     'onLoad.R'
 

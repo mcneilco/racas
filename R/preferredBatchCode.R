@@ -93,24 +93,23 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
 #'   checks those entities for their preferred codes.
 #' @keywords batchCode, preferred
 #' @export
-getPreferredId2 <- function (entityIds, entityType, entityKind, testMode=FALSE, preferredIdService = NULL) {
+getPreferredId2 <- function (entityIds, displayName, testMode=FALSE, preferredIdService = NULL) {
   # Put the entityIds in the correct format
   if (is.null(preferredIdService)) {
     preferredIdService <- paste0(racas::applicationSettings$server.nodeapi.path, 
-                                 "/api/entitymeta/preferredCodes")
+                                 "/api/entitymeta/referenceCodes/csv")
   }
   
   if (length(entityIds) > 500) {
-    return(rbind(getPreferredId2(entityIds[1:500], preferredIdService, testMode), 
-                 getPreferredId2(entityIds[501:length(entityIds)], preferredIdService, testMode)))
+    return(rbind(getPreferredId2(entityIds[1:500], displayName, testMode, preferredIdService),
+                 getPreferredId2(entityIds[501:length(entityIds)], displayName, testMode, preferredIdService)))
   } else {
     requestIds <- list()
     if (testMode) {
       requestIds$testMode <- "true"
     }
     
-    requestIds$type = entityType
-    requestIds$kind = entityKind
+    requestIds$displayName = displayName
     requestIds$entityIdStringLines = paste(entityIds, collapse = "\n")
     
     # Get the preferred ids from the server
