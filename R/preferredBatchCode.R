@@ -80,9 +80,8 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
 #'
 #' Entered entity codes (ids) are checked against a preferred id service.
 #' 
-#' @param batchIds a character vector of batch codes
-#' @param entityType the type of the id's, e.g. "compound"
-#' @param entityKind the kind of the id's, e.g. "batch name"
+#' @param batchIds a character vector of codes
+#' @param displayName the user display name of the codes (e.g. "Compound Batch ID")
 #' @param preferredIdService the url of the preferred id service. Defaults to
 #'   \code{paste0(racas::applicationSettings$server.nodeapi.path,
 #'   "/api/entitymeta/preferredCodes")}

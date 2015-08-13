@@ -4,13 +4,11 @@
 \alias{getPreferredId2}
 \title{Gets preferred ids}
 \usage{
-getPreferredId2(entityIds, entityType, entityKind, testMode = FALSE,
+getPreferredId2(entityIds, displayName, testMode = FALSE,
   preferredIdService = NULL)
 }
 \arguments{
-\item{entityType}{the type of the id's, e.g. "compound"}
-
-\item{entityKind}{the kind of the id's, e.g. "batch name"}
+\item{displayName}{the user display name of the codes (e.g. "Compound Batch ID")}
 
 \item{testMode}{unused testing tool}
 
@@ -18,7 +16,7 @@ getPreferredId2(entityIds, entityType, entityKind, testMode = FALSE,
 \code{paste0(racas::applicationSettings$server.nodeapi.path,
 "/api/entitymeta/preferredCodes")}}
 
-\item{batchIds}{a character vector of batch codes}
+\item{batchIds}{a character vector of codes}
 }
 \value{
 a data.frame with names \code{c("Requested.Name", "Preferred.Code")}
