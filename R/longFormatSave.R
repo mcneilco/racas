@@ -421,7 +421,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
       recordedBy = recordedBy,
       comments = getNullSafe(entityData$comments),
       codeType = getNullSafe(entityData$codeType),
-      codeKind = getNullSafe(entityData$codeType),
+      codeKind = getNullSafe(entityData$codeKind),
       codeOrigin = getNullSafe(entityData$codeOrigin)
     )
     return(stateValue)
