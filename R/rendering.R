@@ -565,14 +565,14 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   ##If only one curve then draw ac50 lines
   #Get coordinates to draw lines through curve at AC50
   #Vertical
-  if(!is.na(drawIntercept) && is.numeric(params[,drawIntercept])) {
+  if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept]))) {
     if(nrow(params) == 1) {
       drawValues <- getDrawValues(params = params[1,])
       for(i in 1:ncol(drawValues)) {
         assign(names(drawValues)[i], drawValues[,i])
       }
       fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curveIntercept <- fct(params[,drawIntercept])
+      curveIntercept <- fct(as.numeric(params[,drawIntercept]))
       ylin <- c()
       ylin$x <- c(params[,drawIntercept], params[,drawIntercept])
       ylin$y <- c(par("usr")[3],curveIntercept)
