@@ -370,11 +370,11 @@
               ]
             },
            {
-              "name": "batchCode2",
+              "name": "batchCode",
               "ls_kind": "batch code",
               "select": [
                 {
-                  "name": "batchCode2",
+                  "name": "batchCode",
                   "field": "code_value"
                 }
               ]
