@@ -1175,6 +1175,8 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   values[ , recordedDate := as.numeric(format(Sys.time(), "%s"))*1000]
   values[ , id := analysisGroupId]
   values[ , c("field", "i.name", "units") := NULL]
+  
+  valus[ lsKind %in% c("Ligand Conc", "Kd"), publicData := FALSE ]
 #   agValues <- prepareTableForDD(values)
   return(values)
 }
