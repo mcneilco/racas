@@ -108,7 +108,7 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   stateSelects <- getSelects(states)
 
   stateJoins <- lapply(states, function(x) {
-    joins <- paste0("LEFT OUTER JOIN analysis_group_state ",gsub(" ","_",x$name)," \nON ",gsub(" ","_",x$parentName),".id = ",gsub(" ","_",x$name),".analysis_group_id \n","AND (",gsub(" ","_",x$name),".ls_kind='",x$ls_kind,"' AND ",gsub(" ","_",x$name),".ls_type='",x$ls_type,"'",ifelse(is.null(x$ignored),"",paste0(" AND ignored=",getLogicalValue(x$ignored))),")")
+    joins <- paste0("LEFT OUTER JOIN analysis_group_state ",gsub(" ","_",x$name)," \nON ",gsub(" ","_",x$parentName),".id = ",gsub(" ","_",x$name),".analysis_group_id \n","AND (",gsub(" ","_",x$name),".ls_kind='",x$ls_kind,"' AND ",gsub(" ","_",x$name),".ls_type='",x$ls_type,"'",ifelse(is.null(x$ignored),"",paste0(" AND ",gsub(" ","_",x$name),".ignored=",getLogicalValue(x$ignored))),")")
     return(joins)
   })
   stateJoins <- paste0(stateJoins,collapse = " \n")
