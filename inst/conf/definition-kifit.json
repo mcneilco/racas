@@ -380,32 +380,7 @@
               ]
             }
           ]
-        },
-        {
-          "name": "ags2",
-          "ls_type": "data",
-          "ls_kind": "results",
-          "ignored": false,
-          "select": [
-            {
-              "name": "analysisStateId_2",
-              "field": "id"
-            }
-          ],
-          "analysis_group_value": [
-            {
-              "name": "batchCode",
-              "ls_kind": "batch code",
-              "select": [
-                {
-                  "name": "batchCode",
-                  "field": "code_value"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+        }      ]
     }
   ]
 }
