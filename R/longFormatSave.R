@@ -345,6 +345,9 @@ meltTimes <- function(entityData, entityKind = "treatmentGroup") {
 #'     \item{uncertainty}{Numeric: the uncertainty (optional)}
 #'     \item{uncertaintyType}{String: the type of uncertainty, such as standard deviation (optional)}
 #'     \item{comments}{String: mainly used for filenames (fileValue is filled with codes) (optional)}
+#'     \item{codeType}{String: type of the codeValue (optional)}
+#'     \item{codeKind}{String: kind of the codeValue (optional)}
+#'     \item{codeOrigin}{String: origin of the codeValue (optional)}
 #'     }
 #' @param  entityKind          String: the kind of the state, allowed values are: "protocol", "experiment", "analysisgroup", 
 #' "subject", "treatmentgroup", "container", "itxcontainercontainer", "itxsubjectcontainer"
@@ -389,6 +392,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
     } else {
       dateValue <- NA
     }
+    getNullSafe <- function(x) {if(is.character(x) && !is.na(x)) {x} else {NULL}}
     stateValue <- createStateValue(
       lsState = list(id=entityData$stateID, version = entityData$stateVersion),
       lsType = if (entityData$valueType %in% c("stringValue", "fileValue", "urlValue", "dateValue", "clobValue", "blobValue", "numericValue", "codeValue", "inlineFileValue")) {
@@ -415,7 +419,10 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
       uncertainty = if(is.numeric(entityData$uncertainty) && !is.na(entityData$uncertainty)) {entityData$uncertainty} else {NULL},
       uncertaintyType = if(is.character(entityData$uncertaintyType) && !is.na(entityData$uncertaintyType)) {entityData$uncertaintyType} else {NULL},
       recordedBy = recordedBy,
-      comments = if(is.character(entityData$comments) && !is.na(entityData$comments)) {entityData$comments} else {NULL}
+      comments = getNullSafe(entityData$comments),
+      codeType = getNullSafe(entityData$codeType),
+      codeKind = getNullSafe(entityData$codeKind),
+      codeOrigin = getNullSafe(entityData$codeOrigin)
     )
     return(stateValue)
   }

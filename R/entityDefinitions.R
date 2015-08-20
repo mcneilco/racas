@@ -13,18 +13,24 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
     }
     return(select)
   }
+  getLogicalValue <- function(x) {
+    if(class(x) == "logical") {
+      if(x) {
+        x <- switch(dbType,
+                    "Postgres" = "1",
+                    "Oracle" = 1)
+      } else {
+        x <- switch(dbType,
+                    "Postgres" = "0",
+                    "Oracle" = 0)          
+      }
+    }
+    return(x)
+  }
   getWhere <- function(table) {
     where <- lapply(table$where, function(x) {
       if(class(x) == "logical") {
-        if(x) {
-          x <- switch(dbType,
-                      "Postgres" = "1",
-                      "Oracle" = 1)
-        } else {
-          x <- switch(dbType,
-                      "Postgres" = "0",
-                      "Oracle" = 0)          
-        }
+        x <- getLogicalValue(x)
       }
       return(sqliz(x))
     })
@@ -102,7 +108,7 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   stateSelects <- getSelects(states)
 
   stateJoins <- lapply(states, function(x) {
-    joins <- paste0("LEFT OUTER JOIN analysis_group_state ",gsub(" ","_",x$name)," \nON ",gsub(" ","_",x$parentName),".id = ",gsub(" ","_",x$name),".analysis_group_id \n","AND (",gsub(" ","_",x$name),".ls_kind='",x$ls_kind,"' AND ",gsub(" ","_",x$name),".ls_type='",x$ls_type,"')")
+    joins <- paste0("LEFT OUTER JOIN analysis_group_state ",gsub(" ","_",x$name)," \nON ",gsub(" ","_",x$parentName),".id = ",gsub(" ","_",x$name),".analysis_group_id \n","AND (",gsub(" ","_",x$name),".ls_kind='",x$ls_kind,"' AND ",gsub(" ","_",x$name),".ls_type='",x$ls_type,"'",ifelse(is.null(x$ignored),"",paste0(" AND ",gsub(" ","_",x$name),".ignored=",getLogicalValue(x$ignored))),")")
     return(joins)
   })
   stateJoins <- paste0(stateJoins,collapse = " \n")
