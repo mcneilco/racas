@@ -50,7 +50,7 @@ plotDependencies <- function(packages = c("racas")) {
   pkgdata <- available.packages()
   pkgList <- unlist(package_dependencies(packages, installed.packages(), which = c("Depends", "Imports"), recursive = FALSE))
   p <- makeDepGraph(pkgList, availPkgs=pkgdata)
-
+  
   plotColours <- c("grey80", "orange")
   topLevel <- as.numeric(V(p)$name %in% packages)
   
@@ -77,13 +77,13 @@ makeRepo <- function(path = "./repo", description = "DESCRIPTION", racasPath = "
     unlink(path, force = TRUE, recursive = TRUE)
   }
   dir.create(path)
-  miniCRAN::makeRepo(pkgs, path = path, type = "source")
+  makeRep(pkgs, path = path, type = "source")
   originalWD <- getwd()
   on.exit(setwd(originalWD))
   setwd(file.path(normalizePath(path), "src", "contrib"))
   system(paste0("R CMD build ", normalizePath(racasPath)))
   setwd(originalWD)
-  miniCRAN::updateRepoIndex(path)
+  updateRepoIndex(path)
 }
 
 descriptionDeps <- function(descriptionPath) {
@@ -96,4 +96,105 @@ descriptionDeps <- function(descriptionPath) {
   dependencies <- dependencies[dependencies != ""]
   dependencies <- dependencies[order(dependencies)]
   return(dependencies)
+}
+
+
+makeRep <- function(pkgs, path, repos=getOption("repos"), type="source",
+                    Rversion=R.version, download=TRUE, writePACKAGES=TRUE, quiet=FALSE) {
+  if(!file.exists(path)) stop("Download path does not exist")
+  pkgPath <- repoBinPath(path=path, type=type, Rversion=Rversion)
+  if(!file.exists(pkgPath)) {
+    result <- dir.create(pkgPath, recursive=TRUE, showWarnings = FALSE)
+    if(result) {
+      if(!quiet) message("Created new folder: ", pkgPath)
+    } else {
+      stop("Unable to create repo path: ", pkgPath)
+    }
+  }
+  
+  pdb <- pkgAvail(repos = repos, type=type, Rversion = Rversion)
+  
+  if(download) utils::download.packages(pkgs, destdir=pkgPath, available=pdb, repos=repos, 
+                                        contriburl = contribUrl(repos, type, Rversion),
+                                        type=type, quiet=quiet)
+  if(writePACKAGES) updateRepoIndex(path=path, type=type, Rversion=Rversion)
+}
+repoBinPath <- function(path, type, Rversion){
+  normalizePath(file.path(path, repoPrefix(type, Rversion)), mustWork = FALSE, winslash = "/")
+}
+
+pkgAvail <- function(repos=getOption("repos"), type="source", Rversion = R.version){
+  if(!grepl("^http://|file:///", repos[1]) && file.exists(repos[1])) {
+    repos <- paste0("file:///", normalizePath(repos[1], mustWork = FALSE, winslash = "/"))
+  } else {
+    if(!is.null(names(repos)) && repos["CRAN"] == "@CRAN@"){
+      repos <- c(CRAN="http://cran.revolutionanalytics.com")
+    }
+  }
+  utils::available.packages(contribUrl(repos, type=type, Rversion = Rversion), type=type, filters=list())
+}
+updateRepoIndex <- function(path, type="source", Rversion=R.version) {
+  lapply(type, function(type){
+    pkgPath <- repoBinPath(path=path, type=type, Rversion=Rversion)
+    if(grepl("mac.binary", type)) type <- "mac.binary"
+    tools::write_PACKAGES(dir=pkgPath, type=type)
+  })
+}
+
+repoPrefix <- function(type, Rversion){
+  Rversion = twodigitRversion(Rversion)
+  switch(
+    type,
+    "source" = "src/contrib",
+    "win.binary" = sprintf("bin/windows/contrib/%s", Rversion),
+    "mac.binary" = sprintf("bin/macosx/contrib/%s", Rversion),
+    "mac.binary.mavericks" =  sprintf("bin/macosx/mavericks/contrib/%s", Rversion),
+    "mac.binary.leopard"= sprintf("bin/macosx/leopard/contrib/%s", Rversion),
+    stop("Type ", type, "not recognised.")
+  )
+}
+twodigitRversion <- function(R=R.version){
+  if ("simple.list" %in% class(R)) {
+    paste(R$major, strsplit(R$minor, ".", fixed = TRUE)[[1L]][1L], sep = ".")
+  } else if ("R_system_version" %in% class(R)) {
+    paste(strsplit(as.character(R), ".", fixed=TRUE)[[1L]][1L:2L], collapse=".")
+  } else if (is.character(R)) {
+    paste(strsplit(R, ".", fixed=TRUE)[[1L]][1L:2L], collapse=".")
+  }
+}
+
+contribUrl <- function (repos, type = getOption("pkgType"), Rversion = R.version) {
+  Rversion <- twodigitRversion(Rversion)
+  if (type == "both") 
+    type <- "source"
+  if (type == "binary") 
+    type <- .Platform$pkgType
+  if (is.null(repos)) 
+    return(NULL)
+  if ("@CRAN@" %in% repos && interactive()) {
+    cat(gettext("--- Please select a CRAN mirror for use in this session ---"), 
+        "\n", sep = "")
+    flush.console()
+    chooseCRANmirror()
+    m <- match("@CRAN@", repos)
+    nm <- names(repos)
+    repos[m] <- getOption("repos")["CRAN"]
+    if (is.null(nm)) 
+      nm <- rep("", length(repos))
+    nm[m] <- "CRAN"
+    names(repos) <- nm
+  }
+  if ("@CRAN@" %in% repos) 
+    stop("trying to use CRAN without setting a mirror")
+  ver <- Rversion
+  mac.path <- "macosx"
+  if (substr(type, 1L, 11L) == "mac.binary.") {
+    mac.path <- paste(mac.path, substring(type, 12L), sep = "/")
+    type <- "mac.binary"
+  }
+  res <- switch(type, 
+                source = paste(gsub("/$", "", repos), "src", "contrib", sep = "/"), 
+                mac.binary = paste(gsub("/$", "", repos), "bin", mac.path, "contrib", ver, sep = "/"), 
+                win.binary = paste(gsub("/$", "", repos), "bin", "windows", "contrib", ver, sep = "/"))
+  res
 }
