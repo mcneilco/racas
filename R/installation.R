@@ -69,12 +69,16 @@ plotDependencies <- function(packages = c("racas")) {
   title("Package dependency graph")
 }
 
-makeRepo <- function(path = "./repo", description = "DESCRIPTION", racasPath = ".") {
+makeRepo <- function(path = "./repo", description = "DESCRIPTION", racasPath = ".", onlyNew = TRUE) {
   pkgs <- descriptionDeps(description)
   pkgs <- unique(c(unlist(tools::package_dependencies(pkgs, available.packages(type = "source"), recursive = TRUE)), pkgs))
   pkgs <- pkgs[order(pkgs)]
   if(file.exists(path)) {
     unlink(path, force = TRUE, recursive = TRUE)
+  }
+  if(onlyNew) {
+    installed <- row.names(installed.packages())
+    pkgs <- pkgs[!pkgs %in% installed]
   }
   dir.create(path)
   makeRep(pkgs, path = path, type = "source")
