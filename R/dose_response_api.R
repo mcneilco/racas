@@ -366,6 +366,7 @@ get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
   if(saved) {
     return(list(
       EC50 = fitData$ec50[[1]],
+      Operator = fitData$ec50OperatorKind,
       SST =  fitData$sst[[1]],
       SSE =  fitData$sse[[1]],
       rsquare = fitData$rsquared[[1]],
@@ -391,6 +392,7 @@ get_curve_attributes.ki <- function(fitData, saved = TRUE) {
   if(saved) {
     return(list(
       Ki = fitData$ki[[1]],
+      Operator = fitData$kiOperatorKind,
       SST =  fitData$sst[[1]],
       SSE =  fitData$sse[[1]],
       rsquare = fitData$rsquared[[1]],
