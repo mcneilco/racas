@@ -78,32 +78,12 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
     groupJoins <- paste0("analysis_group ",gsub(" ","_",groups[[1]]$name))
   }
   
-  
-  if(!is.null(groups$where)) {
-    groupWhere <- getWhere(groups)
+  if(!is.null(groups[[1]]$where)) {
+    groupWhere <- getWhere(groups[[1]])
   } else {
     groupWhere <- ""
   }
-  groupWhere <- groupWhere[groupWhere!=""]
-  if(length(groupWhere) != 0 && groupWhere != "")  {
-    logicals <- lapply(groups$where, function(x) {
-      if(class(x) == "logical") {
-        if(x) {
-          x <- switch(dbType,
-                      "Postgres" = "'1'",
-                      "Oracle" = "true")
-        } else {
-          x <- switch(dbType,
-                      "Postgres" = "'0'",
-                      "Oracle" = "false")          
-        }
-      } else {
-        return(x)
-      }
-    })
-    groupWhere <- paste0(groupWhere, collapse = " and\n")
-  }
-  
+ 
   states <- do.call(c, lapply(queryDefinitionList$analysis_group, function(x) lapply(x[["analysis_group_state"]], function(x,parentName) {x$parentName <- parentName;x}, parentName = x$name)))
   stateSelects <- getSelects(states)
 
