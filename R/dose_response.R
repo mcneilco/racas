@@ -1900,7 +1900,7 @@ get_reported_parameters.ki <- function(results, inactive, fitConverged, insuffic
     }
   }
   if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("kiThresholdLow" %in% results$limits)) {
-    if(("kiThresholdHigh" %in% results$limits | "kiUncertaintyRule" %in% results$goodnessOfFits)) {
+    if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
       ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
     } else {
       ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
