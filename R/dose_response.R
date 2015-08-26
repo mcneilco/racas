@@ -1136,6 +1136,17 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   values <- lapply(x, function(x) {
     if(class(x$value) %in% c("numeric","integer")) {
+      v <- x$value
+      if(v >= 1e+125) {
+        v <- 99.99e+124
+      } else if (v <= 1e-125 && v > 0) {
+        v <- 1.0e-124
+      } else if (v >= -1e-125 && v < 0) {
+        v <- -1.0e-124
+      } else if (v <= -1e125) {
+        v <- -1.0e124
+      }
+      x$value <- v
       names(x)[names(x) == "value"] <- "numeric"
     } else {
       names(x)[names(x) == "value"] <- "character"
