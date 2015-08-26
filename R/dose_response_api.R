@@ -43,18 +43,27 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
   on.exit({
-    update_experiment_model_fit_status(experimentCode, "error")
+    rolledback <- any(unlist(lapply(myMessenger$infos, function(x) x$message=="rolledback")))
     if(myMessenger$hasErrors()) {
       myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
       myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
-      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = lapply(myMessenger$errors, function(x) {x$message}))  
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = c(myMessenger$userErrors,lapply(myMessenger$errors, function(x) {x$message})))  
     } else {
       response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = "There was an error fitting curves")
     }
     
-    myMessenger$logger$debug("saving experiment value model fit result html")
-    experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
-    
+    if(rolledback) {
+      update_experiment_model_fit_status(experimentCode, "error")
+      myMessenger$logger$debug("saving experiment value model fit result html")
+      experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
+    } else {
+      if(!is.null(experimentStatus)) {
+        update_experiment_model_fit_status(experimentCode, experimentStatus)
+      } else {
+        update_experiment_model_fit_status(experimentCode, "error")
+      }
+    }
+  
     return(response)
   })
   
