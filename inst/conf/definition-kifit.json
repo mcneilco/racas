@@ -166,7 +166,7 @@
                   "field": "uncertainty_type"
                 },
                 {
-                  "name": "ec50OperatorKind",
+                  "name": "kiOperatorKind",
                   "field": "operator_kind"
                 }
               ]

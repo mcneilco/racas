@@ -1136,6 +1136,17 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   values <- lapply(x, function(x) {
     if(class(x$value) %in% c("numeric","integer")) {
+      v <- x$value
+      if(v >= 1e+125) {
+        v <- 99.99e+124
+      } else if (v <= 1e-125 && v > 0) {
+        v <- 1.0e-124
+      } else if (v >= -1e-125 && v < 0) {
+        v <- -1.0e-124
+      } else if (v <= -1e125) {
+        v <- -1.0e124
+      }
+      x$value <- v
       names(x)[names(x) == "value"] <- "numeric"
     } else {
       names(x)[names(x) == "value"] <- "character"
@@ -1237,7 +1248,18 @@ save_dose_response_data <- function(fitData, recorded_by) {
   
   myMessenger$logger$debug("calling service to save parameter data")
   url <- paste0(racas::applicationSettings$client.service.persistence.fullpath, "analysisgroups", "/jsonArray")
-  response <- putURLcheckStatus(url, postfields=groupJSON, requireJSON = TRUE)
+  
+  t <-tryCatch({
+    response <- putURLcheckStatus(url, postfields=groupJSON, requireJSON = TRUE)
+  }, error = function(ex) {
+    myMessenger$logger$info("there was an error saving parameter data")
+    myMessenger$logger$info("rolling back ignore of states")
+    done <- query_replace_string_with_values("update analysis_group_state set ignored='0' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
+    myMessenger$logger$info("rolled back ignore of states")
+    myMessenger$addUserError("There was an error saving parameter data after the fit, changes to the data were rolled back")
+    myMessenger$addInfo("rolledback")
+    stop(ex$message)
+  })
   
   myMessenger$logger$debug("organizing flag data for save")
   changedPoints <- rbindlist(fitData$points)[flagchanged == TRUE,]
@@ -1900,7 +1922,7 @@ get_reported_parameters.ki <- function(results, inactive, fitConverged, insuffic
     }
   }
   if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("kiThresholdLow" %in% results$limits)) {
-    if(("kiThresholdHigh" %in% results$limits | "kiUncertaintyRule" %in% results$goodnessOfFits)) {
+    if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
       ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
     } else {
       ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
