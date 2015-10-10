@@ -72,7 +72,8 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   if(!is.null(experimentStatus)) {
     if(experimentStatus == "running") {
       myMessenger$logger$warn("experiment model fit status is 'running', returning without fitting")
-      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = c("Model is already being fit, please wait for the current model fit to finish before refitting"))  
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "running", hasWarning = FALSE, errorMessages = c("Model is already being fit, please wait for the current model fit to finish before refitting"))  
+      on.exit()
       return(response)
     } else {
       myMessenger$logger$debug("experiment status is not 'running', this is a refit")
