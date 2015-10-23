@@ -397,7 +397,7 @@ createLsState <- function(lsValues=NULL, recordedBy="userName", lsType="lsType",
   )
   return(LsState)
 }
-createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", lsType="lsType", 
+createProtocolState <- function(protocol=NULL, protocolValues=list(), recordedBy="userName", lsType="lsType", 
                                 lsKind="lsKind", comments="", lsTransaction=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   protocolState = list(
     protocol=protocol,
