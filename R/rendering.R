@@ -498,7 +498,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
     reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
     reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
-    
+    if(length(paramNames) == 1) {
+      reportedValues <- data.frame(reportedValues)
+      names(reportedValues) <- paramNames
+    }
+
     tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
     names(tmp) <- paramNames
     tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
