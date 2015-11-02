@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
@@ -380,8 +380,10 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
   #If the function can't 
-  curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
-  
+  if(modZero) {
+    curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
+  }
+
   #Determine axes ranges
   plot_limits <- get_plot_window(curveData, logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
   xrn <- plot_limits[c(1,3)]
@@ -498,7 +500,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
     reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
     reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
-    
+    if(length(paramNames) == 1) {
+      reportedValues <- data.frame(reportedValues)
+      names(reportedValues) <- paramNames
+    }
+
     tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
     names(tmp) <- paramNames
     tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
