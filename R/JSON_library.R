@@ -2128,10 +2128,25 @@ createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = raca
 }
 #' validateValueKindsFromDataFrame
 #' 
-#' Get a data table of type names and kind names plus the kind (full object) from a data frame of type names and kind names
+#' Get a data.table of type names and kind names plus the kind (full object) from a data.frame of type names and kind names.
 #' 
-#' @param typesAndKindsDataFrame data.frame 2 columns lsType, lsKind
-#' @return a data table type names, kind names and full object kinds
+#' @param typesAndKindsDataFrame data.frame with 2 columns: \code{lsType} and \code{lsKind}
+#' @param lsServerURL server to check against, currently ignored
+#' @details Column \code{lsKind} will be NULL if there is no value kind found.
+#' @return a data.table with columns \code{lsTypeName} (character), \code{lsKindName} (character), \code{lsKind} (full object kinds), and \code{lsKindExists} (boolean).
+#' @examples
+#' # Not run because this needs a server, example output is below.
+#' # output <- validateValueKindsFromDataFrame(data.frame(lsType="numericValue", lsKind="time"))
+#' output <- structure(list(
+#'  lsTypeName = "numericValue", lsKindName = "time", 
+#'  lsKind = list(list(structure(list(id = 12, kindName = "time", 
+#'                                    lsType = structure(list(id = 7, typeName = "numericValue", version = 0), 
+#'                                                       .Names = c("id", "typeName", "version")), 
+#'                                    lsTypeAndKind = "numericValue_time", version = 0), 
+#'                               .Names = c("id", "kindName", "lsType", "lsTypeAndKind", "version")))), 
+#'  lsKindExists = TRUE), .Names = c("lsTypeName", "lsKindName", "lsKind", "lsKindExists"), 
+#'  sorted = c("lsTypeName", "lsKindName"), class = c("data.table", "data.frame"), 
+#'  row.names = c(NA, -1L))
 validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   allValueKinds <- getAllValueKinds()
   dt <- rbindlist(lapply(allValueKinds, function(x) data.table('lsTypeName'=x$lsType$typeName,'lsKindName'=x$kindName, 'lsKind'=list(list(x)))))
