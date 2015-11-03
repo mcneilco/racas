@@ -397,7 +397,7 @@ createLsState <- function(lsValues=NULL, recordedBy="userName", lsType="lsType",
   )
   return(LsState)
 }
-createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", lsType="lsType", 
+createProtocolState <- function(protocol=NULL, protocolValues=list(), recordedBy="userName", lsType="lsType", 
                                 lsKind="lsKind", comments="", lsTransaction=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   protocolState = list(
     protocol=protocol,
@@ -2158,6 +2158,19 @@ validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL 
   return(matched)
 }
 
+#' Pick Best Name
+#' 
+#' From an acas entity (protocol, experiment, etc.), get the label that is the
+#' best name
+#' 
+#' @param entity a list that is a protocol, experiment, etc.
+#' @return a list that is a label
+pickBestName <- function(entity) {
+  currentLabels <- Filter(function(x) {!x$ignored}, entity$lsLabels)
+  preferredNames <- Filter(function(x) {x$preferred && x$lsType == "name"}, currentLabels)
+  maxIndex <- which.max(vapply(preferredNames, function(x){rd<-x$recordedDate; if(rd == "") Inf else rd}, 1))
+  return(preferredNames[[maxIndex]])
+}
 
 
 
