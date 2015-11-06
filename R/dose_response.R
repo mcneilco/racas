@@ -300,20 +300,11 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
   if(nrow(pts)==0) {
     return(NULL)
   } else {
-    if(logDose) {
-      maxDose <- max(pts$dose[pts$dose > 0])
-      minDose <- min(pts$dose[pts$dose > 0])
-    } else {
-      maxDose <- max(pts$dose)
-      minDose <- min(pts$dose)
-    }
-    if(logResponse) {
-      maxResponse <- max(pts$response[pts$response > 0])
-      minResponse <- min(pts$response[pts$response > 0])
-    } else {
-      maxResponse <- max(pts$response)
-      minResponse <- min(pts$response)
-    }
+    maxDose <- max(pts$dose)
+    minDose <- min(pts$dose)
+    maxResponse <- max(pts$response)
+    minResponse <- min(pts$response)
+
     responseRange <- abs(maxResponse-minResponse)
     doseRange <- abs(maxDose-minDose)
     if(is.na(ymin)) {
@@ -323,7 +314,7 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         if(responseRange != 0) {
           ymin <- (minResponse - 0.10*responseRange)
         } else {
-          ymin <- floor(maxResponse)
+          ymin <- pretty(maxResponse)[1]
         }
       }
     }
@@ -334,22 +325,30 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         if(responseRange != 0) {
           ymax <- (maxResponse + 0.10*responseRange)
         } else {
-          ymax <- ceiling(maxResponse)
+          ymax <- maxResponse + (maxResponse - pretty(maxResponse)[1])
         }
       }
     }
     if(is.na(xmax)) {
-      if(logDose) {
-        xmax <- 10^(log10(maxDose) + 0.5)        
+      if(doseRange == 0) {
+        xmax <- maxDose + (maxDose - pretty(maxDose)[1])
       } else {
-        xmax <- maxDose + abs(0.1 * doseRange)
-      }  
+        if(logDose) {
+          xmax <- 10^(log10(maxDose) + 0.5)        
+        } else {
+          xmax <- maxDose + abs(0.1 * doseRange)
+        }
+      }
     }
     if(is.na(xmin)) {
-      if(logDose) {
-        xmin <- 10^(log10(minDose) - 0.5)        
+      if(doseRange == 0) {
+        xmin <- pretty(minDose)[1]
       } else {
-        xmin <- minDose - abs(0.1 * doseRange)
+        if(logDose) {
+          xmin <- 10^(log10(minDose) - 0.5)        
+        } else {
+          xmin <- minDose - abs(0.1 * doseRange)
+        }
       }
     }
     return(c(xmin,ymax,xmax,ymin))
