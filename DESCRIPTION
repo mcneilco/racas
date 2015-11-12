@@ -2,7 +2,7 @@ Package: racas
 Type: Package
 Title: R Package for ACAS
 Version: 1.6.1.0
-Date: 2014-01-19
+Date: 2015-01-19
 Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
 Description: R Package for ACAS
