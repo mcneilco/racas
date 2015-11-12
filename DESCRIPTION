@@ -28,7 +28,8 @@ Imports:
     grid,
     utils,
     Hmisc,
-    gplots
+    gplots,
+    methods
 Suggests:
     RPostgreSQL,
     ROracle,
