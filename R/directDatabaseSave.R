@@ -10,7 +10,7 @@
 #' @param name A character string specifying a DBMS table name.
 #' @param value a data.table to write.
 dbWriteTableMatchCol <- function(conn, name, value, ...) {
-  fields <- dbListFields(conn, name)
+  fields <- dbListFields(conn, tolower(name))
   # Remove dropped postgres columns and change Oracle columns to lowercase
   fields <- tolower(fields[!grepl("..pg.dropped", fields, fixed = TRUE)])
   setcolorder(value, fields)
@@ -18,7 +18,7 @@ dbWriteTableMatchCol <- function(conn, name, value, ...) {
 }
 #' @rdname saveEntitiesDD
 getEntityIdsDD <- function(conn, numberOfIds) {
-	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
     return(chunkMillionIds(conn, numberOfIds, getEntityIdsDDInternal))
 	} else {
     # No chunking tested for Postgreql yet
@@ -29,7 +29,7 @@ getEntityIdsDD <- function(conn, numberOfIds) {
 }
 #' @rdname saveEntitiesDD
 getEntityIdsDDInternal <- function(conn, numberOfIds) {
-  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+  if (getDBType() == "Oracle"){
     entityIdSql <- paste0("select thing_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
   } else {
     entityIdSql <- paste0("select nextval('thing_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -54,7 +54,7 @@ chunkMillionIds <- function(conn, numberOfIds, FUN) {
 }
 #' @rdname saveEntitiesDD
 getLabelIdsDD <- function(conn, numberOfIds) {
-  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+  if (getDBType() == "Oracle"){
     # Oracle memory limits us to 1 million id's at a time
     return(chunkMillionIds(conn, numberOfIds, getLabelIdsDDInternal))
   } else {
@@ -67,7 +67,7 @@ getLabelIdsDD <- function(conn, numberOfIds) {
 #' @rdname saveEntitiesDD
 getLabelIdsDDInternal <- function(conn, numberOfIds) {
   
-  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+  if (getDBType() == "Oracle"){
     labelIdSql <- paste0("select label_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
   } else {
     labelIdSql <- paste0("select nextval('label_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -78,7 +78,7 @@ getLabelIdsDDInternal <- function(conn, numberOfIds) {
 }
 #' @rdname saveEntitiesDD
 getStateIdsDD <- function(conn, numberOfIds) {
-  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+  if (getDBType() == "Oracle"){
     # Oracle memory limits us to 1 million id's at a time
     return(chunkMillionIds(conn, numberOfIds, getStateIdsDDInternal))
   } else {
@@ -91,7 +91,7 @@ getStateIdsDD <- function(conn, numberOfIds) {
 #' @rdname saveEntitiesDD
 getStateIdsDDInternal <- function(conn, numberOfIds) {
   
-	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 		stateIdSql <- paste0("select state_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
 	} else {
 		stateIdSql <- paste0("select nextval('state_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -102,7 +102,7 @@ getStateIdsDDInternal <- function(conn, numberOfIds) {
 }
 #' @rdname saveEntitiesDD
 getValueIdsDD <- function(conn, numberOfIds) {
-  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+  if (getDBType() == "Oracle"){
     return(chunkMillionIds(conn, numberOfIds, getValueIdsDDInternal))
   } else {
     valueIdSql <- paste0("select nextval('value_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -113,7 +113,7 @@ getValueIdsDD <- function(conn, numberOfIds) {
 }
 #' @rdname saveEntitiesDD
 getValueIdsDDInternal <- function(conn, numberOfIds) {
-	if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 		valueIdSql <- paste0("select value_pkseq.nextval as id from dual connect by level <= ", numberOfIds)
 	} else {
 		valueIdSql <- paste0("select nextval('value_pkseq') as id from generate_series(1,", numberOfIds, ")")
@@ -129,35 +129,35 @@ getEntityCodesBySqlDD <- function(conn, entityType, numberOfCodes) {
   }
 	if (entityType == "ANALYSIS_GROUP"){
 		entityPrefix <- "AG-"
-		if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+		if (getDBType() == "Oracle"){
 			entityCodeSql <- paste0("select lsseq_anlgrp_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
 		} else {
 			entityCodeSql <- paste0("select nextval('lsseq_anlgrp_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 		}
 	} else if (entityType == "TREATMENT_GROUP"){
 		entityPrefix <- "TG-"
-		if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+		if (getDBType() == "Oracle"){
 			entityCodeSql <- paste0("select lsseq_trtgrp_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
 		} else {
 			entityCodeSql <- paste0("select nextval('lsseq_trtgrp_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 		}
 	} else if (entityType == "SUBJECT"){
 		entityPrefix <- "SUBJ-"
-		if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+		if (getDBType() == "Oracle"){
 			entityCodeSql <- paste0("select lsseq_subj_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
 		} else {
 			entityCodeSql <- paste0("select nextval('lsseq_subj_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 		}
 	} else if (entityType == "CONTAINER"){
 	  entityPrefix <- "CONT-"
-	  if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+	  if (getDBType() == "Oracle"){
 	    entityCodeSql <- paste0("select lsseq_container_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
 	  } else {
 	    entityCodeSql <- paste0("select nextval('lsseq_container_pkseq') as id from generate_series(1,", numberOfCodes, ")")
 	  }
 	} else if (entityType == "ITXCONTCONT") {
     entityPrefix <- "CITX-"
-    if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    if (getDBType() == "Oracle"){
       entityCodeSql <- paste0("select lsseq_itxcntrcntr_pkseq.nextval as id from dual connect by level <= ", numberOfCodes)
     } else {
       entityCodeSql <- paste0("select nextval('lsseq_itxcntrcntr_pkseq') as id from generate_series(1,", numberOfCodes, ")")
@@ -212,7 +212,7 @@ saveAgDataDD <- function(conn, inputDT, experimentId, lsTransactionId, recordedD
 	inputDT[ ,recordedDate := recordedDate ]
 	inputDT[ ,ignored := FALSE ]
 	inputDT[ ,modifiedBy := as.character("") ]
-	if (grepl("Oracle", applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 	  inputDT[ ,modifiedDate := as.character("") ] 
 	} else {
 	  inputDT[ ,modifiedDate := NA ] 			
@@ -247,7 +247,7 @@ saveTgDataDD <- function(conn, inputDT, ag_ids, lsTransactionId, recordedDate){
 	inputDT[ ,recordedDate := recordedDate ]
 	inputDT[ ,ignored := FALSE ]
 	inputDT[ ,modifiedBy := as.character("") ]
-	if (grepl("Oracle", applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 	  inputDT[ ,modifiedDate := as.character("") ] 
 	} else {
 	  inputDT[ ,modifiedDate := NA ] 			
@@ -287,7 +287,7 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 	inputDT[ ,recordedDate := recordedDate ]
 	inputDT[ ,ignored := FALSE ]
 	inputDT[ ,modifiedBy := as.character("") ]
-	if (grepl("Oracle", applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 	  inputDT[ ,modifiedDate := as.character("") ] 
 	} else {
 	  inputDT[ ,modifiedDate := NA ] 			
@@ -343,7 +343,7 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
   }
 
 	entities[ ,lsTypeAndKind := paste0(lsType, "_", lsKind)]
-	entities[ is.na(id), id := getEntityIdsDD(conn, length(id))]
+	entities[ is.na(id), id := getEntityIdsDD(conn, .N)]
 	entities[ is.na(codeName) | codeName=="", codeName := getEntityCodesBySqlDD(conn, entityType, length(codeName))]
 	merge_ids <- subset(entities, ,c("id", "tempId"))
 	setkey(merge_ids, "tempId")
@@ -399,7 +399,7 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
                       "ITXCONTCONT" = NA,
                       stop("Unknown Entity Type"))
   
-	if (!grepl("Oracle", applicationSettings$server.database.driver)) {
+	if (!getDBType() == "Oracle") {
 	  entityTable <- tolower(entityTable)
 	  joinTable <- tolower(joinTable)
 	}
@@ -473,7 +473,7 @@ saveStatesDD <- function( conn, entityType, inputStatesDT ){
     setnames(states, "entityId", "container_id")
 	}
   
-  if (!grepl("Oracle", applicationSettings$server.database.driver)) {
+  if (!getDBType() == "Oracle") {
     stateTable <- tolower(stateTable)
   }
   
@@ -520,7 +520,7 @@ saveValuesDD <- function( conn, entityType, inputDT ){
 	values[, unitTypeAndKind := paste0(nullTextIfNa(unitType), "_", nullTextIfNa(unitKind))]
 	values[, codeTypeAndKind := paste0(nullTextIfNa(codeType), "_", nullTextIfNa(codeKind))]
 	
-	if (grepl("Oracle", applicationSettings$server.database.driver)){
+	if (getDBType() == "Oracle"){
 		values[, blobValue := list("")]
 	} else {
 		values[, blobValue := NA]
@@ -571,7 +571,7 @@ saveValuesDD <- function( conn, entityType, inputDT ){
     setnames(values, "stateId", "container_state_id")
 	}
 	
-	if (!grepl("Oracle", applicationSettings$server.database.driver)) {
+	if (!getDBType() == "Oracle") {
 	  valueTable <- tolower(valueTable)
 	}
   
@@ -618,7 +618,7 @@ saveLabelsDD <- function( conn, entityType, inputLabelsDT ){
     setnames(labels, "entityId", "container_id")
   }
   
-  if (!grepl("Oracle", applicationSettings$server.database.driver)) {
+  if (!getDBType() == "Oracle") {
     labelTable <- tolower(labelTable)
   }
   
@@ -638,7 +638,7 @@ saveTsvData <- function(experimentId, lsTransactionId, agDatafile, tgDataFile, s
 		
 		conn <- getDatabaseConnection(racas::applicationSettings)
 
-		if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+		if (getDBType() == "Oracle"){
 			sqlDeferConstraints <- "SET CONSTRAINTS ALL DEFERRED"
 			rs1 <- dbSendQuery(conn, sqlDeferConstraints)
 			Sys.setenv(ORA_SDTZ = "PST8PDT")
@@ -723,7 +723,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
   conn <- getDatabaseConnection(racas::applicationSettings)
   on.exit(dbDisconnect(conn))
   result <- tryCatchLog({
-    if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    if (getDBType() == "Oracle"){
       sqlDeferConstraints <- "SET CONSTRAINTS ALL DEFERRED"
       rs1 <- dbSendQuery(conn, sqlDeferConstraints)
       Sys.setenv(ORA_SDTZ = "PST8PDT")
@@ -764,7 +764,7 @@ saveDataDirectDatabase <- function(agData, tgData, subjectData, lsTransactionId 
   # If anything fails, roll the transaction back
   if (is.null(result) || is.null(result$value)){
     dbRollback(conn)
-    if (grepl("Oracle", racas::applicationSettings$server.database.driver)){
+    if (getDBType() == "Oracle"){
       # On Oracle, delete everything saved in this transaction
       limitQuery <-  paste("where ls_transaction =", lsTransactionId)
       dbSendQuery(conn, paste("delete from subject_value", limitQuery))
