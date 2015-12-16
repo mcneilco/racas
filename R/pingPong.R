@@ -461,3 +461,813 @@ materialize_dose_response_views <- function(update = TRUE, createTableOptions = 
   on.exit(dbDisconnect(conn))
   logger$info(paste0("materialization complete"))            
 }
+
+materialize_analysis_group_results <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
+  logger <- createLogger(logName = "com.mcneilco.racas.materialize.analysisgroupresults", logToConsole = TRUE)  
+  logger$info("materialize analysis group results initiated")  
+  conn <- getDatabaseConnection()
+  on.exit({dbRollback(conn);dbDisconnect(conn)})
+  transaction <- startTransaction(conn)
+  
+  #For Optimization - set query optimizer version to 10.2
+  
+  agvIdsRemovedMaterializedName <-  "api_removed_agv_ids_tmp"
+  agvIdsAddedMaterializedName <-  "api_added_agv_ids_tmp"
+  agvIdsMaterializedName <-  "api_agv_ids_m"
+  analysisGroupResultsMaterializedName <-  "api_analysis_group_results_m"
+  
+  apiAgvIdsRemovedAlreadyExisted <- dbExistsTable(conn, agvIdsRemovedMaterializedName)
+  apiAgvIdsAddedAlreadyExisted <- dbExistsTable(conn, agvIdsAddedMaterializedName)
+  apiAgvIdsAlreadyExisted <- dbExistsTable(conn, agvIdsMaterializedName)
+  apiAnalysisGroupResultsAlreadyExisted <- dbExistsTable(conn, analysisGroupResultsMaterializedName)
+  
+  currentAgvIdsSQL <- "SELECT /*+ optimizer_features_enable('10.2.0.4') */ agv.id AS valueId
+  FROM experiment e
+  JOIN experiment_analysisgroup eag on e.id=eag.experiment_id
+  JOIN analysis_GROUP ag ON eag.analysis_group_id = ag.id
+  JOIN analysis_GROUP_state ags ON ags.analysis_GROUP_id = ag.id
+  JOIN analysis_GROUP_value agv ON agv.analysis_state_id = ags.id AND agv.ls_kind <> 'batch code' AND agv.ls_kind <> 'time'
+  JOIN analysis_GROUP_value agv2 ON agv2.analysis_state_id = ags.id and agv2.ls_kind = 'batch code'
+  WHERE ag.ignored = '0' and
+  ags.ignored = '0' and
+  agv.ignored = '0' and
+  e.ignored = '0'"
+  
+  if(apiAgvIdsRemovedAlreadyExisted & update == TRUE) {
+    if(apiAgvIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT INTO ",agvIdsRemovedMaterializedName,"
+                                          ( valueId
+                                          )
+                                          SELECT *
+                                          FROM ",agvIdsMaterializedName,"
+                                          WHERE NOT EXISTS (",
+                                          currentAgvIdsSQL,
+                                          " AND agv.id = ",agvIdsMaterializedName,".valueid
+                                          )"))
+    }
+    } else {
+      if(apiAgvIdsRemovedAlreadyExisted) {
+        logger$info(paste0(agvIdsRemovedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",agvIdsRemovedMaterializedName))
+      }
+      apiAgvIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",agvIdsRemovedMaterializedName," (valueid NUMBER(19)) on commit delete rows"))    
+    }
+  if(apiAgvIdsAddedAlreadyExisted & update == TRUE) {
+    if(apiAgvIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT
+                                          INTO ",agvIdsAddedMaterializedName,"
+                                          (
+                                          valueId
+                                          )
+                                          SELECT a.valueId
+                                            FROM (",currentAgvIdsSQL,") a
+                                            WHERE NOT EXISTS
+                                            (SELECT *
+                                            FROM ",agvIdsMaterializedName," b
+                                            WHERE b.valueId = a.valueId
+                                          )"))
+    }
+    } else {
+      if(apiAgvIdsAddedAlreadyExisted) {
+        logger$info(paste0(agvIdsAddedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",agvIdsAddedMaterializedName))
+      }
+      apiCurveIdsAddedCreated <- dbSendQuery(conn, paste0("create global temporary table ",agvIdsAddedMaterializedName," (curveid VARCHAR2(4000), valueid NUMBER(19)) on commit delete rows"))    
+    }
+  #Analysis Group Value Ids
+  if(apiAgvIdsAlreadyExisted & update == TRUE) {
+    
+    logger$info(paste0("updating ",agvIdsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",agvIdsMaterializedName,"
+                                             WHERE valueid in (
+                                             select valueid from ",agvIdsRemovedMaterializedName,"
+                                             )"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",agvIdsMaterializedName,"
+                                            (
+                                            valueId
+                                            )
+                                            ( SELECT a.valueId
+                                            FROM (",agvIdsAddedMaterializedName,") a
+                                            )"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    if(apiAgvIdsAlreadyExisted) {
+      logger$info(paste0(agvIdsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",agvIdsMaterializedName))
+    }
+    logger$info(paste0("creating ",agvIdsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",agvIdsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as ",currentAgvIdsSQL)
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key valueid"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",agvIdsMaterializedName," ADD PRIMARY KEY (valueid) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+  }
+  #Analysis Group Results
+  if(apiAnalysisGroupResultsAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",analysisGroupResultsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",analysisGroupResultsMaterializedName,"
+                                             WHERE agv_id in (
+                                             select valueid from ",agvIdsRemovedMaterializedName,"
+                                             )"))
+    
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",analysisGroupResultsMaterializedName,"
+                                            (
+                                             ag_id,
+                                             ag_code_name,
+                                             experiment_id,
+                                             tested_lot,
+                                             tested_conc,
+                                             tested_conc_unit,
+                                             agv_id,
+                                             ls_type,
+                                             ls_kind,
+                                             operator_kind,
+                                             numeric_value,
+                                             uncertainty,
+                                             unit_kind,
+                                             string_value,
+                                             clob_value,
+                                             comments,
+                                             recorded_date,
+                                             public_data
+                                            )
+                                            (SELECT p_api_analysis_group_results.ag_id,
+                                             p_api_analysis_group_results.ag_code_name,
+                                             p_api_analysis_group_results.experiment_id,
+                                             p_api_analysis_group_results.tested_lot,
+                                             p_api_analysis_group_results.tested_conc,
+                                             p_api_analysis_group_results.tested_conc_unit,
+                                             p_api_analysis_group_results.agv_id,
+                                             p_api_analysis_group_results.ls_type,
+                                             p_api_analysis_group_results.ls_kind,
+                                             p_api_analysis_group_results.operator_kind,
+                                             p_api_analysis_group_results.numeric_value,
+                                             p_api_analysis_group_results.uncertainty,
+                                             p_api_analysis_group_results.unit_kind,
+                                             p_api_analysis_group_results.string_value,
+                                             p_api_analysis_group_results.clob_value,
+                                             p_api_analysis_group_results.comments,
+                                             p_api_analysis_group_results.recorded_date,
+                                             p_api_analysis_group_results.public_data
+                                            FROM p_api_analysis_group_results
+                                           WHERE p_api_analysis_group_results.public_data = '1'
+                                            AND agv_id in 
+                                            ( SELECT a.valueId
+                                            FROM (",agvIdsAddedMaterializedName,") a
+                                            ))"))
+    
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    
+    if(apiAnalysisGroupResultsAlreadyExisted) {
+      logger$info(paste0(analysisGroupResultsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",analysisGroupResultsMaterializedName))
+    }
+    logger$info(paste0("creating ",analysisGroupResultsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",analysisGroupResultsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_analysis_group_results")
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key agv_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",analysisGroupResultsMaterializedName," ADD PRIMARY KEY (agv_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding index IDX_API_AG_RESULTS_M_EXPT_ID"))
+    experimentIdIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_AG_RESULTS_M_EXPT_ID ON ",analysisGroupResultsMaterializedName," (experiment_id)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_AG_RESULTS_M_LOT"))
+    testedLotIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_AG_RESULTS_M_LOT ON ",analysisGroupResultsMaterializedName," (tested_lot)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_AG_RESULTS_M_LS_KIND"))
+    lsKindIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_AG_RESULTS_M_LS_KIND ON ",analysisGroupResultsMaterializedName," (ls_kind)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_AG_RESULTS_M_UNIT"))
+    unitKindIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_AG_RESULTS_M_UNIT ON ",analysisGroupResultsMaterializedName," (unit_kind)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+  }
+  
+  logger$info(paste0("commiting transaction"))        
+  commited <- dbCommit(conn)
+  on.exit(dbDisconnect(conn))
+  logger$info(paste0("materialization complete"))            
+}
+
+materialize_treatment_group_results <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
+  logger <- createLogger(logName = "com.mcneilco.racas.materialize.treatmentgroupresults", logToConsole = TRUE)  
+  logger$info("materialize treatment group results initiated")  
+  conn <- getDatabaseConnection()
+  on.exit({dbRollback(conn);dbDisconnect(conn)})
+  transaction <- startTransaction(conn)
+  
+  htsExperimentIdsRemovedMaterializedName <-  "api_removed_hts_expt_ids_tmp"
+  htsExperimentIdsAddedMaterializedName <-  "api_added_hts_expt_ids_tmp"
+  htsExperimentIdsMaterializedName <-  "api_hts_expt_ids_m"
+  treatmentGroupResultsMaterializedName <-  "api_treatment_group_results_m"
+  
+  apiHtsExperimentIdsRemovedAlreadyExisted <- dbExistsTable(conn, htsExperimentIdsRemovedMaterializedName)
+  apiHtsExperimentIdsAddedAlreadyExisted <- dbExistsTable(conn, htsExperimentIdsAddedMaterializedName)
+  apiHtsExperimentIdsAlreadyExisted <- dbExistsTable(conn, htsExperimentIdsMaterializedName)
+  apiTreatmentGroupResultsAlreadyExisted <- dbExistsTable(conn, treatmentGroupResultsMaterializedName)
+  
+  currentHtsExperimentIdsSQL <- "SELECT e.id as experiment_id, ev.id as analysis_result_value_id, ev.version as value_version
+                                FROM experiment e
+                                JOIN experiment_state es ON es.experiment_id = e.id
+                                JOIN experiment_value ev ON es.id = ev.experiment_state_id
+                                WHERE ev.ls_kind = 'analysis result html'
+                                AND e.ignored='0'
+                                AND es.ignored='0'
+                                AND ev.ignored='0'"
+  
+  if(apiHtsExperimentIdsRemovedAlreadyExisted & update == TRUE) {
+    if(apiHtsExperimentIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT INTO ",htsExperimentIdsRemovedMaterializedName,"
+                                          (
+                                          experiment_id,
+                                          analysis_result_value_id,
+                                          value_version
+                                          )
+                                          SELECT *
+                                          FROM ",htsExperimentIdsMaterializedName,"
+                                          WHERE NOT EXISTS ( ",
+                                          currentHtsExperimentIdsSQL,"
+                                          AND e.id = ",htsExperimentIdsMaterializedName,".experiment_id
+                                          AND ev.id = ",htsExperimentIdsMaterializedName,".analysis_result_value_id
+                                          AND ev.version = ",htsExperimentIdsMaterializedName,".value_version
+                                          )"))
+    }
+    } else {
+      if(apiHtsExperimentIdsRemovedAlreadyExisted) {
+        logger$info(paste0(htsExperimentIdsRemovedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",htsExperimentIdsRemovedMaterializedName))
+      }
+      apiHtsExperimentIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",htsExperimentIdsRemovedMaterializedName," (experiment_id NUMBER(19), analysis_result_value_id NUMBER(19), value_version NUMBER(10)) on commit delete rows"))    
+    }
+  if(apiHtsExperimentIdsAddedAlreadyExisted & update == TRUE) {
+    if(apiHtsExperimentIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT
+                                          INTO ",htsExperimentIdsAddedMaterializedName,"
+                                          (
+                                          experiment_id,
+                                          analysis_result_value_id,
+                                          value_version
+                                          )
+                                          SELECT a.experiment_id, a.analysis_result_value_id, a.value_version
+                                            FROM (",currentHtsExperimentIdsSQL,") a
+                                            WHERE NOT EXISTS
+                                            (SELECT *
+                                            FROM ",htsExperimentIdsMaterializedName," b
+                                            WHERE b.experiment_id = a.experiment_id
+                                            AND b.analysis_result_value_id = a.analysis_result_value_id
+                                            AND b.value_version = a.value_version
+                                          )"))
+    }
+    } else {
+      if(apiHtsExperimentIdsAddedAlreadyExisted) {
+        logger$info(paste0(htsExperimentIdsAddedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",htsExperimentIdsAddedMaterializedName))
+      }
+      apiHtsExperimentIdsAddedCreated <- dbSendQuery(conn, paste0("create global temporary table ",htsExperimentIdsAddedMaterializedName," (experiment_id NUMBER(19), analysis_result_value_id NUMBER(19), value_version NUMBER(10)) on commit delete rows"))    
+    }
+  #HTS Experiment Ids, along with analysis status html value id and version
+  if(apiHtsExperimentIdsAlreadyExisted & update == TRUE) {
+    
+    logger$info(paste0("updating ",htsExperimentIdsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",htsExperimentIdsMaterializedName,"
+                                             WHERE experiment_id in (
+                                             select experiment_id from ",htsExperimentIdsRemovedMaterializedName,"
+                                             )"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",htsExperimentIdsMaterializedName,"
+                                            (
+                                            experiment_id,
+                                            analysis_result_value_id,
+                                            value_version
+                                            )
+                                            ( SELECT a.experiment_id,
+                                              a.analysis_result_value_id,
+                                              a.value_version
+                                            FROM (",htsExperimentIdsAddedMaterializedName,") a
+                                            )"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    if(apiHtsExperimentIdsAlreadyExisted) {
+      logger$info(paste0(htsExperimentIdsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",htsExperimentIdsMaterializedName))
+    }
+    logger$info(paste0("creating ",htsExperimentIdsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",htsExperimentIdsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as ",currentHtsExperimentIdsSQL)
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key experiment_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",htsExperimentIdsMaterializedName," ADD PRIMARY KEY (experiment_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding index IDX_API_HTS_EXPT_IDS_M_VALUEID"))
+    valueidIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_HTS_EXPT_IDS_M_VALUEID ON ",htsExperimentIdsMaterializedName," (analysis_result_value_id)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_HTS_EXPT_IDS_M_VERSION"))
+    versionIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_HTS_EXPT_IDS_M_VERSION ON ",htsExperimentIdsMaterializedName," (value_version)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+  }
+  #Treatment Group Results
+  if(apiTreatmentGroupResultsAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",treatmentGroupResultsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",treatmentGroupResultsMaterializedName,"
+                                             WHERE experiment_id in (
+                                             select experiment_id from ",htsExperimentIdsRemovedMaterializedName,"
+                                             )"))
+    
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",treatmentGroupResultsMaterializedName,"
+                                            (
+                                            experiment_id,
+                                            tested_lot,
+                                            concentration,
+                                            conc_unit,
+                                            tgv_id,
+                                            ls_kind,
+                                            operator_kind,
+                                            numeric_value,
+                                            uncertainty,
+                                            unit_kind,
+                                            string_value,
+                                            comments,
+                                            recorded_date,
+                                            public_data,
+                                            state_id,
+                                            treatment_group_id
+                                            )
+                                            (SELECT api_hts_treatment_results.experiment_id,
+                                            api_hts_treatment_results.tested_lot,
+                                            api_hts_treatment_results.concentration,
+                                            api_hts_treatment_results.conc_unit,
+                                            api_hts_treatment_results.tgv_id,
+                                            api_hts_treatment_results.ls_kind,
+                                            api_hts_treatment_results.operator_kind,
+                                            api_hts_treatment_results.numeric_value,
+                                            api_hts_treatment_results.uncertainty,
+                                            api_hts_treatment_results.unit_kind,
+                                            api_hts_treatment_results.string_value,
+                                            api_hts_treatment_results.comments,
+                                            api_hts_treatment_results.recorded_date,
+                                            api_hts_treatment_results.public_data,
+                                            api_hts_treatment_results.state_id,
+                                            api_hts_treatment_results.treatment_group_id
+                                            FROM api_hts_treatment_results
+                                            WHERE api_hts_treatment_results.public_data = '1'
+                                            AND experiment_id in 
+                                            ( SELECT a.experiment_id
+                                            FROM (",htsExperimentIdsAddedMaterializedName,") a
+                                            ))"))
+    
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    
+    if(apiTreatmentGroupResultsAlreadyExisted) {
+      logger$info(paste0(treatmentGroupResultsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",treatmentGroupResultsMaterializedName))
+    }
+    logger$info(paste0("creating ",treatmentGroupResultsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",treatmentGroupResultsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_hts_treatment_results")
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key tgv_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",treatmentGroupResultsMaterializedName," ADD PRIMARY KEY (tgv_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding index IDX_API_TG_RESULTS_M_EXPT_ID"))
+    experimentIdIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_TG_RESULTS_M_EXPT_ID ON ",treatmentGroupResultsMaterializedName," (experiment_id)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_TG_RESULTS_M_LOT"))
+    testedLotIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_TG_RESULTS_M_LOT ON ",treatmentGroupResultsMaterializedName," (tested_lot)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_TG_RESULTS_M_LS_KIND"))
+    lsKindIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_TG_RESULTS_M_LS_KIND ON ",treatmentGroupResultsMaterializedName," (ls_kind)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    logger$info(paste0("adding index IDX_API_TG_RESULTS_M_UNIT"))
+    unitKindIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_TG_RESULTS_M_UNIT ON ",treatmentGroupResultsMaterializedName," (unit_kind)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+  }
+  
+  logger$info(paste0("commiting transaction"))        
+  commited <- dbCommit(conn)
+  on.exit(dbDisconnect(conn))
+  logger$info(paste0("materialization complete"))            
+  }
+
+materialize_experiments <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
+  logger <- createLogger(logName = "com.mcneilco.racas.materialize.experiments", logToConsole = TRUE)  
+  logger$info("materialize experiments initiated")  
+  conn <- getDatabaseConnection()
+  on.exit({dbRollback(conn);dbDisconnect(conn)})
+  transaction <- startTransaction(conn)
+  
+  exptIdsRemovedMaterializedName <-  "api_removed_expt_ids_tmp"
+  exptIdsAddedMaterializedName <-  "api_added_expt_ids_tmp"
+  exptIdsMaterializedName <-  "api_expt_ids_m"
+  experimentsMaterializedName <-  "api_experiment_m"
+  
+  apiExptIdsRemovedAlreadyExisted <- dbExistsTable(conn, exptIdsRemovedMaterializedName)
+  apiExptIdsAddedAlreadyExisted <- dbExistsTable(conn, exptIdsAddedMaterializedName)
+  apiExptIdsAlreadyExisted <- dbExistsTable(conn, exptIdsMaterializedName)
+  apiExperimentsAlreadyExisted <- dbExistsTable(conn, experimentsMaterializedName)
+  
+  currentExptIdsSQL <- "SELECT /*+ FIRST_ROWS(1) */  e.id AS expt_id, e.version as version
+  FROM experiment e
+  JOIN experiment_label el
+  ON e.id         =el.experiment_id
+  JOIN experiment_state es
+  ON e.id=es.experiment_id
+  JOIN experiment_value ev
+  ON Es.Id=Ev.Experiment_State_Id
+  WHERE e.ignored ='0'
+  AND el.preferred='1'
+  AND el.ignored  ='0'
+  AND ev.ignored = '0'
+  AND es.ls_kind='experiment metadata'
+  AND ev.ls_kind='experiment status'
+  AND ev.code_value IN ('approved', 'complete') GROUP BY e.id, e.version"
+  
+  if(apiExptIdsRemovedAlreadyExisted & update == TRUE) {
+    if(apiExptIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT INTO ",exptIdsRemovedMaterializedName,"
+                                          ( expt_id,
+                                          version
+                                          )
+                                          SELECT *
+                                          FROM ",exptIdsMaterializedName,"
+                                          WHERE NOT EXISTS
+                                          (SELECT *
+                                          FROM
+                                          (",
+                                          currentExptIdsSQL,
+                                          ") a
+                                          WHERE ",exptIdsMaterializedName,".expt_id = a. expt_id
+                                          AND ",exptIdsMaterializedName,".version = a. version
+                                          )"))
+    }
+    } else {
+      if(apiExptIdsRemovedAlreadyExisted) {
+        logger$info(paste0(exptIdsRemovedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",exptIdsRemovedMaterializedName))
+      }
+      apiExptIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",exptIdsRemovedMaterializedName," (expt_id NUMBER(19), version NUMBER(19)) on commit delete rows"))    
+    }
+  if(apiExptIdsAddedAlreadyExisted & update == TRUE) {
+    if(apiExptIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT
+                                          INTO ",exptIdsAddedMaterializedName,"
+                                          (
+                                          expt_id,
+                                          version
+                                          )
+                                          ( SELECT a.expt_id, a.version
+                                          FROM (",currentExptIdsSQL,") a
+                                          WHERE NOT EXISTS
+                                          (SELECT *
+                                          FROM ",exptIdsMaterializedName," b
+                                          WHERE b.expt_id = a.expt_id
+                                          AND b.version = a.version
+                                          ))"))
+    }
+    } else {
+      if(apiExptIdsAddedAlreadyExisted) {
+        logger$info(paste0(exptIdsAddedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",exptIdsAddedMaterializedName))
+      }
+      apiCurveIdsAddedCreated <- dbSendQuery(conn, paste0("create global temporary table ",exptIdsAddedMaterializedName," (expt_id NUMBER(19), version NUMBER(19)) on commit delete rows"))    
+    }
+  #Experiment Ids
+  if(apiExptIdsAlreadyExisted & update == TRUE) {
+    
+    logger$info(paste0("updating ",exptIdsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",exptIdsMaterializedName,"
+                                             WHERE (expt_id, version) in (
+                                             select expt_id, version from ",exptIdsRemovedMaterializedName,"
+                                             )"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",exptIdsMaterializedName,"
+                                            (
+                                            expt_id,
+                                            version
+                                            )
+                                            ( SELECT a.expt_id, a.version
+                                            FROM (",exptIdsAddedMaterializedName,") a
+                                            )"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    if(apiExptIdsAlreadyExisted) {
+      logger$info(paste0(exptIdsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",exptIdsMaterializedName))
+    }
+    logger$info(paste0("creating ",exptIdsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",exptIdsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as ",currentExptIdsSQL)
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key expt_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",exptIdsMaterializedName," ADD PRIMARY KEY (expt_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding version index"))  
+    indexSQL <- paste0("CREATE INDEX IDX_EXPT_IDS_M_VERSION ON ",exptIdsMaterializedName," (version)",ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",indexSQL))
+    curveidIndex <- dbSendQuery(conn,indexSQL)
+    
+  }
+  #Experiments
+  if(apiExperimentsAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",experimentsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",experimentsMaterializedName,"
+                                             WHERE (id, version) in (
+                                             select expt_id, version from ",exptIdsRemovedMaterializedName,"
+                                             )"))
+    
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",experimentsMaterializedName,"
+                                            (
+                                            ID,
+                                            EXPERIMENT_NAME,
+                                            CODE_NAME,
+                                            LABEL_TEXT,
+                                            KIND,
+                                            RECORDED_BY,
+                                            RECORDED_DATE,
+                                            SHORT_DESCRIPTION,
+                                            PROTOCOL_ID,
+                                            ANALYSIS_STATUS,
+                                            COMPLETION_DATE,
+                                            NOTEBOOK,
+                                            NOTEBOOK_PAGE,
+                                            PROJECT,
+                                            STATUS,
+                                            SCIENTIST,
+                                            HTS_FORMAT,
+                                            VERSION
+                                            )
+                                            (SELECT api_experiment.ID,
+                                            api_experiment.EXPERIMENT_NAME,
+                                            api_experiment.CODE_NAME,
+                                            api_experiment.LABEL_TEXT,
+                                            api_experiment.KIND,
+                                            api_experiment.RECORDED_BY,
+                                            api_experiment.RECORDED_DATE,
+                                            api_experiment.SHORT_DESCRIPTION,
+                                            api_experiment.PROTOCOL_ID,
+                                            api_experiment.ANALYSIS_STATUS,
+                                            api_experiment.COMPLETION_DATE,
+                                            api_experiment.NOTEBOOK,
+                                            api_experiment.NOTEBOOK_PAGE,
+                                            api_experiment.PROJECT,
+                                            api_experiment.STATUS,
+                                            api_experiment.SCIENTIST,
+                                            api_experiment.HTS_FORMAT,
+                                            api_experiment.VERSION
+                                            FROM api_experiment
+                                            WHERE (id, version) in 
+                                            ( SELECT a.expt_id, a.version
+                                            FROM (",exptIdsAddedMaterializedName,") a
+                                            ))"))
+    
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+  } else {
+    
+    if(apiExperimentsAlreadyExisted) {
+      logger$info(paste0(experimentsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",experimentsMaterializedName))
+    }
+    logger$info(paste0("creating ",experimentsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",experimentsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_experiment")
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key expt_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",experimentsMaterializedName," ADD PRIMARY KEY (id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding version index"))  
+    indexSQL <- paste0("CREATE INDEX IDX_API_EXPERIMENT_M_VERSION ON ",experimentsMaterializedName," (version)",ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",indexSQL))
+    versionIndex <- dbSendQuery(conn,indexSQL)
+    
+    logger$info(paste0("adding index IDX_API_EXPERIMENT_M_NAME"))
+    experimentNameIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_EXPERIMENT_M_NAME ON ",experimentsMaterializedName," (label_text)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+  }
+  
+  logger$info(paste0("commiting transaction"))        
+  commited <- dbCommit(conn)
+  on.exit(dbDisconnect(conn))
+  logger$info(paste0("materialization complete"))            
+}
+
+materialize_protocols <- function(update = TRUE, createTableOptions = NA, createIndexOptions = NA) {
+  logger <- createLogger(logName = "com.mcneilco.racas.materialize.protocols", logToConsole = TRUE)  
+  logger$info("materialize protocols initiated")  
+  conn <- getDatabaseConnection()
+  on.exit({dbRollback(conn);dbDisconnect(conn)})
+  transaction <- startTransaction(conn)
+  
+  protocolIdsRemovedMaterializedName <-  "api_removed_protocol_ids_tmp"
+  protocolIdsAddedMaterializedName <-  "api_added_protocol_ids_tmp"
+  protocolIdsMaterializedName <-  "api_protocol_ids_m"
+  protocolsMaterializedName <-  "api_protocol_m"
+  
+  apiProtocolIdsRemovedAlreadyExisted <- dbExistsTable(conn, protocolIdsRemovedMaterializedName)
+  apiProtocolIdsAddedAlreadyExisted <- dbExistsTable(conn, protocolIdsAddedMaterializedName)
+  apiProtocolIdsAlreadyExisted <- dbExistsTable(conn, protocolIdsMaterializedName)
+  apiProtocolsAlreadyExisted <- dbExistsTable(conn, protocolsMaterializedName)
+  
+  currentProtocolIdsSQL <- "SELECT /*+ FIRST_ROWS(1) */  p.id AS protocol_id, p.version as version
+  FROM protocol p
+  JOIN protocol_label pl ON p.id=pl.protocol_id
+  LEFT JOIN protocol_state ps ON p.id = ps.protocol_id AND ps.ls_kind = 'name modifier'
+  LEFT JOIN protocol_value pv ON ps.id = pv.protocol_state_id AND pv.ls_kind = 'postfix'
+  WHERE p.ignored ='0'
+  AND pl.preferred='1'
+  AND pl.ignored  ='0' GROUP BY p.id, p.version"
+  
+  if(apiProtocolIdsRemovedAlreadyExisted & update == TRUE) {
+    if(apiProtocolIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT INTO ",protocolIdsRemovedMaterializedName,"
+                                          ( protocol_id,
+                                          version
+                                          )
+                                          SELECT *
+                                          FROM ",protocolIdsMaterializedName,"
+                                          WHERE NOT EXISTS
+                                          (SELECT *
+                                          FROM
+                                          (",
+                                          currentProtocolIdsSQL,
+                                          ") a
+                                          WHERE ",protocolIdsMaterializedName,".protocol_id = a. protocol_id
+                                          AND ",protocolIdsMaterializedName,".version = a. version
+                                          )"))
+    }
+    } else {
+      if(apiProtocolIdsRemovedAlreadyExisted) {
+        logger$info(paste0(protocolIdsRemovedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",protocolIdsRemovedMaterializedName))
+      }
+      apiProtocolIdsRemovedCreated <- dbSendQuery(conn, paste0("create global temporary table ",protocolIdsRemovedMaterializedName," (protocol_id NUMBER(19), version NUMBER(19)) on commit delete rows"))    
+    }
+  if(apiProtocolIdsAddedAlreadyExisted & update == TRUE) {
+    if(apiProtocolIdsAlreadyExisted) {
+      updated <- dbSendQuery(conn, paste0("INSERT
+                                          INTO ",protocolIdsAddedMaterializedName,"
+                                          (
+                                          protocol_id,
+                                          version
+                                          )
+                                          ( SELECT a.protocol_id, a.version
+                                          FROM (",currentProtocolIdsSQL,") a
+                                          WHERE NOT EXISTS
+                                          (SELECT *
+                                          FROM ",protocolIdsMaterializedName," b
+                                          WHERE b.protocol_id = a.protocol_id
+                                          AND b.version = a.version
+                                          ))"))
+    }
+    } else {
+      if(apiProtocolIdsAddedAlreadyExisted) {
+        logger$info(paste0(protocolIdsAddedMaterializedName, " already exists, dropping"))            
+        dbSendQuery(conn, paste0("drop table ",protocolIdsAddedMaterializedName))
+      }
+      apiCurveIdsAddedCreated <- dbSendQuery(conn, paste0("create global temporary table ",protocolIdsAddedMaterializedName," (protocol_id NUMBER(19), version NUMBER(19)) on commit delete rows"))    
+    }
+  #Protocol Ids
+  if(apiProtocolIdsAlreadyExisted & update == TRUE) {
+    
+    logger$info(paste0("updating ",protocolIdsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",protocolIdsMaterializedName,"
+                                             WHERE (protocol_id, version) in (
+                                             select protocol_id, version from ",protocolIdsRemovedMaterializedName,"
+                                             )"))
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",protocolIdsMaterializedName,"
+                                            (
+                                            protocol_id,
+                                            version
+                                            )
+                                            ( SELECT a.protocol_id, a.version
+                                            FROM (",protocolIdsAddedMaterializedName,") a
+                                            )"))
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+    
+  } else {
+    if(apiProtocolIdsAlreadyExisted) {
+      logger$info(paste0(protocolIdsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",protocolIdsMaterializedName))
+    }
+    logger$info(paste0("creating ",protocolIdsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",protocolIdsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as ",currentProtocolIdsSQL)
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key protocol_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",protocolIdsMaterializedName," ADD PRIMARY KEY (protocol_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding version index"))  
+    indexSQL <- paste0("CREATE INDEX IDX_PROTOCOL_IDS_M_VERSION ON ",protocolIdsMaterializedName," (version)",ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",indexSQL))
+    versionIndex <- dbSendQuery(conn,indexSQL)
+    
+  }
+  #Protocols
+  if(apiProtocolsAlreadyExisted & update == TRUE) {
+    logger$info(paste0("updating ",protocolsMaterializedName))
+    removed_data <- dbSendQuery(conn, paste0("DELETE FROM ",protocolsMaterializedName,"
+                                             WHERE (protocol_id, version) in (
+                                             select protocol_id, version from ",protocolIdsRemovedMaterializedName,"
+                                             )"))
+    
+    logger$info(paste0("removed ",dbGetInfo(removed_data)$rowsAffected, " rows"))  
+    missingData <- dbSendQuery(conn, paste0("INSERT
+                                            INTO ",protocolsMaterializedName,"
+                                            (
+                                            PROTOCOL_ID,
+                                            CODE_NAME,
+                                            RECORDED_BY,
+                                            RECORDED_DATE,
+                                            SHORT_DESCRIPTION,
+                                            LABEL_TEXT,
+                                            VERSION
+                                            )
+                                            (SELECT api_protocol.PROTOCOL_ID,
+                                            api_protocol.CODE_NAME,
+                                            api_protocol.RECORDED_BY,
+                                            api_protocol.RECORDED_DATE,
+                                            api_protocol.SHORT_DESCRIPTION,
+                                            api_protocol.LABEL_TEXT,
+                                            api_protocol.VERSION
+                                            FROM api_protocol
+                                            WHERE (protocol_id, version) in 
+                                            ( SELECT a.protocol_id, a.version
+                                            FROM (",protocolIdsAddedMaterializedName,") a
+                                            ))"))
+    
+    logger$info(paste0("added ",dbGetInfo(missingData)$rowsAffected, " rows"))
+  } else {
+    
+    if(apiProtocolsAlreadyExisted) {
+      logger$info(paste0(protocolsMaterializedName, " already exists, dropping"))      
+      dbSendQuery(conn, paste0("DROP table ",protocolsMaterializedName))
+    }
+    logger$info(paste0("creating ",protocolsMaterializedName))          
+    createTableSQL <- paste0("CREATE table ",protocolsMaterializedName," ",ifelse(is.na(createTableOptions),"",createTableOptions), " as select * from api_protocol")
+    logger$debug(paste0("executing sql ",createTableSQL))
+    finished <- dbSendQuery(conn, createTableSQL)
+    
+    logger$info(paste0("adding primary key protocol_id"))  
+    primaryKeySQL <- paste0(" ALTER TABLE ",protocolsMaterializedName," ADD PRIMARY KEY (protocol_id) USING INDEX ", ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",primaryKeySQL))
+    finished <- dbSendQuery(conn, primaryKeySQL)
+    
+    logger$info(paste0("adding version index"))  
+    indexSQL <- paste0("CREATE INDEX IDX_API_PROTOCOL_M_VERSION ON ",protocolsMaterializedName," (version)",ifelse(is.na(createIndexOptions),"",createIndexOptions))
+    logger$debug(paste0("executing sql ",indexSQL))
+    curveidIndex <- dbSendQuery(conn,indexSQL)
+    
+    logger$info(paste0("adding index IDX_API_PROTOCOL_M_NAME"))
+    protocolNameIndex <- dbSendQuery(conn,paste0("CREATE INDEX IDX_API_PROTOCOL_M_NAME ON ",protocolsMaterializedName," (label_text)",ifelse(is.na(createIndexOptions),"",createIndexOptions)))
+    
+    
+  }
+  
+  logger$info(paste0("commiting transaction"))        
+  commited <- dbCommit(conn)
+  on.exit(dbDisconnect(conn))
+  logger$info(paste0("materialization complete"))            
+}
