@@ -1,4 +1,4 @@
-FROM mcneilco/centos-node-r-repo:ACASDEV-409-build-tools-restructuring
+FROM mcneilco/centos-node-r-repo:compound-inventory
 
 USER	root
 
