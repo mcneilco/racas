@@ -1,30 +1,38 @@
 ```{r fastFacts1, results='asis', echo=FALSE}
-cat("Total number of protocols: ", prettyNum(numExpProtUsers[2], big.mark = ","))
+cat("Total number of protocols: ", prettyNum(usageTotals$protocol, big.mark = ","))
 ```
 
 ```{r fastFacts2, results='asis', echo=FALSE}
-cat("Total number of experiments: ", prettyNum(numExpProtUsers[1], big.mark = ","))
+cat("Total number of experiments: ", prettyNum(usageTotals$experiment, big.mark = ","))
 ```
 
 ```{r fastFacts3, results='asis', echo=FALSE}
-cat("Total number of users who have uploaded experiments: ", prettyNum(numExpProtUsers[3], big.mark = ","))
+cat("Total number of users who have uploaded experiments: ", prettyNum(usageTotals$user, big.mark = ","))
 ```
 
 ```{r fastFacts4, results='asis', echo=FALSE}
-cat("Total number of samples measured: ", prettyNum(numExpProtUsers[4], big.mark = ","))
+cat("Total number of samples measured: ", prettyNum(usageTotals$subject_value, big.mark = ","))
 ```
 
 ```{r fastFacts5, results='asis', echo=FALSE}
-cat("<p style='margin-bottom:20px;'>", "Total number of calculated results: ", prettyNum(numExpProtUsers[5], big.mark = ","), "</p>")
+cat("<p style='margin-bottom:20px;'>", "Total number of calculated results: ", prettyNum(usageTotals$analysis_group_value, big.mark = ","), "</p>")
 ```
 
 ```{r analysis, echo=FALSE, results='asis', fig.show='hold', fig.width=10, fig.height=4, cache=FALSE, dpi=300}
-if (is.null(analysis) | nrow(analysis) == 1 && is.null(subjects) && is.null(values)) {
+weeklyStatisticsDat <- copy(weeklyStatisticsData)
+noise <- capture.output(weeklyStatisticsDat[ , cumsum := cumsum(analysis_group_value)])
+sumZero <- which(weeklyStatisticsDat$cumsum == 0)
+if(length(sumZero) > 0) {
+  maxZeroCumSumRow <- max(sumZero)
+  weeklyStatisticsDat <- weeklyStatisticsDat[maxZeroCumSumRow:nrow(weeklyStatisticsDat)]
+}
+if (is.null(weeklyStatisticsDat) | nrow(weeklyStatisticsDat) == 1) {
   cat("Not enough statistics yet to display chart")
-} else if (is.null(analysis)) {
+} else if (is.null(weeklyStatisticsDat)) {
   cat("")
 } else {
-  plot3 <- ggplot(analysis, aes(recorded_date, cumulativeSum)) 
+  
+  plot3 <- ggplot(weeklyStatisticsDat, aes(date, cumsum)) 
   plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
   plot3 <- plot3 + labs(title = "Calculated Results Over Time", x = NULL, 
                         y = "Number of Results\nCalculated to Date")
@@ -51,7 +59,7 @@ graphLink <- paste(getSSLString(), racas::applicationSettings$client.host, ":",
 
 ```{r goToGraphs, echo=FALSE, results='asis', cache=FALSE}
 cat("<p style='margin-top:30px;'>For more graphs, <a href='",
-    graphLink, "'>click here</a>", "</p>", sep="")
+    graphLink, "' target='_blank' >click here</a>", "</p>", sep="")
 ```
 
 ```{r details, echo=FALSE, results='asis', cache=FALSE}
@@ -61,5 +69,5 @@ if (is.na(Sys.timezone())) {
   timezone <- Sys.timezone()
 }
 cat("Summary statistics generated on ", date(), " ", timezone, ". Data can be downloaded at <a href='",
-    link, "'>this link</a>", sep="")
+    link, "' target='_blank' >this link</a>", sep="")
 ```

@@ -1,8 +1,8 @@
 # Solves issues with rjson printing times in scientific notation and losing precision
 options(scipen=99)
 
-#racas::applicationSettings$client.service.persistence.fullpath <- "http://localhost:8080/labseer/"
-#racas::applicationSettings$client.service.persistence.fullpath <- "http://host3.labsynch.com:8080/acas/"
+# racas::applicationSettings$client.service.persistence.fullpath <- "http://localhost:8080/labseer/"
+# racas::applicationSettings$client.service.persistence.fullpath <- "http://host3.labsynch.com:8080/acas/"
 
 
 ############  FUNCTIONS ########################
@@ -397,7 +397,7 @@ createLsState <- function(lsValues=NULL, recordedBy="userName", lsType="lsType",
   )
   return(LsState)
 }
-createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", lsType="lsType", 
+createProtocolState <- function(protocol=NULL, protocolValues=list(), recordedBy="userName", lsType="lsType", 
                                 lsKind="lsKind", comments="", lsTransaction=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   protocolState = list(
     protocol=protocol,
@@ -2067,3 +2067,110 @@ pickBestLabel <- function(entity, labelTypeAndKind = NA) {
 getPreferredLabelText <- function(entity, labelTypeAndKind = NA) {
   pickBestLabel(entity, labelTypeAndKind)$labelText
 }
+
+#' Get ddict values by type and kind
+#' 
+#' Gets all ddict values by type and kind
+#' 
+#' @param lsKind
+#' @param lsType
+#' @param format (json, tsv)
+#' @return A data.frame or json of ddict values
+getDDictValuesByTypeKindFormat <- function(lsKind, lsType, format = "json", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  getURLcheckStatus(URLencode(paste0(lsServerURL, "ddictvalues/all/",lsType,"/",lsKind,"/",format)))
+}
+#' getOrCreateDDictTypes
+#' 
+#' Registers ddict types from json
+#' 
+#' @param list (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))
+#' @return list of types
+getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  json <- toJSON(typesList)
+  url <- URLencode(paste0(lsServerURL, "setup/ddicttypes"))
+  response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
+  return(response)
+}
+#' getOrCreateDDictKinds
+#' 
+#' Registers ddict kinds from json
+#' 
+#' @param typesKindsDataFrame (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))
+#' @return list of types and kinds
+getOrCreateDDictKinds <- function(typesKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  json <- jsonlite::toJSON(typesKindsDataFrame)
+  url <- URLencode(paste0(lsServerURL, "setup/ddictkinds"))
+  response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
+  return(response)
+}
+#' getDdictKinds
+#' 
+#' Get ddict kinds as described by URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
+#' 
+#' @param lsServerURL (racas::applicationSettings$client.service.persistence.fullpath)
+#' @return a data frame of kinds
+getDDictKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  url <- URLencode(paste0(lsServerURL, "ddictkinds"))
+  response <- jsonlite::fromJSON(getURLcheckStatus(url))
+  return(response)
+}
+#' createCodeTablesFromJsonArray
+#' 
+#' Create code table (d dict values) from json array as described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
+#' 
+#' @param codeTableDataFrame of ddict values
+#' @return a data frame of kinds
+createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  json <- jsonlite::toJSON(codeTableDataFrame)
+  url <- URLencode(paste0(lsServerURL, "ddictvalues/codetable/jsonArray"))
+  response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
+  return(response)
+}
+#' validateValueKindsFromDataFrame
+#' 
+#' Get a data.table of type names and kind names plus the kind (full object) from a data.frame of type names and kind names.
+#' 
+#' @param typesAndKindsDataFrame data.frame with 2 columns: \code{lsType} and \code{lsKind}
+#' @param lsServerURL server to check against, currently ignored
+#' @details Column \code{lsKind} will be NULL if there is no value kind found.
+#' @return a data.table with columns \code{lsTypeName} (character), \code{lsKindName} (character), \code{lsKind} (full object kinds), and \code{lsKindExists} (boolean).
+#' @examples
+#' # Not run because this needs a server, example output is below.
+#' # output <- validateValueKindsFromDataFrame(data.frame(lsType="numericValue", lsKind="time"))
+#' output <- structure(list(
+#'  lsTypeName = "numericValue", lsKindName = "time", 
+#'  lsKind = list(list(structure(list(id = 12, kindName = "time", 
+#'                                    lsType = structure(list(id = 7, typeName = "numericValue", version = 0), 
+#'                                                       .Names = c("id", "typeName", "version")), 
+#'                                    lsTypeAndKind = "numericValue_time", version = 0), 
+#'                               .Names = c("id", "kindName", "lsType", "lsTypeAndKind", "version")))), 
+#'  lsKindExists = TRUE), .Names = c("lsTypeName", "lsKindName", "lsKind", "lsKindExists"), 
+#'  sorted = c("lsTypeName", "lsKindName"), class = c("data.table", "data.frame"), 
+#'  row.names = c(NA, -1L))
+validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  allValueKinds <- getAllValueKinds()
+  dt <- rbindlist(lapply(allValueKinds, function(x) data.table('lsTypeName'=x$lsType$typeName,'lsKindName'=x$kindName, 'lsKind'=list(list(x)))))
+  setkey(dt,'lsTypeName','lsKindName')
+  typesAndKindsDataTable <- as.data.table(typesAndKindsDataFrame)
+  setkey(typesAndKindsDataTable, 'lsType', 'lsKind')
+  matched <- dt[typesAndKindsDataFrame]
+  matched[ , lsKindExists := !is.null(lsKind[[1]]), by = c('lsTypeName','lsKindName')]
+  return(matched)
+}
+
+#' Pick Best Name
+#' 
+#' From an acas entity (protocol, experiment, etc.), get the label that is the
+#' best name
+#' 
+#' @param entity a list that is a protocol, experiment, etc.
+#' @return a list that is a label
+pickBestName <- function(entity) {
+  currentLabels <- Filter(function(x) {!x$ignored}, entity$lsLabels)
+  preferredNames <- Filter(function(x) {x$preferred && x$lsType == "name"}, currentLabels)
+  maxIndex <- which.max(vapply(preferredNames, function(x){rd<-x$recordedDate; if(rd == "") Inf else rd}, 1))
+  return(preferredNames[[maxIndex]])
+}
+
+
+

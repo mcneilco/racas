@@ -52,7 +52,35 @@ capture_output <- function(obj, ...) {
   val <- gsub(" ", "&nbsp;", val)
   return(paste(val, ...))
 }
-
+flatten_list_in_data_table <- function(dt, selectColumn, parentAddFields = NULL, newParentNames = NULL) {
+  dt <- copy(dt)
+  if(length(selectColumn) > 1) {
+    stop("Length of selectColumn must be 1")
+  }
+  if(!selectColumn %in% names(dt)) {
+    stop(paste0("'",selectColumn, "' not found in names(dt)"))
+  }
+  if(!is.null(parentAddFields)) {
+    if(!selectColumn %in% names(dt)) stop(paste0(sqliz(parentAddFields), " not found in names(dt)"))
+    if(!is.null(newParentNames)) {
+      if(length(parentAddFields) != length(newParentNames)) stop("length of newNames must equal length of parentNames")
+    } else {
+      newParentNames <- parentAddFields
+    }
+    dt[ , id_dt := 1:nrow(dt)]
+    dt[ , returnLists := {
+      addFields <- eval(parse(text=paste0('c(',paste0(parentAddFields,collapse = ","),")")))
+      names(addFields) <- newParentNames
+      vals <- get(selectColumn)
+      returnVals <- lapply(vals, function(x, addFields) c(addFields,x), addFields)
+      list(returnVals)
+    }, by = id_dt]
+    
+  } else {
+    dt[ , returnLists := selects]
+  }
+  selects <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(dt$returnLists, as.data.table))
+}
 flatten_list_to_data.table <- function(l) {
   dt <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(1:length(l), function(x) {
     dt <- as.data.table(l[[x]])

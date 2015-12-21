@@ -4,7 +4,8 @@
 \alias{getSection}
 \title{Get dataframe sections}
 \usage{
-getSection(genericDataFileDataFrame, lookFor, transpose = FALSE)
+getSection(genericDataFileDataFrame, lookFor, transpose = FALSE,
+  required = TRUE)
 }
 \arguments{
 \item{genericDataFileDataFrame}{A data frame of lines}
@@ -12,6 +13,8 @@ getSection(genericDataFileDataFrame, lookFor, transpose = FALSE)
 \item{lookFor}{A string identifier to user as regext for the line before the start of the seciton}
 
 \item{transpose}{a boolean to set if the data should be transposed}
+
+\item{required}{logical Should the function throw an error if the field does not exist?}
 }
 \value{
 A dataframe of the of section in the generic excel file

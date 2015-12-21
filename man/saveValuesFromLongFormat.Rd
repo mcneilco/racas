@@ -34,6 +34,9 @@ saveValuesFromLongFormat(entityData, entityKind, stateGroups = NULL,
  \item{uncertainty}{Numeric: the uncertainty (optional)}
  \item{uncertaintyType}{String: the type of uncertainty, such as standard deviation (optional)}
  \item{comments}{String: mainly used for filenames (fileValue is filled with codes) (optional)}
+ \item{codeType}{String: type of the codeValue (optional)}
+ \item{codeKind}{String: kind of the codeValue (optional)}
+ \item{codeOrigin}{String: origin of the codeValue (optional)}
  }}
 
 \item{entityKind}{String: the kind of the state, allowed values are: "protocol", "experiment", "analysisgroup",

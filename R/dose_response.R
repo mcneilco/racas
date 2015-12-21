@@ -48,14 +48,14 @@ dose_response <- function(fitSettings, fitData) {
   fitData <- biphasic_detection(fitData)
   
   #Applying Limits
-  fitData <- apply_limits(fitData, iterations = 20)
+  fitData <- fitData[1]$modelFit[[1]]$apply_limits(fitData, iterations = 20)
   
   #Categorize the fit data
-  fitData[ , category := categorize_fit_data(renderingHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
+  fitData[ , category := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
   
   #Extract the reported Parameters
   fitData[ , reportedParameters := {
-    list(list(get_reported_parameters(renderingHint, results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]])))
+    list(list(modelFit[[1]]$get_reported_parameters(results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]])))
     }
     , by = curveId]
   
@@ -147,12 +147,12 @@ biphasic_detection <- function(fitData) {
   fitData[ , continueBiphasicDetection := TRUE]
   fitData[ , firstRun := TRUE]
   fitData[ , biphasicParameterPreviousValue := as.numeric(NA)]
-  fitData[ ,  tempCategory := categorize_fit_data(renderingHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
+  fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
   fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], fittedParameters[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun), by = curveId]
   fitData[ , firstRun := FALSE]
   while(any(!fitData$model.synced)) {
     fitData <- dose_response_fit(fitData)  
-    fitData[ ,  tempCategory := categorize_fit_data(renderingHint, results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
+    fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
     fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], 
                                                                                                                                          points[[1]], 
                                                                                                                                          pointStats[[1]], 
@@ -168,132 +168,6 @@ biphasic_detection <- function(fitData) {
   return(fitData[, returnCols, with = FALSE])
 }
 
-apply_limits <- function(fitData, iterations = 20) {
-  #While refit is true, keep refitting using fixed parameters
-  #The reason we check refit and continue is because we are dealing with limits, 
-  #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
-  #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
-  check_refit <- function(fitData) {
-    refit <- fitData[ , switch(renderingHint,
-                               "4 parameter D-R" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
-                                           minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
-                                           slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
-                                           exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
-                                           refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
-                                           refit
-                               },
-                               "MM.2" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
-                                           exceededAThreshold <- (maxExceeded)
-                                           refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
-                                           refit
-                               },
-                               "Ki Fit" = {  maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
-                                         minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
-                                         exceededAThreshold <- (maxExceeded | minExceeded)
-                                         refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
-                                         refit
-                               },{
-                                 warnUser(paste0("Limit Refit rule not implemented for ", renderingHint))
-                                 FALSE
-                               }),
-                     by = curveId]$V1
-    return(refit)
-  }
-  refit <- check_refit(fitData)
-  i <- 1
-  while(any(refit) & i < iterations) {
-    fitData[refit, model.synced := FALSE]
-    fitData[refit, fixedParameters := switch(renderingHint,
-                                             "4 parameter D-R" = {
-                                               if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
-                                                 fixedMax <- fixedParameters[[1]]$max
-                                               } else {
-                                                 if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
-                                                   if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
-                                                     fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
-                                                   } else {
-                                                     fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
-                                                   }
-                                                 } else {
-                                                   fixedMax <- NA
-                                                 }
-                                               }
-                                               if(ifelse(is.null(fixedParameters[[1]]$min), FALSE, !is.na(fixedParameters[[1]]$min))) {
-                                                 fixedMin <- fixedParameters[[1]]$min
-                                               } else {
-                                                 #fixedMax <- ifelse("Min threshold exceeded" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$maxThreshold$value, NA)
-                                                 if("minThreshold" %in% results.parameterRules[[1]]$limits) {
-                                                   if(parameterRules[[1]]$limits$minThreshold$type == "threshold") {
-                                                     fixedMin <- parameterRules[[1]]$limits$minThreshold$value
-                                                   } else {
-                                                     fixedMin <- pointStats[[1]][parameterRules[[1]]$limits$minThreshold$reference][[1]]
-                                                   }
-                                                 } else {
-                                                   fixedMin <- NA
-                                                 }
-                                               }
-                                               if(ifelse(is.null(fixedParameters[[1]]$slope), FALSE, !is.na(fixedParameters[[1]]$slope))) {
-                                                 fixedSlope <- fixedParameters[[1]]$slope
-                                               } else {
-                                                 fixedSlope <- ifelse("slopeThreshold" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$slopeThreshold$value, NA)
-                                               }
-                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin,slope = fixedSlope, ec50 = NA)))
-                                             },
-                                             "MM.2" = {
-                                               if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
-                                                 fixedMax <- fixedParameters[[1]]$max
-                                               } else {
-                                                 if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
-                                                   if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
-                                                     fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
-                                                   } else {
-                                                     fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
-                                                   }
-                                                 } else {
-                                                   fixedMax <- NA
-                                                 }
-                                               }
-                                               list(list(myfixedParameters = list(max = fixedMax, kd = NA)))
-                                             },
-                                             "Ki Fit" = {
-                                               if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
-                                                 fixedMax <- fixedParameters[[1]]$max
-                                               } else {
-                                                 if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
-                                                   if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
-                                                     fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
-                                                   } else {
-                                                     fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
-                                                   }
-                                                 } else {
-                                                   fixedMax <- NA
-                                                 }
-                                               }
-                                               if(ifelse(is.null(fixedParameters[[1]]$min), FALSE, !is.na(fixedParameters[[1]]$min))) {
-                                                 fixedMin <- fixedParameters[[1]]$min
-                                               } else {
-                                                 #fixedMax <- ifelse("Min threshold exceeded" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$maxThreshold$value, NA)
-                                                 if("minThreshold" %in% results.parameterRules[[1]]$limits) {
-                                                   if(parameterRules[[1]]$limits$minThreshold$type == "threshold") {
-                                                     fixedMin <- parameterRules[[1]]$limits$minThreshold$value
-                                                   } else {
-                                                     fixedMin <- pointStats[[1]][parameterRules[[1]]$limits$minThreshold$reference][[1]]
-                                                   }
-                                                 } else {
-                                                   fixedMin <- NA
-                                                 }
-                                               }
-                                               list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA, kd = fixedParameters[[1]]$kd, ligandConc = fixedParameters[[1]]$ligandConc )))
-                                             }
-    ),
-    by = curveId]
-    fitData <- dose_response_fit(fitData)
-    refit <- check_refit(fitData)
-    i <- i + 1
-  }
-  return(fitData)
-}
-
 #' Convert a simple dose response request to an advanced dose response request
 #'
 #' Reads the default fit settings for the given model hint and updates it based on the simple request
@@ -307,103 +181,8 @@ apply_limits <- function(fitData, iterations = 20) {
 #' simpleSettingsJSON <- readChar(file, file.info(file)$size)
 #' simpleSettings <- fromJSON(simpleSettingsJSON)
 #' simple_to_advanced_fit_settings(simpleSettings)
-simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, renderingHint = "4 parameter D-R") {
-  #simpleRequest <- simpleBulkDoseResponseFitRequest
-  defaultSettings <- get_default_fit_settings(renderingHint)
-  updateFitSettings.LL4 <- function(fitSettings, simpleFitSettings) {
-    update.fitSetting.parameter.LL4 <- function(fitSettings, name, simpleSettingsParameter) {   
-      if(simpleSettingsParameter$limitType=="none") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- NULL
-      }
-      if(simpleSettingsParameter$limitType=="pin") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value)
-      }
-      if(simpleSettingsParameter$limitType=="limit") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
-                                                                              type = "threshold",
-                                                                              operator = switch(name,
-                                                                                                max = ">",
-                                                                                                min = "<",
-                                                                                                ec50 = ">",
-                                                                                                slope = "<",
-                                                                                                stop(paste0("Unknown parameter:",name))),
-                                                                              value = ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value),
-                                                                              displayName = paste0(name," threshold exceeded")
-        )
-        fitSettings$fixedParameters[[name]] <- NULL
-      }
-      return(fitSettings)
-    }
-    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "min", simpleSettingsParameter = simpleSettings$min)
-    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
-    fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "slope", simpleSettingsParameter = simpleSettings$slope) 
-    return(fitSettings)
-  }
-  updateFitSettings.MM2 <- function(fitSettings, simpleFitSettings) {
-    update.fitSetting.parameter.MM2 <- function(fitSettings, name, simpleSettingsParameter) {   
-      if(simpleSettingsParameter$limitType=="none") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- NULL
-      }
-      if(simpleSettingsParameter$limitType=="pin") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- simpleSettingsParameter$value
-      }
-      if(simpleSettingsParameter$limitType=="limit") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
-                                                                              type = "threshold",
-                                                                              operator = switch(name,
-                                                                                                max = ">",
-                                                                                                kd = ">",
-                                                                                                stop(paste0("Unknown parameter:",name))),
-                                                                              value = ifelse(simpleSettingsParameter$value),
-                                                                              displayName = paste0(name," threshold exceeded")
-        )
-        fitSettings$fixedParameters[[name]] <- NULL
-      }
-      return(fitSettings)
-    }
-    fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
-    fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "kd", simpleSettingsParameter = simpleSettings$kd) 
-    return(fitSettings)
-  }
-  updateFitSettings.Ki <- function(fitSettings, simpleFitSettings) {
-    update.fitSetting.parameter.Ki <- function(fitSettings, name, simpleSettingsParameter) {   
-      if(is.null(simpleSettingsParameter$limitType) || simpleSettingsParameter$limitType=="pin") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value)
-        return(fitSettings)
-      }
-      if(simpleSettingsParameter$limitType=="none") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-        fitSettings$fixedParameters[[name]] <- NULL
-        return(fitSettings)
-      }
-      if(simpleSettingsParameter$limitType=="limit") {
-        fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
-                                                                              type = "threshold",
-                                                                              operator = switch(name,
-                                                                                                max = ">",
-                                                                                                min = "<",
-                                                                                                ki = ">",
-                                                                                                stop(paste0("Unknown parameter:",name))),
-                                                                              value = ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value),
-                                                                              displayName = paste0(name," threshold exceeded")
-        )
-        fitSettings$fixedParameters[[name]] <- NULL
-        return(fitSettings)
-      }
-    }
-    fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "min", simpleSettingsParameter = simpleSettings$min)
-    fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
-    fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "kd", simpleSettingsParameter = simpleSettings$kd)
-    fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "ligandConc", simpleSettingsParameter = simpleSettings$ligandConc)
-    
-    return(fitSettings)
-  }
-  modifiedSettings <- defaultSettings
+simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, update_function, updateFlags = NULL) {
+  modifiedSettings <- defaultFitSettings
   if(!is.null(simpleSettings$smartMode) && simpleSettings$smartMode) {
     if(simpleSettings$inactiveThresholdMode) {
       modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
@@ -423,14 +202,7 @@ simple_to_advanced_fit_settings <- function(simpleSettings, updateFlags = NULL, 
   if(!is.null(simpleSettings$userFlagStatus)) {
     modifiedSettings$userFlagStatus <- simpleSettings$userFlagStatus
   }
-  
-  modifiedSettings <- switch(renderingHint,
-                             "4 parameter D-R" = updateFitSettings.LL4(modifiedSettings,simpleSettings),
-                             "MM.2" = updateFitSettings.MM2(modifiedSettings,simpleSettings),
-                             "Ki Fit" = updateFitSettings.Ki(modifiedSettings,simpleSettings),
-                             warnUser(paste0("Simple to Advanced fit settings not implemented for renderingHint: ",renderingHint))
-  )
-  
+  modifiedSettings <- update_function(modifiedSettings,simpleSettings)
   if(!is.null(updateFlags)) {
     modifiedSettings$updateFlags <- as.data.table(updateFlags)
   }
@@ -474,7 +246,7 @@ get_default_fit_settings <- function(renderingHint) {
 #' #fit the data
 #' system.time(response <- get_fit_data_experiment_code(fitSettings, curveids = curveids))
 #' 
-dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL, ...) {
+dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL, modelFit = NULL, ...) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
     fitData <- get_fit_data_curve(curveids)
@@ -483,14 +255,15 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     fitSettings_new <- fitSettings
     sessionID_new <- sessionID
     simpleFitSettings_new <- simpleFitSettings
+    modelFit_new <- modelFit
     flagUser_new <- flagUser
     loadSession(sessionID)
     fitSettings <- fitSettings_new
     sessionID <- sessionID_new
     simpleFitSettings <- simpleFitSettings_new
     flagUser <- flagUser_new    
-    
-    rm(fitSettings_new,sessionID_new, simpleFitSettings_new, flagUser_new)
+    modelFit <- modelFit_new    
+    rm(fitSettings_new,sessionID_new, simpleFitSettings_new, flagUser_new, modelFit_new)
     if(exists("fitData")) {
       fitData[, model.synced := FALSE]      
     } else {
@@ -504,6 +277,12 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     fitData[ , simpleFitSettings := toJSON(simpleFitSettings)]
     if(!is.null(flagUser)) {
       fitData[ , userFlagStatus := flagUser]
+    }
+    if(!is.null(fitData$modelFit)) {
+      fitData[ , modelFit := NULL]
+    }
+    if(!is.null(modelFit)) {
+      fitData[ , modelFit := list(list(modelFit))]
     }
     fitData <- dose_response(fitSettings, fitData) 
   } else {
@@ -521,20 +300,11 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
   if(nrow(pts)==0) {
     return(NULL)
   } else {
-    if(logDose) {
-      maxDose <- max(pts$dose[pts$dose > 0])
-      minDose <- min(pts$dose[pts$dose > 0])
-    } else {
-      maxDose <- max(pts$dose)
-      minDose <- min(pts$dose)
-    }
-    if(logResponse) {
-      maxResponse <- max(pts$response[pts$response > 0])
-      minResponse <- min(pts$response[pts$response > 0])
-    } else {
-      maxResponse <- max(pts$response)
-      minResponse <- min(pts$response)
-    }
+    maxDose <- max(pts$dose)
+    minDose <- min(pts$dose)
+    maxResponse <- max(pts$response)
+    minResponse <- min(pts$response)
+
     responseRange <- abs(maxResponse-minResponse)
     doseRange <- abs(maxDose-minDose)
     if(is.na(ymin)) {
@@ -544,7 +314,7 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         if(responseRange != 0) {
           ymin <- (minResponse - 0.10*responseRange)
         } else {
-          ymin <- floor(maxResponse)
+          ymin <- pretty(maxResponse)[1]
         }
       }
     }
@@ -555,177 +325,41 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
         if(responseRange != 0) {
           ymax <- (maxResponse + 0.10*responseRange)
         } else {
-          ymax <- ceiling(maxResponse)
+          ymax <- maxResponse + (maxResponse - pretty(maxResponse)[1])
         }
       }
     }
     if(is.na(xmax)) {
-      if(logDose) {
-        xmax <- 10^(log10(maxDose) + 0.5)        
+      if(doseRange == 0) {
+        xmax <- maxDose + (maxDose - pretty(maxDose)[1])
       } else {
-        xmax <- maxDose + abs(0.1 * doseRange)
-      }  
+        if(logDose) {
+          xmax <- 10^(log10(maxDose) + 0.5)        
+        } else {
+          xmax <- maxDose + abs(0.1 * doseRange)
+        }
+      }
     }
     if(is.na(xmin)) {
-      if(logDose) {
-        xmin <- 10^(log10(minDose) - 0.5)        
+      if(doseRange == 0) {
+        xmin <- pretty(minDose)[1]
       } else {
-        xmin <- minDose - abs(0.1 * doseRange)
+        if(logDose) {
+          xmin <- 10^(log10(minDose) - 0.5)        
+        } else {
+          xmin <- minDose - abs(0.1 * doseRange)
+        }
       }
     }
     return(c(xmin,ymax,xmax,ymin))
   }
-}
-get_reported_parameters <- function(renderingHint, results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
-  switch(renderingHint,
-         "4 parameter D-R" = {
-           if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
-             max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             ec50 <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             slope <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ec50 = ec50, slope = slope)
-             return(reportedValues)
-           }
-           if(potent) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-             ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ec50 = ec50)
-             return(reportedValues)
-           }
-           if(inactive | insufficientRange) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-             ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ec50 = ec50)
-             return(reportedValues)
-           }
-           if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-           } else {
-             if(is_null_or_na(fixedParameters$max)) {
-               max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
-             } else {
-               max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
-             }
-           }
-           if("minUncertaintyRule" %in% results$goodnessOfFits) {
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-           } else {
-             if(is_null_or_na(fixedParameters$min)) {
-               min <- list(value = fittedParameters$min, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$min.stdErr)) {goodnessOfFit.parameters$min.stdErr} else {NULL})
-             } else {
-               min <- list(value = fixedParameters$min, operator = NULL, stdErr = NULL)
-             }
-           }
-           if(is_null_or_na(fixedParameters$slope)) {
-             slope <- list(value = -fittedParameters$slope, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$slope.stdErr)) {goodnessOfFit.parameters$slope.stdErr} else {NULL})
-           } else {
-             slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
-           }
-           if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
-             if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
-               ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-             } else {
-               ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
-             }
-           } else {
-             ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$ec50.stdErr)) {goodnessOfFit.parameters$ec50.stdErr} else {NULL})
-           }
-           reportedValues <- list(min = min, max = max, slope = slope, ec50 = ec50)
-           return(reportedValues)
-         },
-         "MM.2" = {
-           if(inactive | insufficientRange) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-             kd <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-             reportedValues <- list(max = max, kd = kd)
-             return(reportedValues)
-           }
-           if(!fitConverged) {
-             return(list())
-           }
-           if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-           } else {
-             if(is_null_or_na(fixedParameters$max)) {
-               max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
-             } else {
-               max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
-             }
-           }
-           if("kdThreshold" %in% results$limits) {
-             kd <- list(value = pointStats$dose.max, operator = NULL, stdErr = NULL)
-           } else {
-             kd <- list(value = fittedParameters$kd, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$kd.stdErr)) {goodnessOfFit.parameters$kd.stdErr} else {NULL})
-           }
-           reportedValues <- list(max = max, kd = kd)
-           return(reportedValues)
-         },
-         "Ki Fit" = {
-           if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
-             max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             ki <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ki = ki)
-             return(reportedValues)
-           }
-           if(potent) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-             ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ki = ki)
-             return(reportedValues)
-           }
-           if(inactive | insufficientRange) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-             ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-             reportedValues <- list(min = min, max = max, ki = ki)
-             return(reportedValues)
-           }
-           if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-             max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-           } else {
-             if(is_null_or_na(fixedParameters$max)) {
-               max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
-             } else {
-               max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
-             }
-           }
-           if("minUncertaintyRule" %in% results$goodnessOfFits) {
-             min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-           } else {
-             if(is_null_or_na(fixedParameters$min)) {
-               min <- list(value = fittedParameters$min, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$min.stdErr)) {goodnessOfFit.parameters$min.stdErr} else {NULL})
-             } else {
-               min <- list(value = fixedParameters$min, operator = NULL, stdErr = NULL)
-             }
-           }
-           if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("kiThresholdLow" %in% results$limits)) {
-             if(("kiThresholdHigh" %in% results$limits | "kiUncertaintyRule" %in% results$goodnessOfFits)) {
-               ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-             } else {
-               ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
-             }
-           } else {
-             ki <- list(value = fittedParameters$ki, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$ki.stdErr)) {goodnessOfFit.parameters$ki.stdErr} else {NULL})
-           }
-           reportedValues <- list(min = min, max = max, ki = ki)
-           return(reportedValues)
-         },{
-           warnUser(paste0("Reported parameter rules implemented for ", renderingHint))
-           return(list())
-         }
-  )
 }
 #' tsv service url to data.table
 #'
 #' Calls a tsv service and returns a data.table of results
 #' 
 #' @param url a url encoded string that calls a service that returns a tsv
-#' @param type simple (uses data.table's fread which is fast but can't handle embedded html or \t values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)
+#' @param type simple (uses data.table's fread which is fast but can't handle embedded html or tab seperated values) or complex (uses read.csv which is slower but can handle embeded tables .etc.)
 #' @return a data.table result
 #' @export
 #' @examples
@@ -858,7 +492,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   stringColumns <- c("Rendering Hint", "category")
   noneNumericColumns <- c(codeColumns,stringColumns)
   parameterDBNames <- c("EC50", "Min", "Max", "Slope","Fitted EC50", "Fitted Min", "Fitted Max", "Fitted Slope")
-  kiDBNames <- c("Ki", "Min", "Max", "Kd", "Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
+  kiDBNames <- c("Ki", "Min", "Max", "Fitted Kd", "Fitted Ligand Conc","Fitted Ki", "Fitted Min", "Fitted Max")
   
   stringValues <- curve_params[lskind %in% stringColumns,]
   if(nrow(stringValues) > 0) {
@@ -903,7 +537,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
     setnames(parameters, c("Rendering Hint", "user flag status", "algorithm flag status"), c("renderingHint", "userFlagStatus", "algorithmFlagStatus"))
     renderingParameters <- switch(modelFitType,
                                 "4 parameter D-R" = list(value = "EC50", names = data.frame(renderNames = c("ec50", "min", "max", "slope", "fittedec50", "fittedmin", "fittedmax", "fittedslope"), dbNames = parameterDBNames, stringsAsFactors = FALSE)),
-                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "kd", "ligandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
+                                "Ki Fit" = list(value = "Ki", names = data.frame(renderNames = c("ki", "min", "max", "fittedKd", "fittedLigandConc", "fittedki", "fittedmin", "fittedmax"), dbNames = kiDBNames, stringsAsFactors = FALSE))
   )
   
   namesExist <- renderingParameters$names$dbNames %in% names(parameters)
@@ -1037,6 +671,8 @@ curve_fit_controller_fitData_dataTable_to_fitData <- function(serviceDataTable) 
                                                                                                                            list(list()),
                                                                                                                            TRUE,
                                                                                                                            list(list()))]
+  serviceDataTable[is.na(userFlagStatus), userFlagStatus := ""]
+  serviceDataTable[is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
   serviceDataTable[ , model.synced := FALSE]
   return(serviceDataTable)
 }
@@ -1063,54 +699,12 @@ curve_fit_controller_rawData_response_to_data_table <- function(curveFitControll
   setkey(rawData, "curveId")
   return(rawData)
 }
-get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, ...) {
-  myMessenger <- messenger()
-  myMessenger$logger$debug("getting fitData")
-  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByExperimentIdOrCodeName(experimentCode, modelFitType)
-  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse, modelFitType)
-  if(nrow(serviceFitData) == 0) {
-    msg <- "no experiment results found"
-    myMessenger$logger$error(msg)
-    stop(msg)
-  }
-  myMessenger$logger$debug("converting service return to fit_data object") 
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(serviceFitData)
-  #Treatmeng Groups and Subject Groups
-  if(full_object) {
-    myMessenger$logger$debug("getting rawData")
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ ,flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  myMessenger$logger$debug(paste0("returning with ", nrow(fitData), " curves"))
-  return(fitData)
-}
 get_analysis_group_id_from_curve_id <- function(curveID) {
   analyisGroupIDOfCurveID <- query(paste0("select ags.analysis_group_id 
                                           from analysis_group_state ags 
                                           join analysis_group_value agv 
                                           on agv.analysis_state_id=ags.id where agv.string_value = ", sqliz(curveID)))
   return(analyisGroupIDOfCurveID)
-}
-get_fit_data_curve_id <- function(curveids, full_object = TRUE) {
-  curveFitController_fitDataResponse <- curve_fit_controller_getFitDataByCurveId(curveids)
-  serviceFitData <- curve_fit_controller_fitData_response_to_data_table(curveFitController_fitDataResponse)
-  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(serviceFitData)
-  #Treatmeng Groups and Subject Groups
-  if(full_object) {
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
-    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
-    rawData[ ,tempFlagStatus := ""]
-    rawData[ , flagchanged := FALSE]
-    rawData <- rawData[ , list(list(.SD)), .SDcols = 1:ncol(rawData), keyby = "curveId"]
-    setnames(rawData, "V1", "points")
-    fitData <- fitData[rawData]
-  }
-  return(fitData)
 }
 get_cached_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
   parameters <- get_cached_curve_fit_parameters(curveids, ...)
@@ -1128,12 +722,8 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
   
   # Fit the model
-  fitData[model.synced == FALSE, model := list(model = list(switch(renderingHint,
-                                                                   "4 parameter D-R" = get_drc_model(points[[1]], drcFunction = LL.4, paramNames = c("slope", "min", "max", "ec50"), fixed = fixedParameters[[1]]),
-                                                                   "Ki Fit" = get_drc_model(points[[1]], drcFunction = ki_fct.5, paramNames = c("min", "max", "ki", "ligandConc", "kd"), fixed = fixedParameters[[1]]),
-                                                                   "MM.2" = get_drc_model(points[[1]], drcFunction = MM.2, paramNames = c("max", "kd"), fixed = fixedParameters[[1]])
-  ))
-  ), by = curveId]
+  fitData[model.synced == FALSE, model := list(model = list(get_drc_model(points[[1]], drcFunction = modelFit[[1]]$drc_function, paramNames = modelFit[[1]]$paramNames, fixed = fixedParameters[[1]]))), by = curveId]
+  
   # Extract model paramaeters and fit heuristics
   fitData[ model.synced == FALSE, fitConverged := ifelse(unlist(lapply(model, is.null)), FALSE, model[[1]]$fit$convergence), by = curveId]
   fitData[ model.synced == FALSE, c("fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters") := {
@@ -1145,7 +735,7 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitData[ model.synced == FALSE, results.parameterRules := list(list(list(goodnessOfFits = apply_parameter_rules_goodness_of_fits(goodnessOfFit.parameters[[1]], parameterRules[[1]]$goodnessOfFits),
                                                                            limits = apply_parameter_rules_limits(fittedParameters[[1]],pointStats[[1]], parameterRules[[1]]$limits)
   ))), by = curveId]
-  fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse((fitConverged | inactive | insufficientRange | potent) & !pointStats[[1]]$dose.count < 2, as.character(""), "no fit"), by = curveId]
+  fitData[ model.synced == FALSE, algorithmFlagStatus := ifelse(!pointStats[[1]]$dose.count < 2 && (fitConverged | inactive | insufficientRange | potent), as.character(""), "no fit"), by = curveId]
 
   # Return the fitData object
   returnCols <- unique(c(fitDataNames, "model", "fitConverged", "pointStats", "fittedParameters", "goodnessOfFit.model", "goodnessOfFit.parameters", "results.parameterRules", "inactive", "insufficientRange", "potent"))
@@ -1153,85 +743,6 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   return(fitData[, returnCols, with = FALSE])
 }
 
-categorize_fit_data <- function(renderingHint, results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
-  #   -weak tested potency
-  #   strong tested potency
-  #   -inactive
-  #   Low Quality Fit - failed PValue Test
-  #   hockey stick
-  #   sigmoid 
-  #   -lack of fit - fit did not converge
-  category <- "sigmoid"
-  resultList <- unlist(results.parameterRules)
-  category <- switch(renderingHint,
-                     "4 parameter D-R" = {
-                       if(!converged) {
-                         category <- "lack of fit - fit did not converge"
-                       }
-                       if(insufficientRange) {
-                         category <- "insufficient range"
-                       }
-                       if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
-                         category <- "weak tested potency"
-                       }
-                       if("ec50ThresholdLow" %in% resultList | potent) {
-                         category <- "strong tested potency"
-                       }
-                       if(inactive) {
-                         category <- "inactive"
-                       }
-                       if(pointStats$dose.count < 2) {
-                         category <- "insufficient data"
-                       }
-                       category
-                     },
-                     "MM.2" = {
-                       if("maxUncertaintyRule" %in% resultList | "kdThresholdHigh" %in% resultList) {
-                         category <- "weak tested potency"
-                       }
-                       if(!converged) {
-                         category <- "lack of fit - fit did not converge"
-                       }
-                       if(insufficientRange) {
-                         category <- "insufficient range"
-                       }
-                       if("kdThresholdLow" %in% resultList | potent) {
-                         category <- "strong tested potency"
-                       }
-                       if(inactive) {
-                         category <- "inactive"
-                       }
-                       if(pointStats$dose.count < 2) {
-                         category <- "insufficient data"
-                       }
-                       category
-                     },
-                     "Ki Fit" = {
-                       if(!converged) {
-                         category <- "lack of fit - fit did not converge"
-                       }
-                       if(insufficientRange) {
-                         category <- "insufficient range"
-                       }
-                       if("maxUncertaintyRule" %in% resultList | "kiThresholdHigh" %in% resultList) {
-                         category <- "weak tested potency"
-                       }
-                       if("kiThresholdLow" %in% resultList | potent) {
-                         category <- "strong tested potency"
-                       }
-                       if(inactive) {
-                         category <- "inactive"
-                       }
-                       if(pointStats$dose.count < 2) {
-                         category <- "insufficient data"
-                       }
-                       category
-                     },{
-                       warnUser(paste0("Categorization rules not implemented for ", renderingHint))
-                       FALSE
-                     })
-  return(category)
-}
 apply_parameter_rules_limits <- function(fittedParameters, pointStats, rules) {
   if(is.null(fittedParameters)) return(NULL)
   if(is.null(pointStats)) return(NULL)
@@ -1281,8 +792,9 @@ apply_parameter_rules_goodness_of_fits <- function(goodnessOfFit.parameters, rul
 }
 
 apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
-  if(is.null(pointStats)) return(NULL)
-  if(is.null(points)) return(NULL)
+  if(is.null(pointStats)) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
+  if(is.null(points)) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
+  if(pointStats$dose.count < 2) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
   if(length(rule) > 0) {
     threshold <- rule$value
     mockControls <- ifelse(is.null(rule$mockControls), FALSE, rule$mockControls)
@@ -1312,7 +824,7 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
   return(list(inactive = inactive, insufficientRange = insufficientRange, potent = potent))  
 }
 
-get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
+get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramNames = eval(formals(drcFunction)$names), fixed, robust = "mean") {
   fixedParams <- data.frame(matrix(NA,1,length(paramNames)))
   names(fixedParams) <- paramNames
   fixed[unlist(lapply(fixed, is.null))] <- NULL
@@ -1327,7 +839,7 @@ get_drc_model <- function(dataSet, drcFunction = LL.4, subs = NA, paramNames = e
   tryCatch({
     options(show.error.messages=FALSE)
     on.exit(options(show.error.messages=TRUE))
-    drcObj <- drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drmc(errorm=TRUE))
+    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)    
@@ -1606,130 +1118,149 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   #   api_doseResponse.experiment(simpleSettings, recordedBy="bbolt", experimentCode=experimentCode)
   return(experimentCode)
 }
-save_dose_response_data <- function(fitData, recorded_by) {
-  lstrans <- createLsTransaction()$id
-  fitData[ , dto := list(list({
-    ans <- switch(renderingHint,
-                  "4 parameter D-R" = {
-                    list(
-                      "renderingHint" =  renderingHint[[1]],
-                      "max" = reportedParameters[[1]]$max$value,
-                      "maxOperatorKind" = reportedParameters[[1]]$max$operator,
-                      "maxUncertainty" = reportedParameters[[1]]$max$stdErr,
-                      "maxUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error")),
-                      "min" = reportedParameters[[1]]$min$value,
-                      "minOperatorKind" = reportedParameters[[1]]$min$operator,
-                      "minUncertainty" = reportedParameters[[1]]$min$stdErr,
-                      "minUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error")),
-                      "ec50" = reportedParameters[[1]]$ec50$value,
-                      "ec50OperatorKind" = reportedParameters[[1]]$ec50$operator,
-                      "ec50Uncertainty" = reportedParameters[[1]]$ec50$stdErr,
-                      "ec50UncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
-                      "slope" = reportedParameters[[1]]$slope$value,
-                      "slopeOperatorKind" = reportedParameters[[1]]$slope$operator,
-                      "slopeUncertainty" = reportedParameters[[1]]$slope$stdErr,
-                      "slopeUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$slope$stdErr), NA,"standard error")),
-                      "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
-                      "analysisGroupCode" = analysisGroupCode[[1]],
-                      "batchCode" = batchCode[[1]],
-                      "category" = category[[1]],
-                      "minUnits" = points[[1]]$responseUnits[[1]],
-                      "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "ec50Units" = points[[1]]$doseUnits[[1]],
-                      "fittedMin" = fittedParameters[[1]]$min,
-                      "fittedMax" = fittedParameters[[1]]$max,
-                      "fittedEC50" = fittedParameters[[1]]$ec50,
-                      "fittedSlope" = fittedParameters[[1]]$slope,
-                      "sse" = goodnessOfFit.model[[1]]$SSE,
-                      "sst" = goodnessOfFit.model[[1]]$SST,
-                      "rsquared" = goodnessOfFit.model[[1]]$rSquared,
-                      "curveErrorsClob" = curveErrorsClob[[1]],
-                      "reportedValuesClob" = reportedValuesClob[[1]],
-                      "parameterStdErrorsClob" = parameterStdErrorsClob[[1]],
-                      "fitSettings" = simpleFitSettings[[1]],
-                      "fitSummaryClob" = fitSummaryClob[[1]],
-                      "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
-                      lsTransaction = lstrans
-                    )
-                  },
-                  "Ki Fit" = {
-                    list(
-                      "renderingHint" =  renderingHint[[1]],
-                      "max" = reportedParameters[[1]]$max$value,
-                      "maxOperatorKind" = reportedParameters[[1]]$max$operator,
-                      "maxUncertainty" = reportedParameters[[1]]$max$stdErr,
-                      "maxUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$max$stdErr), NA,"standard error")),
-                      "min" = reportedParameters[[1]]$min$value,
-                      "minOperatorKind" = reportedParameters[[1]]$min$operator,
-                      "minUncertainty" = reportedParameters[[1]]$min$stdErr,
-                      "minUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$min$stdErr), NA,"standard error")),
-                      "ki" = reportedParameters[[1]]$ki$value,
-                      "kiOperatorKind" = reportedParameters[[1]]$ec50$operator,
-                      "kiUncertainty" = reportedParameters[[1]]$ec50$stdErr,
-                      "kiUncertaintyType" = na_to_null(ifelse(is.null(reportedParameters[[1]]$ec50$stdErr), NA,"standard error")),
-                      "recordedBy" = recorded_by,
-                      "curveId" = paste0(analysisGroupCode,"_", lstrans),
-                      "analysisGroupCode" = analysisGroupCode[[1]],
-                      "batchCode" = batchCode[[1]],
-                      "category" = category[[1]],
-                      "minUnits" = points[[1]]$responseUnits[[1]],
-                      "maxUnits" = points[[1]]$responseUnits[[1]],
-                      "kiUnits" = points[[1]]$doseUnits[[1]],
-                      "fittedMin" = fittedParameters[[1]]$min,
-                      "fittedMax" = fittedParameters[[1]]$max,
-                      "fittedKi" = fittedParameters[[1]]$ki,
-                      "ligandConc" = fixedParameters[[1]]$ligandConc,
-                      "ligandConcUnits" = 'nM',
-                      "kd" = fixedParameters[[1]]$kd[[1]],
-                      "kdUnits" = 'nM',
-                      "sse" = goodnessOfFit.model[[1]]$SSE,
-                      "sst" = goodnessOfFit.model[[1]]$SST,
-                      "rsquared" = goodnessOfFit.model[[1]]$rSquared,
-                      "curveErrorsClob" = curveErrorsClob[[1]],
-                      "reportedValuesClob" = reportedValuesClob[[1]],
-                      "parameterStdErrorsClob" = parameterStdErrorsClob[[1]],
-                      "fitSettings" = simpleFitSettings[[1]],
-                      "fitSummaryClob" = fitSummaryClob[[1]],
-                      "userFlagStatus" = userFlagStatus[[1]],
-                      "algorithmFlagStatus" = algorithmFlagStatus[[1]],
-                      lsTransaction = lstrans
-                    )
-                  },{
-                    warning(paste0("saving not implemented for ",renderingHint))
-                  }
-    )
-    ans <- lapply(ans, function(x) {
-      if(length(x)==1 && !is.na(x) && is.numeric(x)) {
-        if(x >= 1e+125) {
-          x <- 99.99e+124
-        } else if (x <= 1e-125 && x > 0) {
-          x <- 1.0e-124
-        } else if (x >= -1e-125 && x < 0) {
-          x <- -1.0e-124
-        } else if (x <= -1e125) {
-          x <- -1.0e124          
-        }
-      }
-      return(x)      
-    })
-    ans
-  })), by = curveId]
-  fitDataSaveRequest <- toJSON(fitData$dto)
-  curveids <- unlist(lapply(fitData$dto,function(x) x$curveId))
-  url <- switch(fitData$renderingHint[[1]],
-                "4 parameter D-R" = paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit"),
-                "Ki Fit" = paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/ki")
-                )
-  response <- getURL(
-    url,
-    customrequest='POST',
-    httpheader=c('Content-Type'='application/json'),
-    postfields=fitDataSaveRequest)
-  if(response != "") {
-    stop(response)
+
+create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
+  setkey(typeMap, "name")
+  if(!is.null(fittedParameters)) {
+    names(fittedParameters) <- typeMap$ls_kind[match(gsub(" ", "", tolower(paste0("Fitted ",names(fittedParameters)))), gsub(" ", "",tolower(typeMap$ls_kind)))]
   }
+  reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
+  publicAnalysisGroupValues <- c(reportedParameters, list('batch code' = list(value = batchCode, operator = NULL), 'curve id' = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
+  names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  tolower(typeMap$ls_kind))]
+  privateAnalysisGroupValues <- c(fittedParameters, goodnessOfFit.model, list('Rendering Hint' = renderingHint), c(list(category = category), list('algorithm flag status' = flag_algorithm)[!is.na(flag_algorithm)],  list('user flag status' = flag_user)[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(fitSettings = simpleFitSettings)))
+  privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is_null_or_na))] <- NULL
+  privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
+  
+  x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
+  public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
+  values <- lapply(x, function(x) {
+    if(class(x$value) %in% c("numeric","integer")) {
+      v <- x$value
+      if(v >= 1e+125) {
+        v <- 99.99e+124
+      } else if (v <= 1e-125 && v > 0) {
+        v <- 1.0e-124
+      } else if (v >= -1e-125 && v < 0) {
+        v <- -1.0e-124
+      } else if (v <= -1e125) {
+        v <- -1.0e124
+      }
+      x$value <- v
+      names(x)[names(x) == "value"] <- "numeric"
+    } else {
+      names(x)[names(x) == "value"] <- "character"
+    }
+    return(x)
+  })
+  values <- flatten_list_to_data.table(values)
+  values[ , publicData := public]
+  setkey(values, name)
+  setkey(typeMap, ls_kind)
+  values <- values[typeMap[!is.na(lsType)], allow.cartesian = TRUE]
+  currentNames <- c("numeric", "character", "name", "state_kind", "state_type")
+  missing <- which(!currentNames %in% names(values))
+  if(length(missing) > 0) values[ , currentNames[missing] := NA]
+  values <- values[!(field=="string_value" & is.na(character))]
+  values <- values[!(field=="numeric_value" & is.na(numeric))]
+  setnames(values, c("numeric", "character", "name", "state_kind", "state_type"), c("numericValue", "stringValue", "lsKind", "stateKind", "stateType"))
+  values[lsType == "clobValue", c("stringValue", "clobValue") := list(as.character(NA), stringValue)]
+  values[lsType == "codeValue", c("stringValue", "codeValue") := list(as.character(NA), stringValue)]
+  values[ , unitKind := as.character(NA)]
+  values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
+  values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
+  values[ , uncertaintyType := as.character(NA)]
+  if("stdErr" %in% names(values)) {
+    setnames(values, "stdErr", "uncertainty")
+  } else {
+    values[ , uncertainty := as.numeric(NA)]
+  }
+  if("operator" %in% names(values)) {
+    setnames(values, "operator", "operatorKind")
+  } else {
+    values[ , operatorKind := as.character(NA)]
+  }
+  values[!is.na(uncertainty) == TRUE, uncertaintyType := "standard error"]
+  values[ , recordedBy := recordedBy]
+  values[ , lsTransaction := lsTransaction]
+  values[ , recordedDate := as.numeric(format(Sys.time(), "%s"))*1000]
+  values[ , id := analysisGroupId]
+  values[ , c("field", "i.name", "units") := NULL]
+#   agValues <- prepareTableForDD(values)
+  return(values)
+}
+
+save_dose_response_data <- function(fitData, recorded_by) {
+  myMessenger <- messenger()
+  lstrans <- createLsTransaction()$id
+  myMessenger$logger$debug("organizing parameter data for save")
+  fitData[ , analysisGroupValues := {
+    list(list(create_analysis_group_values_from_fitData(analysisGroupId = analysisGroupId,
+                                                        reportedParameters[[1]],
+                                                        fixedParameters[[1]],
+                                                        fittedParameters[[1]],
+                                                        goodnessOfFit.model[[1]],
+                                                        category[[1]],
+                                                        algorithmFlagStatus[[1]],
+                                                        userFlagStatus[[1]],
+                                                        batchCode = batchCode[[1]],
+                                                        recorded_by,
+                                                        lstrans,
+                                                        doseUnits = as.character(points[[1]][1]$doseUnits), 
+                                                        responseUnits = as.character(points[[1]][1]$responseUnits), 
+                                                        analysisGroupCode = analysisGroupCode[[1]], 
+                                                        renderingHint = renderingHint[[1]],
+                                                        reportedValuesClob = reportedValuesClob[[1]],
+                                                        fitSummaryClob = fitSummaryClob[[1]],
+                                                        parameterStdErrorsClob = parameterStdErrorsClob[[1]],
+                                                        curveErrorsClob = curveErrorsClob[[1]],
+                                                        simpleFitSettings = simpleFitSettings[[1]],
+                                                        typeMap = modelFit[[1]]$typeMap
+                                                        )
+  ))
+  }, by = curveId]
+  values <- rbindlist(fitData$analysisGroupValues, fill = TRUE)
+  setkey(values, stateType, stateKind, id)
+  agValues <- values[ , {
+    values <- copy(.SD)
+    lsValues <- unname(lapply(split(values, f = row.names(values)), function(x) {
+      drop <- x[, which(lapply(.SD, is.na)== TRUE)]
+      x <- x[ , !drop, with = FALSE]
+      as.list(x)}))
+    list(lsValues = list(lsValues), recordedBy = unique(recordedBy), lsTransaction = unique(lsTransaction), recordedDate = unique(recordedDate))
+  }, by = key(values), .SDcols = names(values)[!names(values) %in% key(values)]]
+  setkey(agValues, id)
+  agStates <- agValues[ , {
+    states <- copy(.SD)
+    setnames(states, "stateType", "lsType")
+    setnames(states, "stateKind", "lsKind")
+    lsStates <- unname(lapply(split(states, f = row.names(states)), function(x) {
+      x <- as.list(x)
+      x$lsValues <- x$lsValues[[1]]
+      return(x)}))
+    list(lsStates = list(lsStates))
+  }, by = key(agValues), .SDcols = names(agValues)[!names(agValues) %in% key(agValues)]]
+  groups <- unname(lapply(split(agStates, f = row.names(agStates)), function(x) {x <- as.list(x); x$lsStates <- x$lsStates[[1]]; return(x)}))
+  groupJSON <- jsonlite::toJSON(groups, force = TRUE,  auto_unbox = TRUE, na = c("null"))
+
+  myMessenger$logger$debug("ignoring old curve states")
+  done <- query_replace_string_with_values("update analysis_group_state set ignored='1' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
+  
+  myMessenger$logger$debug("calling service to save parameter data")
+  url <- paste0(racas::applicationSettings$client.service.persistence.fullpath, "analysisgroups", "/jsonArray")
+  
+  t <-tryCatch({
+    response <- putURLcheckStatus(url, postfields=groupJSON, requireJSON = TRUE)
+  }, error = function(ex) {
+    myMessenger$logger$info("there was an error saving parameter data")
+    myMessenger$logger$info("rolling back ignore of states")
+    done <- query_replace_string_with_values("update analysis_group_state set ignored='0' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
+    myMessenger$logger$info("rolled back ignore of states")
+    myMessenger$addUserError("There was an error saving parameter data after the fit, changes to the data were rolled back")
+    myMessenger$addInfo("rolledback")
+    stop(ex$message)
+  })
+  
+  myMessenger$logger$debug("organizing flag data for save")
   changedPoints <- rbindlist(fitData$points)[flagchanged == TRUE,]
   if(nrow(changedPoints) > 0)
   {
@@ -1762,7 +1293,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
       stop(response)
     }
   }
-  return(curveids)
+  myMessenger$logger$debug("returning after save")
+  return(values[lsKind == 'curve id']$stringValue)
 }
 get_ls_type <- function(valueType) {
   valueTypesList <- fromJSON(getURL(paste0(racas::applicationSettings$client.service.persistence.fullpath, "valuetypes")))
@@ -2056,19 +1588,24 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValuesClob <- list(NULL)
       } else {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
+        responseUnits <- points[[1]]$responseUnits[[1]]
+        doseUnits <- points[[1]]$doseUnits[[1]]
+        reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="response"]$ls_kind), units := responseUnits]
+        reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="dose"]$ls_kind), units := doseUnits]
         setkey(reportedValues, "name")
-        reportedValues[ , value :=prettyNum(value, digits = 4)]
+        reportedValues[ , value := prettyNum(value, digits = 4)]
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
             paste(ifelse(is.na(operator), "",operator), value)
           } else {
             value
           }}]
-        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value"), with = FALSE], 
+        reportedValues <- reportedValues[ , c("name", "value", "units"), with = FALSE]
+        reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value", "units"), with = FALSE], 
                                                        include.rownames = FALSE, 
                                                        comment = FALSE, 
                                                        timestamp = FALSE, 
-                                                       align = paste0(rep("r",ncol(reportedValues[ , c("name", "value"), with = FALSE]) + 1), collapse = ""),
+                                                       align = paste0(rep("l",ncol(reportedValues[ , c("name", "value", "units"), with = FALSE]) + 1), collapse = ""),
                                                        rotate.rownames = TRUE, 
                                                        html.table.attributes = "",
                                                        print.results = FALSE, 
@@ -2114,6 +1651,7 @@ add_clob_values_to_fit_data <- function(fitData) {
                                                        )
         parameterStdErrorsClob <- parameterStdErrors
         curveErrors <- flatten_list_to_data.table(goodnessOfFit.model[[1]])[, c("name", prettyNum("V1", digits = 4)), with = FALSE]
+        curveErrors[ name == "rSquared", name:= "R^2"]
         setkey(curveErrors, "name")
         curveErrorsClob <- data.table_to_html_table(curveErrors, 
                                                     align = paste0(rep("r",ncol(curveErrors) + 1), collapse = ""),
@@ -2162,7 +1700,7 @@ update_point_flags <- function(pts, updateFlags) {
   
   pts <- merge(pts,updateFlags, all.x = TRUE, by = "responseSubjectValueId", suffixes = c("",".y"))
   pts[ , flagchanged :=  {
-        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
+        ((userFlagCause == "" | userFlagCause == "curvefit ko") && (preprocessFlagCause == "" | preprocessFlagCause == "curvefit ko") && (algorithmFlagCause == "" | algorithmFlagCause == "curvefit ko")) &&
         (!identical(userFlagStatus,userFlagStatus.y) |
         !identical(userFlagObservation,userFlagObservation.y) | 
         !identical(userFlagCause,userFlagCause.y) | 
@@ -2185,3 +1723,534 @@ update_point_flags <- function(pts, updateFlags) {
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
+
+categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+  category <- "sigmoid"
+  resultList <- unlist(results.parameterRules)
+  if(!converged) {
+    category <- "lack of fit - fit did not converge"
+  }
+  if(insufficientRange) {
+    category <- "insufficient range"
+  }
+  if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
+    category <- "weak tested potency"
+  }
+  if("ec50ThresholdLow" %in% resultList | potent) {
+    category <- "strong tested potency"
+  }
+  if(inactive) {
+    category <- "inactive"
+  }
+  if(pointStats$dose.count < 2) {
+    category <- "insufficient data"
+  }
+  return(category)
+}
+
+categorize.ki <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+    category <- "sigmoid"
+    resultList <- unlist(results.parameterRules)
+    if(!converged) {
+      category <- "lack of fit - fit did not converge"
+    }
+    if(insufficientRange) {
+      category <- "insufficient range"
+    }
+    if("maxUncertaintyRule" %in% resultList | "kiThresholdHigh" %in% resultList) {
+      category <- "weak tested potency"
+    }
+    if("kiThresholdLow" %in% resultList | potent) {
+      category <- "strong tested potency"
+    }
+    if(inactive) {
+      category <- "inactive"
+    }
+    if(pointStats$dose.count < 2) {
+      category <- "insufficient data"
+    }
+    return(category)
+}
+categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+  category <- "sigmoid"
+  resultList <- unlist(results.parameterRules)
+  if("maxUncertaintyRule" %in% resultList | "kdThresholdHigh" %in% resultList) {
+    category <- "weak tested potency"
+  }
+  if(!converged) {
+    category <- "lack of fit - fit did not converge"
+  }
+  if(insufficientRange) {
+    category <- "insufficient range"
+  }
+  if("kdThresholdLow" %in% resultList | potent) {
+    category <- "strong tested potency"
+  }
+  if(inactive) {
+    category <- "inactive"
+  }
+  if(pointStats$dose.count < 2) {
+    category <- "insufficient data"
+  }
+  return(category)
+}
+get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+  if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
+    max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    ec50 <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    slope <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ec50 = ec50, slope = slope)
+    return(reportedValues)
+  }
+  if(potent) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+    ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ec50 = ec50)
+    return(reportedValues)
+  }
+  if(inactive | insufficientRange) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+    ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ec50 = ec50)
+    return(reportedValues)
+  }
+  if("maxUncertaintyRule" %in% results$goodnessOfFits) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+  } else {
+    if(is_null_or_na(fixedParameters$max)) {
+      max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
+    } else {
+      max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
+    }
+  }
+  if("minUncertaintyRule" %in% results$goodnessOfFits) {
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+  } else {
+    if(is_null_or_na(fixedParameters$min)) {
+      min <- list(value = fittedParameters$min, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$min.stdErr)) {goodnessOfFit.parameters$min.stdErr} else {NULL})
+    } else {
+      min <- list(value = fixedParameters$min, operator = NULL, stdErr = NULL)
+    }
+  }
+  if(is_null_or_na(fixedParameters$slope)) {
+    slope <- list(value = -fittedParameters$slope, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$slope.stdErr)) {goodnessOfFit.parameters$slope.stdErr} else {NULL})
+  } else {
+    slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
+  }
+  if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
+    if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+      ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    } else {
+      ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    }
+  } else {
+    ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$ec50.stdErr)) {goodnessOfFit.parameters$ec50.stdErr} else {NULL})
+  }
+  reportedValues <- list(min = min, max = max, slope = slope, ec50 = ec50)
+  return(reportedValues)
+}
+get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+  if(inactive | insufficientRange) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    kd <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    reportedValues <- list(max = max, kd = kd)
+    return(reportedValues)
+  }
+  if(!fitConverged) {
+    return(list())
+  }
+  if("maxUncertaintyRule" %in% results$goodnessOfFits) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+  } else {
+    if(is_null_or_na(fixedParameters$max)) {
+      max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
+    } else {
+      max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
+    }
+  }
+  if("kdThreshold" %in% results$limits) {
+    kd <- list(value = pointStats$dose.max, operator = NULL, stdErr = NULL)
+  } else {
+    kd <- list(value = fittedParameters$kd, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$kd.stdErr)) {goodnessOfFit.parameters$kd.stdErr} else {NULL})
+  }
+  reportedValues <- list(max = max, kd = kd)
+  return(reportedValues)
+}
+get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+  if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
+    max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    ki <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ki = ki)
+    return(reportedValues)
+  }
+  if(potent) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+    ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ki = ki)
+    return(reportedValues)
+  }
+  if(inactive | insufficientRange) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+    ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    reportedValues <- list(min = min, max = max, ki = ki)
+    return(reportedValues)
+  }
+  if("maxUncertaintyRule" %in% results$goodnessOfFits) {
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+  } else {
+    if(is_null_or_na(fixedParameters$max)) {
+      max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
+    } else {
+      max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
+    }
+  }
+  if("minUncertaintyRule" %in% results$goodnessOfFits) {
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
+  } else {
+    if(is_null_or_na(fixedParameters$min)) {
+      min <- list(value = fittedParameters$min, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$min.stdErr)) {goodnessOfFit.parameters$min.stdErr} else {NULL})
+    } else {
+      min <- list(value = fixedParameters$min, operator = NULL, stdErr = NULL)
+    }
+  }
+  if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("kiThresholdLow" %in% results$limits)) {
+    if(("kiThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+      ki <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    } else {
+      ki <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    }
+  } else {
+    ki <- list(value = fittedParameters$ki, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$ki.stdErr)) {goodnessOfFit.parameters$ki.stdErr} else {NULL})
+  }
+  reportedValues <- list(min = min, max = max, ki = ki)
+  return(reportedValues)
+}
+
+apply_limits.LL4 <- function(fitData, iterations = 20) {
+  #While refit is true, keep refitting using fixed parameters
+  #The reason we check refit and continue is because we are dealing with limits, 
+  #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
+  #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
+  check_refit <- function(fitData) {
+    refit <- fitData[ , {
+      maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
+      minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
+      slopeExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "slopeThreshold" %in% results.parameterRules[[1]]$limits)
+      exceededAThreshold <- (maxExceeded | minExceeded | slopeExceeded)
+      refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
+      refit
+    },
+    by = curveId]$V1
+    return(refit)
+  }
+  refit <- check_refit(fitData)
+  i <- 1
+  while(any(refit) & i < iterations) {
+    fitData[refit, model.synced := FALSE]
+    fitData[refit, fixedParameters := {
+      if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
+        fixedMax <- fixedParameters[[1]]$max
+      } else {
+        if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
+            fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
+          } else {
+            fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
+          }
+        } else {
+          fixedMax <- NA
+        }
+      }
+      if(ifelse(is.null(fixedParameters[[1]]$min), FALSE, !is.na(fixedParameters[[1]]$min))) {
+        fixedMin <- fixedParameters[[1]]$min
+      } else {
+        #fixedMax <- ifelse("Min threshold exceeded" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$maxThreshold$value, NA)
+        if("minThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$minThreshold$type == "threshold") {
+            fixedMin <- parameterRules[[1]]$limits$minThreshold$value
+          } else {
+            fixedMin <- pointStats[[1]][parameterRules[[1]]$limits$minThreshold$reference][[1]]
+          }
+        } else {
+          fixedMin <- NA
+        }
+      }
+      if(ifelse(is.null(fixedParameters[[1]]$slope), FALSE, !is.na(fixedParameters[[1]]$slope))) {
+        fixedSlope <- fixedParameters[[1]]$slope
+      } else {
+        fixedSlope <- ifelse("slopeThreshold" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$slopeThreshold$value, NA)
+      }
+      list(list(myfixedParameters = list(max = fixedMax,min = fixedMin,slope = fixedSlope, ec50 = NA)))
+    },
+    by = curveId]
+    fitData <- dose_response_fit(fitData)
+    refit <- check_refit(fitData)
+    i <- i + 1
+  }
+  return(fitData)
+}
+apply_limits.MM2 <- function(fitData, iterations = 20) {
+  #While refit is true, keep refitting using fixed parameters
+  #The reason we check refit and continue is because we are dealing with limits, 
+  #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
+  #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
+  check_refit <- function(fitData) {
+    refit <- fitData[ , {
+      maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
+      exceededAThreshold <- (maxExceeded)
+      refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
+      refit
+    },
+    by = curveId]$V1
+    return(refit)
+  }
+  refit <- check_refit(fitData)
+  i <- 1
+  while(any(refit) & i < iterations) {
+    fitData[refit, model.synced := FALSE]
+    fitData[refit, fixedParameters := {
+      if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
+        fixedMax <- fixedParameters[[1]]$max
+      } else {
+        if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
+            fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
+          } else {
+            fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
+          }
+        } else {
+          fixedMax <- NA
+        }
+      }
+      list(list(myfixedParameters = list(max = fixedMax, kd = NA)))
+    },
+    by = curveId]
+    fitData <- dose_response_fit(fitData)
+    refit <- check_refit(fitData)
+    i <- i + 1
+  }
+  return(fitData)
+}
+apply_limits.ki <- function(fitData, iterations = 20) {
+  #While refit is true, keep refitting using fixed parameters
+  #The reason we check refit and continue is because we are dealing with limits, 
+  #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
+  #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
+  check_refit <- function(fitData) {
+    refit <- fitData[ , {
+      maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
+      minExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "minThreshold" %in% results.parameterRules[[1]]$limits)
+      exceededAThreshold <- (maxExceeded | minExceeded)
+      refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
+      refit
+    },
+    by = curveId]$V1
+    return(refit)
+  }
+  refit <- check_refit(fitData)
+  i <- 1
+  while(any(refit) & i < iterations) {
+    fitData[refit, model.synced := FALSE]
+    fitData[refit, fixedParameters := {
+      if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
+        fixedMax <- fixedParameters[[1]]$max
+      } else {
+        if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
+            fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
+          } else {
+            fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
+          }
+        } else {
+          fixedMax <- NA
+        }
+      }
+      if(ifelse(is.null(fixedParameters[[1]]$min), FALSE, !is.na(fixedParameters[[1]]$min))) {
+        fixedMin <- fixedParameters[[1]]$min
+      } else {
+        #fixedMax <- ifelse("Min threshold exceeded" %in% results.parameterRules[[1]]$limits, parameterRules[[1]]$limits$maxThreshold$value, NA)
+        if("minThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$minThreshold$type == "threshold") {
+            fixedMin <- parameterRules[[1]]$limits$minThreshold$value
+          } else {
+            fixedMin <- pointStats[[1]][parameterRules[[1]]$limits$minThreshold$reference][[1]]
+          }
+        } else {
+          fixedMin <- NA
+        }
+      }
+      list(list(myfixedParameters = list(max = fixedMax,min = fixedMin, ki = NA, kd = fixedParameters[[1]]$kd, ligandConc = fixedParameters[[1]]$ligandConc )))
+    },
+    by = curveId]
+    fitData <- dose_response_fit(fitData)
+    refit <- check_refit(fitData)
+    i <- i + 1
+  }
+  return(fitData)
+}
+updateFitSettings.LL4 <- function(fitSettings, simpleSettings) {
+  update.fitSetting.parameter.LL4 <- function(fitSettings, name, simpleSettingsParameter) {   
+    if(simpleSettingsParameter$limitType=="none") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- NULL
+    }
+    if(simpleSettingsParameter$limitType=="pin") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value)
+    }
+    if(simpleSettingsParameter$limitType=="limit") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
+                                                                            type = "threshold",
+                                                                            operator = switch(name,
+                                                                                              max = ">",
+                                                                                              min = "<",
+                                                                                              ec50 = ">",
+                                                                                              slope = "<",
+                                                                                              stop(paste0("Unknown parameter:",name))),
+                                                                            value = ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value),
+                                                                            displayName = paste0(name," threshold exceeded")
+      )
+      fitSettings$fixedParameters[[name]] <- NULL
+    }
+    return(fitSettings)
+  }
+  fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "min", simpleSettingsParameter = simpleSettings$min)
+  fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
+  fitSettings <- update.fitSetting.parameter.LL4(fitSettings, name = "slope", simpleSettingsParameter = simpleSettings$slope) 
+  return(fitSettings)
+}
+updateFitSettings.MM2 <- function(fitSettings, simpleSettings) {
+  update.fitSetting.parameter.MM2 <- function(fitSettings, name, simpleSettingsParameter) {   
+    if(simpleSettingsParameter$limitType=="none") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- NULL
+    }
+    if(simpleSettingsParameter$limitType=="pin") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- simpleSettingsParameter$value
+    }
+    if(simpleSettingsParameter$limitType=="limit") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
+                                                                            type = "threshold",
+                                                                            operator = switch(name,
+                                                                                              max = ">",
+                                                                                              kd = ">",
+                                                                                              stop(paste0("Unknown parameter:",name))),
+                                                                            value = ifelse(simpleSettingsParameter$value),
+                                                                            displayName = paste0(name," threshold exceeded")
+      )
+      fitSettings$fixedParameters[[name]] <- NULL
+    }
+    return(fitSettings)
+  }
+  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
+  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "kd", simpleSettingsParameter = simpleSettings$kd) 
+  return(fitSettings)
+}
+updateFitSettings.Ki <- function(fitSettings, simpleSettings) {
+  update.fitSetting.parameter.Ki <- function(fitSettings, name, simpleSettingsParameter) {   
+    if(is.null(simpleSettingsParameter$limitType) || simpleSettingsParameter$limitType=="pin") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- ifelse(name=="slope",-simpleSettingsParameter$value,simpleSettingsParameter$value)
+      return(fitSettings)
+    }
+    if(simpleSettingsParameter$limitType=="none") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- NULL
+      return(fitSettings)
+    }
+    if(simpleSettingsParameter$limitType=="limit") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
+                                                                            type = "threshold",
+                                                                            operator = switch(name,
+                                                                                              max = ">",
+                                                                                              min = "<",
+                                                                                              ki = ">",
+                                                                                              stop(paste0("Unknown parameter:",name))),
+                                                                            value = simpleSettingsParameter$value,
+                                                                            displayName = paste0(name," threshold exceeded")
+      )
+      fitSettings$fixedParameters[[name]] <- NULL
+      return(fitSettings)
+    }
+  }
+  fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "min", simpleSettingsParameter = simpleSettings$min)
+  fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
+  fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "kd", simpleSettingsParameter = simpleSettings$kd)
+  fitSettings <- update.fitSetting.parameter.Ki(fitSettings, name = "ligandConc", simpleSettingsParameter = simpleSettings$ligandConc)
+  
+  return(fitSettings)
+}
+
+get_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
+  renderingHint <- get_curve_id_rendering_hint(curveids[[1]], ...)
+  modelFit <- racas::get_model_fit_from_type_code(renderingHint)
+  qu <- modelFit$curveid_query
+  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...)))
+  setkey(fitData,"curveId")
+  if(full_object) {
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
+    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
+    rawData[ ,tempFlagStatus := ""]
+    rawData[ , flagchanged := FALSE]
+    rawData <- rawData[ , list(list(.SD)), .SDcols = 1:ncol(rawData), keyby = "curveId"]
+    setnames(rawData, "V1", "points")
+    fitData <- fitData[rawData]
+  }
+  return(fitData)
+}
+
+get_curve_id_state_id <- function(curveid, ...) {
+  qu <- paste0("SELECT analysis_state_id
+               FROM analysis_group_value agv
+               INNER JOIN analysis_group_state ags
+               ON agv.analysis_state_id=ags.id
+               WHERE agv.ls_type       = 'stringValue'
+               AND agv.ls_kind         = 'curve id'
+               AND agv.string_value = ",sqliz(curveid),"
+               AND agv.ignored = '0'
+               AND ags.ignored = '0'
+               AND ags.ignored = '0'
+               AND ags.ls_type = 'data'
+               AND ags.ls_kind = 'dose response'")
+  query(qu, ...)[[1]]
+}
+get_curve_id_rendering_hint <- function(curveid, ...) {
+  state_id <- get_curve_id_state_id(curveid, ...)
+  qu <- paste0("select string_value from analysis_group_value where ls_kind = 'Rendering Hint' and analysis_state_id = ", state_id)
+  query(qu, ...)[[1]]
+}
+get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, modelFit,...) {
+  myMessenger <- messenger()
+  myMessenger$logger$debug("getting fitData2")
+  qu <- modelFit$experiment_query
+  queryResults <- rbindlist(query_replace_string_with_values(qu, "REPLACEME", experimentCode, ...))
+  if(nrow(queryResults) == 0) {
+    msg <- "no experiment results found"
+    myMessenger$logger$error(msg)
+    stop(msg)
+  }
+  myMessenger$logger$debug("converting service return to fit_data object") 
+  fitData <- curve_fit_controller_fitData_dataTable_to_fitData(queryResults)
+  #Treatmeng Groups and Subject Groups
+  setkey(fitData, "curveId")
+  if(full_object) {
+    myMessenger$logger$debug("getting rawData")
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
+    rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
+    rawData[ ,tempFlagStatus := ""]
+    rawData[ ,flagchanged := FALSE]
+    rawData <- rawData[ , list(list(.SD)), keyby = "curveId"]
+    setnames(rawData, "V1", "points")
+    fitData <- fitData[rawData]
+  }
+  myMessenger$logger$debug(paste0("returning with ", nrow(fitData), " curves"))
+  return(fitData)
+}
+

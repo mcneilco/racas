@@ -833,7 +833,7 @@ prepareTableForDD <- function(entityData) {
     unitKind = naIfNull(entityData$unitKind),
     operatorType = NA_character_,
     operatorKind = naIfNull(entityData$operatorKind),
-    publicData = naIfNull(entityData$publicData),
+    publicData = as.logical(entityData$publicData),
     comments = naIfNull(entityData$comments),
     stateType = naIfNull(entityData$stateType),
     stateKind = naIfNull(entityData$stateKind),
@@ -873,7 +873,7 @@ prepareTableForDD <- function(entityData) {
 #'  
 #'@details each of the data frames must have these columns: unitKind, valueType,
 #'  valueKind, numericValue, publicData, stateType, stateKind, tempStateId,
-#'  tempId, lsType, lsKind. Other optional columns can be found in 
+#'  tempId, lsType, lsKind. Other optional columns can be found in the source code for
 #'  \code{\link{formatEntityAsTsvAndUpload}}. You can get updating and more 
 #'  checks using \code{\link{saveAllViaTsv}}, but it will be slower.
 #'@export

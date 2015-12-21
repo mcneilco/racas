@@ -7,9 +7,9 @@
 #' @param testMode deprecated, was used for a test mode
 
 #' @return a list of pairs of requested IDs and preferred IDs. On error, empty list
+#' @details DEPRECATED: use \code{\link{getPreferredId2}} with \code{entityType="compound"} and \code{entityKind="batch name"}.
 #' @keywords batchCode, preferred
 #' @export
-
 getPreferredId <- function(batchIds, preferredIdService = NULL, testMode=FALSE) {
   
   if (is.null(preferredIdService)) {
@@ -75,3 +75,53 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
   # Return the useful part
   return(response$results)
 }
+
+#' Gets preferred ids
+#'
+#' Entered entity codes (ids) are checked against a preferred id service.
+#' 
+#' @param batchIds a character vector of codes
+#' @param displayName the user display name of the codes (e.g. "Compound Batch ID")
+#' @param preferredIdService the url of the preferred id service. Defaults to
+#'   \code{paste0(racas::applicationSettings$server.nodeapi.path,
+#'   "/api/entitymeta/preferredCodes")}
+#' @param testMode unused testing tool
+#' @return a data.frame with names \code{c("Requested.Name", "Preferred.Code")}
+#' @details Gets preferred id's for a range for inputs. For compound/batch name
+#'   requests, it will use the relevant batch code check. For lsThings, it
+#'   checks those entities for their preferred codes.
+#' @keywords batchCode, preferred
+#' @export
+getPreferredId2 <- function (entityIds, displayName, testMode=FALSE, preferredIdService = NULL) {
+  # Put the entityIds in the correct format
+  if (is.null(preferredIdService)) {
+    preferredIdService <- paste0(racas::applicationSettings$server.nodeapi.path, 
+                                 "/api/entitymeta/referenceCodes/csv")
+  }
+  
+  if (length(entityIds) > 500) {
+    return(rbind(getPreferredId2(entityIds[1:500], displayName, testMode, preferredIdService),
+                 getPreferredId2(entityIds[501:length(entityIds)], displayName, testMode, preferredIdService)))
+  } else {
+    requestIds <- list()
+    if (testMode) {
+      requestIds$testMode <- "true"
+    }
+    
+    requestIds$displayName = displayName
+    requestIds$entityIdStringLines = paste(entityIds, collapse = "\n")
+    
+    # Get the preferred ids from the server
+    response <- list(error=FALSE)
+    response <- postURLcheckStatus(preferredIdService, toJSON(requestIds), requireJSON = TRUE)
+    tryCatch({
+      response <- fromJSON(response)
+    }, error = function(e) {
+      stopUser(paste0("The loader was unable to parse the response it got from the preferred ID service: ", response))
+    })
+    
+    # Return the useful part
+    return(read.csv(text=response$resultCSV, stringsAsFactors=FALSE))
+  }
+}
+

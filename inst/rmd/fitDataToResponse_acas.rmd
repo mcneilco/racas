@@ -4,10 +4,7 @@ Curve Fit Summary
 ***Model Equation***
 
 ```{r modelEquation, message = FALSE, results='asis', echo=FALSE, cache=FALSE}
-modelEquation <- switch(fitData[1]$renderingHint,
-                        "4 parameter D-R" = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4.txt", package = "racas")),
-                        "Ki Fit" = get_text_file_contents(system.file(file.path("rmd","equations"), "ki.txt", package = "racas"))
-                        )
+modelEquation <- fitData[1]$modelFit[[1]]$model_equation_img
 cat(modelEquation)
 ```
 
@@ -50,6 +47,9 @@ for(stat in 1:ncol(gf)) {
   mtext(variable, side = 4, las=1)
 }
 ```
+
 \* Note - this summary is the result of the initial fit; curve curation may alter curves
+
+`r paste0("Fit Date: ", format(Sys.time(), "%a %b %d %Y %X"))`
 
 `r paste0('<a href="', '/curveCurator/', experimentCode, '" target="_blank" class="btn">Curate</a>')`

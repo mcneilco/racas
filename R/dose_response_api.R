@@ -18,7 +18,8 @@
 #' recordedBy <- "bbolt"
 #' experimentCode <- "EXPT-00000441"
 #' modelFitType <- "4 parameter D-R"
-#' api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode)
+#' modelFit <- racas::ll4
+#' api_doseResponse_experiment(simpleFitSettings, modelFitType, recordedBy, experimentCode, modelFit)
 #' 
 #' #Loading fake data first
 #' # requires 1. that a protocol named "Target Y binding") be saved first (see \code{\link{api_createProtocol}})
@@ -30,7 +31,7 @@
 #' experimentCode <- load_dose_response_test_data()
 #' recordedBy <- "bbolt"
 #' api_doseResponse_experiment(simpleFitSettings, recordedBy, experimentCode)
-api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recordedBy, experimentCode, testMode = NULL) {
+api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recordedBy, experimentCode, testMode = NULL, modelFit) {
 #   file <- system.file("docs", "example-simple-fitsettings-ki.json", package = "racas" )
 #   simpleBulkDoseResponseFitRequestJSON <- readChar(file, file.info(file)$size)
 #   simpleFitSettings <- fromJSON(simpleBulkDoseResponseFitRequestJSON)
@@ -42,26 +43,42 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   myMessenger$devMode <- FALSE
   myMessenger$logger <- logger(logName = "com.racas.doseresponse.fit.experiment")
   on.exit({
-    update_experiment_model_fit_status(experimentCode, "error")
+    rolledback <- any(unlist(lapply(myMessenger$infos, function(x) x$message=="rolledback")))
     if(myMessenger$hasErrors()) {
       myMessenger$logger$error(paste0("User Errors: ", myMessenger$userErrors, collapse = ","))
       myMessenger$logger$error(paste0("Errors: ", myMessenger$userErrors, collapse = ","))
-      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = lapply(myMessenger$errors, function(x) {x$message}))  
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = c(myMessenger$userErrors,lapply(myMessenger$errors, function(x) {x$message})))  
     } else {
       response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "error", hasWarning = FALSE, errorMessages = "There was an error fitting curves")
     }
     
-    myMessenger$logger$debug("saving experiment value model fit result html")
-    experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
-    
+    if(rolledback) {
+      update_experiment_model_fit_status(experimentCode, "error")
+      myMessenger$logger$debug("saving experiment value model fit result html")
+      experimentDoseResponseAnalysisResultValue <- update_experiment_model_fit_html(experimentCode, html = response$result$htmlSummary)
+    } else {
+      if(!is.null(experimentStatus)) {
+        update_experiment_model_fit_status(experimentCode, experimentStatus)
+      } else {
+        update_experiment_model_fit_status(experimentCode, "error")
+      }
+    }
+  
     return(response)
   })
   
-  myMessenger$logger$debug("getting current experiment model fit status status to see if this is a refit")
+  myMessenger$logger$debug("getting current experiment model fit status status to see if this experiment is already running")
   experimentStatus <- get_experiment_model_fit_status(experimentCode)
-  if(!is.null(experimentStatus) && experimentStatus!="running") {
-    myMessenger$logger$debug("experiment status is not 'running', this is a refit")
-    refit <- TRUE
+  if(!is.null(experimentStatus)) {
+    if(experimentStatus == "running") {
+      myMessenger$logger$warn("experiment model fit status is 'running', returning without fitting")
+      response <- fit_data_to_acas_experiment_response(fitData = NULL, experimentCode, transactionId = -1, status = "running", hasWarning = FALSE, errorMessages = c("Model is already being fit, please wait for the current model fit to finish before refitting"))  
+      on.exit()
+      return(response)
+    } else {
+      myMessenger$logger$debug("experiment status is not 'running', this is a refit")
+      refit <- TRUE
+    }
   } else {
     refit <- FALSE
   }
@@ -70,18 +87,20 @@ api_doseResponse_experiment <- function(simpleFitSettings, modelFitType, recorde
   experimentStatusValue <- update_experiment_model_fit_status(experimentCode, "running")
   
   myMessenger$logger$debug(paste0("getting fit data for ",experimentCode, collapse = ""))
-  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE))
+  myMessenger$capture_output(fitData <- get_fit_data_experiment_code(experimentCode, modelFitType, full_object = TRUE, modelFit = modelFit))
   if(myMessenger$hasErrors()) {
     return()
   }
   fitData[ , renderingHint := modelFitType]
+  fitData[ , modelFit := list(list(modelFit))]
   fitData[ , simpleFitSettings := toJSON(simpleFitSettings), by = curveId]
 
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = modelFitType)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, simpleFitSettings, modelFit$simple_to_advanced_fittings_function)
   
   #If refitting, then we want to set the algorithm and user flags back to a blank slate
   if(refit) {
+    fitData[ , c("userFlagStatus", "algorithmFlagStatus") := list("", "")]
     fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm", "user")))), by = curveId]
   }
 
@@ -134,68 +153,25 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("getting model fit type for ",entityID))
   modelFitType <- get_experiment_model_fit_type(entityID)
+  modelFit <- get_model_fit_from_type_code(modelFitType)
+  
   myMessenger$logger$debug(paste0("getting fit data for ",entityID))
-  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE)
+  fitData <- get_fit_data_experiment_code(entityID, modelFitType, full_object = FALSE, modelFit = modelFit)
   #TODO: 3.1.0 the next line work but not with 3.0.3, check again when data.table is above 1.9.2 (1.9.2 and devel 1.9.3 has lots of 3.1.0 issues)
   #setkey(fitData, codeName)
   myMessenger$logger$debug(paste0("Getting renderingHint saved parameter"))
   renderingHint <- fitData[1]$renderingHint
   myMessenger$logger$debug(paste0("Got renderingHint '",renderingHint,"'"))
   myMessenger$logger$debug(paste0("Getting sort options '",renderingHint,"'"))
-  sortOptions <- switch(fitData[1]$renderingHint,
-                        "4 parameter D-R" = list(list(code = "compoundCode", name = "Compound Code"),
-                                      list(code = "EC50", name = "EC50"),
-                                      list(code = "SST", name = "SST"),
-                                      list(code = "SSE", name = "SSE"),
-                                      list(code = "rsquare", name = "R^2"),
-                                      list(code = "userFlagStatus", name = "User Flag Status"),
-                                      list(code = "userFlagStatus", name = "Algorithm Flag Status")
-                        ),
-                        "Ki Fit" = list(list(code = "compoundCode", name = "Compound Code"),
-                                    list(code = "Ki", name = "Ki"),
-                                    list(code = "SST", name = "SST"),
-                                    list(code = "SSE", name = "SSE"),
-                                    list(code = "rsquare", name = "R^2"),
-                                    list(code = "userFlagStatus", name = "User Flag Status"),
-                                    list(code = "userFlagStatus", name = "Algorithm Flag Status")
-                        ), {
-                          msg <- paste0("Model Hint '", renderingHint, "' unimplemented for sort options")
-                          myMessenger$logger$error(msg)
-                          stop(msg)
-                        }
-                        
-  )
+  sortOptions <- modelFit$sortOptions
                           
   myMessenger$logger$debug(paste0("Get curve attributes"))
   fitData[ , curves := {
-    curveAttributes <- switch(
-      renderingHint[[1]],
-      "4 parameter D-R" = list(
-        EC50 = ec50[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderingHint = renderingHint[[1]]
-      ),
-      "Ki Fit" = list(
-        Ki = ki[[1]],
-        SST =  sst[[1]],
-        SSE =  sse[[1]],
-        rsquare = rsquared[[1]],
-        compoundCode = batchCode[[1]],
-        algorithmFlagStatus = algorithmFlagStatus[[1]],
-        userFlagStatus = userFlagStatus[[1]],
-        renderingHint = renderingHint[[1]]
-      )
-    )
     list(list(list(curveid = curveId[[1]], 
                    algorithmFlagStatus = algorithmFlagStatus[[1]],
                    userFlagStatus = userFlagStatus[[1]],
                    category = category[[1]],
-                   curveAttributes = curveAttributes)))
+                   curveAttributes = modelFit$get_curve_attributes(.SD))))
   }, by = curveId]
 
   stubs <- list(sortOptions = sortOptions, curves = fitData$curves)
@@ -205,11 +181,13 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   return(stubs)
 }
 
-api_doseResponse_update_flag <- function(POST) {
+api_doseResponse_update_flag <- function(POST, modelFit) {
   fitData <- get_fit_data_curve_id(POST$curveid)
   simpleFitSettings <- fromJSON(fitData$fitSettings)
-  fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = POST$curveAttributes$renderingHint)
-  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$userFlagStatus, simpleFitSettings = simpleFitSettings)
+  #fitSettings <- simple_to_advanced_fit_settings(simpleFitSettings, renderingHint = POST$curveAttributes$renderingHint)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, simpleFitSettings, modelFit$simple_to_advanced_fittings_function)
+  
+  doseResponse <- dose_response_session(fitSettings = fitSettings, fitData = fitData, flagUser = POST$userFlagStatus, simpleFitSettings = simpleFitSettings, modelFit = modelFit)
   deleteSession(doseResponse$sessionID)
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
   savedCurveID <- save_dose_response_data(fitData, recorded_by = POST$user)
@@ -219,28 +197,7 @@ api_doseResponse_update_flag <- function(POST) {
                                       algorithmFlagStatus = algorithmFlagStatus[[1]],
                                       userFlagStatus = userFlagStatus[[1]],
                                       category = category[[1]],
-                                      curveAttributes = switch(POST$curveAttributes$renderingHint,
-                                                               "4 parameter D-R" = list(
-                                                                 EC50 = ec50[[1]],
-                                                                 SST =  sst[[1]],
-                                                                 SSE =  sse[[1]],
-                                                                 rsquare = rsquared[[1]],
-                                                                 compoundCode = batchCode[[1]],
-                                                                 algorithmFlagStatus = algorithmFlagStatus[[1]],
-                                                                 userFlagStatus = userFlagStatus[[1]],
-                                                                 renderingHint = renderingHint[[1]]
-                                                               ),
-                                                               "Ki Fit" = list(
-                                                                 Ki = ki[[1]],
-                                                                 SST =  sst[[1]],
-                                                                 SSE =  sse[[1]],
-                                                                 rsquare = rsquared[[1]],
-                                                                 compoundCode = batchCode[[1]],
-                                                                 algorithmFlagStatus = algorithmFlagStatus[[1]],
-                                                                 userFlagStatus = userFlagStatus[[1]],
-                                                                 renderingHint = renderingHint[[1]]
-                                                               )
-                                      )
+                                      curveAttributes = modelFit$get_curve_attributes(.SD)
   ))), by = curveId]
   return(toJSON(fitData$curves[[1]]))
 }
@@ -259,6 +216,7 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
       fitData <- get_fit_data_analysis_group_id(GET$analysisgroupid, full_object = TRUE)
     }
   }
+  fitData[, modelFit := list(list(get_model_fit_from_type_code(fitData[1]$renderingHint)))]
   
   sessionID <- saveSession()
   
@@ -291,26 +249,8 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     curveErrors <- fitData[1]$curveErrorsClob[[1]]
     fitSettings <- fromJSON(fitData[1]$fitSettings)
     
-    fittedParametersList <- switch(fitData[1]$renderingHint,
-                                   "4 parameter D-R" = list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope),
-                                   "Ki Fit" = list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$ligandConc, kd = fitData[1]$kd)
-           )
-    curveAttributes <- switch(fitData[1]$renderingHint,
-                              "4 parameter D-R" = list(EC50 = length0_or_na_to_null(fitData[1]$ec50),
-                                                Operator = length0_or_na_to_null(fitData[1]$ec50OperatorKind),
-                                                SST = length0_or_na_to_null(fitData[1]$sst),
-                                                SSE =  length0_or_na_to_null(fitData[1]$sse),
-                                                rSquared =  length0_or_na_to_null(fitData[1]$rsquared),
-                                                compoundCode = length0_or_na_to_null(fitData[1]$batchCode)
-                                   ),
-                              "Ki Fit" = list(Ki = length0_or_na_to_null(fitData[1]$ki),
-                                               Operator = length0_or_na_to_null(fitData[1]$ec50OperatorKind),
-                                               SST = length0_or_na_to_null(fitData[1]$sst),
-                                               SSE =  length0_or_na_to_null(fitData[1]$sse),
-                                               rSquared =  length0_or_na_to_null(fitData[1]$rsquared),
-                                               compoundCode = length0_or_na_to_null(fitData[1]$batchCode)
-                                   )
-    )
+    fittedParametersList <- fitData[1]$modelFit[[1]]$get_saved_fitted_parameters(fitData, overRideMaxMin)
+    curveAttributes <- fitData[1]$modelFit[[1]]$get_curve_attributes(fitData)
     category <- fitData[1]$category
   } else {
     reportedValues <- fitData[1]$reportedValuesClob[[1]]
@@ -325,24 +265,7 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
     if(!is.null(fittedParametersList$min) && !is.na(overRideMaxMin)) {
       fittedParametersList$min <- overRideMaxMin
     }
-    curveAttributes <- switch(fitData[1]$renderingHint,
-                              "4 parameter D-R" = list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
-                                                Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
-                                                SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
-                                                SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
-                                                rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
-                                                compoundCode = fitData[1]$batchCode
-                                   ),
-                                   "Ki Fit" = list(Ki = fitData[1]$reportedParameters[[1]]$ki$value,
-                                               Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
-                                               SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
-                                               SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
-                                               rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
-                                               ligandConc = fitData[1]$ligandConc[[1]],
-                                               kd = fitData[1]$kd[[1]],                                            
-                                               compoundCode = fitData[1]$batchCode
-                                   )
-    )
+    curveAttributes <- fitData[1]$modelFit[[1]]$get_curve_attributes(fitData, saved = FALSE)
     category <- fitData[1]$category[[1]]
   }
   curveid <- fitData[1]$curveId[[1]]
@@ -350,35 +273,24 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   userFlagStatus = fitData[1]$userFlagStatus[[1]]
   points <- fitData[1]$points[[1]]
   renderingHint <- fitData[1]$renderingHint[[1]]
-  #category <- nrow(points[!is.na(flag)])
   points <- split(points, points$responseSubjectValueId)
   names(points) <- NULL
   protocol_display_values <- get_protocol_curve_display_min_and_max_by_curve_id(curveid)    
   plotWindow <- get_plot_window(fitData[1]$points[[1]])
   plotWindow[c(1,3)] <- log10(plotWindow[c(1,3)])
   plotWindow[c(2,4)] <- c(max(protocol_display_values$ymax,plotWindow[2], na.rm = TRUE),min(protocol_display_values$ymin,plotWindow[4], na.rm = TRUE))
-  plotData <- switch(fitData[1]$renderingHint,
-                     "4 parameter D-R" = list(plotWindow = plotWindow,
-                                  points  = points,
-                                  curve = c(type = fitData[1]$renderingHint,
-                                            reported_ec50 = curveAttributes$EC50,
-                                            reported_operator = curveAttributes$Operator,
-                                            fittedParametersList)
-                     ),
-                     "Ki Fit" = list(plotWindow = plotWindow,
+  plotData <- list(plotWindow = plotWindow,
                                  points  = points,
                                  curve = c(type = fitData[1]$renderingHint,
-                                           reported_ki = curveAttributes$Ki,
-                                           reported_operator = curveAttributes$Operator,
+                                           curveAttributes = list(curveAttributes),
                                            fittedParametersList)
                      )
-  )
-                                 
                             
-  if(length(fittedParametersList) == 0) {
-    plotData$curve <- NULL
-  }
+#   if(length(fittedParametersList) == 0) {
+#     plotData$curve <- NULL
+#   }
   return(toJSON(list(id = curveid,
+                     compoundCode = fitData[1]$batchCode,
                      curveid = curveid,
                      reportedValues = reportedValues,
                      fitSummary = fitSummary,
@@ -422,7 +334,7 @@ api_doseResponse_save_session <- function(sessionID, user) {
   return(response)
 }
 
-api_doseResponse_refit <- function(POST) {
+api_doseResponse_refit <- function(POST, modelFit) {
   myMessenger <- messenger()$reset()
   myMessenger$devMode <- TRUE
   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.fit.curve")
@@ -430,11 +342,12 @@ api_doseResponse_refit <- function(POST) {
   myMessenger$logger$debug(paste0("got session id: ", POST$sessionID))
   myMessenger$logger$debug("getting updated point flags sent from acas")
   points <- data.table(POST$plotData$points)
+  
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  fitSettings <- simple_to_advanced_fit_settings(POST$fitSettings, points, renderingHint = POST$renderingHint)
+  fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, POST$fitSettings, modelFit$simple_to_advanced_fittings_function, points)
   
   myMessenger$logger$debug("fitting the dose response model")
-  doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user)
+  doseResponse <- dose_response_session(fitSettings = fitSettings, sessionID = POST$sessionID, simpleFitSettings = POST$fitSettings, flagUser = POST$userFlagStatus, user = POST$user, modelFit = modelFit)
   
   myMessenger$logger$debug("converting the fitted data to a response json object")
   fitData <- add_clob_values_to_fit_data(doseResponse$fitData)
@@ -447,24 +360,92 @@ api_doseResponse_refit <- function(POST) {
   return(response)
 }
 
-# api_doseResponse_update_user_flag <- function(sessionID, userFlagStatus, user) {
-#   myMessenger <- messenger()$reset()
-#   myMessenger$devMode <- FALSE
-#   myMessenger$logger <- logger(logName = "com.racas.api.doseresponse.update.curve.user.flag")
-#   myMessenger$logger$debug(paste0("loading session ", sessionID))
-#   myMessenger$logger$debug(paste0("setting flag to ", userFlagStatus))
-#   myMessenger$logger$debug(paste0("setting user to ", user))
-#   loadSession(sessionID)
-#   if(flagUser == "NA") {
-#     flagUser <- as.character(NA)
-#   }
-#   updated <- doseResponse_update_user_flag(fitData, flagUser, user)
-#   if(!myMessenger$hasErrors()) {
-#     GET <- list()
-#     GET$analysisgroupid <- fitData$analysisGroupId
-#     response <- api_doseResponse_get_curve_detail(GET)
-#   } else {
-#     response <- myMessenger$toJSON()
-#   }
-#   return(response)
-# }
+sortOptions.LL4 <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "EC50", name = "EC50"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
+sortOptions.ki <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "Ki", name = "Ki"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
+get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
+  if(saved) {
+    return(list(
+      EC50 = fitData$ec50[[1]],
+      Operator = na_to_null(fitData$ec50OperatorKind),
+      SST =  fitData$sst[[1]],
+      SSE =  fitData$sse[[1]],
+      rsquare = fitData$rsquared[[1]],
+      compoundCode = fitData$batchCode[[1]],
+      algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+      userFlagStatus = fitData$userFlagStatus[[1]],
+      renderingHint = fitData$renderingHint[[1]]
+    ))
+  } else {
+    return(list(EC50 = fitData[1]$reportedParameters[[1]]$ec50$value,
+         Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
+         SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+         SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+         rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+         compoundCode = fitData[1]$batchCode,
+         algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+         userFlagStatus = fitData$userFlagStatus[[1]],
+         renderingHint = fitData$renderingHint[[1]]
+    ))
+  }
+}
+get_curve_attributes.ki <- function(fitData, saved = TRUE) {
+  if(saved) {
+    return(list(
+      Ki = fitData$ki[[1]],
+      Operator = na_to_null(fitData$kiOperatorKind),
+      SST =  fitData$sst[[1]],
+      SSE =  fitData$sse[[1]],
+      rsquare = fitData$rsquared[[1]],
+      compoundCode = fitData$batchCode[[1]],
+      algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+      userFlagStatus = fitData$userFlagStatus[[1]],
+      renderingHint = fitData$renderingHint[[1]]
+    ))
+  } else {
+    return(list(Ki = fitData[1]$reportedParameters[[1]]$ki$value,
+                Operator = fitData[1]$reportedParameters[[1]]$ki$operator,
+                SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+                SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+                rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                ligandConc = fitData[1]$ligandConc[[1]],
+                kd = fitData[1]$kd[[1]],                                            
+                compoundCode = fitData[1]$batchCode,
+                algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+                userFlagStatus = fitData$userFlagStatus[[1]],
+                renderingHint = fitData$renderingHint[[1]]
+    ))
+  }
+}
+get_model_fit_from_type_code <- function(modelFitTypeCode) {
+  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes))
+  source(file.path(applicationSettings$appHome,modelFitClasses[code==modelFitTypeCode]$RSource), local = TRUE)
+  return(modelFit)
+}
+get_saved_fitted_parameters.LL4 <- function(fitData, overRideMaxMin = NA) {
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
+}
+get_saved_fitted_parameters.ki <- function(fitData, overRideMaxMin = NA) {
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
+}
+get_plot_data_curve.LL4 <- function(fitData, overRideMaxMin = NA) {
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
+}
+get_plot_data_curve.ki <- function(fitData, overRideMaxMin = NA) {
+  list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
+}

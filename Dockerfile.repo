@@ -1,0 +1,23 @@
+FROM mcneilco/centos-node-r
+
+USER	root
+
+RUN yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-6-x86_64/pgdg-centos94-9.4-1.noarch.rpm && \
+  yum install -y postgresql94-devel curl-devel libxml2-devel
+
+RUN	useradd -u 1000 -ms /bin/bash runner
+ENV ACAS_HOME /home/runner/build
+RUN echo $ACAS_HOME && mkdir $ACAS_HOME
+
+WORKDIR $ACAS_HOME
+
+ENV R_LIBS $ACAS_HOME/r_libs
+RUN mkdir $ACAS_HOME/r_libs
+ENV PATH /usr/pgsql-9.4/bin:$PATH
+
+COPY	DESCRIPTION $ACAS_HOME
+COPY	R/installation.R $ACAS_HOME
+RUN chown -R runner:runner $ACAS_HOME
+USER runner
+RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));" && \
+     rm DESCRIPTION installation.R
