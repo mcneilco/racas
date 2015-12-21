@@ -31,11 +31,7 @@ Imports:
     gplots,
     methods
 Suggests:
-    RPostgreSQL,
-    ROracle,
-    RMySQL,
-    RJDBC,
-    DBI
+    RPostgreSQL
 Collate:
     'JSON_library.R'
     'api.R'

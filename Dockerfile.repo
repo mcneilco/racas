@@ -15,14 +15,9 @@ ENV R_LIBS $ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
 ENV PATH /usr/pgsql-9.4/bin:$PATH
 
-COPY	. $ACAS_HOME/racas
+COPY	DESCRIPTION $ACAS_HOME
+COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
 USER runner
-RUN   RACAS_PATH=$ACAS_HOME/racas && \
-      TMP_REPO_PATH=./repo && \
-      Rscript -e "options(repos = c(CRAN='http://cran.rstudio.com/')); \
-                source(\"$RACAS_PATH/R/installation.R\"); \
-                makeRepo(path=\"$TMP_REPO_PATH\", description = \"$RACAS_PATH/DESCRIPTION\", racasPath = \"$RACAS_PATH\"); \
-                install.packages(\"RPostgreSQL\", repos=paste0('file:',normalizePath(\"$TMP_REPO_PATH\")), lib = \"$R_LIBS\", type = 'source'); \
-                install.packages(\"racas\", repos=paste0('file:',normalizePath(\"$TMP_REPO_PATH\")), lib = \"$R_LIBS\", type = 'source');" && \
-     rm -rf $TMP_REPO_PATH $RACAS_PATH $R_LIBS/racas
+RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));" && \
+     rm DESCRIPTION installation.R
