@@ -11,8 +11,8 @@ saveSession <- function(id = NA) {
       }
     }
   }
-  if(!is.null(dev.list()))
-    warning("Open graphics devices will not be saved or restored.")
+#   if(!is.null(dev.list()))
+#     warning("Open graphics devices will not be saved or restored.")
   
   #.save.session.search <- search()
   #.save.session.packages <- .packages()
