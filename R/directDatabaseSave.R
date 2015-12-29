@@ -855,7 +855,7 @@ prepareTableForDD <- function(entityData) {
     labelKind = naIfNull(entityData$labelKind, NA_character_),
     labelValue = naIfNull(entityData$labelValue, NA_character_),
     imageFile = naIfNull(entityData$imageFile, NA_character_),
-    physicallyLabled = naIfNull(entityData$imageFile, NA_integer_),
+    physicallyLabled = naIfNull(entityData$physicallyLabled, NA_integer_),
     preferred = naIfNull(entityData$preferred, NA_integer_)
   )
   return(entityDataFormatted)
