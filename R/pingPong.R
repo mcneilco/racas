@@ -1004,7 +1004,8 @@ materialize_treatment_group_results <- function(update = TRUE, createTableOption
                                              	 WHERE rn = 1
                                              	 ) X
                                             	ON ( api_hts_treatment_results.tested_lot=X.alias )
-                                            WHERE api_hts_treatment_results.public_data = '1'"
+                                            "
+  #WHERE api_hts_treatment_results.public_data = '1'"
   
   if(apiTreatmentGroupResultsAlreadyExisted & update == TRUE) {
     logger$info(paste0("updating ",treatmentGroupResultsMaterializedName))
