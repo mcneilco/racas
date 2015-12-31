@@ -1037,7 +1037,7 @@ materialize_treatment_group_results <- function(update = TRUE, createTableOption
                                             batch_id
                                             )
                                             (", selectTreatmentGroupResultsSQL, "
-                                            AND experiment_id in 
+                                            WHERE experiment_id in 
                                             ( SELECT a.experiment_id
                                             FROM (",htsExperimentIdsAddedMaterializedName,") a
                                             ))"))
