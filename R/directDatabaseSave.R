@@ -10,7 +10,7 @@
 #' @param name A character string specifying a DBMS table name.
 #' @param value a data.table to write.
 dbWriteTableMatchCol <- function(conn, name, value, ...) {
-  fields <- dbListFields(conn, tolower(name))
+  fields <- dbListFields(conn, name)
   # Remove dropped postgres columns and change Oracle columns to lowercase
   fields <- tolower(fields[!grepl("..pg.dropped", fields, fixed = TRUE)])
   setcolorder(value, fields)
