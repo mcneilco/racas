@@ -169,20 +169,35 @@ getEntityCodesBySqlDD <- function(conn, entityType, numberOfCodes) {
 	return(entityCodes)
 }
 #' @rdname saveEntitiesDD
-getEntityCodesDD <- function(entityType, numberOfCodes){
-	if (entityType == "ANALYSIS_GROUP"){
-		entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_analysis group", 
-		                                                labelTypeAndKind = "id_codeName", 
-		                                                numberOfLabels = numberOfCodes))
-	} else if (entityType == "TREATMENT_GROUP"){
-		entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_treatment group", 
-		                                                labelTypeAndKind = "id_codeName", 
-		                                                numberOfLabels = numberOfCodes))
-	} else if (entityType == "SUBJECT"){
-		entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_subject", 
-		                                                labelTypeAndKind = "id_codeName", 
-		                                                numberOfLabels = numberOfCodes))
-	}
+getEntityCodesDD <- function(entityType = NA, numberOfCodes, thingTypeAndKind = NA, labelTypeAndKind = NA){
+  if(!is.na(entityType)) {
+    if (entityType == "ANALYSIS_GROUP"){
+      entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_analysis group", 
+                                          labelTypeAndKind = "id_codeName", 
+                                          numberOfLabels = numberOfCodes))
+    } else if (entityType == "TREATMENT_GROUP"){
+      entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_treatment group", 
+                                          labelTypeAndKind = "id_codeName", 
+                                          numberOfLabels = numberOfCodes))
+    } else if (entityType == "SUBJECT"){
+      entityCodes <- unlist(getAutoLabels(thingTypeAndKind = "document_subject", 
+                                          labelTypeAndKind = "id_codeName", 
+                                          numberOfLabels = numberOfCodes))
+    }
+  } else {
+    if(is.na(thingTypeAndKind)) {
+      stop("must specify entityType or both thingTypeAndKind and labelTypeAndKind")
+    } else {
+      if(is.na(labelTypeAndKind)) {
+        stop("must specify labelTypeAndKind when specifying thingTypeAndKind")
+      } else {
+        entityCodes <- unlist(getAutoLabels(thingTypeAndKind = thingTypeAndKind, 
+                                            labelTypeAndKind = labelTypeAndKind, 
+                                            numberOfLabels = numberOfCodes))
+      }
+    }
+  }
+
 
 	return(entityCodes)
 }
@@ -324,9 +339,13 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 #' @param ag_ids data.table of analysis_group ids with columns tempParentId and id
 #' @param tg_ids data.table of treatment_group ids with columns tempParentId and id
 #' @param FUN function to apply repeatedly
-saveEntitiesDD <- function( conn, entityType, inputDT ){
+saveEntitiesDD <- function( conn, entityType, inputDT, thingTypeAndKind = NA, labelTypeAndKind = NA){
 #entityType <- "ANALYSIS_GROUP"
-  
+  if(!is.na(thingTypeAndKind)) {
+    if(is.na(labelTypeAndKind)) {
+      stop("if thingTypeAndKind is specified, then you must provide a  labelTypeAndKind")
+    }
+  }
   if (!"parentId" %in% names(inputDT)) {
     inputDT[ , parentId := NA]
   }
@@ -344,7 +363,11 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
 
 	entities[ ,lsTypeAndKind := paste0(lsType, "_", lsKind)]
 	entities[ is.na(id), id := getEntityIdsDD(conn, .N)]
-	entities[ is.na(codeName) | codeName=="", codeName := getEntityCodesBySqlDD(conn, entityType, length(codeName))]
+	if(is.na(thingTypeAndKind)) {
+	  entities[ is.na(codeName) | codeName=="", codeName := getEntityCodesBySqlDD(conn, entityType, length(codeName))]
+	} else {
+	  entities[ is.na(codeName) | codeName=="", codeName := getEntityCodesDD(entityType = NA, numberOfCodes = length(codeName), thingTypeAndKind = thingTypeAndKind, labelTypeAndKind = labelTypeAndKind)]
+	}
 	merge_ids <- subset(entities, ,c("id", "tempId"))
 	setkey(merge_ids, "tempId")
 	setkey(inputDT, "tempId")
