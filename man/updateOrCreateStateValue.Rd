@@ -75,7 +75,8 @@ updateOrCreateStateValue(entityKind, lsState, lsType, lsKind,
 a named list of the lsValue object
 }
 \description{
-If a value with the correct lsType and lsKind exists within the provided lsState, it is updated, otherwise, it is created.
+If a value with the correct lsType and lsKind exists within the provided lsState,
+it is updated, otherwise, it is created.
 }
 \details{
 This will fail if the entity has more than one non-ignored state of entered stateKind,

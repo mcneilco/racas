@@ -1885,7 +1885,8 @@ getAcasEntities <- function(acasCategory, lsServerURL = racas::applicationSettin
 
 #' Update a value
 #' 
-#' If a value with the correct lsType and lsKind exists within the provided lsState, it is updated, otherwise, it is created.
+#' If a value with the correct lsType and lsKind exists within the provided lsState, 
+#' it is updated, otherwise, it is created.
 #' 
 #' @param entityKind the kind of parent entity, such as "experiment" or "analysisgroup", see \link{acasEntityHierarchy}
 #' @param lsType type of the value
@@ -1952,7 +1953,45 @@ updateOrCreateStateValue <- function(entityKind, lsState, lsType, lsKind, string
   }
   return(output)
 }
-
+#' Get Experiment States
+#' 
+#' Get states by type and kind.
+#' 
+#' @param experimentId id or codeName of the experiment
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param responseFormat "json" or maybe "tsv"
+#' 
+#' @export
+#' 
+#' @details Returns a list of experiment states.
+getExperimentStatesByTypeAndKind <- function(experimentId, stateType, stateKind, responseFormat="json",
+                                     lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  #url <- "acas/api/v1/{entity}/{experimentIdOrCodeName}/exptstates/bytypekind/{stateType}/{stateKind}/{format}"
+  url <- paste0(lsServerURL, "experiments/", experimentId, "/exptstates/bytypekind/", 
+                stateType, "/", stateKind, "/", responseFormat)
+  getURLcheckStatus(URLencode(url), requireJSON = responseFormat=="json")
+}
+#' Get Experiment Values
+#' 
+#' Get values without requiring knowledge of whether the value already
+#' exists or not- it will be checked by the roo server.
+#' 
+#' @param experimentId id or codeName of the experiment
+#' @param stateType lsType of the state
+#' @param stateKind lsKind of the state
+#' @param valueType lsType of the value
+#' @param valueKind lsKind of the value
+#' @param responseFormat "json" or maybe "tsv"
+#' @return List of experiment values.
+#' @export
+getExperimentValuesByTypeAndKind <- function(experimentId, stateType, stateKind, valueType, valueKind, responseFormat="json",
+                                     lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
+  #url <- "acas/api/v1/experiments/{experimentIdOrCodeName}/exptvalues/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/{format}"
+  url <- paste0(lsServerURL, "experiments/", experimentId, "/exptvalues/bystate/", 
+                stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/", responseFormat)
+  getURLcheckStatus(URLencode(url), requireJSON = responseFormat=="json")
+}
 #' Update Values
 #' 
 #' Updates values without requiring knowledge of whether the value already
