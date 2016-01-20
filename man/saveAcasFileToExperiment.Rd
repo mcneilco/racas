@@ -15,7 +15,7 @@ saveAcasFileToExperiment(fileStartLocation, experiment, stateType, stateKind,
 \arguments{
 \item{fileStartLocation}{path to file, relative from privateUploads}
 
-\item{experiment}{an experiment object}
+\item{experiment}{an experiment object, must have "id" and "codeName"}
 
 \item{stateType}{the stateType of save location, e.g. "metadata"}
 

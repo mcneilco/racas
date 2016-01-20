@@ -53,7 +53,7 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
 #' experiment
 #' 
 #' @param fileStartLocation path to file, relative from privateUploads
-#' @param experiment an experiment object
+#' @param experiment an experiment object, must have "id" and "codeName"
 #' @param stateType the stateType of save location, e.g. "metadata"
 #' @param stateKind the stateKind of save location, e.g. "experiment metadata"
 #' @param valueKind the valueKind, or description of the file e.g. "source file"
@@ -81,9 +81,7 @@ saveAcasFileToExperiment <- function(
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   fileName <- basename(fileStartLocation)
   
-  if (is.null(experimentCodeName)) {
-    experimentCodeName <- experiment$codeName
-  }
+  experimentCodeName <- experiment$codeName
   
   sourceLocation <- getUploadedFilePath(fileStartLocation)
   
