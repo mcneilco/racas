@@ -181,7 +181,7 @@ saveAgDataDD <- function(conn, inputDT, experimentId, lsTransactionId, recordedD
 	}
 	inputDT[ ,version := 0 ]
 	inputDT[ ,deleted := FALSE ]
-	inputDT[ publicData==NA, publicData := FALSE ]
+	inputDT[ is.na(publicData), publicData := FALSE ]
 	
 	inputDT <- saveEntitiesDD(conn, entityType="ANALYSIS_GROUP", inputDT)
 	parentDT <- unique(subset(inputDT, ,c("id", "tempId")))
@@ -256,7 +256,7 @@ saveSubjectDataDD <- function(conn, inputDT, tg_ids, lsTransactionId, recordedDa
 	}
 	inputDT[ ,version := 0 ]
 	inputDT[ ,deleted := FALSE ]
-	inputDT[ publicData==NA, publicData := FALSE ]
+	inputDT[ is.na(publicData), publicData := FALSE ]
 
 	inputDT <- saveEntitiesDD(conn, entityType="SUBJECT", inputDT)
 	parentDT <- unique(subset(inputDT, ,c("id", "tempId")))
@@ -359,7 +359,13 @@ saveEntitiesDD <- function( conn, entityType, inputDT ){
 saveStatesDD <- function( conn, entityType, inputStatesDT ){
   stateColumns <- c("tempStateId", "stateId", "stateType", "stateKind", 
                     "lsTransaction", "id", "recordedBy", "ignored", "modifiedBy", 
-                    "modifiedDate", "recordedDate", "version", "deleted", "comments")
+                    "modifiedDate", "recordedDate", "version", "deleted", "stateComments")
+  if (!"stateComments" %in% names(inputStatesDT)) {
+    inputStatesDT[, stateComments := NA_character_]
+  }
+  if (!"stateId" %in% names(inputStatesDT)) {
+    inputStatesDT[, stateId := NA_character_]
+  }
   setkeyv(inputStatesDT, stateColumns) #Set key to all used colums
   states <- unique(inputStatesDT[!is.na(inputStatesDT$tempStateId), stateColumns, with=FALSE])
   if (nrow(states) == 0) {
@@ -380,7 +386,7 @@ saveStatesDD <- function( conn, entityType, inputStatesDT ){
     states[ , tempStateId := NULL ]
   }
   setnames(states, 
-           c("stateId", "comments", "ignored", "stateKind", "lsTransaction", "stateType", 
+           c("stateId", "stateComments", "ignored", "stateKind", "lsTransaction", "stateType", 
              "lsTypeAndKind", "modifiedBy", "modifiedDate", "recordedBy", 
              "recordedDate", "version", "id", "deleted"),
            c("id", "comments", "ignored", "ls_kind", "ls_transaction", "ls_type", 
@@ -434,7 +440,7 @@ saveValuesDD <- function( conn, entityType, inputDT ){
     "recordedBy", "sigFigs", "stateId", "stringValue", "tempValueId", "uncertainty",
     "uncertaintyType", "unitKind", "unitType", "ignored", "modifiedBy", "modifiedDate",
     "recordedDate", "version", "deleted", "urlValue", "valueKind", "valueType")
-  setkeyv(inputDT, valueColumns) #Set key to all used colums
+  setkeyv(inputDT, valueColumns) #Set key to all used columns
   values <- unique(inputDT[!is.na(inputDT$tempValueId), valueColumns, with=FALSE])
   
   if (nrow(values) == 0) {
