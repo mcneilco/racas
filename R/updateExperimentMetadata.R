@@ -251,8 +251,9 @@ getAcasFileLink <- function(fileCode, login = FALSE) {
   fileServiceType <- racas::applicationSettings$server.service.external.file.type
   if (fileServiceType == "blueimp") {
     fileRootPath <- ifelse(login, 
-                           paste0(racas::applicationSettings$client.host, ":",
-                                         racas::applicationSettings$client.path),
+                           paste0("http://", racas::applicationSettings$client.host, ":",
+                                  racas::applicationSettings$client.port,
+                                  racas::applicationSettings$client.path),
                            racas::applicationSettings$server.nodeapi.path)
     urlLocation <- paste0(fileRootPath, "/dataFiles/", URLencode(fileCode))
   } else if (fileServiceType == "custom") {
