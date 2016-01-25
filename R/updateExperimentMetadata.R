@@ -102,8 +102,10 @@ saveAcasFileToExperiment <- function(
         warnUser(paste("could not rename file", fileName))
       }
     } else {
-      if (!file.copy(from = sourceLocation, to = targetLocation, overwrite = TRUE)) {
-        warnUser(paste("could not copy file", fileName))
+      if (sourceLocation != targetLocation) {
+        if (!file.copy(from = sourceLocation, to = targetLocation, overwrite = TRUE)) {
+          warnUser(paste("could not copy file", fileName))
+        }
       }
     }
     
