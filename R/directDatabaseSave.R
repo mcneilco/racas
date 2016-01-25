@@ -352,7 +352,7 @@ saveEntitiesDD <- function( conn, entityType, inputDT, thingTypeAndKind = NA, la
 
   if(entityType == "CONTAINER") {
     entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
-                                      ignored, modifiedBy, modifiedDate, recordedDate, version, locationId, deleted)])
+                                      ignored, modifiedBy, modifiedDate, recordedDate, version, locationId, deleted, rowIndex, columnIndex)])
   } else if (entityType == "ITXCONTCONT") {
     entities <- unique(inputDT[, list(tempId, id, codeName, lsKind, lsTransaction, lsType, parentId, recordedBy,
                                       ignored, modifiedBy, modifiedDate, recordedDate, version, firstContainer, secondContainer, deleted)])
@@ -398,8 +398,8 @@ saveEntitiesDD <- function( conn, entityType, inputDT, thingTypeAndKind = NA, la
   
   if (entityType == "CONTAINER") {
     setnames(entities, 
-             c("locationId"),
-             c("location_id"))
+             c("locationId", "rowIndex", "columnIndex"),
+             c("location_id", "row_index", "column_index"))
   } else if (entityType == "ITXCONTCONT") {
     setnames(entities,
             c("firstContainer"    , "secondContainer"),
@@ -426,8 +426,10 @@ saveEntitiesDD <- function( conn, entityType, inputDT, thingTypeAndKind = NA, la
 	  entityTable <- tolower(entityTable)
 	  joinTable <- tolower(joinTable)
 	}
-  
   ### Save entity table
+  setkey(entities, "id")
+  setkey(inputDT, "id")
+  inputDT <- entities[ , c('id', 'code_name'), with = FALSE][inputDT]
   dbWriteTableMatchCol(conn, entityTable, entities, append = T, row.names=FALSE, col.names=FALSE)
   
   if (is.na(joinTable)) {
@@ -879,7 +881,9 @@ prepareTableForDD <- function(entityData) {
     labelValue = naIfNull(entityData$labelValue, NA_character_),
     imageFile = naIfNull(entityData$imageFile, NA_character_),
     physicallyLabled = naIfNull(entityData$physicallyLabled, NA_integer_),
-    preferred = naIfNull(entityData$preferred, NA_integer_)
+    preferred = naIfNull(entityData$preferred, NA_integer_),
+    rowIndex = naIfNull(entityData$rowIndex, NA_integer_),
+    columnIndex = naIfNull(entityData$columnIndex, NA_integer_)
   )
   return(entityDataFormatted)
 }
