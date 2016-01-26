@@ -26,6 +26,7 @@ ModelFit <- setRefClass(Class = "ModelFit",
                           get_saved_fitted_parameters = "function",
                           curveid_query = "character",
                           experiment_query = "character",
+                          raw_results_persistence_path = "character",
                           typeMap = "data.table"
                         )
 )

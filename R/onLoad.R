@@ -85,6 +85,7 @@
                       get_saved_fitted_parameters = get_saved_fitted_parameters.LL4,
                       curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
                       experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
+                      raw_results_persistence_path = 'curvefit/rawdata',
                       typeMap = typeMap
   )
   assignInNamespace("ll4",ll4, ns="racas")
@@ -148,6 +149,7 @@
                         get_saved_fitted_parameters = get_saved_fitted_parameters.ki,
                         curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
                         experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
+                        raw_results_persistence_path = 'curvefit/rawdata',
                         typeMap = typeMap
   )
   assignInNamespace("kifit",kifit, ns="racas")
