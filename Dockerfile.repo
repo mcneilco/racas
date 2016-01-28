@@ -1,6 +1,44 @@
-FROM mcneilco/centos-node-r
+FROM centos:centos6
 
-USER	root
+# R
+RUN \
+  useradd -ms /bin/bash builder && \
+  yum update -y && \
+  yum upgrade -y && \
+  yum install -y epel-release && \
+  yum install -y epel-release rpm-build make wget tar httpd-devel libapreq2-devel R-devel libcurl-devel protobuf-devel openssl-devel libpng-devel && \
+  yum clean all
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.6.0
+ENV LD_LIBRARY_PATH $JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server/
+RUN echo "$JAVA_HOME/jre/lib/amd64/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
+    /sbin/ldconfig && \
+    R CMD javareconf
+
+USER builder
+
+RUN \
+  mkdir -p ~/rpmbuild/SOURCES && \
+  mkdir -p ~/rpmbuild/SPECS
+
+RUN \
+  cd ~ && \
+  wget https://github.com/jeffreyhorner/rapache/archive/v1.2.6.tar.gz -O rapache-1.2.6.tar.gz && \
+  tar xzvf rapache-1.2.6.tar.gz rapache-1.2.6/rpm/rapache.spec --strip-components 2 && \
+  mv -f rapache-1.2.6.tar.gz ~/rpmbuild/SOURCES/ && \
+  mv -f rapache.spec ~/rpmbuild/SPECS/ && \
+  rpmbuild -ba ~/rpmbuild/SPECS/rapache.spec
+
+USER root
+
+RUN \
+  yum install -y MTA mod_ssl /usr/sbin/semanage && \
+  cd /home/builder/rpmbuild/RPMS/x86_64/ && \
+  rpm -i rapache-*.rpm
+
+RUN \
+  chkconfig httpd off \
+  userdel builder
 
 RUN yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-6-x86_64/pgdg-centos94-9.4-1.noarch.rpm && \
   yum install -y postgresql94-devel curl-devel libxml2-devel
