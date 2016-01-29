@@ -191,6 +191,18 @@ Messenger <- setRefClass(Class = "Messenger",
                                      addWarning(x)
                                      if (!inherits(x, "userWarning")) {
                                        logger$warn(x$message)
+                                       s <- sys.calls()    
+                                       s <- c(s[1],s[(max(grep("eval\\(expr, envir, enclos\\)",s))+1):(length(s)-3)])
+                                       s <- lapply(1:length(s), function(x) paste0(x,": ", deparse(s[[x]])))
+                                       s <- paste0(s,collapse = '\n')
+                                       s <- paste0("Traceback:\n",s, collapse = "")
+                                       logger$warn(s)
+                                       currentwd <- getwd()
+                                       on.exit(setwd(currentwd))
+                                       setwd("/tmp")
+                                       t <- tempfile(tmpdir = "/tmp")
+                                       dump.frames(basename(t), to.file = TRUE)
+                                       logger$warn(paste0("R frames dumped to: ", t, ".rda"))
                                      }
                                    },
                                    message = function(x) {
