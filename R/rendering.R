@@ -657,7 +657,7 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
                              {
-                               modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes))
+                               modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
                                source(file.path(applicationSettings$appHome,modelFitClasses[code==renderingHint]$RSource), local = TRUE)
                                if(exists('renderingOptions')) {
                                  renderingOptions
