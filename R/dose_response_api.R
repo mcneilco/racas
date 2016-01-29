@@ -426,7 +426,7 @@ get_curve_attributes.ki <- function(fitData, saved = TRUE) {
   }
 }
 get_model_fit_from_type_code <- function(modelFitTypeCode) {
-  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes))
+  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
   source(file.path(applicationSettings$appHome,modelFitClasses[code==modelFitTypeCode]$RSource), local = TRUE)
   return(modelFit)
 }
