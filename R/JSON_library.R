@@ -2172,5 +2172,41 @@ pickBestName <- function(entity) {
   return(preferredNames[[maxIndex]])
 }
 
+#' Throw container in trash
+#' 
+#' Throw a container in the trash
+#' 
+#' @param containerCodeNameTable a data.table or data.frame with columns containerCodeName (character), modifiedBy (character), modifiedDate (millisecondtime: as.numeric(format(Sys.time(), "%s"))*1000)
+#' @return a list that is a label
+throwInTrash <- function(containerCodeNameTable, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  url <- paste0(lsServerURL, "containers/throwInTrash")
+  request <- jsonlite::toJSON(containerCodeNameTable)
+  response <- postURLcheckStatus(url, postfields=request)
+  if(response== "") {
+    return(response)
+  } else {
+    response <- jsonlite::fromJSON(response)
+  }
+  return(response)
+}
+
+#' Update amount in well 
+#' 
+#' Update the amount value in a well
+#' 
+#' @param containerCodeNameTable a data.table or data.frame with columns containerCodeName (character), amount (numeric), amountUnits (character - optional),  modifiedBy (character), modifiedDate (millisecondtime: as.numeric(format(Sys.time(), "%s"))*1000)
+#' @return a list that is a label
+updateAmountInWell <- function(containerCodeNameTable, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
+  url <- paste0(lsServerURL, "containers/updateAmountInWell")
+  request <- jsonlite::toJSON(containerCodeNameTable)
+  response <- postURLcheckStatus(url, postfields=request)
+  if(response== "") {
+    return(response)
+  } else {
+    response <- jsonlite::fromJSON(response)
+  }
+  return(response)
+}
+
 
 

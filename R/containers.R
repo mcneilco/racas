@@ -194,3 +194,43 @@ resizeContainerRowColumns <- function(originRowColumns = c("R001_C001","R001_C00
   }
   return(destinationRowColumns)
 }
+
+getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
+  answer <- query(paste0("select c2.code_name
+        from container c1
+        join container_label cl1
+        on c1.id=cl1.container_id
+        join itx_container_container itxcc
+        on cl1.id=itxcc.first_container_id
+        join container c2
+        on c2.id=itxcc.second_container_id
+        join container_label cl2
+        on c2.id=cl2.container_id
+        where c1.ls_type='container'
+        and c1.ls_kind = 'plate'
+        and c1.deleted = '0'
+        and c1.ignored = '0'
+        and cl1.ls_type = 'barcode'
+        and cl1.ls_kind = 'barcode'
+        and cl1.deleted = '0'
+        and cl1.ignored = '0'
+        and itxcc.ls_type = 'has member'
+        and itxcc.ls_kind = 'plate well'
+        and itxcc.deleted = '0'
+        and itxcc.ignored = '0'
+        and c2.ls_type = 'well'
+        and c2.ls_kind = 'default'
+        and c2.deleted = '0'
+        and c2.ignored = '0'
+        and cl2.ls_type = 'name'
+        and cl2.ls_kind = 'well name'
+        and cl2.deleted = '0'
+        and cl2.ignored = '0'
+        and cl1.label_text = '",plateBarcode,"'
+        and cl2.label_text = '",wellName,"'"))
+  if(nrow(answer) == 0) {
+    return(NA)
+  } else {
+    return(answer[1,1])
+  }
+}
