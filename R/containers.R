@@ -201,7 +201,7 @@ getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
         join container_label cl1
         on c1.id=cl1.container_id
         join itx_container_container itxcc
-        on cl1.id=itxcc.first_container_id
+        on c1.id=itxcc.first_container_id
         join container c2
         on c2.id=itxcc.second_container_id
         join container_label cl2
