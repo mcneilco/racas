@@ -215,7 +215,7 @@ getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
         and cl1.deleted = '0'
         and cl1.ignored = '0'
         and itxcc.ls_type = 'has member'
-        and itxcc.ls_kind = 'plate well'
+        and itxcc.ls_kind = 'container_well'
         and itxcc.deleted = '0'
         and itxcc.ignored = '0'
         and c2.ls_type = 'well'
