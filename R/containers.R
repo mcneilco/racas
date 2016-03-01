@@ -234,3 +234,77 @@ getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
     return(answer[1,1])
   }
 }
+
+getBreadCrumbByContainerCode <- function(containerCodes, sep = "\t") {
+  breadCrumbDT <- data.table(containerCode = containerCodes, labelBreadCrumb = NA_character_)
+  movedToContainerLocation <- rbindlist(query_replace_string_with_values("SELECT container.id container_id,
+                                                                         container.code_name container_code,
+                                                                         location.id current_location_id,
+                                                                         location.code_name current_location_code,
+                                                                         locationLabel.label_text current_location_label
+                                                                         FROM container
+                                                                         JOIN itx_container_container itxContainerLocation
+                                                                         ON itxContainerLocation.first_container_id=container.id
+                                                                         AND itxContainerLocation.ls_type          = 'moved to'
+                                                                         AND itxContainerLocation.ls_kind          = 'container_location'
+                                                                         AND itxContainerLocation.ignored         <> '1'
+                                                                         AND itxContainerLocation.deleted         <> '1'
+                                                                         JOIN container location
+                                                                         ON itxContainerLocation.second_container_id=location.id
+                                                                         AND location.deleted <> '1'
+                                                                         AND location.ignored <> '1'
+                                                                         JOIN container_label locationLabel
+                                                                         ON location.id=locationLabel.container_id
+                                                                         AND locationLabel.deleted <> '1'
+                                                                         AND locationLabel.ignored <> '1'
+                                                                         AND locationLabel.preferred = '1'
+                                                                         AND container.code_name in (<REPLACEME>)
+                                                                         WHERE container.deleted <> '1'
+                                                                         AND container.ignored <> '1'
+                                                                         ", "<REPLACEME>", containerCodes))
+  setnames(movedToContainerLocation, c("containerID", "containerCode", "currentLocationID", "currentLocationCode", "currentLocationLabel"))
+  setkey(breadCrumbDT, containerCode)
+  setkey(movedToContainerLocation, containerCode)
+  breadCrumbDT <- movedToContainerLocation[breadCrumbDT]
+  if(nrow(breadCrumbDT[!is.na(currentLocationLabel)]) > 0) {
+    locationIds <- breadCrumbDT[!is.na(currentLocationLabel)]$currentLocationID
+    breadCrumbDT[!is.na(currentLocationLabel), c('labelBreadCrumb','lastLocationID') := list(currentLocationLabel, currentLocationID)]
+    while(length(locationIds) > 0) {
+      movedToLocationLocation <- rbindlist(query_replace_string_with_values("SELECT container.id container_id,
+                                                                            container.code_name container_code,
+                                                                            location.id location_id,
+                                                                            location.code_name location_code,
+                                                                            locationLabel.label_text location_label
+                                                                            FROM container
+                                                                            JOIN itx_container_container itxContainerLocation
+                                                                            ON itxContainerLocation.first_container_id=container.id
+                                                                            AND itxContainerLocation.ls_type          = 'moved to'
+                                                                            AND itxContainerLocation.ls_kind          = 'location_location'
+                                                                            AND itxContainerLocation.ignored         <> '1'
+                                                                            AND itxContainerLocation.deleted         <> '1'
+                                                                            JOIN container location
+                                                                            ON itxContainerLocation.second_container_id=location.id
+                                                                            AND location.deleted <> '1'
+                                                                            AND location.ignored <> '1'
+                                                                            JOIN container_label locationLabel
+                                                                            ON location.id=locationLabel.container_id
+                                                                            AND locationLabel.deleted <> '1'
+                                                                            AND locationLabel.ignored <> '1'
+                                                                            AND locationLabel.preferred = '1'
+                                                                            AND container.id in (<REPLACEME>)
+                                                                            WHERE container.deleted <> '1'
+                                                                            AND container.ignored <> '1'", "<REPLACEME>", locationIds))
+      
+      if(nrow(movedToLocationLocation) > 0) {
+        locationIds <- movedToLocationLocation$LOCATION_ID
+        setkey(breadCrumbDT, lastLocationID)
+        setkey(movedToLocationLocation, CONTAINER_ID)
+        breadCrumbDT[movedToLocationLocation, c('labelBreadCrumb', 'lastLocationID') := list(paste0(LOCATION_LABEL,sep,labelBreadCrumb), LOCATION_ID)]
+      } else {
+        locationIds <- NULL
+      }
+    }
+    
+  }
+  return(breadCrumbDT)
+  }
