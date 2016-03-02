@@ -236,7 +236,15 @@ getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
 }
 
 getBreadCrumbByContainerCode <- function(containerCodes, sep = "\t") {
-  breadCrumbDT <- data.table(containerCode = containerCodes, labelBreadCrumb = NA_character_)
+  outputExample <- data.table(containerID = NA_integer_,
+                              containerCode = NA_character_, 
+                              currentLocationID = NA_integer_, 
+                              currentLocationCode = NA_character_, 
+                              currentLocationLabel = NA_character_,
+                              labelBreadCrumb = NA_character_)
+  breadCrumbDT <- data.table(containerCode = containerCodes, originalOrder = 1:length(containerCodes), labelBreadCrumb = NA_character_)
+  
+  namesBreadCrumbDT <- copy(names(breadCrumbDT))
   movedToContainerLocation <- rbindlist(query_replace_string_with_values("SELECT container.id container_id,
                                                                          container.code_name container_code,
                                                                          location.id current_location_id,
@@ -304,7 +312,7 @@ getBreadCrumbByContainerCode <- function(containerCodes, sep = "\t") {
         locationIds <- NULL
       }
     }
-    
   }
+  breadCrumbDT <- breadCrumbDT[ breadCrumbDT$originalOrder, names(outputExample), with = FALSE]
   return(breadCrumbDT)
-  }
+}
