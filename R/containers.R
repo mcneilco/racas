@@ -235,7 +235,7 @@ getWellCodeByPlateBarcodeAndWellName <- function(plateBarcode, wellName) {
   }
 }
 
-getBreadCrumbByContainerCode <- function(containerCodes, sep = "\t") {
+getBreadCrumbByContainerCode <- function(containerCodes, sep = ">") {
   outputExample <- data.table(containerID = NA_integer_,
                               containerCode = NA_character_, 
                               currentLocationID = NA_integer_, 
@@ -313,6 +313,7 @@ getBreadCrumbByContainerCode <- function(containerCodes, sep = "\t") {
       }
     }
   }
-  breadCrumbDT <- breadCrumbDT[ breadCrumbDT$originalOrder, names(outputExample), with = FALSE]
+  setkey(breadCrumbDT, originalOrder)
+  breadCrumbDT <- breadCrumbDT[ , names(outputExample), with = FALSE]
   return(breadCrumbDT)
 }
