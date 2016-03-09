@@ -29,7 +29,7 @@ getCurveData <- function(curveids, ...) {
   renderingHintParameters[ , curveId := curveId]
   renderingHintParameters[ , curveid := NULL]
   #Remove when sam fixes container saving
-#   renderingHintParameters[ , name := curveId]
+  #   renderingHintParameters[ , name := curveId]
   
   return (list(
     points = points,
@@ -383,7 +383,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(modZero) {
     curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   }
-
+  
   #Determine axes ranges
   plot_limits <- get_plot_window(curveData, logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
   xrn <- plot_limits[c(1,3)]
@@ -414,197 +414,207 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     on.exit(dev.off())
   }
   
-  #Axes and Labels require extra margins
-  #TODO: make this a bit nicer, right now there is probably too much padding in the margins when label is on
-  defaultMargins=c(0.1,1,0.3,0.8)
-  #par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
-  margins <- defaultMargins
-  if(labelAxes) {
-    margins[c(1,2)] <- defaultMargins[c(1,2)] + 4
-  } else {
+  originalMargins <- par("mar")
+  plotError <- function(error) {
+    par(mar = originalMargins)
+    if(!is.na(outFile)) {
+      png(file = outFile)
+    }
+    plot(-1:1, -1:1, type = "n", xlab = NA, ylab = NA, axes = FALSE)
+    text(c(0,0),c(0,0),labels=c(error$message))
+  }
+  tryCatch({
+    #Axes and Labels require extra margins
+    #TODO: make this a bit nicer, right now there is probably too much padding in the margins when label is on
+    defaultMargins=c(0.1,1,0.3,0.8)
+    #par(mar=c(2.1,3,0.1,0.1)) #Set margin to east to fit legend
+    margins <- defaultMargins
+    if(labelAxes) {
+      margins[c(1,2)] <- defaultMargins[c(1,2)] + 4
+    } else {
+      if(showAxes) {
+        marginAdd <- c()
+        if("x" %in% axes) {
+          marginAdd <- 1
+        }
+        if("y" %in% axes) {
+          marginAdd <- c(marginAdd,2)
+        }
+        margins[marginAdd] <- defaultMargins[marginAdd] + 2
+      }
+    }
+    par(mar = margins)
+    #Determine which axes will require log scale plotting
+    plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
+    #First Plot Good Points so we that can see the flagged points if they are overlayed
+    plotPoints <- function(yrn, pts, ...) {
+      if(!plotMeans) {
+        #TODO: what if plotMeans but also plotPoints? deal with that later
+        plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
+      } else {
+        plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
+      }
+      if(drawStdDevs) {
+        plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
+      }
+    }
+    #Draw Legend if specified
+    if(nrow(goodPoints) > 0) {
+      plotPoints(yrn = yrn, goodPoints)
+    } else {
+      flaggedPoints$pch <- 4
+      plotPoints(yrn = yrn, flaggedPoints)
+    }
+    if(showLegend) {
+      #par(xpd=TRUE) # allows legends to be printed outside plot area
+      #legendYPosition <- 10 ^ par("usr")[2]
+      #legendXPosition <- par("usr")[4]
+      if(is.null(params$name)) {
+        legendText <- params$curveId
+      } else {
+        legendText <- params$name
+      }
+      legendTextColor <- params$color
+      legendPCH <- params$pch
+      legendLineWidth <- 1
+      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+      if(nrow(goodPoints) > 0) {
+        plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
+      } else {
+        plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
+      }
+      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+    }
+    if(connectPoints && exists("means")) {
+      cids <- unique(means$curveId)
+      for(c in 1:length(cids)) {
+        cid <- cids[c]
+        lineData <- subset(means, means$curveId == cid)
+        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
+      }
+    }
+    
+    #If grid, then add grid
+    if(showGrid) {
+      grid(lwd = 1.7*scaleFactor)
+    }
+    #Now Plot Flagged Points
+    if(nrow(goodPoints) > 0) {
+      points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
+    }
+    #Draw Error Bars and Means
+    #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
+    getDrawValues <- function(params) {
+      reportedValueColumns <- match(paramNames, names(params))
+      reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
+      reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
+      reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
+      if(length(paramNames) == 1) {
+        reportedValues <- data.frame(reportedValues)
+        names(reportedValues) <- paramNames
+      }
+      
+      tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
+      names(tmp) <- paramNames
+      tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
+      
+      fittedColumnNames <- tolower(gsub(" ", "", paste0("fitted",paramNames)))
+      fittedValueColumns <- match(fittedColumnNames,gsub(" ", "", tolower(names(params))))
+      fittedValueColumns <- fittedValueColumns[!is.na(fittedValueColumns)]
+      
+      if(length(fittedValueColumns) > 0) {
+        fittedValues <-  params[,fittedValueColumns]
+        fittedValues <- fittedValues[sapply(fittedValues, function(x) !any(is.na(x)))] 
+        tmp[1,match(tolower(names(fittedValues)),fittedColumnNames)] <- fittedValues
+      }
+      return(tmp)
+    }
+    #Curve Drawing Function
+    drawCurveID <- function(cid) {
+      flagged <- any(params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit")
+      if(drawFlagged == FALSE && !flagged) {
+        drawValues <- getDrawValues(params = params[cid,])
+        curveID <- params$curveId[cid]
+        curveParams <- subset(params, params$curveId == curveID)
+        for(i in 1:ncol(drawValues)) {
+          assign(names(drawValues)[i], drawValues[,i])
+        }
+        fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
+        curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
+      }
+    }
+    #Actually Draw Curves
+    if(drawCurve) {
+      null <- lapply(1:length(params$curveId),drawCurveID)
+    }
+    ##DO axes and Grid
+    box()
     if(showAxes) {
-      marginAdd <- c()
       if("x" %in% axes) {
-        marginAdd <- 1
+        if(logDose) {
+          xTickRange <- par("xaxp")[1:2]
+          log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
+          major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {xTickRange[1]*10^(x-1)}))
+          axis(1,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8)
+          intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
+          minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
+          axis(1, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
+        } else {
+          axis(1)
+        }
       }
       if("y" %in% axes) {
-        marginAdd <- c(marginAdd,2)
-      }
-      margins[marginAdd] <- defaultMargins[marginAdd] + 2
-    }
-  }
-  par(mar = margins)
-  
-  #Determine which axes will require log scale plotting
-  plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
-  #First Plot Good Points so we that can see the flagged points if they are overlayed
-  plotPoints <- function(yrn, pts, ...) {
-    if(!plotMeans) {
-      #TODO: what if plotMeans but also plotPoints? deal with that later
-      plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
-    } else {
-      plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
-    }
-    if(drawStdDevs) {
-      plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
-    }
-  }
-  #Draw Legend if specified
-  if(nrow(goodPoints) > 0) {
-    plotPoints(yrn = yrn, goodPoints)
-  } else {
-    flaggedPoints$pch <- 4
-    plotPoints(yrn = yrn, flaggedPoints)
-  }
-  if(showLegend) {
-    #par(xpd=TRUE) # allows legends to be printed outside plot area
-    #legendYPosition <- 10 ^ par("usr")[2]
-    #legendXPosition <- par("usr")[4]
-    if(is.null(params$name)) {
-      legendText <- params$curveId
-    } else {
-      legendText <- params$name
-    }
-    legendTextColor <- params$color
-    legendPCH <- params$pch
-    legendLineWidth <- 1
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
-    if(nrow(goodPoints) > 0) {
-      plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
-    } else {
-      plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
-    }
-    leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
-  }
-  if(connectPoints && exists("means")) {
-    cids <- unique(means$curveId)
-    for(c in 1:length(cids)) {
-      cid <- cids[c]
-      lineData <- subset(means, means$curveId == cid)
-      lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
-    }
-  }
-  
-  #If grid, then add grid
-  if(showGrid) {
-    grid(lwd = 1.7*scaleFactor)
-  }
-  #Now Plot Flagged Points
-  if(nrow(goodPoints) > 0) {
-    points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
-  }
-  #Draw Error Bars and Means
-  #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
-  getDrawValues <- function(params) {
-    reportedValueColumns <- match(paramNames, names(params))
-    reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
-    reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
-    reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
-    if(length(paramNames) == 1) {
-      reportedValues <- data.frame(reportedValues)
-      names(reportedValues) <- paramNames
-    }
-
-    tmp <- data.frame(matrix(nrow=1, ncol=length(paramNames))) 
-    names(tmp) <- paramNames
-    tmp[1,match(names(reportedValues), paramNames)] <- reportedValues
-
-    fittedColumnNames <- tolower(gsub(" ", "", paste0("fitted",paramNames)))
-    fittedValueColumns <- match(fittedColumnNames,gsub(" ", "", tolower(names(params))))
-    fittedValueColumns <- fittedValueColumns[!is.na(fittedValueColumns)]
-    
-    if(length(fittedValueColumns) > 0) {
-      fittedValues <-  params[,fittedValueColumns]
-      fittedValues <- fittedValues[sapply(fittedValues, function(x) !any(is.na(x)))] 
-      tmp[1,match(tolower(names(fittedValues)),fittedColumnNames)] <- fittedValues
-    }
-    return(tmp)
-  }
-  #Curve Drawing Function
-  drawCurveID <- function(cid) {
-    flagged <- any(params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit")
-    if(drawFlagged == FALSE && !flagged) {
-      drawValues <- getDrawValues(params = params[cid,])
-      curveID <- params$curveId[cid]
-      curveParams <- subset(params, params$curveId == curveID)
-      for(i in 1:ncol(drawValues)) {
-        assign(names(drawValues)[i], drawValues[,i])
-      }
-      fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
-    }
-  }
-  #Actually Draw Curves
-  if(drawCurve) {
-    null <- lapply(1:length(params$curveId),drawCurveID)
-  }
-  ##DO axes and Grid
-  box()
-  if(showAxes) {
-    if("x" %in% axes) {
-      if(logDose) {
-        xTickRange <- par("xaxp")[1:2]
-        log10Range <- log10(abs(xTickRange[2]/xTickRange[1]))+1
-        major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {xTickRange[1]*10^(x-1)}))
-        axis(1,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8)
-        intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
-        minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
-        axis(1, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
-      } else {
-        axis(1)
+        if(logResponse) {
+          yTickRange <- par("yaxp")[1:2]
+          log10Range <- log10(abs(yTickRange[2]/yTickRange[1]))+1
+          major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {yTickRange[1]*10^(x-1)}))
+          axis(2,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8,,las=1)
+          intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
+          minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
+          axis(2, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
+        } else {
+          axis(2)
+        }
       }
     }
-    if("y" %in% axes) {
-      if(logResponse) {
-        yTickRange <- par("yaxp")[1:2]
-        log10Range <- log10(abs(yTickRange[2]/yTickRange[1]))+1
-        major.ticks <- unlist(lapply(1:log10Range,ten <- function(x) {yTickRange[1]*10^(x-1)}))
-        axis(2,at=major.ticks,labels=formatC(major.ticks),tcl=par("tcl")*1.8,,las=1)
-        intervals <- c(major.ticks/10,major.ticks[-1],major.ticks*10)
-        minor.ticks <- 1:9 * rep(intervals / 10, each = 9)
-        axis(2, at= minor.ticks, tcl = -0.5, labels = FALSE, tcl=par("tcl")*0.7) 
-      } else {
-        axis(2)
+    ##If only one curve then draw ac50 lines
+    #Get coordinates to draw lines through curve at AC50
+    #Vertical
+    if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept]))) {
+      if(nrow(params) == 1) {
+        drawValues <- getDrawValues(params = params[1,])
+        for(i in 1:ncol(drawValues)) {
+          assign(names(drawValues)[i], drawValues[,i])
+        }
+        fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
+        curveIntercept <- fct(as.numeric(params[,drawIntercept]))
+        ylin <- c()
+        ylin$x <- c(params[,drawIntercept], params[,drawIntercept])
+        ylin$y <- c(par("usr")[3],curveIntercept)
+        #Horizontal
+        xlin <- c()
+        if(logDose) {
+          xlin$x <- c(0.0000000000000001,params[,drawIntercept])
+        } else {
+          xlin$x <- c(par("usr")[1],params[,drawIntercept])
+        }
+        xlin$y <- c(curveIntercept,curveIntercept)
+        #Draw AC50 Lines
+        if(!is.NULLorNA(params$operator)) {
+          col <- '#ff0000'
+        } else {
+          col <- '#808080'
+        }
+        lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
+        lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
       }
     }
-  }
-  ##If only one curve then draw ac50 lines
-  #Get coordinates to draw lines through curve at AC50
-  #Vertical
-  if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept]))) {
-    if(nrow(params) == 1) {
-      drawValues <- getDrawValues(params = params[1,])
-      for(i in 1:ncol(drawValues)) {
-        assign(names(drawValues)[i], drawValues[,i])
-      }
-      fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-      curveIntercept <- fct(as.numeric(params[,drawIntercept]))
-      ylin <- c()
-      ylin$x <- c(params[,drawIntercept], params[,drawIntercept])
-      ylin$y <- c(par("usr")[3],curveIntercept)
-      #Horizontal
-      xlin <- c()
-      if(logDose) {
-        xlin$x <- c(0.0000000000000001,params[,drawIntercept])
-      } else {
-        xlin$x <- c(par("usr")[1],params[,drawIntercept])
-      }
-      xlin$y <- c(curveIntercept,curveIntercept)
-      #Draw AC50 Lines
-      if(!is.NULLorNA(params$operator)) {
-        col <- '#ff0000'
-      } else {
-        col <- '#808080'
-      }
-      lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
-      lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
+    if(labelAxes) {
+      xlabel <- paste0(ifelse(is.null(curveData$doseType) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
+      ylabel <- paste0(as.character(curveData$responseType[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
+      title(xlab = xlabel, ylab = ylabel)
     }
-  }
-  if(labelAxes) {
-    xlabel <- paste0(ifelse(is.null(curveData$doseType) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
-    ylabel <- paste0(as.character(curveData$responseType[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
-    title(xlab = xlabel, ylab = ylabel)
-  }
+  }, error = plotError)
 }
 
 is.NULLorNA <- function(value) {
@@ -637,17 +647,17 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
 
 get_curve_curator_url <- function(curveid, ...) {
   experimentCode <- query(paste0("SELECT e.code_name
-                                       FROM experiment e
-                                       JOIN experiment_analysisgroup eag ON e.id = eag.experiment_id
-                                       JOIN analysis_group ag ON ag.id = eag.analysis_group_id
-                                       JOIN analysis_group_state ags on ags.analysis_group_id=ag.id
-                                       JOIN analysis_group_value agv on agv.analysis_state_id=ags.id
-                                       WHERE agv.string_value = ",sqliz(curveid),"
-                                       AND agv.ls_kind        = 'curve id'"),...)
+                                 FROM experiment e
+                                 JOIN experiment_analysisgroup eag ON e.id = eag.experiment_id
+                                 JOIN analysis_group ag ON ag.id = eag.analysis_group_id
+                                 JOIN analysis_group_state ags on ags.analysis_group_id=ag.id
+                                 JOIN analysis_group_value agv on agv.analysis_state_id=ags.id
+                                 WHERE agv.string_value = ",sqliz(curveid),"
+                                 AND agv.ls_kind        = 'curve id'"),...)
   url <- paste(getSSLString(), applicationSettings$client.host, ":",
-                applicationSettings$client.port,
-                "/curveCurator/",experimentCode,"/",curveid,
-                sep = "") 
+               applicationSettings$client.port,
+               "/curveCurator/",experimentCode,"/",curveid,
+               sep = "") 
   return(url)
 }
 api_get_curve_curator_url <- function(curveid, inTable, ...) {
