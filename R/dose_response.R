@@ -1589,11 +1589,10 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValuesClob <- list(NULL)
       } else {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
-        # Not sure why but for some reason running this line:
-        blah <- copy(.SD)
-        # allows this line to wor
-        units <- mget(paste0(reportedValues$name,"Units"))
-        reportedValues[ , "units" := units]
+        responseUnits <- points[[1]]$responseUnits[[1]]
+        doseUnits <- points[[1]]$doseUnits[[1]]
+        reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="response"]$ls_kind), units := responseUnits]
+        reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="dose"]$ls_kind), units := doseUnits]
         setkey(reportedValues, "name")
         reportedValues[ , value := prettyNum(value, digits = 4)]
         reportedValues <- reportedValues[ , value := {

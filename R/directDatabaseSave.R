@@ -718,7 +718,7 @@ prepareTableForDD <- function(entityData) {
     unitKind = naIfNull(entityData$unitKind),
     operatorType = NA_character_,
     operatorKind = naIfNull(entityData$operatorKind),
-    publicData = entityData$publicData,
+    publicData = as.logical(entityData$publicData),
     comments = naIfNull(entityData$comments),
     stateType = entityData$stateType,
     stateKind = entityData$stateKind,

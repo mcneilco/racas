@@ -397,7 +397,7 @@ createLsState <- function(lsValues=NULL, recordedBy="userName", lsType="lsType",
   )
   return(LsState)
 }
-createProtocolState <- function(protocol=NULL, protocolValues=NULL, recordedBy="userName", lsType="lsType", 
+createProtocolState <- function(protocol=NULL, protocolValues=list(), recordedBy="userName", lsType="lsType", 
                                 lsKind="lsKind", comments="", lsTransaction=NULL, recordedDate=as.numeric(format(Sys.time(), "%s"))*1000){
   protocolState = list(
     protocol=protocol,
@@ -2167,10 +2167,25 @@ createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = raca
 }
 #' validateValueKindsFromDataFrame
 #' 
-#' Get a data table of type names and kind names plus the kind (full object) from a data frame of type names and kind names
+#' Get a data.table of type names and kind names plus the kind (full object) from a data.frame of type names and kind names.
 #' 
-#' @param typesAndKindsDataFrame data.frame 2 columns lsType, lsKind
-#' @return a data table type names, kind names and full object kinds
+#' @param typesAndKindsDataFrame data.frame with 2 columns: \code{lsType} and \code{lsKind}
+#' @param lsServerURL server to check against, currently ignored
+#' @details Column \code{lsKind} will be NULL if there is no value kind found.
+#' @return a data.table with columns \code{lsTypeName} (character), \code{lsKindName} (character), \code{lsKind} (full object kinds), and \code{lsKindExists} (boolean).
+#' @examples
+#' # Not run because this needs a server, example output is below.
+#' # output <- validateValueKindsFromDataFrame(data.frame(lsType="numericValue", lsKind="time"))
+#' output <- structure(list(
+#'  lsTypeName = "numericValue", lsKindName = "time", 
+#'  lsKind = list(list(structure(list(id = 12, kindName = "time", 
+#'                                    lsType = structure(list(id = 7, typeName = "numericValue", version = 0), 
+#'                                                       .Names = c("id", "typeName", "version")), 
+#'                                    lsTypeAndKind = "numericValue_time", version = 0), 
+#'                               .Names = c("id", "kindName", "lsType", "lsTypeAndKind", "version")))), 
+#'  lsKindExists = TRUE), .Names = c("lsTypeName", "lsKindName", "lsKind", "lsKindExists"), 
+#'  sorted = c("lsTypeName", "lsKindName"), class = c("data.table", "data.frame"), 
+#'  row.names = c(NA, -1L))
 validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   allValueKinds <- getAllValueKinds()
   dt <- rbindlist(lapply(allValueKinds, function(x) data.table('lsTypeName'=x$lsType$typeName,'lsKindName'=x$kindName, 'lsKind'=list(list(x)))))
@@ -2182,6 +2197,19 @@ validateValueKindsFromDataFrame <- function(typesAndKindsDataFrame, lsServerURL 
   return(matched)
 }
 
+#' Pick Best Name
+#' 
+#' From an acas entity (protocol, experiment, etc.), get the label that is the
+#' best name
+#' 
+#' @param entity a list that is a protocol, experiment, etc.
+#' @return a list that is a label
+pickBestName <- function(entity) {
+  currentLabels <- Filter(function(x) {!x$ignored}, entity$lsLabels)
+  preferredNames <- Filter(function(x) {x$preferred && x$lsType == "name"}, currentLabels)
+  maxIndex <- which.max(vapply(preferredNames, function(x){rd<-x$recordedDate; if(rd == "") Inf else rd}, 1))
+  return(preferredNames[[maxIndex]])
+}
 
 
 
