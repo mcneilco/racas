@@ -2208,5 +2208,45 @@ updateAmountInWell <- function(containerCodeNameTable, lsServerURL = racas::appl
   return(response)
 }
 
+updateWellContent <- function(containerCodeNameTable, lsServerURL = racas::applicationSettings$server.nodeapi.path){
+  url <- paste0(lsServerURL, "/api/updateWellContent")
+  request <- jsonlite::toJSON(containerCodeNameTable, na = "null")
+  response <- postURLcheckStatus(url, postfields=request)
+  if(response== "") {
+    return(response)
+  } else {
+    response <- jsonlite::fromJSON(response)
+  }
+  return(response)
+}
 
+getWellCodesByContainerCodes <- function(containerCodes, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
+  return(wellCodes)
+}
+
+getContainerCodesByLabels <- function(containerCodes, containerType = NA, containerKind = NA, labelType = NA, labelKind = NA, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  queryParams <- c()
+  if(! is.na(containerType)) queryParams <- c(queryParams, paste0("containerType=",containerType))
+  if(! is.na(containerKind)) queryParams <- c(queryParams, paste0("containerKind=",containerKind))
+  if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
+  if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
+  queryString <- paste0(queryParams, collapse="&")
+  url <- paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString))
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
+  return(wellCodes)
+}
+
+getWellCodesByContainerCodes <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
+  return(wellCodes)
+}
 

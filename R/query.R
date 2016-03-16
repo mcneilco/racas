@@ -160,7 +160,6 @@ sqliz <- function(vector) {
 #' query_replace_string_with_values(qu = "select * from analysis_group_value where id in (REPLACEME)", string = "REPLACEME", values = c(1:1001))
 #' 
 query_replace_string_with_values <- function(qu, string, values, limit = 999, ...) {
-  # Queries DNET instead of exampleClient's ACAS
   if(!missing(string)) {
     subString <- string
     valueList <- values
