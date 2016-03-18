@@ -1330,6 +1330,73 @@ deleteURLcheckStatus <- function(url, ..., requireJSON=FALSE) {
   }
   return(response)
 }
+requestURL <- function(url = url, handleResponse = TRUE, ...) {
+  if(handleResponse) {
+    # Need to suppress specific warning about unrecognized curl options for anything going into the curl function that is not a curl option
+    callingHandler <- function(w) {if( any( grepl( paste(names(formals(handleRequestURLResponse)),collapse="|"), w) ) ) invokeRestart( "muffleWarning" )}
+    responseHandler <- handleRequestURLResponse
+  } else {
+    #No op functions
+    callingHandler <- function(w) w
+    responseHandler <- function(response) invisible(response)
+  }
+  h <- basicTextGatherer()
+  body <- withCallingHandlers(getURL(url=url, headerfunction = h$update, ...), warning =  callingHandler)
+  response <- list(body = body, header = as.list(parseHTTPHeader(h$value())))
+  responseHandler(response, ...)
+  return(response)
+}
+requestURLHandleResponse <- function(url = url, ...) {
+  #... refers to both requestURL and handleResponse and getURL from curl throws warnings we need to suppress about unrecognized parameters
+  response <- withCallingHandlers(requestURL(url, ...), , warning = h )
+  handleResponse(response, ...)
+  return(response)
+}
+handleRequestURLResponse <- function(response, errorStatusCodes = c(500), ...) {
+  logName <- "com.acas.racas.handleRequestURLResponse"
+  logFileName <- "racas.log"
+  if(response$header$status %in% errorStatusCodes) {
+    myLogger <- createLogger(logName = logName, logFileName = logFileName)
+    errorMessage <- paste0("Request to ", url, " with method 'POST' failed with status '",
+                           statusCode, " ", responseHeader$statusMessage, "' when sent the following: \n", 
+                           postfields, "\nResponse header was: \n", h$value(), "\nBody was: \n", response)
+    myLogger$error(errorMessage)
+    stopUserWithTime(logFileName)
+  }
+}
+requestJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestURL(url=url, postfields=postfields, httpheader=c('Content-Type'='application/json'), ...)
+  return(response)
+}
+requestJSONURLWithTable <- function(url, table = table, ...) {
+  postfields <- jsonlite::toJSON(table, na = "null", ...)
+  requestJSONURL(url, postfields, ...)
+}
+postJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestWithJSON(url=url, postfields=postfields, customrequest='POST')
+  return(response)
+}
+postJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='POST', ...)
+  return(response)
+}
+deleteJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestWithJSON(url=url, postfields=postfields, customrequest='DELETE')
+  return(response)
+}
+deleteJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='DELETE', ...)
+  return(response)
+}
+putJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestWithJSON(url=url, postfields=postfields, customrequest='PUT')
+  return(response)
+}
+putJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='PUT', ...)
+  return(response)
+}
+
 
 #' Protocol search by name
 #' 
@@ -2210,13 +2277,7 @@ updateAmountInWell <- function(containerCodeNameTable, lsServerURL = racas::appl
 
 updateWellContent <- function(containerCodeNameTable, lsServerURL = racas::applicationSettings$server.nodeapi.path){
   url <- paste0(lsServerURL, "/api/updateWellContent")
-  request <- jsonlite::toJSON(containerCodeNameTable, na = "null")
-  response <- postURLcheckStatus(url, postfields=request)
-  if(response== "") {
-    return(response)
-  } else {
-    response <- jsonlite::fromJSON(response)
-  }
+  response <- postJSONURLWithTable(url, table=containerCodeNameTable)
   return(response)
 }
 
@@ -2250,3 +2311,15 @@ getWellCodesByContainerCodes <- function(containerCodes,  lsServerURL = racas::a
   return(wellCodes)
 }
 
+moveToLocation <- function(containerCodeLocationCodeDT,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, "/api/moveToLocation")
+  response <- postJSONURLWithTable(url, table=containerCodeLocationCodeDT, errorStatusCodes = 500)
+}
+
+deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/deleteContainers')
+  deleteContainersJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  deleteContainersJSON <- fromJSON(deleteContainersJSON)
+  deleteContainersJSON <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(deleteContainersJSON, as.data.table))
+  return(deleteContainersJSON)
+}
