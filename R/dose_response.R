@@ -31,6 +31,8 @@ dose_response <- function(fitSettings, fitData) {
   fitData[ , inactiveRule := list(list(myInactiveRule))]
   fitData[ , inverseAgonistMode := myInverseAgonistMode]
   fitData[ , biphasicRule := list(list(myBiphasicRule))]
+  fitData[ , theoreticalMaxMode := list(list(fitSettings$theoreticalMaxMode))]
+  fitData[ , theoreticalMax := list(list(fitSettings$theoreticalMax))]
   
   #Update all of the flags to those that are in the fitSettings json
   updateFlags <- as.data.table(fitSettings$updateFlags)
@@ -42,20 +44,20 @@ dose_response <- function(fitSettings, fitData) {
   fitData[ , points := list(list(remove_point_flags(points[[1]], flagKindsToRemove = c("algorithm")))), by = curveId]    
   
   #Fit the data
-  fitData <- dose_response_fit(fitData)
+  fitData <- dose_response_fit(fitData, fitSettings)
   
   #Biphasic Detection
-  fitData <- biphasic_detection(fitData)
+  fitData <- biphasic_detection(fitData, fitSettings)
   
   #Applying Limits
-  fitData <- fitData[1]$modelFit[[1]]$apply_limits(fitData, iterations = 20)
+  fitData <- fitData[1]$modelFit[[1]]$apply_limits(fitData, iterations = 20, fitSettings)
   
   #Categorize the fit data
   fitData[ , category := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
   
   #Extract the reported Parameters
   fitData[ , reportedParameters := {
-    list(list(modelFit[[1]]$get_reported_parameters(results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]])))
+    list(list(modelFit[[1]]$get_reported_parameters(results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]], fitSettings)))
     }
     , by = curveId]
   
@@ -188,6 +190,13 @@ simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, 
       modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
     } else {
       modifiedSettings$inactiveRule <- list()    
+    }
+    if(simpleSettings$theoreticalMaxMode) {
+      modifiedSettings$theoreticalMaxMode <- TRUE   
+      modifiedSettings$theoreticalMax <- simpleSettings$theoreticalMax   
+    } else {
+      modifiedSettings$theoreticalMaxMode <- FALSE   
+      modifiedSettings$theoreticalMax <- NA   
     }
     modifiedSettings$inverseAgonistMode <- simpleSettings$inverseAgonistMode
     if(!is.null(simpleSettings$biphasicRule)) {
@@ -719,7 +728,7 @@ dose_response_fit <- function(fitData, refit = FALSE, ...) {
   fitDataNames <- names(fitData)
   
   # Get Point Stats and Inactive, Insufficient Range and Potent Categories
-  fitData[ model.synced == FALSE, pointStats := list(list(get_point_stats(points[[1]]))), by = curveId]
+  fitData[ model.synced == FALSE, pointStats := list(list(get_point_stats(points[[1]], theoreticalMaxMode, theoreticalMax))), by = curveId]
   fitData[ model.synced == FALSE, c("inactive", "insufficientRange", "potent") := apply_inactive_rules(pointStats[[1]],points[[1]], inactiveRule[[1]], inverseAgonistMode), by = curveId]
   
   # Fit the model
@@ -848,7 +857,8 @@ get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramName
   return(drcObj)
 }
 
-get_point_stats <- function(pts) {
+get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMaxMode) {
+  myMessenger <- messenger()
   pts <- copy(pts)
   pts[ , knockedOut := userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus!=""]
   pts[, meanByDose := as.numeric(NA)]
@@ -864,15 +874,31 @@ get_point_stats <- function(pts) {
   count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout <- length(doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout)
   doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- pts[(knockedOut == FALSE) & (algorithmFlagStatus != "hit") & dose < dose.empiricalMinResponse & meanByDose > response.empiricalMin, unique(dose)]
   count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout)
-  return(list(dose.count = dose.count,
-              response.empiricalMax = response.empiricalMax, 
-              response.empiricalMin = response.empiricalMin, 
-              dose.min = dose.min, 
-              dose.max = dose.max, 
-              doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, 
-              doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout,
-              count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout,
-              count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout))
+  myMessenger$logger$debug("About to set stats")
+  stats <- list(dose.count = dose.count,
+       response.empiricalMax = response.empiricalMax, 
+       response.empiricalMin = response.empiricalMin, 
+       dose.min = dose.min, 
+       dose.max = dose.max, 
+       doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, 
+       doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout,
+       count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout = count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout,
+       count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout = count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout)
+  myMessenger$logger$debug("Just finished set stats")
+  myMessenger$logger$debug(theoreticalMaxMode)
+  if (!is.na(theoreticalMaxMode)) {
+    if (theoreticalMaxMode) {
+      #TODO does this work?
+      myMessenger$logger$debug(paste0("Theoretical max: ", theoreticalMax))
+      dose.lowestDoseAboveHalfTheoMax <- min(pts[knockedOut == FALSE & meanByDose>theoreticalMax/2.0, ]$dose)
+      myMessenger$logger$debug(paste0("Theoretical max dose.lowestDoseAboveHalfTheoMax: ", dose.lowestDoseAboveHalfTheoMax))
+      dose.doseBelowLowestDoseAboveHalfTheoMax <- max(pts[ dose < dose.lowestDoseAboveHalfTheoMax, ]$dose)
+      myMessenger$logger$debug(paste0("Theoretical max dose.doseBelowLowestDoseAboveHalfTheoMax: ", dose.doseBelowLowestDoseAboveHalfTheoMax))
+      stats$dose.lowestDoseAboveHalfTheoMax <- dose.lowestDoseAboveHalfTheoMax
+      stats$dose.doseBelowLowestDoseAboveHalfTheoMax <- dose.doseBelowLowestDoseAboveHalfTheoMax
+    }
+  }
+  return( stats )
 }
 
 ki_fct.5 <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", "f")) {
@@ -1795,7 +1821,7 @@ categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, conver
   }
   return(category)
 }
-get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, fitSettings) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -1843,9 +1869,29 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   }
   if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
     if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
-      ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+      if (!fitSettings$theoreticalMaxMode) {
+        ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+      } else {
+        if (pointStats$response.empiricalMax > fitSettings$theoreticalMax/2.0 ) {
+          # some logic to get the lowest dose at which the avg is > than theoMax/2, then the dose below that
+          ec50val <- pointStats$dose.max #wrong see above
+          ec50 <- list(value = ec50val, operator = ">", stdErr = NULL)
+        } else {
+          ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+        }
+      }
     } else {
-      ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      if (!fitSettings$theoreticalMaxMode) {
+        ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      } else {
+        if (pointStats$response.empiricalMax > fitSettings$theoreticalMax/2.0 ) { #also if not biphasic
+          # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
+          ec50val <- pointStats$dose.min #wrong see above
+          ec50 <- list(value = ec50val, operator = "<", stdErr = NULL)
+        } else {
+          ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+        }
+      }
     }
   } else {
     ec50 <- list(value = fittedParameters$ec50, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$ec50.stdErr)) {goodnessOfFit.parameters$ec50.stdErr} else {NULL})
@@ -1853,7 +1899,7 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   reportedValues <- list(min = min, max = max, slope = slope, ec50 = ec50)
   return(reportedValues)
 }
-get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, fitSettings) {
   if(inactive | insufficientRange) {
     max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
     kd <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
@@ -1880,7 +1926,7 @@ get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insuffi
   reportedValues <- list(max = max, kd = kd)
   return(reportedValues)
 }
-get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus) {
+get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, fitSettings) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -2038,7 +2084,7 @@ apply_limits.MM2 <- function(fitData, iterations = 20) {
   }
   return(fitData)
 }
-apply_limits.ki <- function(fitData, iterations = 20) {
+apply_limits.ki <- function(iterations = 20) {
   #While refit is true, keep refitting using fixed parameters
   #The reason we check refit and continue is because we are dealing with limits, 
   #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
