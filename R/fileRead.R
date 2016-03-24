@@ -27,7 +27,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
 #       wb <- XLConnect::loadWorkbook(filePath)
 #       sheetToRead <- which(!unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetHidden, object = wb)))[sheet]
 #       output <- XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d")
-      output <- read.xls(filePath, sheet = sheet, header = header, stringsAsFactors = FALSE)
+      output <- gdata::read.xls(filePath, sheet = sheet, header = header, stringsAsFactors = FALSE)
     }, error = function(e) {
       stopUser("Cannot read input excel file")
     })
