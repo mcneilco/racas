@@ -17,6 +17,7 @@ Imports:
     brew,
     logging,
     evaluate,
+    XLConnect,
     gdata,
     reshape,
     xtable,
