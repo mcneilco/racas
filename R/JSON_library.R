@@ -1346,7 +1346,7 @@ requestURL <- function(url = url, handleResponse = TRUE, errorStatusCodes = c(50
       logFileName <- "racas.log"
       myLogger <- createLogger(logName =  "com.acas.racas.handleRequestURLResponse", logFileName = logFileName)
       errorMessage <- paste0("Request to ", url, 
-                             ifelse(is.null(input_list$customrequest)," "," with method 'POST' "),
+                             ifelse(!exists("customrequest")," ",paste0(" with method '",customrequest,"' ")),
                              "failed with status '",response$header$status, "' ", 
                              response$header$statusMessage, 
                              ifelse(!exists("postfields"),"", paste0("' when sent the following: \n", postfields)),
@@ -2318,7 +2318,7 @@ deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSe
   return(deleteContainersJSON)
 }
 
-updateContainerMetadataByContainerCode <- function(containerMetadataDT, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
-  url <- paste0(lsServerURL, "/api/containerMetadataByContainerCode")
-  response <- putJSONURLWithTable(url, table=containerMetadataDT, errorStatusCodes = 500)
+containerByContainerCode <- function(containerDT, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, "/api/containerByContainerCode")
+  response <- putJSONURLWithTable(url, table=containerDT, errorStatusCodes = 500)
 }

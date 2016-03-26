@@ -83,7 +83,7 @@ closeAllDatabaseConnections <- function(...) {
   databaseConnections <- getAllDatabaseConnections(...)
   lapply(databaseConnections, DBI::dbDisconnect)
 }
-getDatabaseConnection <- function(applicationSettings = racas::applicationSettings) {
+getDatabaseConnection <- function(applicationSettings = racas::applicationSettings, ...) {
   driver <- eval(parse(text = applicationSettings$server.database.r.driver))
   conn <- switch(class(driver),
                  "OraDriver" = DBI::dbConnect(driver, dbname=paste0(applicationSettings$server.database.host,":",applicationSettings$server.database.port,"/",applicationSettings$server.database.name), user=applicationSettings$server.database.username, pass=applicationSettings$server.database.password),
