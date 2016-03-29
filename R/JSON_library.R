@@ -2318,7 +2318,7 @@ deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSe
   return(deleteContainersJSON)
 }
 
-containerByContainerCode <- function(containerDT, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
-  url <- paste0(lsServerURL, "/api/containerByContainerCode")
+updateContainersByContainerCodes <- function(containerDT, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, "/api/containersByContainerCodes")
   response <- putJSONURLWithTable(url, table=containerDT, errorStatusCodes = 500)
 }
