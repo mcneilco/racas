@@ -2290,7 +2290,7 @@ getContainerCodesByLabels <- function(containerLabels, containerType = NA, conta
   if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
   if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
   queryString <- paste0(queryParams, collapse="&")
-  url <- paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString))
+  url <- URLencode(paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString)))
   wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerLabels)))
   wellCodes <- fromJSON(wellCodeJSON)
   wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, function(x) {if(length(x$foundCodeNames)==0) {x$foundCodeNames <-  NA_character_};as.data.table(x)}))
