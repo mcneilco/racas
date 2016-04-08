@@ -9,7 +9,7 @@ saveAcasFileToExperiment(fileStartLocation, experiment, stateType, stateKind,
   additionalPath = "",
   fileServiceType = racas::applicationSettings$server.service.external.file.type,
   fileService = racas::applicationSettings$server.service.external.file.service.url,
-  deleteOldFile = TRUE,
+  deleteOldFile = TRUE, customSourceFileMove = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
@@ -39,6 +39,8 @@ custom file service}
 
 \item{deleteOldFile}{boolean, \code{TRUE} if current file should be deleted
 after a copy is made}
+
+\item{customSourceFileMove}{function for custom moving file to server}
 
 \item{lsServerURL}{the url for the roo server}
 }

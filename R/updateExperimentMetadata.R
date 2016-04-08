@@ -67,6 +67,7 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
 #'   custom file service
 #' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted 
 #'   after a copy is made
+#' @param customSourceFileMove function for custom moving file to server
 #' @param lsServerURL the url for the roo server
 #' @details sets the "status" value in state "analysis status" (or "dryrun 
 #'   status" if \code{dryRun == TRUE}). Get the file back with 
@@ -77,12 +78,12 @@ saveAcasFileToExperiment <- function(
   valueKind, recordedBy, lsTransaction, valueType = "fileValue", additionalPath = "",
   fileServiceType = racas::applicationSettings$server.service.external.file.type, 
   fileService = racas::applicationSettings$server.service.external.file.service.url,
-  deleteOldFile = TRUE,
+  deleteOldFile = TRUE, customSourceFileMove = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   return(saveAcasFile(
     fileStartLocation, experiment, 'experiment', stateType, stateKind, valueKind, recordedBy, 
     lsTransaction, valueType, additionalPath, fileServiceType = fileServiceType,
-    fileService = fileService, deleteOldFile = deleteOldFile, lsServerURL = lsServerURL))
+    fileService = fileService, deleteOldFile = deleteOldFile, customSourceFileMove = customSourceFileMove, lsServerURL = lsServerURL))
 }
 
 #' save file in ACAS
@@ -107,6 +108,7 @@ saveAcasFileToExperiment <- function(
 #'   custom file service
 #' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted 
 #'   after a copy is made
+#' @param customSourceFileMove function for custom moving file to server
 #' @param lsServerURL the url for the roo server
 #' @details sets the "status" value in state "analysis status" (or "dryrun 
 #'   status" if \code{dryRun == TRUE}). Mostly used by
@@ -116,7 +118,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
                          lsTransaction, valueType = "fileValue", additionalPath = "", experimentCodeName = NULL,
                          fileServiceType = racas::applicationSettings$server.service.external.file.type, 
                          fileService = racas::applicationSettings$server.service.external.file.service.url,
-                         deleteOldFile = TRUE, 
+                         deleteOldFile = TRUE, customSourceFileMove = NULL,
                          lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   
   fileName <- basename(fileStartLocation)
@@ -154,7 +156,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     }
     
   } else if (fileServiceType == "custom") {
-    if(!exists('customSourceFileMove')) {
+    if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     serverFileLocation <- customSourceFileMove(sourceLocation, fileName, fileService, 
