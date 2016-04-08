@@ -2271,9 +2271,9 @@ updateAmountInWell <- function(containerCodeNameTable, lsServerURL = racas::appl
 
 updateWellContent <- function(containerCodeNameTable, callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path, ...){
   if(callCustom) {
-    queryString <- "callCustom=true"
+    queryString <- "callCustom=1"
   } else {
-    queryString <- "callCustom=false"
+    queryString <- "callCustom=0"
   }
   url <- paste0(lsServerURL, "/api/updateWellContent?",queryString)
   response <- postJSONURLWithTable(url, table=containerCodeNameTable, ...)
@@ -2339,9 +2339,9 @@ deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSe
 
 updateContainersByContainerCodes <- function(containerDT, callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   if(callCustom) {
-    queryString <- "callCustom=true"
+    queryString <- "callCustom=1"
   } else {
-    queryString <- "callCustom=false"
+    queryString <- "callCustom=0"
   }
   url <- paste0(lsServerURL, "/api/containersByContainerCodes?",queryString)
   response <- putJSONURLWithTable(url, table=containerDT, errorStatusCodes = 500)
@@ -2359,4 +2359,11 @@ getWellContentByContainerLabels <- function(containerLabels, containerType = NA,
   wellContent <- as.data.table(jsonlite::fromJSON(wellContentJSON))
   wellContentDT <- wellContent[ , as.data.table(wellContent[[1]]), by = c('containerCodeName', 'label')]
   return(wellContent)
+}
+
+getContainerAndDefinitionContainerByContainerCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getContainerAndDefinitionContainerByContainerCodeNames')
+  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
+  containers <- fromJSON(json$body)
+  return(containers)
 }
