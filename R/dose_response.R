@@ -1272,8 +1272,8 @@ save_dose_response_data <- function(fitData, recorded_by) {
     list(lsStates = list(lsStates))
   }, by = key(agValues), .SDcols = names(agValues)[!names(agValues) %in% key(agValues)]]
   groups <- unname(lapply(split(agStates, f = row.names(agStates)), function(x) {x <- as.list(x); x$lsStates <- x$lsStates[[1]]; return(x)}))
-  groupJSON <- jsonlite::toJSON(groups, force = TRUE,  auto_unbox = TRUE, na = c("null"))
-
+  groupJSON <- jsonlite::toJSON(groups, force = TRUE,  auto_unbox = TRUE, na = c("null"), digits = 20)
+  
   myMessenger$logger$debug("ignoring old curve states")
   done <- query_replace_string_with_values("update analysis_group_state set ignored='1' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
   
