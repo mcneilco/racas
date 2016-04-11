@@ -661,6 +661,7 @@ api_get_curve_curator_url <- function(curveid, inTable, ...) {
 get_rendering_hint_options <- function(renderingHint = NA) {
   renderingOptions <- switch(renderingHint,
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
+                             "4 parameter D-R IC50" = list(fct = LL4IC50, paramNames = c("ic50", "min", "max", "slope"), drawIntercept = "ic50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
                              {
                                modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)

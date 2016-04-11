@@ -89,8 +89,7 @@
   )
   assignInNamespace("ll4",ll4, ns="racas")
 
-  
-  
+
   queryDefinition <- read_json_file(system.file("conf", "definition-ll4IC50.json", package = "racas"))
   curveQueryDefinition <- queryDefinition
   experimentQueryDefinition <- queryDefinition
@@ -104,22 +103,22 @@
   typeMap[field == 'code_value', lsType := 'codeValue']
   typeMap[field == 'numeric_value', lsType := 'numericValue']
   #TODO finish making new functions and replacing them here
-  ll4 <- ModelFit$new(drc_function = drc::LL.4, 
-                      paramNames = c("slope", "min", "max", "ic50"),
+  ll4IC50 <- ModelFit$new(drc_function = drc::LL.4, 
+                      paramNames = c("slope", "max", "min", "ic50"),
                       categorization_function = categorize.LL4,
-                      get_reported_parameters = get_reported_parameters.LL4,
-                      apply_limits = apply_limits.LL4,
+                      get_reported_parameters = get_reported_parameters.LL4IC50,
+                      apply_limits = apply_limits.LL4IC50,
                       default_fit_settings = get_default_fit_settings("4 parameter D-R IC50"),
-                      simple_to_advanced_fittings_function = updateFitSettings.LL4,
+                      simple_to_advanced_fittings_function = updateFitSettings.LL4IC50,
                       model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4IC50.txt", package = "racas")),
-                      sortOptions = sortOptions.LL4,
-                      get_curve_attributes = get_curve_attributes.LL4,
-                      get_saved_fitted_parameters = get_saved_fitted_parameters.LL4,
+                      sortOptions = sortOptions.LL4IC50,
+                      get_curve_attributes = get_curve_attributes.LL4IC50,
+                      get_saved_fitted_parameters = get_saved_fitted_parameters.LL4IC50,
                       curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
                       experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
                       typeMap = typeMap
   )
-  assignInNamespace("ll4",ll4, ns="racas")
+  assignInNamespace("ll4IC50",ll4IC50, ns="racas")
   
   
   
