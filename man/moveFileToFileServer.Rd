@@ -7,7 +7,7 @@
 moveFileToFileServer(fileStartLocation, targetPath = NULL,
   fileServiceType = racas::applicationSettings$server.service.external.file.type,
   fileService = racas::applicationSettings$server.service.external.file.service.url,
-  experiment = NULL, recordedBy = NULL)
+  experiment = NULL, recordedBy = NULL, customSourceFileMove = NULL)
 }
 \arguments{
 \item{fileStartLocation}{current location of file, relative from working directory}
@@ -21,6 +21,8 @@ moveFileToFileServer(fileStartLocation, targetPath = NULL,
 \item{experiment}{experiment object, not used when fileServiceType == "blueimp"}
 
 \item{recordedBy}{logged in username, not used when fileServiceType == "blueimp"}
+
+\item{customSourceFileMove}{function to move file to custom server}
 }
 \value{
 character file code or path relative from privateUploads
