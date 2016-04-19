@@ -441,17 +441,29 @@ curve_fit_controller_getFitDataByExperimentIdOrCodeName <- function(experiment, 
   response <- getURL(url)
   return(response)
 }
-curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata') {
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=",format,"&experiment=",experiment))
+curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata', transformation = NULL) {
+  if(is.null(transformation)) {
+    transformation <- "efficacy"
+  }
+  if(is.null(rawResultsPersistencePath) | length(rawResultsPersistencePath) == 0) {
+    rawResultsPersistencePath <- 'curvefit/rawdata'
+  }
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=",format,"&experiment=",experiment,"&response=",transformation))
   myMessenger <- messenger()  
   myMessenger$logger$debug(paste0("calling raw data service url: ", url))
   response <- getURL(url)
   return(response)
 }
-curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata') {
+curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata', transformation = NULL) {
+  if(is.null(transformation)) {
+    transformation <- "efficacy"
+  }
+  if(is.null(rawResultsPersistencePath) | length(rawResultsPersistencePath) == 0) {
+    rawResultsPersistencePath <- 'curvefit/rawdata'
+  }
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format),
+    paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format, "&response=",transformation),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
@@ -1385,6 +1397,10 @@ get_experiment_model_fit_status <- function(experimentCodeOrID) {
 }
 get_experiment_model_fit_type <- function(experimentCodeOrID) {
   value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit type")
+  return(value)
+}
+get_experiment_model_fit_transformation <- function(experimentCodeOrID) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "stringValue", lsKind = "model fit transformation")
   return(value)
 }
 get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind) {
@@ -2419,7 +2435,10 @@ get_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
   fitData <- curve_fit_controller_fitData_dataTable_to_fitData(rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...)))
   setkey(fitData,"curveId")
   if(full_object) {
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids, rawResultsPersistencePath = modelFit$raw_results_persistence_path)
+    experimentCode <- query(paste0("select e.code_name from experiment e join experiment_analysisgroup eag on e.id=eag.experiment_id join analysis_group ag on eag.analysis_group_id=ag.id join analysis_group_state ags on ag.id=ags.analysis_group_id join analysis_group_value agv on ags.id=agv.analysis_state_id where e.ignored <> '1' and e.deleted <> '1' and ag.ignored <> '1' and ag.deleted <> '1' and ags.ignored <> '1' and ags.deleted <> '1' and agv.ignored <> '1' and agv.deleted <> '1' and agv.ls_type='stringValue' and agv.ls_kind='curve id' and agv.string_value='",curveids[1],"'")
+                            , ...)
+    transformation <- get_experiment_model_fit_transformation(experimentCode[[1]])
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids, rawResultsPersistencePath = modelFit$raw_results_persistence_path, transformation = transformation)
     rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
     rawData[ ,tempFlagStatus := ""]
     rawData[ , flagchanged := FALSE]
@@ -2466,7 +2485,8 @@ get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_obje
   setkey(fitData, "curveId")
   if(full_object) {
     myMessenger$logger$debug("getting rawData")
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode, rawResultsPersistencePath = modelFit$raw_results_persistence_path)
+    transformation <- get_experiment_model_fit_transformation(experimentCode)
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode, rawResultsPersistencePath = modelFit$raw_results_persistence_path, transformation = transformation)
     rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
     rawData[ ,tempFlagStatus := ""]
     rawData[ ,flagchanged := FALSE]
