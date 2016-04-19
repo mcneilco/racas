@@ -41,12 +41,10 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
     selects <- rbindlist(do.call(c, lapply(x, function(x) lapply(x[["select"]], function(x,parentName) {x$parentName <- parentName;x}, parentName = x$name))), fill = TRUE)
     if(nrow(selects) != 0) {
       if(dbType == "Postgres") {
-        selects[field!="clob_value", table := parentName]
-        selects[field=="clob_value", c('table','field') := list(paste0('convert_from(loread(lo_open(',name),paste0(field,"::int, x'40000'::int), x'40000'::int),\'SQL_ASCII\')"))]
         selects[ , field := ifelse(.N > 1, paste0(field,"::text"),field), by = name]
-      } else {
-        selects[, table := parentName]
       }
+      selects[, table := parentName]
+
       valueSelects <- selects[ , getSelect(table, field, name), by = name]$V1
       valueSelects <- paste0(valueSelects,collapse = ",\n")
       valueSelects <- paste0(valueSelects,   collapse = ",\n")
