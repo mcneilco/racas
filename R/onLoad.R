@@ -89,7 +89,41 @@
                       typeMap = typeMap
   )
   assignInNamespace("ll4",ll4, ns="racas")
+
+
+  queryDefinition <- read_json_file(system.file("conf", "definition-ll4IC50.json", package = "racas"))
+  curveQueryDefinition <- queryDefinition
+  experimentQueryDefinition <- queryDefinition
+  curveQueryDefinition$entryPoint <- list(analysis_group = "ag", analysis_group_state = "ags1",analysis_group_value = "curveId", field = "string_value")
+  experimentQueryDefinition$entryPoint <- list(experiment = "e", field = "code_name")
+  states <- Reduce(function(x,y) rbind(x,y, fill = TRUE, use.names = TRUE), lapply(queryDefinition$analysis_group[[1]]$analysis_group_state, as.data.table))
+  values <- flatten_list_in_data_table(states, "analysis_group_value", c("ls_type", "ls_kind"), c("state_type", "state_kind"))
+  typeMap <- flatten_list_in_data_table(values, "select", c("state_type", "state_kind","ls_kind"))
+  typeMap[field == 'clob_value', lsType := 'clobValue']
+  typeMap[field == 'string_value', lsType := 'stringValue']
+  typeMap[field == 'code_value', lsType := 'codeValue']
+  typeMap[field == 'numeric_value', lsType := 'numericValue']
+  #TODO finish making new functions and replacing them here
+  ll4IC50 <- ModelFit$new(drc_function = drc::LL.4, 
+                      paramNames = c("slope", "max", "min", "ic50"),
+                      categorization_function = categorize.LL4,
+                      get_reported_parameters = get_reported_parameters.LL4IC50,
+                      apply_limits = apply_limits.LL4IC50,
+                      default_fit_settings = get_default_fit_settings("4 parameter D-R IC50"),
+                      simple_to_advanced_fittings_function = updateFitSettings.LL4IC50,
+                      model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4IC50.txt", package = "racas")),
+                      sortOptions = sortOptions.LL4IC50,
+                      get_curve_attributes = get_curve_attributes.LL4IC50,
+                      get_saved_fitted_parameters = get_saved_fitted_parameters.LL4IC50,
+                      curveid_query = query_definition_list_to_sql(curveQueryDefinition, dbType = dbType),
+                      experiment_query = query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType),
+                      typeMap = typeMap
+  )
+  assignInNamespace("ll4IC50",ll4IC50, ns="racas")
   
+  
+  
+    
   queryDefinition <- read_json_file(system.file("conf", "definition-kifit.json", package = "racas"))
   curveQueryDefinition <- queryDefinition
   experimentQueryDefinition <- queryDefinition
