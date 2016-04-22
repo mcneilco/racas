@@ -17,7 +17,7 @@
 #'@return NULL
 #'@export
 addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction, 
-                            reportFileSummary = NULL, reportFilePath = NULL, fileType=NULL, url=NULL, testMode=FALSE) {
+                        reportFileSummary = NULL, reportFilePath = NULL, fileType=NULL, url=NULL, testMode=FALSE) {
   
   if (!is.null(reportFilePath)) {
     fileName <- basename(reportFilePath)
@@ -63,7 +63,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         lsType = "urlValue",
         lsKind = "report url",
         urlValue = url,
-        comments = summary,
+        comments = reportFileSummary,
         lsTransaction=lsTransaction,
         testMode=testMode
       )
@@ -87,9 +87,9 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
                                                                                       testMode=testMode)
     
     analysisGroups[[length(analysisGroups)+1]] <- createAnalysisGroup(lsTransaction=lsTransaction,
-                                                                       recordedBy=recordedBy,
-                                                                       analysisGroupStates=analysisGroupStates,
-                                                                       experiment=experiment,
+                                                                      recordedBy=recordedBy,
+                                                                      analysisGroupStates=analysisGroupStates,
+                                                                      experiment=experiment,
                                                                       testMode=testMode)
   }
   
@@ -103,35 +103,22 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     })
   }
   
-  locationState <- experiment$lsStates[lapply(experiment$lsStates, function(x) x$"lsKind")=="report locations"]
-  
-  # Record the location
-  if (length(locationState)> 0) {
-    locationState <- locationState[[1]]
-  } else {
-    locationState <- createExperimentState(
-      recordedBy=recordedBy,
-      experiment = experiment,
-      lsType="metadata",
-      lsKind="report locations",
-      lsTransaction=lsTransaction,
-      testMode=testMode)
-    
-    if(testMode) {
-      output$locationState <- locationState
-    } else {
-      locationState <- saveExperimentState(locationState)
-    }
+  existingStates <- fromJSON(getExperimentStatesByTypeAndKind(experiment$id, "metadata", "experiment metadata"))
+  if (length(existingStates) == 0) {
+    stop("Must have an existing state for saving fileValue")
   }
+  locationState <- existingStates[[1]]
+  
   if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
     if (!is.null(reportFilePath)) {
-    locationValue <- createStateValue(recordedBy = recordedBy,
-                                      lsType = "fileValue",
-                                      lsKind = "annotation file",
-                                      fileValue = serverFileLocation,
-                                      lsState = locationState,
-                                      lsTransaction = lsTransaction,
-                                      testMode=testMode)
+      locationValue <- createStateValue(recordedBy = recordedBy,
+                                        lsType = "fileValue",
+                                        lsKind = "annotation file",
+                                        fileValue = serverFileLocation,
+                                        lsState = locationState,
+                                        lsTransaction = lsTransaction,
+                                        comments = reportFileSummary,
+                                        testMode=testMode)
     } else {
       locationValue <- createStateValue(recordedBy = recordedBy,
                                         lsType = "urlValue",
@@ -139,6 +126,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
                                         urlValue = url,
                                         lsState = locationState,
                                         lsTransaction = lsTransaction,
+                                        comments = reportFileSummary,
                                         testMode=testMode)
     }
   } else {

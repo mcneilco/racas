@@ -1,7 +1,7 @@
 Package: racas
 Type: Package
 Title: R Package for ACAS
-Version: 1.7.0
+Version: 1.8.0
 Date: 2015-11-02
 Author: Brian Bolt
 Maintainer: Brian Bolt <brian@mcneilco.com>
@@ -28,7 +28,8 @@ Imports:
     grid,
     utils,
     Hmisc,
-    gplots
+    gplots,
+    rcdk
 Suggests:
     RPostgreSQL,
     ROracle,
