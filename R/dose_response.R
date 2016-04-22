@@ -188,7 +188,7 @@ biphasic_detection <- function(fitData) {
 simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, update_function, updateFlags = NULL) {
   modifiedSettings <- defaultFitSettings
   if(!is.null(simpleSettings$smartMode) && simpleSettings$smartMode) {
-    if(simpleSettings$inactiveThresholdMode) {
+    if(!is.null(simpleSettings$inactiveThreshold) && simpleSettings$inactiveThresholdMode) {
       modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
     } else {
       modifiedSettings$inactiveRule <- list()    
