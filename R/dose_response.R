@@ -1176,8 +1176,13 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is_null_or_na))] <- NULL
   privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
   
+  reportedParametersPublic <- TRUE
+  if(!is.null(racas::applicationSettings$server.curveCurator.onRejectMakeReportedValuesNonPublic) && racas::applicationSettings$server.curveCurator.onRejectMakeReportedValuesNonPublic == TRUE) {
+    if(identical(flag_user, "rejected") || flag_algorithm != "") reportedParametersPublic <- FALSE
+  }
+  
   x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
-  public <- c(rep(TRUE, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
+  public <- c(rep(reportedParametersPublic, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
   values <- lapply(x, function(x) {
     if(class(x$value) %in% c("numeric","integer")) {
       v <- x$value
