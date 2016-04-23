@@ -59,6 +59,16 @@
               ]
             },
             {
+              "name": "curveName",
+              "ls_kind": "curve name",
+              "select": [
+                {
+                  "name": "curveName",
+                  "field": "string_value"
+                }
+              ]
+            },
+            {
               "name": "category",
               "ls_kind": "category",
               "select": [

@@ -1164,7 +1164,7 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   return(experimentCode)
 }
 
-create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
+create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
   setkey(typeMap, "name")
   if(!is.null(fittedParameters)) {
     names(fittedParameters) <- typeMap$ls_kind[match(gsub(" ", "", tolower(paste0("Fitted ",names(fittedParameters)))), gsub(" ", "",tolower(typeMap$ls_kind)))]
@@ -1172,7 +1172,7 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, reportedP
   reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
   publicAnalysisGroupValues <- c(reportedParameters, list('batch code' = list(value = batchCode, operator = NULL), 'curve id' = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
   names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  tolower(typeMap$ls_kind))]
-  privateAnalysisGroupValues <- c(fittedParameters, goodnessOfFit.model, list('Rendering Hint' = renderingHint), c(list(category = category), list('algorithm flag status' = flag_algorithm)[!is.na(flag_algorithm)],  list('user flag status' = flag_user)[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(fitSettings = simpleFitSettings)))
+  privateAnalysisGroupValues <- c(fittedParameters, goodnessOfFit.model, list('curve name' = curveName)[!is.na(curveName)], list('Rendering Hint' = renderingHint), c(list(category = category), list('algorithm flag status' = flag_algorithm)[!is.na(flag_algorithm)],  list('user flag status' = flag_user)[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(fitSettings = simpleFitSettings)))
   privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is_null_or_na))] <- NULL
   privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
   
@@ -1245,6 +1245,7 @@ save_dose_response_data <- function(fitData, recorded_by) {
   myMessenger$logger$debug("organizing parameter data for save")
   fitData[ , analysisGroupValues := {
     list(list(create_analysis_group_values_from_fitData(analysisGroupId = analysisGroupId,
+                                                        curveName[[1]],
                                                         reportedParameters[[1]],
                                                         fixedParameters[[1]],
                                                         fittedParameters[[1]],

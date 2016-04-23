@@ -40,6 +40,7 @@ Dose Response,numericValue,efficacy
 Dose Response,stringValue,category
 Dose Response,stringValue,comment
 Dose Response,stringValue,curve id
+Dose Response,stringValue,curve name
 Dose Response,stringValue,EC50
 Dose Response,stringValue,Ki
 Dose Response,stringValue,Max
