@@ -891,6 +891,8 @@ get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
   count.doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout <- length(doses.withDoseBelow.doseEmpiricalMin.andResponseAbove.responseEmpiricalMin.andCanKnockout)
   myMessenger$logger$debug("About to set stats")
   stats <- list(dose.count = dose.count,
+       dose.unit = unique(pts$doseUnits),
+       response.unit = unique(pts$responseUnits),
        response.empiricalMax = response.empiricalMax, 
        response.empiricalMin = response.empiricalMin, 
        dose.min = dose.min, 
@@ -914,6 +916,17 @@ get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
       myMessenger$logger$debug(paste0("Theoretical max dose.doseBelowLowestDoseAboveHalfTheoMax: ", dose.doseBelowLowestDoseAboveHalfTheoMax))
       stats$dose.lowestDoseAboveHalfTheoMax <- dose.lowestDoseAboveHalfTheoMax
       stats$dose.doseBelowLowestDoseAboveHalfTheoMax <- dose.doseBelowLowestDoseAboveHalfTheoMax
+      
+      dose.lowestDoseBelowHalfTheoMax <- min(pts[knockedOut == FALSE & meanByDose<theoreticalMax/2.0, ]$dose)
+      myMessenger$logger$debug(paste0("Theoretical max dose.lowestDoseBelowHalfTheoMax: ", dose.lowestDoseBelowHalfTheoMax))
+      dose.doseBelowLowestDoseBelowHalfTheoMax <- max(pts[ knockedOut == FALSE & dose < dose.lowestDoseBelowHalfTheoMax, ]$dose)
+      if(!is.finite(dose.doseBelowLowestDoseBelowHalfTheoMax)) {
+        dose.doseBelowLowestDoseBelowHalfTheoMax <- dose.min
+      }
+      myMessenger$logger$debug(paste0("Theoretical max dose.doseBelowLowestDoseBelowHalfTheoMax: ", dose.doseBelowLowestDoseBelowHalfTheoMax))
+      stats$dose.lowestDoseAboveHalfTheoMax <- dose.lowestDoseBelowHalfTheoMax
+      stats$dose.doseBelowLowestDoseBelowHalfTheoMax <- dose.doseBelowLowestDoseBelowHalfTheoMax
+      
     }
   }
   return( stats )
@@ -1776,7 +1789,7 @@ update_point_flags <- function(pts, updateFlags) {
 
 
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
-LL4IC50 <- 'max + (min - max)/(1 + exp(slope * (log(x/ic50))))'
+LL4IC50 <- 'min + (max - min)/(1 + exp(slope * (log(x/ic50))))'
 OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
 MM2 <- '(max*x)/(kd + x)'
 
@@ -1793,6 +1806,30 @@ categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, conver
     category <- "weak tested potency"
   }
   if("ec50ThresholdLow" %in% resultList | potent) {
+    category <- "strong tested potency"
+  }
+  if(inactive) {
+    category <- "inactive"
+  }
+  if(pointStats$dose.count < 2) {
+    category <- "insufficient data"
+  }
+  return(category)
+}
+
+categorize.LL4IC50 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+  category <- "sigmoid"
+  resultList <- unlist(results.parameterRules)
+  if(!converged) {
+    category <- "lack of fit - fit did not converge"
+  }
+  if(insufficientRange) {
+    category <- "insufficient range"
+  }
+  if("minUncertaintyRule" %in% resultList | "ic50ThresholdHigh" %in% resultList) {
+    category <- "weak tested potency"
+  }
+  if("ic50ThresholdLow" %in% resultList | potent) {
     category <- "strong tested potency"
   }
   if(inactive) {
@@ -1937,15 +1974,15 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
     return(reportedValues)
   }
   if(potent) {
-    max <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-    min <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
     ic50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
     reportedValues <- list(min = min, max = max, ic50 = ic50)
     return(reportedValues)
   }
   if(inactive | insufficientRange) {
-    max <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-    min <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
     ic50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
     reportedValues <- list(min = min, max = max, ic50 = ic50)
     return(reportedValues)
@@ -1973,13 +2010,13 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
   } else {
     slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
   }
-  if(("ic50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ic50ThresholdLow" %in% results$limits)) {
-    if(("ic50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+  if(("ic50ThresholdHigh" %in% results$limits | "minUncertaintyRule" %in% results$goodnessOfFits) | ("ic50ThresholdLow" %in% results$limits)) {
+    if(("ic50ThresholdHigh" %in% results$limits | "minUncertaintyRule" %in% results$goodnessOfFits)) {
       if (!theoreticalMaxMode) {
         ic50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
       } else {
         if (pointStats$response.empiricalMax > theoreticalMax/2.0 ) {
-          ic50val <- pointStats$dose.doseBelowLowestDoseAboveHalfTheoMax
+          ic50val <- pointStats$dose.doseBelowLowestDoseBelowHalfTheoMax
           ic50 <- list(value = ic50val, operator = ">", stdErr = NULL)
         } else {
           ic50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)

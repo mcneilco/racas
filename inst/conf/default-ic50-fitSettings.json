@@ -20,12 +20,12 @@
    },
    "parameterRules":{
       "goodnessOfFits":{
-         "maxUncertaintyRule":{
-            "parameter":"max",
+         "minUncertaintyRule":{
+            "parameter":"min",
             "type":"stdErr",
             "value":20,
             "operator":">",
-            "displayName":"Max uncertainty exceeded"
+            "displayName":"Min uncertainty exceeded"
          }
       },
       "limits":{
