@@ -26,6 +26,13 @@
             "value":20,
             "operator":">",
             "displayName":"Max uncertainty exceeded"
+         },
+         "ec50UncertaintyRule":{
+            "parameter":"ec50",
+            "type":"stdErr",
+            "value":20,
+            "operator":">",
+            "displayName":"EC50 uncertainty exceeded"
          }
       },
       "limits":{

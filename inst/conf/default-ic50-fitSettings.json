@@ -26,6 +26,13 @@
             "value":20,
             "operator":">",
             "displayName":"Min uncertainty exceeded"
+         },
+         "ic50UncertaintyRule":{
+            "parameter":"ic50",
+            "type":"stdErr",
+            "value":20,
+            "operator":">",
+            "displayName":"IC50 uncertainty exceeded"
          }
       },
       "limits":{
