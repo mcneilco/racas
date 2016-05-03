@@ -908,6 +908,9 @@ get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
       #TODO does this work?
       myMessenger$logger$debug(paste0("Theoretical max: ", theoreticalMax))
       dose.lowestDoseAboveHalfTheoMax <- min(pts[knockedOut == FALSE & meanByDose>theoreticalMax/2.0, ]$dose)
+      if(!is.finite(dose.lowestDoseAboveHalfTheoMax)) {
+        dose.lowestDoseAboveHalfTheoMax <- dose.max
+      }
       myMessenger$logger$debug(paste0("Theoretical max dose.lowestDoseAboveHalfTheoMax: ", dose.lowestDoseAboveHalfTheoMax))
       dose.doseBelowLowestDoseAboveHalfTheoMax <- max(pts[ knockedOut == FALSE & dose < dose.lowestDoseAboveHalfTheoMax, ]$dose)
       if(!is.finite(dose.doseBelowLowestDoseAboveHalfTheoMax)) {
@@ -918,13 +921,16 @@ get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
       stats$dose.doseBelowLowestDoseAboveHalfTheoMax <- dose.doseBelowLowestDoseAboveHalfTheoMax
       
       dose.lowestDoseBelowHalfTheoMax <- min(pts[knockedOut == FALSE & meanByDose<theoreticalMax/2.0, ]$dose)
+      if(!is.finite(dose.lowestDoseBelowHalfTheoMax)) {
+        dose.lowestDoseBelowHalfTheoMax <- dose.max
+      }
       myMessenger$logger$debug(paste0("Theoretical max dose.lowestDoseBelowHalfTheoMax: ", dose.lowestDoseBelowHalfTheoMax))
       dose.doseBelowLowestDoseBelowHalfTheoMax <- max(pts[ knockedOut == FALSE & dose < dose.lowestDoseBelowHalfTheoMax, ]$dose)
       if(!is.finite(dose.doseBelowLowestDoseBelowHalfTheoMax)) {
         dose.doseBelowLowestDoseBelowHalfTheoMax <- dose.min
       }
       myMessenger$logger$debug(paste0("Theoretical max dose.doseBelowLowestDoseBelowHalfTheoMax: ", dose.doseBelowLowestDoseBelowHalfTheoMax))
-      stats$dose.lowestDoseAboveHalfTheoMax <- dose.lowestDoseBelowHalfTheoMax
+      stats$dose.lowestDoseBelowHalfTheoMax <- dose.lowestDoseBelowHalfTheoMax
       stats$dose.doseBelowLowestDoseBelowHalfTheoMax <- dose.doseBelowLowestDoseBelowHalfTheoMax
       
     }
@@ -1899,7 +1905,17 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   if(potent) {
     max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
     min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-    ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    if (!theoreticalMaxMode) {
+      ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    } else {
+      if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) {
+        # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
+        ec50val <- pointStats$dose.lowestDoseAboveHalfTheoMax
+        ec50 <- list(value = ec50val, operator = "<", stdErr = NULL)
+      } else {
+        ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      }
+    }
     reportedValues <- list(min = min, max = max, ec50 = ec50)
     return(reportedValues)
   }
@@ -1949,9 +1965,9 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
       if (!theoreticalMaxMode) {
         ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
       } else {
-        if (pointStats$response.empiricalMax > theoreticalMaxMode/2.0 ) { #also if not biphasic
+        if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) { #also if not biphasic
           # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
-          ec50val <- pointStats$dose.min #wrong see above
+          ec50val <- pointStats$dose.doseBelowLowestDoseAboveHalfTheoMax #wrong see above
           ec50 <- list(value = ec50val, operator = "<", stdErr = NULL)
         } else {
           ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
@@ -1976,8 +1992,18 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
   if(potent) {
     max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
     min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
-    ic50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
-    reportedValues <- list(min = min, max = max, ic50 = ic50)
+    if (!theoreticalMaxMode) {
+      ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    } else {
+      if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) {
+        # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
+        ec50val <- pointStats$dose.lowestDoseAboveHalfTheoMax
+        ec50 <- list(value = ec50val, operator = "<", stdErr = NULL)
+      } else {
+        ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      }
+    }
+    reportedValues <- list(min = min, max = max, ec50 = ec50)
     return(reportedValues)
   }
   if(inactive | insufficientRange) {
