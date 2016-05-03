@@ -30,7 +30,7 @@
          "ec50UncertaintyRule":{
             "parameter":"ec50",
             "type":"stdErr",
-            "value":20,
+            "value":100,
             "operator":">",
             "displayName":"EC50 uncertainty exceeded"
          }

@@ -30,7 +30,7 @@
          "ic50UncertaintyRule":{
             "parameter":"ic50",
             "type":"stdErr",
-            "value":20,
+            "value":100,
             "operator":">",
             "displayName":"IC50 uncertainty exceeded"
          }
