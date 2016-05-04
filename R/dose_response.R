@@ -1993,17 +1993,17 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
     max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
     min <- list(value = pointStats$response.empiricalMin, operator = NULL, stdErr = NULL)
     if (!theoreticalMaxMode) {
-      ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      ic50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
     } else {
       if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) {
         # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
-        ec50val <- pointStats$dose.lowestDoseAboveHalfTheoMax
-        ec50 <- list(value = ec50val, operator = "<", stdErr = NULL)
+        ic50val <- pointStats$dose.lowestDoseAboveHalfTheoMax
+        ic50 <- list(value = ec50val, operator = "<", stdErr = NULL)
       } else {
-        ec50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+        ic50 <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
       }
     }
-    reportedValues <- list(min = min, max = max, ec50 = ec50)
+    reportedValues <- list(min = min, max = max, ic50 = ic50)
     return(reportedValues)
   }
   if(inactive | insufficientRange) {
