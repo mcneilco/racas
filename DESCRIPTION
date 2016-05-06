@@ -29,8 +29,7 @@ Imports:
     utils,
     Hmisc,
     gplots,
-    methods,
-    rcdk
+    methods
 Suggests:
     RPostgreSQL
 Collate:
