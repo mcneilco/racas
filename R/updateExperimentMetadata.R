@@ -53,7 +53,7 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
 #' experiment
 #' 
 #' @param fileStartLocation path to file, relative from privateUploads
-#' @param experiment an experiment object
+#' @param experiment an experiment object, must have "id" and "codeName"
 #' @param stateType the stateType of save location, e.g. "metadata"
 #' @param stateKind the stateKind of save location, e.g. "experiment metadata"
 #' @param valueKind the valueKind, or description of the file e.g. "source file"
@@ -80,10 +80,74 @@ saveAcasFileToExperiment <- function(
   fileService = racas::applicationSettings$server.service.external.file.service.url,
   deleteOldFile = TRUE, customSourceFileMove = NULL,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  return(saveAcasFile(
-    fileStartLocation, experiment, 'experiment', stateType, stateKind, valueKind, recordedBy, 
-    lsTransaction, valueType, additionalPath, fileServiceType = fileServiceType,
-    fileService = fileService, deleteOldFile = deleteOldFile, customSourceFileMove = customSourceFileMove, lsServerURL = lsServerURL))
+  fileName <- basename(fileStartLocation)
+  
+  experimentCodeName <- experiment$codeName
+  
+  sourceLocation <- getUploadedFilePath(fileStartLocation)
+  
+  if (fileServiceType == "blueimp") {
+    if (additionalPath == "") {
+      folderLocation <- file.path("experiments", experimentCodeName)
+    } else {
+      folderLocation <- file.path("experiments", experimentCodeName, additionalPath)
+    }
+    
+    dir.create(getUploadedFilePath(folderLocation), showWarnings = FALSE, recursive = TRUE)
+    
+    # Move the file
+    serverFileLocation <- file.path(folderLocation, fileName)
+    targetLocation <- getUploadedFilePath(serverFileLocation)
+    if (deleteOldFile) {
+      if (!file.rename(from = sourceLocation, to = targetLocation)) {
+        warnUser(paste("could not rename file", fileName))
+      }
+    } else {
+      if (sourceLocation != targetLocation) {
+        if (!file.copy(from = sourceLocation, to = targetLocation, overwrite = TRUE)) {
+          warnUser(paste("could not copy file", fileName))
+        }
+      }
+    }
+    
+  } else if (fileServiceType == "custom") {
+    if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
+      stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+    }
+    serverFileLocation <- customSourceFileMove(sourceLocation, fileName, fileService, 
+                                               experiment, recordedBy, deleteOldFile)
+  } else {
+    stopUser("Invalid file service type")
+  }
+  
+  # Ignore old values
+  existingValues <- fromJSON(getExperimentValuesByTypeAndKind(
+    experiment$id, stateType, stateKind, valueType, valueKind))
+  if (length(existingValues) > 0) {
+    for (value in existingValues) {
+      value$ignored <- TRUE
+      updateAcasEntity(value, "experimentvalues")
+    }
+    existingStates <- lapply(existingValues, getElement, name="lsState")
+  } else {
+    existingStates <- fromJSON(getExperimentStatesByTypeAndKind(experiment$id, stateType, stateKind))
+    if (length(existingStates) == 0) {
+      stop("Must have an existing state for saving fileValue")
+    }
+  }
+  stateId <- vapply(existingStates, getElement, 1, name="id")
+  if (length(stateId) > 1) {
+    stop(paste("Cannot have more than one stateId for fileValue:", paste(stateId, collapse = ", ")))
+  }
+  
+  # Save new value, then add comment
+  newValue <- createStateValue(
+    lsType = valueType, lsKind = valueKind, fileValue = serverFileLocation, 
+    comments = fileName, recordedBy = recordedBy, lsTransaction = lsTransaction, 
+    lsState = existingStates[[1]])
+  saveAcasEntity(newValue, "experimentvalues")
+  
+  return(serverFileLocation)
 }
 
 #' save file in ACAS
@@ -191,8 +255,9 @@ getAcasFileLink <- function(fileCode, login = FALSE) {
   fileServiceType <- racas::applicationSettings$server.service.external.file.type
   if (fileServiceType == "blueimp") {
     fileRootPath <- ifelse(login, 
-                           paste0(racas::applicationSettings$client.host, ":",
-                                         racas::applicationSettings$client.path),
+                           paste0("http://", racas::applicationSettings$client.host, ":",
+                                  racas::applicationSettings$client.port,
+                                  racas::applicationSettings$client.path),
                            racas::applicationSettings$server.nodeapi.path)
     urlLocation <- paste0(fileRootPath, "/dataFiles/", URLencode(fileCode))
   } else if (fileServiceType == "custom") {

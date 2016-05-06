@@ -184,7 +184,7 @@ biphasic_detection <- function(fitData) {
 simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, update_function, updateFlags = NULL) {
   modifiedSettings <- defaultFitSettings
   if(!is.null(simpleSettings$smartMode) && simpleSettings$smartMode) {
-    if(simpleSettings$inactiveThresholdMode) {
+    if(!is.null(simpleSettings$inactiveThreshold) && simpleSettings$inactiveThresholdMode) {
       modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
     } else {
       modifiedSettings$inactiveRule <- list()    
@@ -428,17 +428,17 @@ curve_fit_controller_getFitDataByExperimentIdOrCodeName <- function(experiment, 
   response <- getURL(url)
   return(response)
 }
-curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, format = "tsv") {
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/rawdata?format=",format,"&experiment=",experiment))
+curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata') {
+  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=",format,"&experiment=",experiment))
   myMessenger <- messenger()  
   myMessenger$logger$debug(paste0("calling raw data service url: ", url))
   response <- getURL(url)
   return(response)
 }
-curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv") {
+curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", rawResultsPersistencePath = 'curvefit/rawdata') {
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/rawdata?format=",format),
+    paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
@@ -2195,7 +2195,7 @@ get_fit_data_curve_id <- function(curveids, full_object = TRUE, ...) {
   fitData <- curve_fit_controller_fitData_dataTable_to_fitData(rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...)))
   setkey(fitData,"curveId")
   if(full_object) {
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids)
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByCurveId(curveids, rawResultsPersistencePath = modelFit$raw_results_persistence_path)
     rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
     rawData[ ,tempFlagStatus := ""]
     rawData[ , flagchanged := FALSE]
@@ -2242,7 +2242,7 @@ get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_obje
   setkey(fitData, "curveId")
   if(full_object) {
     myMessenger$logger$debug("getting rawData")
-    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode)
+    curveFitController_rawDataResponse <- curve_fit_controller_getRawDataByExperimentIdOrCodeName(experimentCode, rawResultsPersistencePath = modelFit$raw_results_persistence_path)
     rawData <- curve_fit_controller_rawData_response_to_data_table(curveFitController_rawDataResponse)
     rawData[ ,tempFlagStatus := ""]
     rawData[ ,flagchanged := FALSE]
