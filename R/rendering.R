@@ -538,6 +538,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
     }
   }
+  
   #Actually Draw Curves
   if(drawCurve) {
     null <- lapply(1:length(params$curveId),drawCurveID)
@@ -667,6 +668,7 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
                              "4 parameter D-R IC50" = list(fct = LL4IC50, paramNames = c("ic50", "min", "max", "slope"), drawIntercept = "ic50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
+                             "Michaelis-Menten" = list(fct = MM2, paramNames = c("km", "vmax"),drawIntercept =  NA),
                              {
                                modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
                                source(file.path(applicationSettings$appHome,modelFitClasses[code==renderingHint]$RSource), local = TRUE)

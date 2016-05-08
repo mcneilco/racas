@@ -119,14 +119,23 @@
   )
   assignInNamespace("kifit",kifit, ns="racas")
   
-  mm2 <- ModelFit$new(drc_function = drc::MM.2, 
-                      paramNames = c("max", "kd"), 
-                      categorization_function = categorize.MM2, 
-                      get_reported_parameters = get_reported_parameters.MM2,
-                      apply_limits = apply_limits.MM2,
-                      default_fit_settings = get_default_fit_settings("MM.2"),
-                      simple_to_advanced_fittings_function = updateFitSettings.MM2
+  definition <- read_json_file(system.file("conf", "definition-mm2.json", package = "racas"))
+  queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
+  kifit <- ModelFit$new(drc_function = drc::MM.2, 
+                        paramNames = c("vmax", "km"), 
+                        categorization_function = categorize.MM2, 
+                        get_reported_parameters = get_reported_parameters.MM2,
+                        apply_limits = apply_limits.MM2,
+                        default_fit_settings = get_default_fit_settings("Michaelis-Menten"),
+                        simple_to_advanced_fittings_function = updateFitSettings.MM2,
+                        model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ki.txt", package = "racas")),
+                        sortOptions = sortOptions.MM2,
+                        get_curve_attributes = get_curve_attributes.MM2,
+                        get_saved_fitted_parameters = get_saved_fitted_parameters.MM2,
+                        curveid_query = queriesAndTypeMap$curveSQL,
+                        experiment_query = queriesAndTypeMap$experimentSQL,
+                        raw_results_persistence_path = 'curvefit/rawdata',
+                        typeMap = queriesAndTypeMap$typeMap
   )
-  assignInNamespace("mm2",mm2, ns="racas")
-  
+  assignInNamespace("mm2",kifit, ns="racas")
 }

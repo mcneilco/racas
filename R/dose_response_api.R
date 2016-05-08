@@ -275,9 +275,11 @@ api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   renderingHint <- fitData[1]$renderingHint[[1]]
   points <- split(points, points$responseSubjectValueId)
   names(points) <- NULL
-  protocol_display_values <- get_protocol_curve_display_min_and_max_by_curve_id(curveid)    
-  plotWindow <- get_plot_window(fitData[1]$points[[1]])
-  plotWindow[c(1,3)] <- log10(plotWindow[c(1,3)])
+  protocol_display_values <- get_protocol_curve_display_min_and_max_by_curve_id(curveid)
+  logDose <- TRUE
+  if(fitData[1]$renderingHint == "Michaelis-Menten") logDose <- FALSE
+  plotWindow <- get_plot_window(fitData[1]$points[[1]], logDose = logDose)
+  if(logDose) plotWindow[c(1,3)] <- log10(plotWindow[c(1,3)])
   plotWindow[c(2,4)] <- c(max(protocol_display_values$ymax,plotWindow[2], na.rm = TRUE),min(protocol_display_values$ymin,plotWindow[4], na.rm = TRUE))
   plotData <- list(plotWindow = plotWindow,
                                  points  = points,
@@ -344,6 +346,7 @@ api_doseResponse_refit <- function(POST, modelFit) {
   points <- data.table(POST$plotData$points)
   
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
+  saveSession('/tmp/blahs')
   fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, POST$fitSettings, modelFit$simple_to_advanced_fittings_function, points)
   
   myMessenger$logger$debug("fitting the dose response model")
@@ -387,6 +390,15 @@ sortOptions.ki <- list(
   list(code = "userFlagStatus", name = "User Flag Status"),
   list(code = "userFlagStatus", name = "Algorithm Flag Status")
 )
+sortOptions.MM2 <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "Km", name = "Km"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
 get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
   if(saved) {
     return(list(
@@ -405,7 +417,7 @@ get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
                 Operator = fitData[1]$reportedParameters[[1]]$ec50$operator,
                 SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
                 SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
-                rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
                 compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
                 algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
                 userFlagStatus = fitData$userFlagStatus[[1]],
@@ -431,7 +443,7 @@ get_curve_attributes.LL4IC50 <- function(fitData, saved = TRUE) {
                 Operator = fitData[1]$reportedParameters[[1]]$ic50$operator,
                 SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
                 SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
-                rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
                 compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
                 algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
                 userFlagStatus = fitData$userFlagStatus[[1]],
@@ -457,9 +469,36 @@ get_curve_attributes.ki <- function(fitData, saved = TRUE) {
                 Operator = fitData[1]$reportedParameters[[1]]$ki$operator,
                 SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
                 SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
-                rSquared =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
                 ligandConc = fitData[1]$ligandConc[[1]],
                 kd = fitData[1]$kd[[1]],                                            
+                compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+                algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+                userFlagStatus = fitData$userFlagStatus[[1]],
+                renderingHint = fitData$renderingHint[[1]]
+    ))
+  }
+}
+get_curve_attributes.MM2 <- function(fitData, saved = TRUE) {
+  if(saved) {
+    return(list(
+      Km = fitData$km[[1]],
+      Operator = na_to_null(fitData$kmOperatorKind),
+      SST =  fitData$sst[[1]],
+      SSE =  fitData$sse[[1]],
+      rsquare = fitData$rsquared[[1]],
+      compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+      algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+      userFlagStatus = fitData$userFlagStatus[[1]],
+      renderingHint = fitData$renderingHint[[1]]
+    ))
+  } else {
+    return(list(Km = fitData[1]$reportedParameters[[1]]$km$value,
+                Operator = fitData[1]$reportedParameters[[1]]$km$operator,
+                SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+                SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                ligandConc = fitData[1]$ligandConc[[1]],
                 compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
                 algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
                 userFlagStatus = fitData$userFlagStatus[[1]],
@@ -481,6 +520,9 @@ get_saved_fitted_parameters.LL4IC50 <- function(fitData, overRideMaxMin = NA) {
 get_saved_fitted_parameters.ki <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
 }
+get_saved_fitted_parameters.MM2 <- function(fitData, overRideMaxMin = NA) {
+  list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm)
+}
 get_plot_data_curve.LL4 <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
 }
@@ -489,4 +531,7 @@ get_plot_data_curve.LL4IC50 <- function(fitData, overRideMaxMin = NA) {
 }
 get_plot_data_curve.ki <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin), max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ki = fitData[1]$fittedKi, ligandConc = fitData[1]$fittedLigandConc, kd = fitData[1]$fittedKd)
+}
+get_plot_data_curve.MM2 <- function(fitData, overRideMaxMin = NA) {
+  list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm)
 }

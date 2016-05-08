@@ -1,0 +1,55 @@
+{
+   "inverseAgonistMode":true,
+   "fixedParameters":{
+      "vmax":null,
+      "km":null
+   },
+   "inactiveRule":{
+      "type":"threshold",
+      "value":20,
+      "activeDoses":2,
+      "operator":">="
+   },
+   "biphasicRule":{
+      "type":"parameter.percentage",
+      "parameter":"vmax",
+      "operator":"<",
+      "value":0.90
+   },
+   "parameterRules":{
+      "goodnessOfFits":{
+         "vmaxUncertaintyRule":{
+            "parameter":"vmax",
+            "type":"stdErr",
+            "value":20,
+            "operator":">",
+            "displayName":"VMax uncertainty exceeded"
+         },
+         "kmUncertaintyRule":{
+            "parameter":"km",
+            "type":"stdErr",
+            "value":100,
+            "operator":">",
+            "displayName":"Km uncertainty exceeded"
+         }
+      },
+      "limits":{
+         "kmThresholdHigh":{
+            "parameter":"km",
+            "type":"logReference",
+            "reference":"dose.max",
+            "value":0.5,
+            "operator":">",
+            "displayName":"Km high threshold exceeded"
+         },
+         "kmThresholdLow":{
+            "parameter":"km",
+            "type":"logReference",
+            "reference":"dose.min",
+            "value":0.0,
+            "operator":"<",
+            "displayName":"Km low threshold exceeded"
+         }
+      }
+   }
+}

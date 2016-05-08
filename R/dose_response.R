@@ -194,7 +194,7 @@ simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, 
       modifiedSettings$inactiveRule <- list()    
     }
     if(!is.null(simpleSettings$theoreticalMaxMode) && simpleSettings$theoreticalMaxMode) {
-      modifiedSettings$theoreticalMaxMode <- TRUE   
+      modifiedSettings$theoreticalMaxMode <- TRUE
       modifiedSettings$theoreticalMax <- simpleSettings$theoreticalMax
     } else {
       modifiedSettings$theoreticalMaxMode <- FALSE   
@@ -224,7 +224,7 @@ get_default_fit_settings <- function(renderingHint) {
   file <- system.file("conf", switch(renderingHint,
                                      "4 parameter D-R" = "default-ec50-fitSettings.json",
                                      "4 parameter D-R IC50" = "default-ic50-fitSettings.json",
-                                     "MM.2" = "default-kd-fitSettings.json",
+                                     "Michaelis-Menten" = "default-km-fitSettings.json",
                                      "Ki Fit" = "default-ki-fitSettings.json",
                                      stop("renderingHint \'", renderingHint,"\' does not have a default fit settings json object")), package = "racas")
   defaultRequest <- readChar(file, file.info(file)$size)
@@ -1797,8 +1797,7 @@ update_point_flags <- function(pts, updateFlags) {
 LL4 <- 'min + (max - min)/(1 + exp(slope * (log(x/ec50))))'
 LL4IC50 <- 'min + (max - min)/(1 + exp(slope * (log(x/ic50))))'
 OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
-MM2 <- '(max*x)/(kd + x)'
-
+MM2 <- '(vmax*x)/(km + x)'
 categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
@@ -1882,7 +1881,7 @@ categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, conver
   if(insufficientRange) {
     category <- "insufficient range"
   }
-  if("kdThresholdLow" %in% resultList | potent) {
+  if("kmThresholdLow" %in% resultList | potent) {
     category <- "strong tested potency"
   }
   if(inactive) {
@@ -2068,30 +2067,77 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
   return(reportedValues)
 }
 get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
-  if(inactive | insufficientRange) {
-    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
-    kd <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
-    reportedValues <- list(max = max, kd = kd)
+  if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
+    vmax <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    km <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
+    reportedValues <- list(vmax = vmax, km = km)
     return(reportedValues)
   }
-  if(!fitConverged) {
-    return(list())
+  if(potent) {
+    vmax <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    if (!theoreticalMaxMode) {
+      km <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+    } else {
+      if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) {
+        # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
+        kmVal <- pointStats$dose.lowestDoseAboveHalfTheoMax
+        km <- list(value = kmVal, operator = "<", stdErr = NULL)
+      } else {
+        km <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      }
+    }
+    reportedValues <- list(vmax = vmax, km = km)
+    return(reportedValues)
+  }
+  if(inactive | insufficientRange) {
+    vmax <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    km <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+    reportedValues <- list(vmax = vmax, km = km)
+    return(reportedValues)
   }
   if("maxUncertaintyRule" %in% results$goodnessOfFits) {
-    max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
+    vmax <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
   } else {
-    if(is_null_or_na(fixedParameters$max)) {
-      max <- list(value = fittedParameters$max, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$max.stdErr)) {goodnessOfFit.parameters$max.stdErr} else {NULL})
+    if(is_null_or_na(fixedParameters$vmax)) {
+      vmax <- list(value = fittedParameters$vmax, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$vmax.stdErr)) {goodnessOfFit.parameters$vmax.stdErr} else {NULL})
     } else {
-      max <- list(value = fixedParameters$max, operator = NULL, stdErr = NULL)
+      vmax <- list(value = fixedParameters$vmax, operator = NULL, stdErr = NULL)
     }
   }
-  if("kdThreshold" %in% results$limits) {
-    kd <- list(value = pointStats$dose.max, operator = NULL, stdErr = NULL)
+  if(("kmThresholdHigh" %in% results$limits | "vmaxUncertaintyRule" %in% results$goodnessOfFits) | ("kmThresholdLow" %in% results$limits)) {
+    if(("kmThresholdHigh" %in% results$limits | "vmaxUncertaintyRule" %in% results$goodnessOfFits)) {
+      if (!theoreticalMaxMode) {
+        km <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+      } else {
+        if (pointStats$response.empiricalMax > theoreticalMax/2.0 ) {
+          kmval <- pointStats$dose.doseBelowLowestDoseAboveHalfTheoMax
+          km <- list(value = kmval, operator = ">", stdErr = NULL)
+        } else {
+          km <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
+        }
+      }
+    } else {
+      if (!theoreticalMaxMode) {
+        km <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+      } else {
+        if (pointStats$response.empiricalMin < theoreticalMax/2.0 ) { #also if not biphasic
+          # some logic to get the lowest dose at which the avg is > than theoMax/2, then that dose
+          kmval <- pointStats$dose.doseBelowLowestDoseAboveHalfTheoMax #wrong see above
+          km <- list(value = kmval, operator = "<", stdErr = NULL)
+        } else {
+          km <- list(value = pointStats$dose.min, operator = "<", stdErr = NULL)
+        }
+      }
+    }
   } else {
-    kd <- list(value = fittedParameters$kd, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$kd.stdErr)) {goodnessOfFit.parameters$kd.stdErr} else {NULL})
+    km <- list(value = fittedParameters$km, operator = NULL, stdErr = if(is.finite(goodnessOfFit.parameters$km.stdErr)) {goodnessOfFit.parameters$km.stdErr} else {NULL})
   }
-  reportedValues <- list(max = max, kd = kd)
+  reportedValues <- list(vmax = vmax, km = km)
+  if(!is.null(fixedParameters$et)) {
+    kcat <- list(value = vmax$value/fixedParameters$et, operator = NULL, stdErr = NULL)
+    kcatkm <- list(value = kcat$value/km$value, operator = NULL, stdErr = NULL)
+    reportedValues <- c(reportedValues, list(kcat = kcat, kcatkm = kcatkm))
+  }
   return(reportedValues)
 }
 get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus,  theoreticalMaxMode, theoreticalMax) {
@@ -2280,7 +2326,7 @@ apply_limits.MM2 <- function(fitData, iterations = 20) {
   #Check if limits have been exceeded and refit if not inactive, non-converged or insufficient range
   check_refit <- function(fitData) {
     refit <- fitData[ , {
-      maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "maxThreshold" %in% results.parameterRules[[1]]$limits)
+      maxExceeded <- ifelse(is.null(results.parameterRules[[1]]$limits), FALSE, "vmaxThreshold" %in% results.parameterRules[[1]]$limits)
       exceededAThreshold <- (maxExceeded)
       refit <-  exceededAThreshold & (!inactive | !fitConverged | !insufficientRange | !potent)
       refit
@@ -2293,20 +2339,20 @@ apply_limits.MM2 <- function(fitData, iterations = 20) {
   while(any(refit) & i < iterations) {
     fitData[refit, model.synced := FALSE]
     fitData[refit, fixedParameters := {
-      if(ifelse(is.null(fixedParameters[[1]]$max), FALSE, !is.na(fixedParameters[[1]]$max))) {
+      if(ifelse(is.null(fixedParameters[[1]]$vmax), FALSE, !is.na(fixedParameters[[1]]$vmax))) {
         fixedMax <- fixedParameters[[1]]$max
       } else {
-        if("maxThreshold" %in% results.parameterRules[[1]]$limits) {
-          if(parameterRules[[1]]$limits$maxThreshold$type == "threshold") {
-            fixedMax <- parameterRules[[1]]$limits$maxThreshold$value
+        if("vmaxThreshold" %in% results.parameterRules[[1]]$limits) {
+          if(parameterRules[[1]]$limits$vmaxThreshold$type == "threshold") {
+            fixedVMax <- parameterRules[[1]]$limits$vmaxThreshold$value
           } else {
-            fixedMax <- pointStats[[1]][parameterRules[[1]]$limits$maxThreshold$reference][[1]]
+            fixedVMax <- pointStats[[1]][parameterRules[[1]]$limits$vmaxThreshold$reference][[1]]
           }
         } else {
           fixedMax <- NA
         }
       }
-      list(list(myfixedParameters = list(max = fixedMax, kd = NA)))
+      list(list(myfixedParameters = list(vmax = fixedVMax, km = NA)))
     },
     by = curveId]
     fitData <- dose_response_fit(fitData)
@@ -2436,30 +2482,31 @@ updateFitSettings.LL4IC50 <- function(fitSettings, simpleSettings) {
 }
 updateFitSettings.MM2 <- function(fitSettings, simpleSettings) {
   update.fitSetting.parameter.MM2 <- function(fitSettings, name, simpleSettingsParameter) {   
+    if(is.null(simpleSettingsParameter$limitType) || simpleSettingsParameter$limitType=="pin") {
+      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
+      fitSettings$fixedParameters[[name]] <- simpleSettingsParameter$value
+      return(fitSettings)
+    }
     if(simpleSettingsParameter$limitType=="none") {
       fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
       fitSettings$fixedParameters[[name]] <- NULL
-    }
-    if(simpleSettingsParameter$limitType=="pin") {
-      fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- NULL
-      fitSettings$fixedParameters[[name]] <- simpleSettingsParameter$value
     }
     if(simpleSettingsParameter$limitType=="limit") {
       fitSettings$parameterRules$limits[[paste0(name,"Threshold")]] <- list(parameter = name,
                                                                             type = "threshold",
                                                                             operator = switch(name,
-                                                                                              max = ">",
-                                                                                              kd = ">",
+                                                                                              vmax = ">",
+                                                                                              km = ">",
                                                                                               stop(paste0("Unknown parameter:",name))),
-                                                                            value = ifelse(simpleSettingsParameter$value),
+                                                                            value = simpleSettingsParameter$value,
                                                                             displayName = paste0(name," threshold exceeded")
       )
       fitSettings$fixedParameters[[name]] <- NULL
     }
     return(fitSettings)
   }
-  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "max", simpleSettingsParameter = simpleSettings$max)
-  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "kd", simpleSettingsParameter = simpleSettings$kd) 
+  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "vmax", simpleSettingsParameter = simpleSettings$vmax)
+  fitSettings <- update.fitSetting.parameter.MM2(fitSettings, name = "et", simpleSettingsParameter = simpleSettings$et)
   return(fitSettings)
 }
 updateFitSettings.Ki <- function(fitSettings, simpleSettings) {
