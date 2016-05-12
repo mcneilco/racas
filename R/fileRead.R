@@ -591,8 +591,9 @@ moveFileToFileServer <- function(fileStartLocation, targetPath=NULL,
                                  experiment=NULL, recordedBy=NULL) {
   # moves a file to file server
   if (fileServiceType == "blueimp") {
-    # Move the file
-    file.rename(from=fileStartLocation, to=getUploadedFilePath(targetPath))
+    # Move the file, cannot use file.rename across a mounted drive
+    file.copy(from=fileStartLocation, to=getUploadedFilePath(targetPath))
+    file.remove(fileStartLocation)
     return(targetPath)
   } else if (fileServiceType == "custom") {
     if(!exists('customSourceFileMove')) {
