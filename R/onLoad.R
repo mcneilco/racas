@@ -138,4 +138,25 @@
                         typeMap = queriesAndTypeMap$typeMap
   )
   assignInNamespace("mm2",kifit, ns="racas")
+  
+  definition <- read_json_file(system.file("conf", "definition-substrateInhibition.json", package = "racas"))
+  queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
+  substrateInhibition <- ModelFit$new(drc_function = substrateInhibition.3, 
+                        paramNames = c("vmax", "km", "ki"), 
+                        categorization_function = categorize.substrateInhibition, 
+                        get_reported_parameters = get_reported_parameters.substrateInhibition,
+                        apply_limits = apply_limits.substrateInhibition,
+                        default_fit_settings = get_default_fit_settings("Michaelis-Menten"),
+                        simple_to_advanced_fittings_function = updateFitSettings.substrateInhibition,
+                        model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ki.txt", package = "racas")),
+                        sortOptions = sortOptions.substrateInhibition,
+                        get_curve_attributes = get_curve_attributes.substrateInhibition,
+                        get_saved_fitted_parameters = get_saved_fitted_parameters.substrateInhibition,
+                        curveid_query = queriesAndTypeMap$curveSQL,
+                        experiment_query = queriesAndTypeMap$experimentSQL,
+                        raw_results_persistence_path = 'curvefit/rawdata',
+                        typeMap = queriesAndTypeMap$typeMap
+  )
+  assignInNamespace("substrateInhibition",substrateInhibition, ns="racas")
+  
 }

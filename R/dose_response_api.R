@@ -399,6 +399,17 @@ sortOptions.MM2 <- list(
   list(code = "userFlagStatus", name = "User Flag Status"),
   list(code = "userFlagStatus", name = "Algorithm Flag Status")
 )
+sortOptions.substrateInhibition <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "Vmax", name = "Vmax"),
+  list(code = "Km", name = "Km"),
+  list(code = "Ki", name = "Ki"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
 get_curve_attributes.LL4 <- function(fitData, saved = TRUE) {
   if(saved) {
     return(list(
@@ -506,6 +517,36 @@ get_curve_attributes.MM2 <- function(fitData, saved = TRUE) {
     ))
   }
 }
+get_curve_attributes.substrateInhibition <- function(fitData, saved = TRUE) {
+  if(saved) {
+    return(list(
+      VMax = fitData$vmax[[1]],
+      Km = fitData$km[[1]],
+      Ki = fitData$ki[[1]],
+      Operator = na_to_null(fitData$kmOperatorKind),
+      SST =  fitData$sst[[1]],
+      SSE =  fitData$sse[[1]],
+      rsquare = fitData$rsquared[[1]],
+      compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+      algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+      userFlagStatus = fitData$userFlagStatus[[1]],
+      renderingHint = fitData$renderingHint[[1]]
+    ))
+  } else {
+    return(list(VMax = fitData[1]$reportedParameters[[1]]$vmax$value,
+                Km = fitData[1]$reportedParameters[[1]]$km$value,
+                Ki = fitData[1]$reportedParameters[[1]]$ki$value,
+                Operator = fitData[1]$reportedParameters[[1]]$km$operator,
+                SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+                SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+                algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+                userFlagStatus = fitData$userFlagStatus[[1]],
+                renderingHint = fitData$renderingHint[[1]]
+    ))
+  }
+}
 get_model_fit_from_type_code <- function(modelFitTypeCode) {
   modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
   source(file.path(applicationSettings$appHome,modelFitClasses[code==modelFitTypeCode]$RSource), local = TRUE)
@@ -523,6 +564,9 @@ get_saved_fitted_parameters.ki <- function(fitData, overRideMaxMin = NA) {
 get_saved_fitted_parameters.MM2 <- function(fitData, overRideMaxMin = NA) {
   list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm)
 }
+get_saved_fitted_parameters.substrateInhibition <- function(fitData, overRideMaxMin = NA) {
+  list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm, ki = fitData[1]$fittedKi)
+}
 get_plot_data_curve.LL4 <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
 }
@@ -534,4 +578,7 @@ get_plot_data_curve.ki <- function(fitData, overRideMaxMin = NA) {
 }
 get_plot_data_curve.MM2 <- function(fitData, overRideMaxMin = NA) {
   list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm)
+}
+get_plot_data_curve.substrateInhibition <- function(fitData, overRideMaxMin = NA) {
+  list(vmax = ifelse(is.na(overRideMaxMin), fitData[1]$fittedVMax, overRideMaxMin), km = fitData[1]$fittedKm, km = fitData[1]$fittedKi)
 }
