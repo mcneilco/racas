@@ -1345,12 +1345,14 @@ requestURL <- function(url = url, handleResponse = TRUE, errorStatusCodes = c(50
     if(response$header$status %in% errorStatusCodes) {
       logFileName <- "racas.log"
       myLogger <- createLogger(logName =  "com.acas.racas.handleRequestURLResponse", logFileName = logFileName)
+      input_list <- list(...)
       errorMessage <- paste0("Request to ", url, 
-                             ifelse(!exists("customrequest")," ",paste0(" with method '",customrequest,"' ")),
+                             ifelse(is.null(input_list$customrequest)," ",paste0(" with method '",input_list$customrequest,"' ")),
                              "failed with status '",response$header$status, "' ", 
                              response$header$statusMessage, 
-                             ifelse(!exists("postfields"),"", paste0("' when sent the following: \n", postfields)),
+                             ifelse(is.null(input_list$postfields),"", paste0("' when sent the following: \n", input_list$postfields)),
                              "\nResponse header was: \n", response$header$value, "\nBody was: \n", response$body)
+      # myLogger$error(toJSON(response))
       myLogger$error(errorMessage)
       stopUserWithTime(logFileName)
     }
