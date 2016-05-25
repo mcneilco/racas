@@ -146,7 +146,7 @@
                         categorization_function = categorize.substrateInhibition, 
                         get_reported_parameters = get_reported_parameters.substrateInhibition,
                         apply_limits = apply_limits.substrateInhibition,
-                        default_fit_settings = get_default_fit_settings("Michaelis-Menten"),
+                        default_fit_settings = get_default_fit_settings("Substrate Inhibition"),
                         simple_to_advanced_fittings_function = updateFitSettings.substrateInhibition,
                         model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "substrateInhibition.txt", package = "racas")),
                         sortOptions = sortOptions.substrateInhibition,
