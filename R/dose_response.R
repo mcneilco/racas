@@ -1448,25 +1448,29 @@ get_protocol_curve_display_min_and_max_by_curve_id <- function(curveid) {
     return(displayValues)
   }
 }
-get_experiment_model_fit_status <- function(experimentCodeOrID) {
-  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status")
+get_experiment_model_fit_status <- function(experimentCodeOrID, ...) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit status", ...)
   return(value)
 }
-get_experiment_model_fit_type <- function(experimentCodeOrID) {
-  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit type")
+get_experiment_model_fit_type <- function(experimentCodeOrID, ...) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "codeValue", lsKind = "model fit type", ...)
   return(value)
 }
-get_experiment_model_fit_transformation <- function(experimentCodeOrID) {
-  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "stringValue", lsKind = "model fit transformation")
+get_experiment_model_fit_transformation <- function(experimentCodeOrID, ...) {
+  value <- get_experiment_metadata_value(experimentCodeOrID, lsType = "stringValue", lsKind = "model fit transformation", ...)
   return(value)
 }
-get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind) {
+get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind, fullValue = FALSE) {
   url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"experiments/", experimentCodeOrID,"/exptvalues/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/json"))  
   response <- fromJSON(getURL(url))
   if(length(response) == 0) {
     value <- NULL
   } else {
-    value <- response[[1]][[lsType]]
+    if(fullValue) {
+      value <- response[[1]]
+    } else {
+      value <- response[[1]][[lsType]]
+    }
   }
   return(value)
 }
