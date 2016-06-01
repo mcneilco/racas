@@ -153,6 +153,12 @@ api_doseResponse_get_curve_stubs <- function(GET) {
   }
   myMessenger$logger$debug(paste0("getting model fit type for ",entityID))
   modelFitType <- get_experiment_model_fit_type(entityID)
+  modelFitStatus <- get_experiment_model_fit_status(entityID, fullValue = TRUE)
+  if(is.null(modelFitStatus) && type == "experimentCode") {
+    stop("experiment not fit")
+  } else if(modelFitStatus$lsState$experiment$deleted || modelFitStatus$lsState$experiment$ignored) {
+    stop("experiment has been deleted")
+  }
   modelFit <- get_model_fit_from_type_code(modelFitType)
   
   myMessenger$logger$debug(paste0("getting fit data for ",entityID))
