@@ -214,7 +214,7 @@
             },
            {
               "name": "kcatkm",
-              "ls_kind": "kcat/km",
+              "ls_kind": "kcat/Km",
               "select": [
                 {
                   "name": "kcatkm",

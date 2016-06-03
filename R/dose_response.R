@@ -1222,7 +1222,7 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   }
   reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
   publicAnalysisGroupValues <- c(reportedParameters, list('batch code' = list(value = batchCode, operator = NULL), 'curve id' = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
-  names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  tolower(typeMap$ls_kind))]
+  names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  gsub("/","",tolower(typeMap$ls_kind)))]
   privateAnalysisGroupValues <- c(fittedParameters, goodnessOfFit.model, list('curve name' = curveName)[!is.na(curveName)], list('Rendering Hint' = renderingHint), c(list(category = category), list('algorithm flag status' = flag_algorithm)[!is.na(flag_algorithm)],  list('user flag status' = flag_user)[!is.na(flag_user)], list(reportedValuesClob = reportedValuesClob), list(fitSummaryClob = fitSummaryClob), list(parameterStdErrorsClob = parameterStdErrorsClob), list(curveErrorsClob = curveErrorsClob),  list(fitSettings = simpleFitSettings)))
   privateAnalysisGroupValues[unlist(lapply(privateAnalysisGroupValues, is_null_or_na))] <- NULL
   privateAnalysisGroupValues <- lapply(privateAnalysisGroupValues, function(x) list(value = x, operator = NULL, stdErr = NULL))
