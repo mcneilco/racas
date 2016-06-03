@@ -1076,16 +1076,17 @@ substrateInhibition.3 <- function(fixed = c(NA, NA, NA, NA), names = c("vmax", "
   list(fct, substrateInhibitionssfct, names)
 }
 
-substrateInhibitionfct <- function(x, parm) {
-  (parm[, 1] * x)/(parm[, 2] + x(1+(x/parm[,3])))
-}
 substrateInhibitionssfct <- function(data) {
-  vmax <- max(data[, 2])
-  km <- vmax * data[1, 1]/(data[1, 2] - data[1, 1])
-  ki <- vmax * data[1, 1]/(data[1, 2] - data[1, 1])
-  km <- 22
-  ki <- 97
-  return(c(vmax, km, ki)) 
+  data <- as.data.table(data)
+  data <- data[x != 0 ]
+  means <- data[ , list(y = mean(y)), by = x]
+  setkey(means, y, x)
+  means[nrow(means)]$x
+  michaelisMentenGuesses <- stats::getInitial(y ~ SSmicmen(x, Vm, K), data = data[data$x <= means[nrow(means)]$x,])
+  vmax <- michaelisMentenGuesses[1]
+  km <- michaelisMentenGuesses[2]
+  ki <- means[1,]$y
+  return(c(vmax, km, ki))
 }
 
 get_parameters_drc_object <- function(drcObj = drcObject) {
