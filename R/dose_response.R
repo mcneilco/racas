@@ -1059,10 +1059,7 @@ ki.ssf <- function(fixed, useFixed = FALSE) {
 }
 substrateInhibition.3 <- function(fixed = c(NA, NA, NA, NA), names = c("vmax", "km", "ki")) {
   numParm <- 3
-  
   notFixed <- is.na(fixed)
-  parmVec <- rep(0, numParm)
-  parmVec[!notFixed] <- fixed[!notFixed]
   parmVec <- rep(0, numParm)
   parmVec[!notFixed] <- fixed[!notFixed]
   fct <- function(dose, parm) 
@@ -1071,22 +1068,44 @@ substrateInhibition.3 <- function(fixed = c(NA, NA, NA, NA), names = c("vmax", "
     parmMat[, notFixed] <- parm
     cParm <- parmMat[, 2]
     x  <- dose
-    (parm[, 1] * x)/(parm[, 2] + x * (1+(x/parm[,3])))
+    (parmMat[, 1] * x)/(parmMat[, 2] + x * (1+(x/parmMat[,3])))
   }
-  list(fct, substrateInhibitionssfct, names)
+  ssfct <- substrateInhibitionssfct(fixed)
+  names <- names[notFixed]
+  # lowerAs <- drc:::pickParm(parmVec, notFixed, 1)
+  # upperAs <- drc:::pickParm(parmVec, notFixed, 2)
+  # monoton <- drc:::monoParm(parmVec, notFixed, 1, -1)
+  # 
+  # list(fct = fct, ssfct = ssfct, names = names, fixed = fixed)
+  returnList <- list(fct = fct, 
+                     ssfct = ssfct, 
+                     names = names, 
+                     #                      scaleFct = scaleFct, 
+                     name = as.character(match.call()[[1]]), 
+                     text = "Substrate Inhibition", 
+                     noParm = sum(is.na(fixed)), 
+                     # lowerAs = lowerAs,
+                     # upperAs = upperAs,
+                     # monoton = monoton,
+                     #                   retFct = retFct,
+                     fixed = fixed)
+  return(returnList)
 }
 
-substrateInhibitionssfct <- function(data) {
-  data <- as.data.table(data)
-  data <- data[x != 0 ]
-  means <- data[ , list(y = mean(y)), by = x]
-  setkey(means, y, x)
-  means[nrow(means)]$x
-  michaelisMentenGuesses <- stats::getInitial(y ~ SSmicmen(x, Vm, K), data = data[data$x <= means[nrow(means)]$x,])
-  vmax <- michaelisMentenGuesses[1]
-  km <- michaelisMentenGuesses[2]
-  ki <- means[1,]$y
-  return(c(vmax, km, ki))
+substrateInhibitionssfct <- function(fixed) {
+  ssfct <- function(data) {
+    data <- as.data.table(data)
+    data <- data[x != 0 ]
+    means <- data[ , list(y = mean(y)), by = x]
+    setkey(means, y, x)
+    means[nrow(means)]$x
+    michaelisMentenGuesses <- stats::getInitial(y ~ SSmicmen(x, Vm, K), data = data[data$x <= means[nrow(means)]$x,])
+    vmax <- michaelisMentenGuesses[1]
+    km <- michaelisMentenGuesses[2]
+    ki <- means[1,]$y
+    return(as.vector(c(vmax, km, ki))[is.na(fixed)])
+  }
+  return(ssfct)
 }
 
 get_parameters_drc_object <- function(drcObj = drcObject) {
