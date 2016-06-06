@@ -140,11 +140,11 @@ saveAcasFileToExperiment <- function(
     stop(paste("Cannot have more than one stateId for fileValue:", paste(stateId, collapse = ", ")))
   }
   
-  # Save new value, then add comment
+  # Save new value with name in comments
   newValue <- createStateValue(
     lsType = valueType, lsKind = valueKind, fileValue = serverFileLocation, 
     comments = fileName, recordedBy = recordedBy, lsTransaction = lsTransaction, 
-    lsState = existingStates[[1]])
+    lsState = existingStates[[1]], comments = basename(sourceLocation))
   saveAcasEntity(newValue, "experimentvalues")
   
   return(serverFileLocation)
