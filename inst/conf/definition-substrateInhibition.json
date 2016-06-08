@@ -89,63 +89,94 @@
               ]
             },
             {
-              "name": "min",
-              "ls_kind": "Min",
+              "name": "vmax",
+              "ls_kind": "VMax",
               "select": [
                 {
-                  "name": "min",
+                  "name": "vmax",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "min",
+                  "name": "vmax",
                   "field": "string_value"
                 },
                 {
-                  "name": "minUnits",
+                  "name": "vmaxUnits",
                   "field": "unit_kind",
                   "units": "response"
                 },
                 {
-                  "name": "minUncertainty",
+                  "name": "vmaxUncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "minUncertaintyType",
+                  "name": "vmaxUncertaintyType",
                   "field": "uncertainty_type"
                 },
                 {
-                  "name": "minOperatorKind",
+                  "name": "vmaxOperatorKind",
                   "field": "operator_kind"
                 }
               ]
             },
             {
-              "name": "max",
-              "ls_kind": "Max",
+              "name": "km",
+              "ls_kind": "Km",
               "select": [
                 {
-                  "name": "max",
+                  "name": "km",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "max",
+                  "name": "km",
                   "field": "string_value"
                 },
                 {
-                  "name": "maxUnits",
+                  "name": "kmUnits",
                   "field": "unit_kind",
-                  "units": "response"
+                  "units": "dose"
                 },
                 {
-                  "name": "maxUncertainty",
+                  "name": "kmUncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "maxUncertaintyType",
+                  "name": "kmUncertaintyType",
                   "field": "uncertainty_type"
                 },
                 {
-                  "name": "maxOperatorKind",
+                  "name": "kmOperatorKind",
+                  "field": "operator_kind"
+                }
+              ]
+            },
+            {
+              "name": "kcat",
+              "ls_kind": "kcat",
+              "select": [
+                {
+                  "name": "kcat",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "kcat",
+                  "field": "string_value"
+                },
+                {
+                  "name": "kcatUnits",
+                  "field": "unit_kind",
+                  "units": "dose"
+                },
+                {
+                  "name": "kcatUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "kcatUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "kcatOperatorKind",
                   "field": "operator_kind"
                 }
               ]
@@ -181,78 +212,94 @@
                 }
               ]
             },
-            {
-              "name": "fittedLigandConc",
-              "ls_kind": "Fitted Ligand Conc",
+           {
+              "name": "kcatkm",
+              "ls_kind": "kcat/Km",
               "select": [
                 {
-                  "name": "fittedLigandConc",
+                  "name": "kcatkm",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "fittedLigandConcUnits",
+                  "name": "kcatkm",
+                  "field": "string_value"
+                },
+                {
+                  "name": "kcatkmUnits",
+                  "field": "unit_kind",
+                  "units": "dose"
+                },
+                {
+                  "name": "kcatkmUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "kcatkmUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "kcatkmOperatorKind",
+                  "field": "operator_kind"
+                }
+              ]
+            },
+           {
+              "name": "fittedEt",
+              "ls_kind": "Fitted Et",
+              "select": [
+                {
+                  "name": "fittedEt",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedEtUnits",
                   "field": "unit_kind",
                   "units": "nM"
                 }
               ]
             },
             {
-              "name": "fittedKd",
-              "ls_kind": "Fitted Kd",
+              "name": "fittedVMax",
+              "ls_kind": "Fitted VMax",
               "select": [
                 {
-                  "name": "fittedKd",
+                  "name": "fittedVMax",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "fittedKdUnits",
-                  "field": "unit_kind",
-                  "units": "nM"
-                }
-              ]
-            },
-            {
-              "name": "fittedMin",
-              "ls_kind": "Fitted Min",
-              "select": [
-                {
-                  "name": "fittedMin",
-                  "field": "numeric_value"
-                },
-                {
-                  "name": "fittedMinUnits",
+                  "name": "fittedVMaxUnits",
                   "field": "unit_kind",
                   "units": "response"
                 },
                 {
-                  "name": "fittedMinUncertainty",
+                  "name": "fittedVMaxUncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "fittedMinUncertaintyType",
+                  "name": "fittedVMaxUncertaintyType",
                   "field": "uncertainty_type"
                 }
               ]
             },
             {
-              "name": "fittedMax",
-              "ls_kind": "Fitted Max",
+              "name": "fittedKm",
+              "ls_kind": "Fitted Km",
               "select": [
                 {
-                  "name": "fittedMax",
+                  "name": "fittedKm",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "fittedMaxUnits",
+                  "name": "fittedKmUnits",
                   "field": "unit_kind",
-                  "units": "response"
+                  "units": "dose"
                 },
                 {
-                  "name": "fittedMaxUncertainty",
+                  "name": "fittedKmUncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "fittedMaxUncertaintyType",
+                  "name": "fittedKmUncertaintyType",
                   "field": "uncertainty_type"
                 }
               ]

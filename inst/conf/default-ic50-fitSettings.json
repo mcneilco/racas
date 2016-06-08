@@ -1,55 +1,57 @@
 {
    "inverseAgonistMode":true,
    "fixedParameters":{
+      "min":null,
       "max":null,
-      "kd":null
+      "slope":null,
+      "ic50":null
    },
    "inactiveRule":{
       "type":"threshold",
-      "value":2,
-      "activeDoses":1
+      "value":20,
+      "activeDoses":2,
+      "operator":"<="
    },
    "biphasicRule":{
       "type":"parameter.percentage",
       "parameter":"max",
       "operator":">",
-      "value":0.90
+      "value":1.1
    },
    "parameterRules":{
       "goodnessOfFits":{
-         "maxUncertaintyRule":{
-            "parameter":"max",
+         "minUncertaintyRule":{
+            "parameter":"min",
             "type":"stdErr",
-            "value":5,
+            "value":20,
             "operator":">",
-            "displayName":"Max uncertainty exceeded"
+            "displayName":"Min uncertainty exceeded"
          },
-         "kdPValue":{
-            "parameter":"kd",
-            "type":"pValue",
-            "value":1,
+         "ic50UncertaintyRule":{
+            "parameter":"ic50",
+            "type":"stdErr",
+            "value":100,
             "operator":">",
-            "displayName":"KD uncertainty exceeded"
+            "displayName":"IC50 uncertainty exceeded"
          }
       },
       "limits":{
-         "kdThresholdHigh":{
-            "parameter":"kd",
+         "ic50ThresholdHigh":{
+            "parameter":"ic50",
             "type":"logReference",
             "reference":"dose.max",
             "value":0.5,
             "operator":">",
-            "displayName":"KD high threshold exceeded"
+            "displayName":"IC50 high threshold exceeded"
          },
-         "kdThresholdLow":{
-            "parameter":"kd",
+         "ic50ThresholdLow":{
+            "parameter":"ic50",
             "type":"logReference",
             "reference":"dose.min",
             "value":0.0,
             "operator":"<",
-            "displayName":"KD low threshold exceeded"
+            "displayName":"IC50 low threshold exceeded"
          }
-
       }
    }
 }

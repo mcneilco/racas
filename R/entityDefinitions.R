@@ -41,12 +41,10 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
     selects <- rbindlist(do.call(c, lapply(x, function(x) lapply(x[["select"]], function(x,parentName) {x$parentName <- parentName;x}, parentName = x$name))), fill = TRUE)
     if(nrow(selects) != 0) {
       if(dbType == "Postgres") {
-        selects[field!="clob_value", table := parentName]
-        selects[field=="clob_value", c('table','field') := list(paste0('convert_from(loread(lo_open(',name),paste0(field,"::int, x'40000'::int), x'40000'::int),\'SQL_ASCII\')"))]
         selects[ , field := ifelse(.N > 1, paste0(field,"::text"),field), by = name]
-      } else {
-        selects[, table := parentName]
       }
+      selects[, table := parentName]
+
       valueSelects <- selects[ , getSelect(table, field, name), by = name]$V1
       valueSelects <- paste0(valueSelects,collapse = ",\n")
       valueSelects <- paste0(valueSelects,   collapse = ",\n")
@@ -137,4 +135,21 @@ read_json_file <- function(jsonFile) {
   jsonCharacter <- readChar(jsonFile, file.info(jsonFile)$size)
   jsonList <- fromJSON(jsonCharacter)
   return(jsonList)
+}
+entityDefinitionToQueriesAndTypeMap <- function(queryDefinition, dbType) {
+  curveQueryDefinition <- queryDefinition
+  experimentQueryDefinition <- queryDefinition
+  curveQueryDefinition$entryPoint <- list(analysis_group = "ag", analysis_group_state = "ags1",analysis_group_value = "curveId", field = "string_value")
+  experimentQueryDefinition$entryPoint <- list(experiment = "e", field = "code_name")
+  states <- Reduce(function(x,y) rbind(x,y, fill = TRUE, use.names = TRUE), lapply(queryDefinition$analysis_group[[1]]$analysis_group_state, as.data.table))
+  values <- flatten_list_in_data_table(states, "analysis_group_value", c("ls_type", "ls_kind"), c("state_type", "state_kind"))
+  typeMap <- flatten_list_in_data_table(values, "select", c("state_type", "state_kind","ls_kind"))
+  typeMap[field == 'clob_value', lsType := 'clobValue']
+  typeMap[field == 'string_value', lsType := 'stringValue']
+  typeMap[field == 'code_value', lsType := 'codeValue']
+  typeMap[field == 'numeric_value', lsType := 'numericValue']
+  
+  curveSQL <- query_definition_list_to_sql(curveQueryDefinition, dbType = dbType)
+  experimentSQL <- query_definition_list_to_sql(experimentQueryDefinition, dbType = dbType)
+  return(list(typeMap = typeMap, curveSQL = curveSQL, experimentSQL = experimentSQL))
 }

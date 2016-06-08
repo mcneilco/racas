@@ -151,63 +151,63 @@
               ]
             },
             {
-              "name": "ki",
-              "ls_kind": "Ki",
+              "name": "ic50",
+              "ls_kind": "IC50",
               "select": [
                 {
-                  "name": "ki",
+                  "name": "ic50",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "ki",
+                  "name": "ic50",
                   "field": "string_value"
                 },
                 {
-                  "name": "kiUnits",
+                  "name": "ic50Units",
                   "field": "unit_kind",
                   "units": "dose"
                 },
                 {
-                  "name": "kiUncertainty",
+                  "name": "ic50Uncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "kiUncertaintyType",
+                  "name": "ic50UncertaintyType",
                   "field": "uncertainty_type"
                 },
                 {
-                  "name": "kiOperatorKind",
+                  "name": "ic50OperatorKind",
                   "field": "operator_kind"
                 }
               ]
             },
             {
-              "name": "fittedLigandConc",
-              "ls_kind": "Fitted Ligand Conc",
+              "name": "slope",
+              "ls_kind": "Slope",
               "select": [
                 {
-                  "name": "fittedLigandConc",
+                  "name": "slope",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "fittedLigandConcUnits",
-                  "field": "unit_kind",
-                  "units": "nM"
-                }
-              ]
-            },
-            {
-              "name": "fittedKd",
-              "ls_kind": "Fitted Kd",
-              "select": [
-                {
-                  "name": "fittedKd",
-                  "field": "numeric_value"
+                  "name": "slope",
+                  "field": "string_value"
                 },
                 {
-                  "name": "fittedKdUnits",
-                  "field": "unit_kind",
-                  "units": "nM"
+                  "name": "slopeUnits",
+                  "field": "unit_kind"
+                },
+                {
+                  "name": "slopeUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "slopeUncertaintyType",
+                  "field": "uncertainty_type"
+                },
+                {
+                  "name": "slopeOperatorKind",
+                  "field": "operator_kind"
                 }
               ]
             },
@@ -258,28 +258,47 @@
               ]
             },
             {
-              "name": "fittedKi",
-              "ls_kind": "Fitted Ki",
+              "name": "fittedIC50",
+              "ls_kind": "Fitted IC50",
               "select": [
                 {
-                  "name": "fittedKi",
+                  "name": "fittedIC50",
                   "field": "numeric_value"
                 },
                 {
-                  "name": "fittedKiUnits",
+                  "name": "fittedIC50Units",
                   "field": "unit_kind",
                   "units": "dose"
                 },
                 {
-                  "name": "fittedKiUncertainty",
+                  "name": "fittedIC50Uncertainty",
                   "field": "uncertainty"
                 },
                 {
-                  "name": "fittedKiUncertaintyType",
+                  "name": "fittedIC50UncertaintyType",
                   "field": "uncertainty_type"
                 }
               ]
-            },{
+            },
+            {
+              "name": "fittedSlope",
+              "ls_kind": "Fitted Slope",
+              "select": [
+                {
+                  "name": "fittedSlope",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "fittedSlopeUncertainty",
+                  "field": "uncertainty"
+                },
+                {
+                  "name": "fittedSlopeUncertaintyType",
+                  "field": "uncertainty_type"
+                }
+              ]
+            },
+            {
               "name": "sse",
               "ls_kind": "SSE",
               "select": [
@@ -390,7 +409,8 @@
               ]
             }
           ]
-        }      ]
+        }
+      ]
     }
   ]
 }

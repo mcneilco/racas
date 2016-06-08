@@ -33,6 +33,10 @@ ModelFit <- setRefClass(Class = "ModelFit",
 
 ll4 <- ModelFit$new()
 
+ll4IC50 <- ModelFit$new()
+
 kifit <- ModelFit$new()
 
 mm2 <- ModelFit$new()
+
+substrateInhibition <- ModelFit$new()

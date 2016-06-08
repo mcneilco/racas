@@ -9,7 +9,8 @@
    "inactiveRule":{
       "type":"threshold",
       "value":20,
-      "activeDoses":2
+      "activeDoses":2,
+      "operator":">="
    },
    "biphasicRule":{
       "type":"parameter.percentage",
@@ -25,6 +26,13 @@
             "value":20,
             "operator":">",
             "displayName":"Max uncertainty exceeded"
+         },
+         "ec50UncertaintyRule":{
+            "parameter":"ec50",
+            "type":"stdErr",
+            "value":100,
+            "operator":">",
+            "displayName":"EC50 uncertainty exceeded"
          }
       },
       "limits":{

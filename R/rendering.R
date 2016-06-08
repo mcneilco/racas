@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
@@ -395,6 +395,10 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     curveXrn[2] <- xrn[2]
   }
   
+  if(!drawPointsForRejectedCurve) {
+    rejectedCurveIds <-  params$curveId[params$userFlagStatus == "rejected" && params$algorithmFlagStatus != "no fit"]
+    curveData <- subset(curveData, !curveId %in% rejectedCurveIds)
+  }
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
   flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
@@ -610,8 +614,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
     }
     if(labelAxes) {
-      xlabel <- paste0(ifelse(is.null(curveData$doseType) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
-      ylabel <- paste0(as.character(curveData$responseType[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
+      xlabel <- paste0(ifelse(is.null(curveData$doseKind) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
+      ylabel <- paste0(as.character(curveData$responseKind[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
       title(xlab = xlabel, ylab = ylabel)
     }
   }, error = plotError)
@@ -671,7 +675,10 @@ api_get_curve_curator_url <- function(curveid, inTable, ...) {
 get_rendering_hint_options <- function(renderingHint = NA) {
   renderingOptions <- switch(renderingHint,
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
+                             "4 parameter D-R IC50" = list(fct = LL4IC50, paramNames = c("ic50", "min", "max", "slope"), drawIntercept = "ic50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
+                             "Michaelis-Menten" = list(fct = MM2, paramNames = c("km", "vmax"),drawIntercept =  NA),
+                             "Substrate Inhibition" = list(fct = substrateInhibitionEq, paramNames = c("vmax", "km", "ki"),drawIntercept =  NA),
                              {
                                modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
                                source(file.path(applicationSettings$appHome,modelFitClasses[code==renderingHint]$RSource), local = TRUE)

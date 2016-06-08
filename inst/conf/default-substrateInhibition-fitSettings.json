@@ -1,9 +1,8 @@
 {
    "inverseAgonistMode":true,
    "fixedParameters":{
-      "min":null,
-      "max":null,
-      "ki":null
+      "vmax":null,
+      "km":null
    },
    "inactiveRule":{
       "type":"threshold",
@@ -13,36 +12,43 @@
    },
    "biphasicRule":{
       "type":"parameter.percentage",
-      "parameter":"max",
+      "parameter":"vmax",
       "operator":"<",
       "value":0.90
    },
    "parameterRules":{
       "goodnessOfFits":{
-         "maxUncertaintyRule":{
-            "parameter":"max",
+         "vmaxUncertaintyRule":{
+            "parameter":"vmax",
             "type":"stdErr",
-            "value":10,
+            "value":20,
             "operator":">",
-            "displayName":"Max uncertainty exceeded"
+            "displayName":"VMax uncertainty exceeded"
+         },
+         "kmUncertaintyRule":{
+            "parameter":"km",
+            "type":"stdErr",
+            "value":100,
+            "operator":">",
+            "displayName":"Km uncertainty exceeded"
          }
       },
       "limits":{
-         "kiThresholdHigh":{
-            "parameter":"ki",
+         "kmThresholdHigh":{
+            "parameter":"km",
             "type":"logReference",
             "reference":"dose.max",
             "value":0.5,
             "operator":">",
-            "displayName":"Ki high threshold exceeded"
+            "displayName":"Km high threshold exceeded"
          },
-         "kiThresholdLow":{
-            "parameter":"ki",
+         "kmThresholdLow":{
+            "parameter":"km",
             "type":"logReference",
             "reference":"dose.min",
             "value":0.0,
             "operator":"<",
-            "displayName":"Ki low threshold exceeded"
+            "displayName":"Km low threshold exceeded"
          }
       }
    }
