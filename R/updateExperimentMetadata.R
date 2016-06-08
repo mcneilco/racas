@@ -144,7 +144,7 @@ saveAcasFileToExperiment <- function(
   newValue <- createStateValue(
     lsType = valueType, lsKind = valueKind, fileValue = serverFileLocation, 
     comments = fileName, recordedBy = recordedBy, lsTransaction = lsTransaction, 
-    lsState = existingStates[[1]], comments = basename(sourceLocation))
+    lsState = existingStates[[1]])
   saveAcasEntity(newValue, "experimentvalues")
   
   return(serverFileLocation)
