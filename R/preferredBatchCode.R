@@ -125,3 +125,33 @@ getPreferredId2 <- function (entityIds, displayName, testMode=FALSE, preferredId
   }
 }
 
+#' Gets parts of batch code
+#' 
+#' Takes a batch code and splits it on the last batch separator, as defined in 
+#' \code{racas::applicationSettings$server.service.external.preferred.batchid.separator}.
+#' getCompoundName will return everything except the last section, while
+#' getBatchName will return everything after the last separator. For example, "CMPD-000001-01A"
+#' is split into "CMPD-000001" and "01A" when the separator is "-".
+#' @param batchCode vector of batch codes
+#' @return character vector
+getCompoundName <- function(batchCode) {
+  # Split the batchCode to pull the compound name off the front, splitting by the last batchid.separator.
+  # If nothing is left, returns the batchCode. Returns a character vector.
+  batchSep <- racas::applicationSettings$server.service.external.preferred.batchid.separator
+  splitBatch <- strsplit(batchCode, batchSep)
+  # Remove last section to get compound name
+  compoundName <- vapply(lapply(splitBatch, function(x) {
+    head(x, n=length(x)-1)
+  }), paste, "", collapse=batchSep)
+  # If 
+  compoundName[compoundName==""] <- batchCode[compoundName==""]
+  return(compoundName)
+}
+#' @rdname getCompoundName
+getBatchNumber <- function(batchCode) {
+  batchSep <- racas::applicationSettings$server.service.external.preferred.batchid.separator
+  splitBatch <- strsplit(batchCode, batchSep)
+  batchNumber <- vapply(splitBatch, tail, character(1), n=1)
+  batchNumber[batchNumber==batchCode] <- NA_character_
+  return(batchNumber)
+}

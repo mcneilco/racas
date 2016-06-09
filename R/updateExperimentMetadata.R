@@ -266,3 +266,17 @@ getAcasFileLink <- function(fileCode, login = FALSE) {
   }
   return(urlLocation)
 }
+#' Save experiment parameters
+#' 
+#' Save the experiment parameters passed from the GUI to the data analysis parameters clobValue.
+#' 
+#' @param inputParameters string that contains JSON
+#' @param experiment list, experiment object from JSON, only needs an id
+#' @param lsTransaction unused
+#' @param recordedBy unused
+saveInputParameters <- function(inputParameters, experiment, lsTransaction, recordedBy) {
+  # input: inputParameters a string that is JSON
+  updateValueByTypeAndKind(inputParameters, "experiment", experiment$id, "metadata", 
+                           "experiment metadata", "clobValue", "data analysis parameters")
+  return(NULL)
+}
