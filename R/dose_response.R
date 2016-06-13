@@ -1240,6 +1240,9 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   if(!is.null(fittedParameters)) {
     names(fittedParameters) <- typeMap$ls_kind[match(gsub(" ", "", tolower(paste0("Fitted ",names(fittedParameters)))), gsub(" ", "",tolower(typeMap$ls_kind)))]
   }
+
+  #saveSession("/tmp/fitData.rda")
+
   reportedParameters[unlist(lapply(reportedParameters, function(x) is_null_or_na(x$value)))] <- NULL
   publicAnalysisGroupValues <- c(reportedParameters, list('batch code' = list(value = batchCode, operator = NULL), 'curve id' = list(value = paste0(analysisGroupCode,"_", lsTransaction), operator = NULL, stdErr = NULL)))
   names(publicAnalysisGroupValues) <- typeMap$ls_kind[match(tolower(names(publicAnalysisGroupValues)),  gsub("/","",tolower(typeMap$ls_kind)))]
@@ -1287,6 +1290,15 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   values[lsType == "clobValue", c("stringValue", "clobValue") := list(as.character(NA), stringValue)]
   values[lsType == "codeValue", c("stringValue", "codeValue") := list(as.character(NA), stringValue)]
   values[ , unitKind := as.character(NA)]
+
+  ## modifying values data.table as a side effect
+  ## pulling in units definded in the definition json files that are brought in via typeMap
+  setValueUnits <- function(typeKind, typeUnit){
+    values[lsKind == typeKind, unitKind := typeUnit]
+  }
+  knownTypes <- c("dose", "response", NA)
+  typeMap[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
+
   values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
   values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
   values[ , uncertaintyType := as.character(NA)]
@@ -1363,7 +1375,10 @@ save_dose_response_data <- function(fitData, recorded_by) {
   }, by = key(agValues), .SDcols = names(agValues)[!names(agValues) %in% key(agValues)]]
   groups <- unname(lapply(split(agStates, f = row.names(agStates)), function(x) {x <- as.list(x); x$lsStates <- x$lsStates[[1]]; return(x)}))
   groupJSON <- jsonlite::toJSON(groups, force = TRUE,  auto_unbox = TRUE, na = c("null"), digits = 20)
-  
+
+  myMessenger$logger$debug("here is the group data")
+  myMessenger$logger$debug(groupJSON)
+
   myMessenger$logger$debug("ignoring old curve states")
   done <- query_replace_string_with_values("update analysis_group_state set ignored='1' where id in (REPLACEME)", string = "REPLACEME", values = unlist(fitData[ , grepl("analysisStateId_",names(fitData)), with = FALSE]))
   
@@ -1720,10 +1735,25 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
         responseUnits <- points[[1]]$responseUnits[[1]]
         doseUnits <- points[[1]]$doseUnits[[1]]
+#saveSession("/tmp/reportedClobValue")
+        ## modifying reportedValues data.table as a side effect
+        ## pulling in units definded in the definition json files that are brought in via typeMap
+        setValueUnits <- function(typeKind, typeUnit){
+          reportedValues[name == typeKind, units := typeUnit]
+        }
+        knownTypes <- c("dose", "response", NA)
+        resultTypes <- copy(modelFit[[1]]$typeMap)
+        resultTypes <- resultTypes[!is.na(units)]
+        resultTypes[ ,ls_kind:=gsub('/','',ls_kind)]
+        resultTypes[ ,ls_kind:=tolower(ls_kind)]
+        resultTypes[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
+
         reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="response"]$ls_kind), units := responseUnits]
         reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="dose"]$ls_kind), units := doseUnits]
         setkey(reportedValues, "name")
         reportedValues[ , value := prettyNum(value, digits = 4)]
+        reportedValues[ name=='kcatkm', value := format(as.numeric(value), digits=4, scientific=TRUE)]
+
         reportedValues <- reportedValues[ , value := {
           if(exists("operator")) {
             paste(ifelse(is.na(operator), "",operator), value)
@@ -1731,6 +1761,7 @@ add_clob_values_to_fit_data <- function(fitData) {
             value
           }}]
         reportedValues <- reportedValues[ , c("name", "value", "units"), with = FALSE]
+        reportedValues[ name=='kcatkm', name:='kcat/Km']
         reportedValuesClob <- data.table_to_html_table(reportedValues[ , c("name", "value", "units"), with = FALSE], 
                                                        include.rownames = FALSE, 
                                                        comment = FALSE, 
@@ -2216,7 +2247,7 @@ get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insuffi
   reportedValues <- list(vmax = vmax, km = km)
   if(!is.null(fixedParameters$et)) {
     kcat <- list(value = vmax$value/fixedParameters$et, operator = NULL, stdErr = NULL)
-    kcatkm <- list(value = kcat$value/km$value, operator = NULL, stdErr = NULL)
+    kcatkm <- list(value = 1E6*kcat$value/km$value, operator = NULL, stdErr = NULL)
     reportedValues <- c(reportedValues, list(kcat = kcat, kcatkm = kcatkm))
   }
   return(reportedValues)
@@ -2306,7 +2337,7 @@ get_reported_parameters.substrateInhibition <- function(results, inactive, fitCo
   reportedValues <- list(vmax = vmax, km = km, ki = ki)
   if(!is.null(fixedParameters$et)) {
     kcat <- list(value = vmax$value/fixedParameters$et, operator = NULL, stdErr = NULL)
-    kcatkm <- list(value = kcat$value/km$value, operator = NULL, stdErr = NULL)
+    kcatkm <- list(value = 1E6*kcat$value/km$value, operator = NULL, stdErr = NULL)
     reportedValues <- c(reportedValues, list(kcat = kcat, kcatkm = kcatkm))
   }
   return(reportedValues)

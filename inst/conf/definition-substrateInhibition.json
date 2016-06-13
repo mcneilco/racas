@@ -165,7 +165,7 @@
                 {
                   "name": "kcatUnits",
                   "field": "unit_kind",
-                  "units": "dose"
+                  "units": "1/s"
                 },
                 {
                   "name": "kcatUncertainty",
@@ -227,7 +227,7 @@
                 {
                   "name": "kcatkmUnits",
                   "field": "unit_kind",
-                  "units": "dose"
+                  "units": "1/M*s"
                 },
                 {
                   "name": "kcatkmUncertainty",
