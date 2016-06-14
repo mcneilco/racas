@@ -1846,9 +1846,9 @@ remove_point_flags <- function(points, flagKindsToRemove = c("algorithm", "prepr
     preprocessColumns <- columnsToReset[grepl("preprocess",columnsToReset)]
     algorithmColumns <- columnsToReset[grepl("algorithm",columnsToReset)]
     updateFlags <- points[, c("responseSubjectValueId", allFlagColumns), with = FALSE]
-    updateFlags[  userFlagCause == "curvefit ko", userColumns := "", with = FALSE]
-    updateFlags[  preprocessFlagCause == "curvefit ko", preprocessColumns := "", with = FALSE]
-    updateFlags[  algorithmFlagCause == "curvefit ko", algorithmColumns := "", with = FALSE]
+    if (length(userColumns)>0) updateFlags[  userFlagCause == "curvefit ko", userColumns := "", with = FALSE]
+    if (length(preprocessColumns)>0) updateFlags[  preprocessFlagCause == "curvefit ko", preprocessColumns := "", with = FALSE]
+    if (length(algorithmColumns)>0) updateFlags[  algorithmFlagCause == "curvefit ko", algorithmColumns := "", with = FALSE]
     points <- update_point_flags(points, updateFlags)
   }
   return(points)
