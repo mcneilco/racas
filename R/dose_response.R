@@ -1291,13 +1291,17 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   values[lsType == "codeValue", c("stringValue", "codeValue") := list(as.character(NA), stringValue)]
   values[ , unitKind := as.character(NA)]
 
+#saveSession("/tmp/curveValues")
   ## modifying values data.table as a side effect
   ## pulling in units definded in the definition json files that are brought in via typeMap
   setValueUnits <- function(typeKind, typeUnit){
     values[lsKind == typeKind, unitKind := typeUnit]
   }
   knownTypes <- c("dose", "response", NA)
-  typeMap[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
+  resultTypes <- copy(typeMap)
+  resultTypes <- resultTypes[!is.na(units)]
+  resultTypes <- resultTypes[ ls_kind %in% values$lsKind ]
+  resultTypes[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
 
   values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
   values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
@@ -1726,6 +1730,8 @@ add_clob_values_to_fit_data <- function(fitData) {
   fitData <- copy(fitData)
   addingColumns <- c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob")
   removeColumns <- addingColumns[ addingColumns %in% names(fitData)]
+#  saveSession("/tmp/reportedClobValue")
+
   if(length(removeColumns) > 0) fitData[ , removeColumns := NULL, with = FALSE]
   fitData[ , c("reportedValuesClob", "fitSummaryClob", "parameterStdErrorsClob", "curveErrorsClob") := {
     if(model.synced) {
@@ -1735,7 +1741,6 @@ add_clob_values_to_fit_data <- function(fitData) {
         reportedValues <- flatten_list_to_data.table(reportedParameters[[1]])
         responseUnits <- points[[1]]$responseUnits[[1]]
         doseUnits <- points[[1]]$doseUnits[[1]]
-#saveSession("/tmp/reportedClobValue")
         ## modifying reportedValues data.table as a side effect
         ## pulling in units definded in the definition json files that are brought in via typeMap
         setValueUnits <- function(typeKind, typeUnit){
@@ -1746,6 +1751,7 @@ add_clob_values_to_fit_data <- function(fitData) {
         resultTypes <- resultTypes[!is.na(units)]
         resultTypes[ ,ls_kind:=gsub('/','',ls_kind)]
         resultTypes[ ,ls_kind:=tolower(ls_kind)]
+        resultTypes <- resultTypes[ ls_kind %in% reportedValues$name ]
         resultTypes[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
 
         reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="response"]$ls_kind), units := responseUnits]
