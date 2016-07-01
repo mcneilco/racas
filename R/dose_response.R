@@ -463,7 +463,7 @@ curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", r
   }
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format, "&response=",transformation),
+    URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format, "&response=",transformation)),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
@@ -473,7 +473,7 @@ curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", r
 curve_fit_controller_getFitDataByCurveId <- function(curveids, format = "tsv") {
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/fitdata?format=",format),
+    URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/fitdata?format=",format)),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
