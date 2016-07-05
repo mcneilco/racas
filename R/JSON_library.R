@@ -1330,6 +1330,69 @@ deleteURLcheckStatus <- function(url, ..., requireJSON=FALSE) {
   }
   return(response)
 }
+requestURL <- function(url = url, handleResponse = TRUE, errorStatusCodes = c(500), ...) {
+  if(handleResponse) {
+    # Need to suppress specific warning about unrecognized curl options for anything going into the curl function that is not a curl option
+    callingHandler <- function(w) {if( any( grepl( paste(c("errorStatusCodes"),collapse="|"), w) ) ) invokeRestart( "muffleWarning" )}
+  } else {
+    #No op functions
+    callingHandler <- function(w) w
+  }
+  h <- basicTextGatherer()
+  body <- withCallingHandlers(getURL(url=url, headerfunction = h$update, ...), warning =  callingHandler)
+  response <- list(body = body, header = as.list(c(parseHTTPHeader(h$value()), value = h$value())))
+  if(handleResponse) {
+    if(response$header$status %in% errorStatusCodes) {
+      logFileName <- "racas.log"
+      myLogger <- createLogger(logName =  "com.acas.racas.handleRequestURLResponse", logFileName = logFileName)
+      input_list <- list(...)
+      errorMessage <- paste0("Request to ", url, 
+                             ifelse(is.null(input_list$customrequest)," ",paste0(" with method '",input_list$customrequest,"' ")),
+                             "failed with status '",response$header$status, "' ", 
+                             response$header$statusMessage, 
+                             ifelse(is.null(input_list$postfields),"", paste0("' when sent the following: \n", input_list$postfields)),
+                             "\nResponse header was: \n", response$header$value, "\nBody was: \n", response$body)
+      # myLogger$error(toJSON(response))
+      myLogger$error(errorMessage)
+      stopUserWithTime(logFileName)
+    }
+  }
+  return(response)
+}
+
+requestJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestURL(url=url, postfields=postfields, httpheader=c('Content-Type'='application/json'), ...)
+  return(response)
+}
+requestJSONURLWithTable <- function(url, table = table, ...) {
+  postfields <- jsonlite::toJSON(table, na = "null", ...)
+  requestJSONURL(url=url, postfields=postfields, ...)
+}
+postJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestJSONURL(url=url, postfields=postfields, customrequest='POST')
+  return(response)
+}
+postJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='POST', ...)
+  return(response)
+}
+deleteJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestWithJSON(url=url, postfields=postfields, customrequest='DELETE')
+  return(response)
+}
+deleteJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='DELETE', ...)
+  return(response)
+}
+putJSONURL <- function(url = url, postfields=postfields, ...) {
+  response <- requestWithJSON(url=url, postfields=postfields, customrequest='PUT')
+  return(response)
+}
+putJSONURLWithTable <- function(url = url, table=table, ...) {
+  response <- requestJSONURLWithTable(url=url, table=table, customrequest='PUT', ...)
+  return(response)
+}
+
 
 #' Protocol search by name
 #' 
@@ -2247,5 +2310,101 @@ updateAmountInWell <- function(containerCodeNameTable, lsServerURL = racas::appl
   return(response)
 }
 
+updateWellContent <- function(containerCodeNameTable, callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path, ...){
+  if(callCustom) {
+    queryString <- "callCustom=1"
+  } else {
+    queryString <- "callCustom=0"
+  }
+  url <- paste0(lsServerURL, "/api/updateWellContent?",queryString)
+  response <- postJSONURLWithTable(url, table=containerCodeNameTable, ...)
+  return(response)
+}
 
+getWellCodesByContainerCodes <- function(containerCodes, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
+  return(wellCodes)
+}
 
+getContainerCodesByLabels <- function(containerLabels, containerType = NA, containerKind = NA, labelType = NA, labelKind = NA, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  queryParams <- c()
+  if(! is.na(containerType)) queryParams <- c(queryParams, paste0("containerType=",containerType))
+  if(! is.na(containerKind)) queryParams <- c(queryParams, paste0("containerKind=",containerKind))
+  if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
+  if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
+  queryString <- paste0(queryParams, collapse="&")
+  url <- URLencode(paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString)))
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerLabels)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, function(x) {if(length(x$foundCodeNames)==0) {x$foundCodeNames <-  NA_character_};as.data.table(x)}))
+  return(wellCodes)
+}
+
+getWellCodesByContainerCodes <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
+  return(wellCodes)
+}
+
+getDefinitionContainersByContainerCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getDefinitionContainersByContainerCodeNames')
+  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
+  containers <- fromJSON(json)
+  return(containers)
+}
+
+getContainersByCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getContainersByCodeNames')
+  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
+  containers <- fromJSON(json$body)
+  return(containers)
+}
+
+moveToLocation <- function(containerCodeLocationCodeDT,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, "/api/moveToLocation")
+  response <- postJSONURLWithTable(url, table=containerCodeLocationCodeDT, errorStatusCodes = 500)
+}
+
+deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/deleteContainers')
+  deleteContainersJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
+  deleteContainersJSON <- fromJSON(deleteContainersJSON)
+  deleteContainersJSON <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(deleteContainersJSON, as.data.table))
+  return(deleteContainersJSON)
+}
+
+updateContainersByContainerCodes <- function(containerDT, callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  if(callCustom) {
+    queryString <- "callCustom=1"
+  } else {
+    queryString <- "callCustom=0"
+  }
+  url <- paste0(lsServerURL, "/api/containersByContainerCodes?",queryString)
+  response <- putJSONURLWithTable(url, table=containerDT, errorStatusCodes = 500)
+}
+
+getWellContentByContainerLabels <- function(containerLabels, containerType = NA, containerKind = NA, labelType = NA, labelKind = NA, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  queryParams <- c()
+  if(! is.na(containerType)) queryParams <- c(queryParams, paste0("containerType=",containerType))
+  if(! is.na(containerKind)) queryParams <- c(queryParams, paste0("containerKind=",containerKind))
+  if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
+  if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
+  queryString <- paste0(queryParams, collapse="&")
+  url <- URLencode(paste0(lsServerURL, paste0('/api/getWellContentByContainerLabels?',queryString)))
+  wellContentJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerLabels)))
+  wellContent <- as.data.table(jsonlite::fromJSON(wellContentJSON))
+  wellContentDT <- wellContent[ , as.data.table(wellContent[[1]]), by = c('containerCodeName', 'label')]
+  return(wellContent)
+}
+
+getContainerAndDefinitionContainerByContainerCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  url <- paste0(lsServerURL, '/api/getContainerAndDefinitionContainerByContainerCodeNames')
+  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
+  containers <- fromJSON(json$body)
+  return(containers)
+}

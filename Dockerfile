@@ -7,3 +7,4 @@ RUN  export R_LIBS=/home/runner/build/r_libs && R CMD INSTALL --no-multiarch --w
 
 USER root
 RUN  rm -rf /home/runner/racas
+EXPOSE 1080
