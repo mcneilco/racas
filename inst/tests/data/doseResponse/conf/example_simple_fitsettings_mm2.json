@@ -1,0 +1,8 @@
+{
+  "max":{
+    "limitType":"none",
+    "value":101
+  },
+  "inactiveThreshold":2,
+  "inverseAgonistMode":true
+}

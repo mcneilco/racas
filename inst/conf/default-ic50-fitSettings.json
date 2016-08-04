@@ -1,0 +1,57 @@
+{
+   "inverseAgonistMode":true,
+   "fixedParameters":{
+      "min":null,
+      "max":null,
+      "slope":null,
+      "ic50":null
+   },
+   "inactiveRule":{
+      "type":"threshold",
+      "value":20,
+      "activeDoses":2,
+      "operator":"<="
+   },
+   "biphasicRule":{
+      "type":"parameter.percentage",
+      "parameter":"max",
+      "operator":">",
+      "value":1.1
+   },
+   "parameterRules":{
+      "goodnessOfFits":{
+         "minUncertaintyRule":{
+            "parameter":"min",
+            "type":"stdErr",
+            "value":20,
+            "operator":">",
+            "displayName":"Min uncertainty exceeded"
+         },
+         "ic50UncertaintyRule":{
+            "parameter":"ic50",
+            "type":"stdErr",
+            "value":100,
+            "operator":">",
+            "displayName":"IC50 uncertainty exceeded"
+         }
+      },
+      "limits":{
+         "ic50ThresholdHigh":{
+            "parameter":"ic50",
+            "type":"logReference",
+            "reference":"dose.max",
+            "value":0.5,
+            "operator":">",
+            "displayName":"IC50 high threshold exceeded"
+         },
+         "ic50ThresholdLow":{
+            "parameter":"ic50",
+            "type":"logReference",
+            "reference":"dose.min",
+            "value":0.0,
+            "operator":"<",
+            "displayName":"IC50 low threshold exceeded"
+         }
+      }
+   }
+}

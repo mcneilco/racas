@@ -1,0 +1,18 @@
+{
+   "max":{
+      "limitType":"none",
+      "value":101
+   },
+   "min":{
+      "limitType":"none",
+      "value":0
+   },
+   "slope":{
+      "limitType":"none",
+      "value":0.6
+   },
+   "smartMode":true,
+   "inactiveThresholdMode":true,
+   "inactiveThreshold":20,
+   "inverseAgonistMode":true
+}
