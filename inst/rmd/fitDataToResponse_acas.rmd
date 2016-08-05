@@ -10,7 +10,7 @@ cat(modelEquation)
 
 ***Fit Summary***
 * Attempted Fits: `r nrow(fitData)`
-* Successful Fits: `r nrow(fitData["algorithmFlagStatus" == "",])`
+* Successful Fits: `r nrow(fitData[algorithmFlagStatus == "",])`
 * Failed Fits: `r nrow(fitData[algorithmFlagStatus != "",])`
 
 ***Categories***
