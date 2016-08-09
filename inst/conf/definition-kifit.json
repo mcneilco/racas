@@ -196,6 +196,36 @@
                 }
               ]
             },
+             {
+              "name": "ligandConc",
+              "ls_kind": "Ligand Conc",
+              "select": [
+                {
+                  "name": "ligandConc",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "ligandConcUnits",
+                  "field": "unit_kind",
+                  "units": "nM"
+                }
+              ]
+            },
+            {
+              "name": "kd",
+              "ls_kind": "Kd",
+              "select": [
+                {
+                  "name": "kd",
+                  "field": "numeric_value"
+                },
+                {
+                  "name": "KdUnits",
+                  "field": "unit_kind",
+                  "units": "nM"
+                }
+              ]
+            },
             {
               "name": "fittedKd",
               "ls_kind": "Fitted Kd",

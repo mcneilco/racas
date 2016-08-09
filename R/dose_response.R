@@ -1006,9 +1006,9 @@ ki_fct <- function(fixed = c(NA, NA, NA, NA, NA), names = c("b", "c", "d", "e", 
                      lowerAs = lowerAs, 
                      upperAs = upperAs, 
                      monoton = monoton, 
+                     modelFitType = "Ki Fit",
 #                   retFct = retFct, 
                      fixed = fixed)
-  class(returnList) <- "kifit"
   return(returnList)
 }
 findbe1 <- function(doseTr, respTr, sgnb = 1, back = exp) {
@@ -1114,7 +1114,7 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fittedParameters <- as.list(coefficients(drcObj))
   names(fittedParameters) <- gsub("\\:\\(Intercept\\)","", names(fittedParameters))
-  if("ki" %in% (names(fittedParameters))) {
+  if(!is.null(drcObj$fct$modelFitType) && drcObj$fct$modelFitType == "Ki Fit") {
     fittedParameters$ki <- 10^(fittedParameters$ki)
   }
   fixedParameters <- as.list(drcObj$fct$fixed)
