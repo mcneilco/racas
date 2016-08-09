@@ -1114,7 +1114,7 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
   #Get calculated values (only non-fixed parameters)
   fittedParameters <- as.list(coefficients(drcObj))
   names(fittedParameters) <- gsub("\\:\\(Intercept\\)","", names(fittedParameters))
-  if(class(drcObj) == "kifit") {
+  if("ki" %in% (names(fittedParameters))) {
     fittedParameters$ki <- 10^(fittedParameters$ki)
   }
   fixedParameters <- as.list(drcObj$fct$fixed)
@@ -2611,7 +2611,7 @@ apply_limits.substrateInhibition <- function(fitData, iterations = 20) {
   }
   return(fitData)
 }
-apply_limits.ki <- function(iterations = 20) {
+apply_limits.ki <- function(fitData, iterations = 20) {
   #While refit is true, keep refitting using fixed parameters
   #The reason we check refit and continue is because we are dealing with limits, 
   #if max is above limit so then we limit it, does min then go below limit? ok, then limit that....etc.
