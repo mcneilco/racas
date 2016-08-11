@@ -558,7 +558,7 @@ get_model_fit_from_type_code <- function(modelFitTypeCode = NULL) {
   if(is.null(modelFitTypeCode)) {
     source <- modelFitClasses[1]$RSource
   } else {
-    modelFitClasses[code==modelFitTypeCode]$RSource
+    source <- modelFitClasses[code==modelFitTypeCode]$RSource
   }
   source(file.path(applicationSettings$appHome,source), local = TRUE)
   return(modelFit)
