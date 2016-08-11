@@ -2862,7 +2862,12 @@ get_curve_id_state_id <- function(curveid, ...) {
 get_curve_id_rendering_hint <- function(curveid, ...) {
   state_id <- get_curve_id_state_id(curveid, ...)
   qu <- paste0("select string_value from analysis_group_value where ls_kind = 'Rendering Hint' and analysis_state_id = ", state_id)
-  query(qu, ...)[[1]]
+  res <- query(qu, ...)
+  if(nrow(res) == 0) {
+    return(NULL)
+  } else {
+    return(res[[1]])
+  }
 }
 get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_object = FALSE, modelFit,...) {
   myMessenger <- messenger()
