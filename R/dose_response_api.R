@@ -554,14 +554,18 @@ get_curve_attributes.substrateInhibition <- function(fitData, saved = TRUE) {
   }
 }
 get_model_fit_from_type_code <- function(modelFitTypeCode = NULL) {
-  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
+  modelFitClasses <- get_model_fit_classes()
   if(is.null(modelFitTypeCode)) {
     source <- modelFitClasses[1]$RSource
   } else {
-    source <- modelFitClasses[1]$RSource
+    modelFitClasses[code==modelFitTypeCode]$RSource
   }
   source(file.path(applicationSettings$appHome,source), local = TRUE)
   return(modelFit)
+}
+get_model_fit_classes <- function() {
+  modelFitClasses <- rbindlist(fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes), fill = TRUE)
+  return(modelFitClasses)
 }
 get_saved_fitted_parameters.LL4 <- function(fitData, overRideMaxMin = NA) {
   list(min = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMin, overRideMaxMin),  max = ifelse(is.na(overRideMaxMin), fitData[1]$fittedMax, overRideMaxMin), ec50 = fitData[1]$fittedEC50, slope = fitData[1]$fittedSlope)
