@@ -115,7 +115,13 @@ list_to_data.table <- function(l) {
   dt[ , V1 := NULL]
   return(dt)
 }
-
+coalesce <- function(...) {
+  out <- Reduce(function(x, y) {
+    i <- which(is.na(x))
+    x[i] <- y[i]
+    x},
+    list(...))
+}
 parse_command_line_args <- function(args) {
   #args <- c("--tables", "api_curve_params", "api_dose_response")
   hh <- paste(unlist(args),collapse=' ')
