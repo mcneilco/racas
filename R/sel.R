@@ -265,41 +265,9 @@ convertSELExperimentMetaDataToSEL <- function(experimentMetaData) {
   return(selExperimentMetaDataSection)
 }
 
-getViewerLink <- function(protocol, experiment, experimentName = NULL, protocolName = NULL) {
+getViewerLink <- function(protocol = NULL, experiment, experimentName = NULL, protocolName = NULL) {
   # Returns url link for viewer
-  
-  if(is.null(experimentName)) {
-    experimentName <- getPreferredName(experiment)
-  }
-  
-  # Add name modifier to protocol name for viewer
-  protocolPostfixStates <- list()
-  if (is.list(protocol$lsStates)) {
-    protocolPostfixStates <- Filter(function(x) {x$lsTypeAndKind == "metadata_name modifier"}, 
-                                    protocol$lsStates)
-  }
-  
-  protocolPostfix <- ""
-  if (length(protocolPostfixStates) > 0) {
-    protocolPostfixState <- protocolPostfixStates[[1]]
-    protocolPostfixValues <- Filter(function(x) {x$lsTypeAndKind == "stringValue_postfix"},
-                                    protocolPostfixState$lsValues)
-    protocolPostfix <- protocolPostfixValues[[1]]$stringValue
-  }
-  
   if (!is.null(racas::applicationSettings$client.service.result.viewer.protocolPrefix)) {
-    if (!(is.null(protocolName))) {
-      protocolName <- paste0(protocolName, protocolPostfix)
-    } else {
-      protocol <- getProtocolById(protocol$id)
-      
-      protocolName <- getPreferredName(protocol)
-      protocolName <- paste0(protocolName, protocolPostfix)
-    }
-    
-    if (is.list(experiment) && racas::applicationSettings$client.service.result.viewer.experimentNameColumn == "EXPERIMENT_NAME") {
-      experimentName <- paste0(experiment$codeName, "::", experimentName)
-    }
     viewerLink <- paste0("/openExptInQueryTool?experiment=", URLencode(experiment$codeName, reserved=TRUE))
   } else {
     viewerLink <- NULL
