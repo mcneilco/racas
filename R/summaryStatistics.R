@@ -166,7 +166,7 @@ weeklyStatistics <- function(dbType) {
   if(TRUE) {
       queries <- lapply(queries, function(x) gsub("AND d.recorded_date >= TRUNC\\(sysdate, 'WW'\\)\n", "", x))
   }
-  #queries <- queries[-c(1:2)]
+  # queries <- queries[-c(1:2)]
   answers <- lapply(queries, function(x) {
     answer <- query(x)
     answer <- as.data.table(answer)
@@ -202,9 +202,9 @@ weeklyStatistics <- function(dbType) {
   answers <- answers[!is.na(date)]
   setkey(answers,"date", "year", "week")
   regularSequence <- data.table(date = seq(answers[1]$date, answers[nrow(answers)]$date, by='1 week'))
-  regularSequence[ , c('year', 'week') := list(format(date, "%Y"), strftime(date,format="%W")) ]
+  regularSequence[ , c('year', 'week') := list(format(date, "%Y"), strftime(date,format="%U")) ]
   setkey(regularSequence, "date", "year", "week")
-  answers <- answers[regularSequence, allow.cartesian = TRUE]
+  answers <- regularSequence[answers, allow.cartesian = TRUE]
   answers[is.na(answers)] <- 0
 #   min <- answers[1, c("year", "week"), with = FALSE]
 #   max <- answers[nrow(answers), c("year", "week"), with = FALSE]
