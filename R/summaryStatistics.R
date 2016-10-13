@@ -160,7 +160,7 @@ weeklyStatistics <- function(dbType) {
                       order by 1,2 desc"
     )
   if(dbType == "Oracle") {
-    queries <- lapply(queries, function(x) gsub("EXTRACT\\(WEEK FROM d.recorded_date\\)", "to_char(d.recorded_date - 7/24,'WW')", x))
+    queries <- lapply(queries, function(x) gsub("EXTRACT\\(WEEK FROM d.recorded_date\\)", "ROUND(TO_NUMBER(TO_CHAR(to_date(d.recorded_date),'ddd'))/7)", x))
   }
 #   if(!update) {
   if(TRUE) {
@@ -199,6 +199,7 @@ weeklyStatistics <- function(dbType) {
     }
   }
   answers[ , date := as.Date(paste(paste0(year,"-",week,"-1")),"%Y-%U-%u")]
+  answers <- answers[!is.na(date)]
   setkey(answers,"date", "year", "week")
   regularSequence <- data.table(date = seq(answers[1]$date, answers[nrow(answers)]$date, by='1 week'))
   regularSequence[ , c('year', 'week') := list(format(date, "%Y"), strftime(date,format="%W")) ]
