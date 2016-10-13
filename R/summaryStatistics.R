@@ -104,7 +104,7 @@ generateSummaryStatistics <- function(numWeeks = 4) {
 
 weeklyStatistics <- function(dbType) {
   queries <- list(
-    subject_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) as YEAR, EXTRACT(WEEK FROM d.recorded_date) AS WEEK, count(d.id) as subject_value
+    subject_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) as YEAR, ROUND(EXTRACT(DOY FROM d.recorded_date)/7) AS WEEK, count(d.id) as subject_value
                        FROM protocol p
                        JOIN experiment e on p.id=e.protocol_id
                        JOIN experiment_analysisgroup eag ON e.id=eag.experiment_id
@@ -121,9 +121,9 @@ weeklyStatistics <- function(dbType) {
                        AND p.ignored            = '0'
                        AND p.deleted            = '0'
                        AND d.recorded_date >= TRUNC(sysdate, 'WW')
-                       GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                       GROUP BY EXTRACT(YEAR FROM d.recorded_date), ROUND(EXTRACT(DOY FROM d.recorded_date)/7)
                        order by 1,2 desc",
-    analysis_group_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as analysis_group_value
+    analysis_group_value = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, ROUND(EXTRACT(DOY FROM d.recorded_date)/7) as WEEK, count(d.id) as analysis_group_value
                                   FROM protocol p
                                   JOIN experiment e on p.id=e.protocol_id
                                   JOIN experiment_analysisgroup eag ON e.id=eag.experiment_id
@@ -138,10 +138,10 @@ weeklyStatistics <- function(dbType) {
                                   AND p.ignored            = '0'
                                   AND p.deleted            = '0'
                                   AND d.recorded_date >= TRUNC(sysdate, 'WW')
-                                  GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                                  GROUP BY EXTRACT(YEAR FROM d.recorded_date), ROUND(EXTRACT(DOY FROM d.recorded_date)/7)
                                   order by 1,2 desc
                                   ",
-    experiment = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as experiment
+    experiment = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, ROUND(EXTRACT(DOY FROM d.recorded_date)/7) as WEEK, count(d.id) as experiment
                         FROM protocol p
                         JOIN experiment d on p.id=d.protocol_id
                         WHERE d.ignored            = '0'
@@ -149,18 +149,18 @@ weeklyStatistics <- function(dbType) {
                         AND p.ignored            = '0'
                         AND p.deleted            = '0'
                         AND d.recorded_date >= TRUNC(sysdate, 'WW')
-                        GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                        GROUP BY EXTRACT(YEAR FROM d.recorded_date), ROUND(EXTRACT(DOY FROM d.recorded_date)/7)
                         order by 1,2 desc",
-   protocol = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, EXTRACT(WEEK FROM d.recorded_date) as WEEK, count(d.id) as protocol
+   protocol = "SELECT EXTRACT(YEAR FROM d.recorded_date) AS YEAR, ROUND(EXTRACT(DOY FROM d.recorded_date)/7) WEEK, count(d.id) as protocol
                       FROM protocol d
                       WHERE d.ignored            = '0'
                       AND d.deleted            = '0'
                       AND d.recorded_date >= TRUNC(sysdate, 'WW')
-                      GROUP BY EXTRACT(YEAR FROM d.recorded_date), EXTRACT(WEEK FROM d.recorded_date)
+                      GROUP BY EXTRACT(YEAR FROM d.recorded_date), ROUND(EXTRACT(DOY FROM d.recorded_date)/7)
                       order by 1,2 desc"
     )
   if(dbType == "Oracle") {
-    queries <- lapply(queries, function(x) gsub("EXTRACT\\(WEEK FROM d.recorded_date\\)", "ROUND(TO_NUMBER(TO_CHAR(to_date(d.recorded_date),'ddd'))/7)", x))
+    queries <- lapply(queries, function(x) gsub("ROUND\\(EXTRACT\\(DOY FROM d.recorded_date\\)/7\\)", "ROUND(TO_NUMBER(TO_CHAR(d.recorded_date,'ddd'))/7)", x))
   }
 #   if(!update) {
   if(TRUE) {
