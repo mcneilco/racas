@@ -1,0 +1,71 @@
+Package: racas
+Type: Package
+Title: R Package for ACAS
+Version: 1.9.0
+Date: 2016-07-06
+Author: Brian Bolt
+Maintainer: Brian Bolt <brian@mcneilco.com>
+Description: R Package for ACAS
+License: GPL-3
+Copyright: See file COPYRIGHTS
+Imports:
+    drc,
+    data.table,
+    rjson,
+    RCurl,
+    plyr,
+    plotrix,
+    brew,
+    logging,
+    evaluate,
+    XLConnect,
+    gdata,
+    reshape,
+    xtable,
+    knitr,
+    reshape2,
+    ggplot2,
+    jsonlite,
+    grid,
+    utils,
+    Hmisc,
+    gplots,
+    methods
+Suggests:
+    RPostgreSQL
+Collate:
+    'JSON_library.R'
+    'api.R'
+    'applicationSettings.R'
+    'batchAnnotation.R'
+    'campaign.R'
+    'containers.R'
+    'createHtmlSummary.R'
+    'createNewACASExperiment.R'
+    'errorLogging.R'
+    'fileRead.R'
+    'hello.R'
+    'logger.R'
+    'longFormatSave.R'
+    'installation.R'
+    'messenger.R'
+    'dose_response.R'
+    'dose_response_api.R'
+    'objectHelper.R'
+    'pingPong.R'
+    'preferredBatchCode.R'
+    'query.R'
+    'rendering.R'
+    'sel.R'
+    'session.R'
+    'testing.R'
+    'summaryStatistics.R'
+    'tsvSave.R'
+    'updateExperimentMetadata.R'
+    'utilities.R'
+    'directDatabaseSave.R'
+    'entityDefinitions.R'
+    'model_fit.R'
+    'entityMeta.R'
+    'onLoad.R'
+

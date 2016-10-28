@@ -1,0 +1,4 @@
+#http://www.codecogs.com/latex/eqneditor.php
+#http://www.base64-image.de/step-1.php
+Ki
+Max + \frac{(Max-Min)}{1+10^{(log10(x)-log10(Ki(1+\frac{Ligand Conc}{Kd}))}}

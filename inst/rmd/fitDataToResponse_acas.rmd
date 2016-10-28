@@ -1,0 +1,55 @@
+Curve Fit Summary
+========================================================
+
+***Model Equation***
+
+```{r modelEquation, message = FALSE, results='asis', echo=FALSE, cache=FALSE}
+modelEquation <- fitData[1]$modelFit[[1]]$model_equation_img
+cat(modelEquation)
+```
+
+***Fit Summary***
+* Attempted Fits: `r nrow(fitData)`
+* Successful Fits: `r nrow(fitData[algorithmFlagStatus == "",])`
+* Failed Fits: `r nrow(fitData[algorithmFlagStatus != "",])`
+
+***Categories***
+
+```{r categories, echo=FALSE, message = FALSE, fig.show='hold', fig.width=10, fig.height=4, cache=FALSE}
+op <- par(mar = c(5.2,4,1,1))
+plotCategories <- as.factor(fitData$category)
+levels(plotCategories)[levels(plotCategories) == "lack of fit - fit did not converge"] <- "lack of fit"
+mp <- plot(plotCategories, xaxt="n")
+text(mp, par("usr")[3], labels = levels(plotCategories), srt = 30, adj = c(1,1.1), xpd = TRUE, cex=1.1)
+```
+
+***Goodness of Fit***
+
+```{r goodnessOfFit, echo=FALSE, message = FALSE, fig.width=10, fig.height=10, cache=FALSE}
+goodnessOfFitExists <- !unlist(lapply(fitData$goodnessOfFit.model, is.null))
+gf <- rbindlist(fitData[goodnessOfFitExists,]$goodnessOfFit.model)
+op <- par(mfrow = c(3, 1),
+          oma = c(5,4,0,5) + 0.1,
+          mar = c(1,0,1,1) + 0.1)
+for(stat in 1:ncol(gf)) {
+  variable <- names(gf)[stat]
+  dat <- gf[[stat]]
+  hist(dat, 
+       main = NULL,
+       xlab = NULL,
+       ylab = NULL,
+       border = "black",
+       col = "gray",
+       cex = 5,
+       axes = FALSE)
+  axis(1, cex.axis=1.4)
+  axis(2, cex.axis=1.4)
+  mtext(variable, side = 4, las=1)
+}
+```
+
+\* Note - this summary is the result of the initial fit; curve curation may alter curves
+
+`r paste0("Fit Date: ", format(Sys.time(), "%a %b %d %Y %X"))`
+
+`r paste0('<a href="', '/curveCurator/', experimentCode, '" target="_blank" class="btn">Curate</a>')`

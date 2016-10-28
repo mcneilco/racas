@@ -1,0 +1,49 @@
+Module,Type,Kind
+Dose Response,clobValue,curveErrorsClob
+Dose Response,clobValue,fitSettings
+Dose Response,clobValue,fitSummaryClob
+Dose Response,clobValue,model fit result html
+Dose Response,clobValue,parameterStdErrorsClob
+Dose Response,clobValue,reportedValuesClob
+Dose Response,codeValue,algorithm flag observation
+Dose Response,codeValue,algorithm flag reason
+Dose Response,codeValue,algorithm flag status
+Dose Response,codeValue,batch code
+Dose Response,codeValue,experiment status
+Dose Response,codeValue,flag observation
+Dose Response,codeValue,flag reason
+Dose Response,codeValue,flag status
+Dose Response,codeValue,preprocess flag observation
+Dose Response,codeValue,preprocess flag reason
+Dose Response,codeValue,preprocess flag status
+Dose Response,codeValue,protocol status
+Dose Response,codeValue,user flag observation
+Dose Response,codeValue,user flag reason
+Dose Response,codeValue,user flag status
+Dose Response,numericValue,EC50
+Dose Response,numericValue,Fitted EC50
+Dose Response,numericValue,Fitted Ki
+Dose Response,numericValue,Fitted Max
+Dose Response,numericValue,Fitted Min
+Dose Response,numericValue,Fitted Slope
+Dose Response,numericValue,Kd
+Dose Response,numericValue,Ki
+Dose Response,numericValue,Ligand Conc
+Dose Response,numericValue,Max
+Dose Response,numericValue,Min
+Dose Response,numericValue,Response
+Dose Response,numericValue,rSquared
+Dose Response,numericValue,Slope
+Dose Response,numericValue,SSE
+Dose Response,numericValue,SST
+Dose Response,numericValue,efficacy
+Dose Response,stringValue,category
+Dose Response,stringValue,comment
+Dose Response,stringValue,curve id
+Dose Response,stringValue,curve name
+Dose Response,stringValue,EC50
+Dose Response,stringValue,Ki
+Dose Response,stringValue,Max
+Dose Response,stringValue,Min
+Dose Response,stringValue,Rendering Hint
+Dose Response,stringValue,Slope

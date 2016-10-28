@@ -1,0 +1,11 @@
+Fit Error Summary
+========================================================
+
+
+***Errors***
+
+```{r errorSummary, results='asis', echo=FALSE, cache=FALSE}
+  cat(paste0("  ",1:length(errorMessages), ": ", errorMessages, collapse = "\n\n"))
+```
+
+`r paste0("Fit Date: ", format(Sys.time(), "%a %b %d %Y %X"))`
