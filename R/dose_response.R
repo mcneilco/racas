@@ -313,11 +313,21 @@ get_plot_window <- function(pts, logDose = TRUE, logResponse = FALSE, ymin = NA,
   if(nrow(pts)==0) {
     return(NULL)
   } else {
-    maxDose <- max(pts$dose)
-    minDose <- min(pts$dose)
-    maxResponse <- max(pts$response)
-    minResponse <- min(pts$response)
-
+    if(logDose) {
+      maxDose <- max(pts$dose[pts$dose > 0])
+      minDose <- min(pts$dose[pts$dose > 0])
+    } else {
+      maxDose <- max(pts$dose)
+      minDose <- min(pts$dose)
+    }
+    if(logResponse) {
+      maxResponse <- max(pts$response[pts$response > 0])
+      minResponse <- min(pts$response[pts$response > 0])
+    } else {
+      maxResponse <- max(pts$response)
+      minResponse <- min(pts$response)
+    }
+    
     responseRange <- abs(maxResponse-minResponse)
     doseRange <- abs(maxDose-minDose)
     if(is.na(ymin)) {
