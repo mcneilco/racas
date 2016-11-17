@@ -519,7 +519,7 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
 moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
                                        fileServiceType = racas::applicationSettings$server.service.external.file.type, 
                                        fileService = racas::applicationSettings$server.service.external.file.service.url,
-                                       deleteOldFile = TRUE) {
+                                       deleteOldFile = TRUE, customSourceFileMove = NULL) {
   
   fileName <- basename(fileStartLocation)
   
@@ -536,7 +536,7 @@ moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy
   }
   
   serverFileLocation <- moveFileToFileServer(fileStartLocation, targetPath, 
-                                             fileServiceType, fileService, experiment, recordedBy)
+                                             fileServiceType, fileService, experiment, recordedBy, customSourceFileMove = customSourceFileMove)
   
   updateValueByTypeAndKind(serverFileLocation, "experiment", experiment$id, 
                            "metadata", "raw results locations", "fileValue", "source file")
