@@ -184,7 +184,7 @@ formatEntityAsTsvAndUpload <- function(entityData) {
   })
   
   
-  tsvServerLocation <- file.path(racas::applicationSettings$server.service.persistence.filePath, response[[1]]$name)
+  tsvServerLocation <- file.path(racas::applicationSettings$server.service.persistence.filePath, response$files[[1]]$name)
   return(tsvServerLocation)
 }
 
