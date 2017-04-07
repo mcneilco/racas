@@ -2413,3 +2413,13 @@ getContainerAndDefinitionContainerByContainerCodeNames <- function(containerCode
   containers <- fromJSON(json$body)
   return(containers)
 }
+
+addContainerLocationHistory <- function(containerDT, callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+  if(callCustom) {
+    queryString <- "callCustom=1"
+  } else {
+    queryString <- "callCustom=0"
+  }
+  url <- paste0(lsServerURL, "/api/containerLocationHistory?",queryString)
+  response <- postJSONURLWithTable(url, table=containerDT, errorStatusCodes = 500)
+}

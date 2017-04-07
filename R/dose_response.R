@@ -542,6 +542,7 @@ get_cached_curve_fit_parameters <- function(curveids, ...) {
   } else {
     modelFitType <- "4 parameter D-R"
   }  
+  if(modelFitType == "4 parameter D-R abs slope") modelFitType <- "4 parameter D-R"
   numericValues <- curve_params[!lskind %in% noneNumericColumns,]
   if(nrow(numericValues) > 0) {
     dt2 <- dcast.data.table(numericValues, "curveid+curvedisplaymin+curvedisplaymax ~ lskind", value.var = "numericvalue")    
