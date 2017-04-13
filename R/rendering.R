@@ -157,10 +157,10 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                      data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
-                                  doseType = as.character(points$dosetype), 
+                                  doseKind = as.character(points$dosetype), 
                                   doseUnits = as.character(points$doseunits), 
                                   response = as.numeric(points$response),
-                                  responseType = as.character(points$responsetype),
+                                  responseKind = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
                                   standardDeviation = as.numeric(points$standarddeviation),
                                   preprocessFlagStatus = as.character(points$preprocessflagstatus),
@@ -174,10 +174,10 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                      data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
-                                  doseType = as.character(points$dosetype), 
+                                  doseKind = as.character(points$dosetype), 
                                   doseUnits = as.character(points$doseunits), 
                                   response = as.numeric(points$response),
-                                  responseType = as.character(points$responsetype),
+                                  responseKind = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
                                   preprocessFlagStatus = as.character(points$preprocessflagstatus),
                                   response_ss_id = as.integer(points$response_ss_id),
@@ -193,10 +193,10 @@ getPoints <- function(curveids, renderingHint = as.character(NA), flagsAsLogical
                      data.frame(  curveId = as.character(points$curveid),
                                   name = gsub(paste0(unique(as.character(points$experiment_name)),"_"),"",as.character(points$name)),
                                   dose = as.numeric(points$dose), 
-                                  doseType = as.character(points$dosetype), 
+                                  doseKind = as.character(points$dosetype), 
                                   doseUnits = as.character(points$doseunits), 
                                   response = as.numeric(points$response),
-                                  responseType = as.character(points$responsetype),
+                                  responseKind = as.character(points$responsetype),
                                   responseUnits = as.character(points$responseunits),
                                   preprocessFlagStatus = as.character(points$preprocessflagstatus),
                                   response_ss_id = as.integer(points$response_ss_id),
@@ -614,7 +614,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
     }
     if(labelAxes) {
-      xlabel <- paste0(ifelse(is.null(curveData$doseKind) || is.na(curveData$doseType[1]),'Concentration',as.character(curveData$doseType[1])), " (",as.character(curveData$doseUnits[1]),")")
+      xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Concentration',as.character(curveData$doseKind[1])), " (",as.character(curveData$doseUnits[1]),")")
       ylabel <- paste0(as.character(curveData$responseKind[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
       title(xlab = xlabel, ylab = ylabel)
     }
