@@ -259,7 +259,7 @@ get_default_fit_settings <- function(renderingHint) {
 #' #fit the data
 #' system.time(response <- get_fit_data_experiment_code(fitSettings, curveids = curveids))
 #' 
-dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL, modelFit = NULL, ...) {
+dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fitData = NA, simpleFitSettings = NULL, flagUser = NULL, user = NULL, modelFit = NULL, renderingHint = NULL, ...) {
   if(all(is.na(c(curveids, sessionID, fitData)))) stop("Must provide curveids or sessionID or fitData, all are NA")
   if(class(curveids) == "character") {
     fitData <- get_fit_data_curve(curveids)
@@ -270,13 +270,15 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     simpleFitSettings_new <- simpleFitSettings
     modelFit_new <- modelFit
     flagUser_new <- flagUser
+    renderingHint_new <- renderingHint
     loadSession(sessionID)
     fitSettings <- fitSettings_new
     sessionID <- sessionID_new
     simpleFitSettings <- simpleFitSettings_new
     flagUser <- flagUser_new    
     modelFit <- modelFit_new    
-    rm(fitSettings_new,sessionID_new, simpleFitSettings_new, flagUser_new, modelFit_new)
+    renderingHint <- renderingHint_new
+    rm(fitSettings_new,sessionID_new, simpleFitSettings_new, flagUser_new, modelFit_new, renderingHint_new)
     if(exists("fitData")) {
       fitData[, model.synced := FALSE]      
     } else {
@@ -297,6 +299,11 @@ dose_response_session <- function(fitSettings, curveids = NA, sessionID = NA, fi
     if(!is.null(modelFit)) {
       fitData[ , modelFit := list(list(modelFit))]
     }
+    if(!is.null(fitData$renderingHint)) {
+      fitData[ , renderingHint := NULL]
+    }
+    fitData[ , renderingHint := renderingHint]
+    
     fitData <- dose_response(fitSettings, fitData) 
   } else {
     stop("fitData not a data.table")

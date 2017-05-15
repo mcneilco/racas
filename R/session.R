@@ -31,9 +31,9 @@ loadSession <- function(id, envir = parent.frame()) {
     stop(paste0("\'", id, "\' cannot be found.  Session may have been deleted"))
   }
   #Check writeable
-  if(file.access(id, mode = 2) != 0) {
-    stop(paste0("\'", id , "\' is not writeable"))
-  }
+  # if(file.access(id, mode = 2) != 0) {
+  #   stop(paste0("\'", id , "\' is not writeable"))
+  # }
   load(id, envir)
   #blah <- sapply( rev(get(".save.session.packages", envir=envir)), library, character.only=TRUE )
   #pad <- function(x,n) c( rep(NA,n-length(x)), x )
