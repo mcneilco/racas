@@ -98,6 +98,35 @@
                       typeMap = queriesAndTypeMap$typeMap
   )
   assignInNamespace("ll4IC50",ll4IC50, ns="racas")
+
+  definition <- read_json_file(system.file("conf", "definition-ll4IC50.json", package = "racas"))
+  dMax <- structure(list(name = "dmax", ls_kind = "DMax", select = list(
+    structure(list(name = "dmax", field = "numeric_value"), .Names = c("name",
+                                                                        "field")), structure(list(name = "dmax", field = "string_value"), .Names = c("name",
+                                                                                                                                                      "field")),
+    structure(list(name = "dmaxUncertainty", field = "uncertainty"), .Names = c("name",
+                                                                                 "field")), structure(list(name = "dmaxUncertaintyType", field = "uncertainty_type"), .Names = c("name",
+                                                                                                                                                                                  "field")), structure(list(name = "dmaxOperatorKind", field = "operator_kind"), .Names = c("name",
+                                                                                                                                                                                                                                                                             "field")))), .Names = c("name", "ls_kind", "select"))
+  addLocation <- length(definition$analysis_group[[1]]$analysis_group_state[[1]]$analysis_group_value)+1
+  definition$analysis_group[[1]]$analysis_group_state[[1]]$analysis_group_value[[addLocation]] <- dMax
+  queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
+  ll4IC50DMax <- ModelFit$new(drc_function = drc::LL.4, 
+                          paramNames = c("slope", "min", "max", "ic50"),
+                          categorization_function = categorize.LL4IC50,
+                          get_reported_parameters = get_reported_parameters.LL4IC50DMax,
+                          apply_limits = apply_limits.LL4IC50,
+                          default_fit_settings = get_default_fit_settings("4 parameter D-R IC50"),
+                          simple_to_advanced_fittings_function = updateFitSettings.LL4IC50,
+                          model_equation_img = get_text_file_contents(system.file(file.path("rmd","equations"), "ll4IC50.txt", package = "racas")),
+                          sortOptions = sortOptions.LL4IC50DMax,
+                          get_curve_attributes = get_curve_attributes.LL4IC50DMax,
+                          get_saved_fitted_parameters = get_saved_fitted_parameters.LL4IC50,
+                          curveid_query = queriesAndTypeMap$curveSQL,
+                          experiment_query = queriesAndTypeMap$experimentSQL,
+                          typeMap = queriesAndTypeMap$typeMap
+  )
+  assignInNamespace("ll4IC50DMax",ll4IC50DMax, ns="racas")
   
   definition <- read_json_file(system.file("conf", "definition-kifit.json", package = "racas"))
   queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)

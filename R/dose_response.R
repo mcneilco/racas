@@ -2194,6 +2194,21 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
   reportedValues <- list(min = min, max = max, slope = slope, ic50 = ic50)
   return(reportedValues)
 }
+get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
+  reportedParameters <- get_reported_parameters.LL4IC50(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax)
+  saveSession('/tmp/blah')
+  dmax <- list(value = "Not calculated", operator = NULL, stdErr = NULL)
+  if(fittedParameters$max == reportedParameters$max$value && fittedParameters$min == reportedParameters$min$value && fittedParameters$slope > 0) {
+    value <- ((fittedParameters$max - fittedParameters$min)/fittedParameters$min) * 100
+    percentDifference <- (abs(fittedParameters$max - fittedParameters$min)/((fittedParameters$max + fittedParameters$min)/2))*100
+    if(length(value) != 0 && is.finite(value) && !is.na(value) && percentDifference > 10 && !(fittedParameters$min < 0 && abs(value) > 100)) {
+      dmax$value <- value
+    }
+  }
+  reportedParameters <- c(reportedParameters, list(dmax = dmax))
+  return(reportedParameters)
+}
+
 get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     vmax <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
