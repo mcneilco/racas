@@ -146,15 +146,15 @@ warnUser <- function(message) {
 #'   message, future plans to group errors by class if there are very large
 #'   numbers.
 getErrorText <- function (errorList) {
-  internalErrors <- Filter(function (x) {!inherits(x, "userError")}, errorList)
-  userErrors <- Filter(function (x) {inherits(x, "userError")}, errorList)
-  allTextErrors <- lapply(userErrors, getElement, "message")
-  if (length(internalErrors) > 0) {
-    internalTextError <- paste0(
-      "We encountered an internal error. Check the logs at ", Sys.time())
-    allTextErrors <- c(internalTextError, allTextErrors)
-  }
-  return(allTextErrors)
+#   internalErrors <- Filter(function (x) {!inherits(x, "userError")}, errorList)
+#   userErrors <- Filter(function (x) {inherits(x, "userError")}, errorList)
+  allTextErrors <- lapply(errorList, getElement, "message")
+#   if (length(internalErrors) > 0) {
+#     internalTextError <- paste0(
+#       "We encountered an internal error. Check the logs at ", Sys.time())
+#     allTextErrors <- c(internalTextError, allTextErrors)
+#   }
+  return(rev(allTextErrors))
 }
 
 #' Get warning text for users

@@ -420,10 +420,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   originalMargins <- par("mar")
   plotError <- function(error) {
-    par(mar = originalMargins)
     if(!is.na(outFile)) {
+      dev.off(dev.prev())
       png(file = outFile)
     }
+    par(mar = originalMargins)
     plot(-1:1, -1:1, type = "n", xlab = NA, ylab = NA, axes = FALSE)
     text(c(0,0),c(0,0),labels=c(error$message))
   }
