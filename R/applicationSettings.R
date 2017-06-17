@@ -163,7 +163,7 @@ getSSLString <- function(clientUseSSL = applicationSettings$client.use.ssl) {
 cleanPackages <- function(applicationSettings = racas::applicationSettings) {
   output <- capture.output(tryCatch({
     defaultPackages <- c(getOption("defaultPackages"),"base","methods","utils")
-    packagesToBeLoaded <- c(unlist(applicationSettings$server.rapache.preloadedpackages),c("racas","rjson"))
+    packagesToBeLoaded <- c(unlist(applicationSettings$server.rapache.preloadedpackages),c("racas","rjson", applicationSettings$server.database.r.package))
     currentlyLoadedPackages <- (.packages())
     packagesToUnload <- currentlyLoadedPackages[!currentlyLoadedPackages %in% unique(c(defaultPackages, packagesToBeLoaded))]
     if(length(packagesToUnload) > 0) {
