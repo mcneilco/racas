@@ -2196,7 +2196,6 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
 }
 get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
   reportedParameters <- get_reported_parameters.LL4IC50(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax)
-  saveSession('/tmp/blah')
   dmax <- list(value = "Not calculated", operator = NULL, stdErr = NULL)
   if(fittedParameters$max == reportedParameters$max$value && fittedParameters$min == reportedParameters$min$value && fittedParameters$slope > 0) {
     value <- ((fittedParameters$max - fittedParameters$min)/fittedParameters$min) * 100
