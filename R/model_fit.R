@@ -35,6 +35,8 @@ ll4 <- ModelFit$new()
 
 ll4IC50 <- ModelFit$new()
 
+ll4IC50DMax <- ModelFit$new()
+
 kifit <- ModelFit$new()
 
 mm2 <- ModelFit$new()

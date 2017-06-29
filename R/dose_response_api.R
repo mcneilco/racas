@@ -387,6 +387,16 @@ sortOptions.LL4IC50 <- list(
   list(code = "userFlagStatus", name = "User Flag Status"),
   list(code = "userFlagStatus", name = "Algorithm Flag Status")
 )
+sortOptions.LL4IC50DMax <- list(
+  list(code = "compoundCode", name = "Compound Code"),
+  list(code = "IC50", name = "IC50"),
+  list(code = "DMax", name = "DMax"),
+  list(code = "SST", name = "SST"),
+  list(code = "SSE", name = "SSE"),
+  list(code = "rsquare", name = "R^2"),
+  list(code = "userFlagStatus", name = "User Flag Status"),
+  list(code = "userFlagStatus", name = "Algorithm Flag Status")
+)
 sortOptions.ki <- list(
   list(code = "compoundCode", name = "Compound Code"),
   list(code = "Ki", name = "Ki"),
@@ -457,6 +467,34 @@ get_curve_attributes.LL4IC50 <- function(fitData, saved = TRUE) {
     ))
   } else {
     return(list(IC50 = fitData[1]$reportedParameters[[1]]$ic50$value,
+                Operator = fitData[1]$reportedParameters[[1]]$ic50$operator,
+                SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
+                SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
+                rsquare =  fitData[1]$goodnessOfFit.model[[1]]$rSquared,
+                compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+                algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+                userFlagStatus = fitData$userFlagStatus[[1]],
+                renderingHint = fitData$renderingHint[[1]]
+    ))
+  }
+}
+get_curve_attributes.LL4IC50DMax <- function(fitData, saved = TRUE) {
+  if(saved) {
+    return(list(
+      IC50 = fitData$ic50[[1]],
+      DMax = fitData$dmax[[1]],
+      Operator = na_to_null(fitData$ic50OperatorKind),
+      SST =  fitData$sst[[1]],
+      SSE =  fitData$sse[[1]],
+      rsquare = fitData$rsquared[[1]],
+      compoundCode = paste0(fitData$batchCode[[1]],na_to_null(fitData$curveName)),
+      algorithmFlagStatus = fitData$algorithmFlagStatus[[1]],
+      userFlagStatus = fitData$userFlagStatus[[1]],
+      renderingHint = fitData$renderingHint[[1]]
+    ))
+  } else {
+    return(list(IC50 = fitData[1]$reportedParameters[[1]]$ic50$value,
+                DMax = fitData[1]$reportedParameters[[1]]$dmax$value,
                 Operator = fitData[1]$reportedParameters[[1]]$ic50$operator,
                 SST = fitData[1]$goodnessOfFit.model[[1]]$SST,
                 SSE =  fitData[1]$goodnessOfFit.model[[1]]$SSE,
