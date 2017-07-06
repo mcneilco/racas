@@ -159,3 +159,35 @@ getSSLString <- function(clientUseSSL = applicationSettings$client.use.ssl) {
   
   return(sslString)
 }
+
+cleanPackages <- function(applicationSettings = racas::applicationSettings) {
+  output <- capture.output(tryCatch({
+    defaultPackages <- c(getOption("defaultPackages"),"base","methods","utils")
+    packagesToBeLoaded <- c(unlist(applicationSettings$server.rapache.preloadedpackages),c("racas","rjson", applicationSettings$server.database.r.package))
+    currentlyLoadedPackages <- (.packages())
+    packagesToUnload <- currentlyLoadedPackages[!currentlyLoadedPackages %in% unique(c(defaultPackages, packagesToBeLoaded))]
+    if(length(packagesToUnload) > 0) {
+      suppressWarnings(lapply(packagesToUnload, function(k) detach( paste('package:', k, sep='', collapse=''), char=TRUE)))
+    }
+  }, error  = function(mesage) {
+    
+  }))
+  return(invisible(output))
+}
+cleanObjects <- function() {
+  output <- capture.output(tryCatch({
+    allGlobalObjects <- ls(envir = .GlobalEnv, )
+    objectsToRemove <- allGlobalObjects[!allGlobalObjects %in% "conn"]
+    if(length(objectsToRemove) > 0) {
+      rm(list = objectsToRemove, envir = .GlobalEnv)
+    }
+  }, error  = function(mesage) {
+    
+  }))
+  return(invisible(output))
+}
+cleanEnvironment <- function(applicationSettings = racas::applicationSettings) {
+  cleanPackages(applicationSettings)
+  cleanObjects()
+  return(invisible(TRUE))
+}
