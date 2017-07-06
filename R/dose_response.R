@@ -2197,7 +2197,8 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
 get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
   reportedParameters <- get_reported_parameters.LL4IC50(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax)
   dmax <- list(value = "Not calculated", operator = NULL, stdErr = NULL)
-  if(fittedParameters$max == reportedParameters$max$value && fittedParameters$min == reportedParameters$min$value && fittedParameters$slope > 0) {
+  shouldCalculateDMax <- fitConverged && fittedParameters$max == reportedParameters$max$value && fittedParameters$min == reportedParameters$min$value && fittedParameters$slope > 0
+  if(!is.na(shouldCalculateDMax) && shouldCalculateDMax) {
     # IF Ymin <0 AND Ymin > -0.1 THEN Ymin =0 and calculate Dmax – or just assign as 100%.
     if(fittedParameters$min < 0 && fittedParameters$min > -0.1) {
       fittedParameters$min <- 0
