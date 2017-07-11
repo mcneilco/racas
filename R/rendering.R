@@ -677,6 +677,7 @@ get_rendering_hint_options <- function(renderingHint = NA) {
   renderingOptions <- switch(renderingHint,
                              "4 parameter D-R" = list(fct = LL4, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50"),
                              "4 parameter D-R IC50" = list(fct = LL4IC50, paramNames = c("ic50", "min", "max", "slope"), drawIntercept = "ic50"),
+                             "4 parameter D-R IC50/DMax" = list(fct = LL4IC50, paramNames = c("ic50", "min", "max", "slope"), drawIntercept = "ic50"),
                              "Ki Fit" = list(fct = OneSiteKi, paramNames = c("ki", "min", "max", "kd", "ligandConc"),drawIntercept = "ki" ),
                              "Michaelis-Menten" = list(fct = MM2, paramNames = c("km", "vmax"),drawIntercept =  NA),
                              "Substrate Inhibition" = list(fct = substrateInhibitionEq, paramNames = c("vmax", "km", "ki"),drawIntercept =  NA),
