@@ -79,7 +79,7 @@ analysis_group_save_from_tsv <- function(analysisGroupCsvFilePath, treatmentGrou
   response <- postURLcheckStatus(
     paste0(racas::applicationSettings$client.service.persistence.fullpath, 
            "experiments/analysisgroup/savefromtsv"),
-    postfields=toJSON(filePaths),
+    postfields=rjson::toJSON(filePaths),
     requireJSON = TRUE
   )
   return(response)
@@ -177,7 +177,7 @@ formatEntityAsTsvAndUpload <- function(entityData) {
   write.table(entityDataFormatted, file = csvLocalLocation, sep="\t", na = "", row.names = FALSE)
   
   tryCatch({
-    response <- fromJSON(postForm(paste0(racas::applicationSettings$server.service.persistence.fileUrl), 
+    response <- rjson::fromJSON(postForm(paste0(racas::applicationSettings$server.service.persistence.fileUrl), 
                       fileData = (fileUpload(csvLocalLocation, contentType = "text/plain"))))
   }, error = function (e) {
     stopUser("Internal: Could not send tsv file to server, make sure upload server is running.")

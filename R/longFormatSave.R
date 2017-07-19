@@ -81,7 +81,7 @@ saveStatesFromLongFormat <- function(entityData, entityKind, stateGroups, idColu
   names(lsStates) <- NULL
   if (testMode) {
     lsStates <- lapply(lsStates, function(x) {x$recordedDate <- 1381939115000; return (x)})
-    return(toJSON(lsStates))
+    return(rjson::toJSON(lsStates))
   } else {
     savedLsStates <- saveAcasEntities(lsStates, paste0(entityKind, "states"))
   }
@@ -436,7 +436,7 @@ saveValuesFromLongFormat <- function(entityData, entityKind, stateGroups = NULL,
 
   if (testMode) {
     entityValues <- lapply(entityValues, function(x) {x$recordedDate <- 42; return (x)})
-    return(toJSON(entityValues))
+    return(rjson::toJSON(entityValues))
   } else {
     savedEntityValues <- saveAcasEntities(entityValues, paste0(entityKind, "values"))
     return(savedEntityValues)
@@ -558,7 +558,7 @@ saveStatesFromExplicitFormat <- function(entityData, entityKind, testMode=FALSE)
   names(lsStates) <- NULL
   if (testMode) {
     lsStates <- lapply(lsStates, function(x) {x$recordedDate <- 1381939115000; return (x)})
-    return(toJSON(lsStates))
+    return(rjson::toJSON(lsStates))
   } else {
     savedLsStates <- saveAcasEntities(lsStates, paste0(acasServerEntity, "states"))
   }
@@ -657,7 +657,7 @@ saveValuesFromExplicitFormat <- function(entityData, entityKind, testMode=FALSE)
   
   if (testMode) {
     entityValues <- lapply(entityValues, function(x) {x$recordedDate <- 42; return (x)})
-    return(toJSON(entityValues))
+    return(rjson::toJSON(entityValues))
   } else {
     savedEntityValues <- saveAcasEntities(entityValues, paste0(acasServerEntity, "values"))
     return(savedEntityValues)
