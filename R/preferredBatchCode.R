@@ -50,7 +50,7 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
       preferredIdService,
       customrequest='POST',
       httpheader=c('Content-Type'='application/json'),
-      postfields=toJSON(requestIds))
+      postfields=rjson::toJSON(requestIds))
   }, error = function(e) {
     stopUser(paste("Error in contacting the preferred ID service:", e$message))
   })
@@ -58,7 +58,7 @@ getPreferredIdInternal <- function (batchIds, preferredIdService = NULL, testMod
     stopUser(paste0("Error in contacting the preferred ID service: ", response))
   } else {
     tryCatch({
-      response <- fromJSON(response)
+      response <- rjson::fromJSON(response)
     }, error = function(e) {
       stopUser(paste0("The loader was unable to parse the response it got from the preferred ID service: ", response))
     })
@@ -113,9 +113,9 @@ getPreferredId2 <- function (entityIds, displayName, testMode=FALSE, preferredId
     
     # Get the preferred ids from the server
     response <- list(error=FALSE)
-    response <- postURLcheckStatus(preferredIdService, toJSON(requestIds), requireJSON = TRUE)
+    response <- postURLcheckStatus(preferredIdService, rjson::toJSON(requestIds), requireJSON = TRUE)
     tryCatch({
-      response <- fromJSON(response)
+      response <- rjson::fromJSON(response)
     }, error = function(e) {
       stopUser(paste0("The loader was unable to parse the response it got from the preferred ID service: ", response))
     })
