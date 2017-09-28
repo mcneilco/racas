@@ -1245,6 +1245,31 @@ load_dose_response_test_data <- function(type = c("small.ll4","large.ll4", "expl
   return(experimentCode)
 }
 
+limitValueSizeForDB <- function(v, dbType = getDBType()) {
+  if(dbType == "Oracle") {
+    if(v >= 1e+125) {
+      v <- 99.99e+124
+    } else if (v <= 1e-125 && v > 0) {
+      v <- 1.0e-124
+    } else if (v >= -1e-125 && v < 0) {
+      v <- -1.0e-124
+    } else if (v <= -1e125) {
+      v <- -1.0e124
+    }
+  } else {
+    if(v >= 1e+20) {
+      v <- 9.999e+19
+    } else if (v <= 1e-20 && v > 0) {
+      v <- 9.999e-19
+    } else if (v >= -1e-20 && v < 0) {
+      v <- -9.999e-19
+    } else if (v <= -1e20) {
+      v <- -9.999e+19
+    }
+  }
+  return(v)
+}
+
 create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName, reportedParameters, fixedParameters, fittedParameters, goodnessOfFit.model, category, flag_algorithm, flag_user, batchCode, recordedBy, lsTransaction, doseUnits, responseUnits, analysisGroupCode, renderingHint, reportedValuesClob, fitSummaryClob, parameterStdErrorsClob, curveErrorsClob, simpleFitSettings, typeMap) {
   setkey(typeMap, "name")
   if(!is.null(fittedParameters)) {
@@ -1267,19 +1292,10 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   
   x <- c(publicAnalysisGroupValues,privateAnalysisGroupValues)   
   public <- c(rep(reportedParametersPublic, length(publicAnalysisGroupValues)), rep(FALSE, length(privateAnalysisGroupValues)))
+  dbType <- getDBType()
   values <- lapply(x, function(x) {
     if(class(x$value) %in% c("numeric","integer")) {
-      v <- x$value
-      if(v >= 1e+125) {
-        v <- 99.99e+124
-      } else if (v <= 1e-125 && v > 0) {
-        v <- 1.0e-124
-      } else if (v >= -1e-125 && v < 0) {
-        v <- -1.0e-124
-      } else if (v <= -1e125) {
-        v <- -1.0e124
-      }
-      x$value <- v
+      x$value <-limitValueSizeForDB(x$value, dbType)
       names(x)[names(x) == "value"] <- "numeric"
     } else {
       names(x)[names(x) == "value"] <- "character"
