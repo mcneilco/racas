@@ -2365,11 +2365,16 @@ getContainersByCodeNames <- function(containerCodes,  lsServerURL = racas::appli
   return(containers)
 }
 
-moveToLocation <- function(containerCodeLocationCodeDT,  callCustom = TRUE, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
+moveToLocation <- function(containerCodeLocationCodeDT,  callCustom = TRUE, updateLocationHistory = FALSE, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   if(callCustom) {
     queryString <- "callCustom=1"
   } else {
     queryString <- "callCustom=0"
+  }
+  if(updateLocationHistory) {
+    queryString <- paste0(queryString, "&callCustom=1")
+  } else {
+    queryString <- paste0(queryString, "&callCustom=0")
   }
   url <- paste0(lsServerURL, "/api/moveToLocation?",queryString)
   response <- postJSONURLWithTable(url, table=containerCodeLocationCodeDT, errorStatusCodes = 500)
