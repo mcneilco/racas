@@ -2372,9 +2372,9 @@ moveToLocation <- function(containerCodeLocationCodeDT,  callCustom = TRUE, upda
     queryString <- "callCustom=0"
   }
   if(updateLocationHistory) {
-    queryString <- paste0(queryString, "&callCustom=1")
+    queryString <- paste0(queryString, "&updateLocationHistory=1")
   } else {
-    queryString <- paste0(queryString, "&callCustom=0")
+    queryString <- paste0(queryString, "&updateLocationHistory=0")
   }
   url <- paste0(lsServerURL, "/api/moveToLocation?",queryString)
   response <- postJSONURLWithTable(url, table=containerCodeLocationCodeDT, errorStatusCodes = 500)
