@@ -186,6 +186,14 @@ cleanObjects <- function() {
   }))
   return(invisible(output))
 }
+checkMemoryLimitAndKillSelf <- function(applicationSettings = racas::applicationSettings) {
+  usage <- gc()
+  used.mb <- sum(usage[, 2])
+  if(!is.null(applicationSettings$server.rapache.child.memory.limit) && used.mb > applicationSettings$server.rapache.child.memory.limit) {
+    logger()$info(paste0("rapache child memory (",used.mb,"MB) reached limit (",applicationSettings$server.rapache.child.memory.limit,"MB). Killing self (pid ",Sys.getpid(),"), goodbye." ))
+    tools::pskill(Sys.getpid(), signal = tools::SIGUSR1)
+  }
+}
 cleanEnvironment <- function(applicationSettings = racas::applicationSettings) {
   cleanPackages(applicationSettings)
   cleanObjects()
