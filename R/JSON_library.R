@@ -15,12 +15,12 @@ getAutoLabelId <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind
     labelTypeAndKind=labelTypeAndKind,
     numberOfLabels=numberOfLabels
   )
-  cat(toJSON(labelSequenceDTO))
-  response <- fromJSON(getURL(
+  cat(rjson::toJSON(labelSequenceDTO))
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "labelsequences/getNextLabelSequences", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(labelSequenceDTO)))
+    postfields=rjson::toJSON(labelSequenceDTO)))
   return(response)
 }
 
@@ -33,8 +33,8 @@ getAutoLabels <- function(thingTypeAndKind="thingTypeAndKind", labelTypeAndKind=
     numberOfLabels=numberOfLabels
   )
   url <- paste0(lsServerURL, "labelsequences/getLabels")
-  response <- postURLcheckStatus(url, postfields=toJSON(labelSequenceDTO), requireJSON = TRUE)
-  response <- fromJSON(response)
+  response <- postURLcheckStatus(url, postfields=rjson::toJSON(labelSequenceDTO), requireJSON = TRUE)
+  response <- rjson::fromJSON(response)
   return(response)
 }
 
@@ -47,11 +47,11 @@ createThingKind <- function(thingType="thingType List Object", kindName="kindNam
     thingType=thingType,
     kindName=kindName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "thingkinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(thingKind)))
+    postfields=rjson::toJSON(thingKind)))
   return(response)
 }
 
@@ -62,11 +62,11 @@ createLabelKind <- function(labelType="labelType List Object", kindName="kindNam
     labelType=labelType,
     kindName=kindName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "labelkinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(labelKind)))
+    postfields=rjson::toJSON(labelKind)))
   return(response)
 }
 
@@ -75,11 +75,11 @@ createStateType <- function(typeName="typeName", lsServerURL = racas::applicatio
   stateType = list(
     typeName=typeName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "statetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(stateType)))
+    postfields=rjson::toJSON(stateType)))
   return(response)
 }
 
@@ -89,11 +89,11 @@ createStateKind <- function(stateType="stateType List Object", kindName="kindNam
     stateType=stateType,
     kindName=kindName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "statekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(stateKind)))
+    postfields=rjson::toJSON(stateKind)))
   return(response)
 }
 
@@ -102,11 +102,11 @@ createValueType <- function(typeName="typeName", lsServerURL = racas::applicatio
   valueType = list(
     typeName=typeName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "valuetypes", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(valueType)))
+    postfields=rjson::toJSON(valueType)))
   return(response)
 }
 
@@ -116,11 +116,11 @@ createValueKind <- function(valueType="valueType List Object", kindName="kindNam
     valueType=valueType,
     kindName=kindName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "valuekinds", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(valueKind)))
+    postfields=rjson::toJSON(valueKind)))
   return(response)
 }
 
@@ -130,11 +130,11 @@ createInteractionKind <- function(interactionType="interactionType List Object",
     interactionType=interactionType,
     kindName=kindName
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "interactionkinds/", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(interactionKind)))
+    postfields=rjson::toJSON(interactionKind)))
   return(response)
 }
 ##to create a new LsTransaction
@@ -143,20 +143,20 @@ createLsTransaction <- function(comments="", lsServerURL = racas::applicationSet
     comments=comments,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "lstransactions", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(newLsTransaction)))
+    postfields=rjson::toJSON(newLsTransaction)))
   return(response)
 }
 #to create a list of ls transactions
 createLsTransactions <- function(transactionList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "lstransactions/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(transactionList)))
+    postfields=rjson::toJSON(transactionList)))
   return(response)
 }
 
@@ -177,11 +177,11 @@ createThing <- function(thingType="thingType List Object", thingKind="thingKind 
     lsTransaction=lsTransaction,
     recordedDate=as.numeric(format(Sys.time(), "%s"))*1000
   )
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "lsthings", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(newThing)))
+    postfields=rjson::toJSON(newThing)))
   return(response)
 }
 
@@ -201,11 +201,11 @@ createThingLabel <- function(thing, labelText, author, lsType, lsKind, lsTransac
 }
 
 saveThingLabels <- function(thingLabels, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "thinglabels/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(thingLabels)))
+    postfields=rjson::toJSON(thingLabels)))
   return(response)
 }
 
@@ -375,11 +375,11 @@ createSubjectContainerInteractionState <- function(itxSubjectContainer=NULL, lsV
 }
 
 saveLsInteractions <- function(lsInteractions, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath){
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste(lsServerURL, "interactions/lsinteraction/jsonArray", sep=""),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
-    postfields=toJSON(lsInteractions)))
+    postfields=rjson::toJSON(lsInteractions)))
   return(response)
 }
 
@@ -892,10 +892,10 @@ saveProtocolLabel <- function(protocolLabel, lsServerURL = racas::applicationSet
 #' @rdname saveAcasEntities
 saveAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
-  message <- toJSON(entity)
+  message <- rjson::toJSON(entity)
   url <- paste0(lsServerURL, acasCategory, "/")
   response <- postURLcheckStatus(url, message, requireJSON = TRUE)
-  response <- fromJSON(response)
+  response <- rjson::fromJSON(response)
   return(response)
 }
 
@@ -925,7 +925,7 @@ saveAcasEntities <- function(entities, acasCategory, lsServerURL = racas::applic
 saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   # If you have trouble, make sure the acasCategory is all lowercase, has no spaces, and is plural
   
-  message <- toJSON(entities)
+  message <- rjson::toJSON(entities)
   url <- paste0(lsServerURL, acasCategory, "/jsonArray")
   response <- postURLcheckStatus(url, postfields=message, requireJSON = TRUE)
   
@@ -933,7 +933,7 @@ saveAcasEntitiesInternal <- function(entities, acasCategory, lsServerURL = racas
     return("")
   }
   
-  response <- fromJSON(response)
+  response <- rjson::fromJSON(response)
   return(response)
 }
 
@@ -1199,10 +1199,10 @@ getContainerByLabelText <- function(searchText, ignored=F, lsServerURL = racas::
   searchText <- unique(searchText)
   labelList <- lapply(searchText, function(x) {list(labelText=x)})
   url <- paste0(lsServerURL, "containers/findByLabels/jsonArray")
-  postfields <- toJSON(labelList)
+  postfields <- rjson::toJSON(labelList)
   response <- postURLcheckStatus(url, postfields = postfields, requireJSON = TRUE)
   tryCatch({
-    response <- fromJSON(response)
+    response <- rjson::fromJSON(response)
   }, error = function(e) {
     logName <- "com.acas.racas.getContainerByLabelText"
     logFileName <- "racas.log"
@@ -1411,7 +1411,7 @@ getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSet
                 URLencode(protocolName, reserved = TRUE))
   protocols <- getURLcheckStatus(url)
   tryCatch({
-    protocols <- fromJSON(protocols)
+    protocols <- rjson::fromJSON(protocols)
   }, error = function(e) {
     logName <- "com.acas.racas.getProtocolsByName"
     logFileName <- "racas.log"
@@ -1440,7 +1440,7 @@ getExperimentsByName <- function(experimentName, lsServerURL = racas::applicatio
                 URLencode(experimentName, reserved = TRUE))
   experiments <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
-    experiments <- fromJSON(experiments)
+    experiments <- rjson::fromJSON(experiments)
   }, error = function(e) {
     stopUserAndLogInvalidJSON(logName, logFileName, url, response)
   })
@@ -1486,7 +1486,7 @@ checkValueKinds <- function(neededValueKinds, neededValueKindTypes) {
 #' @param lsServerURL url for roo server
 getAllValueKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   valueKindsList <- getURLcheckStatus(paste0(lsServerURL, "valuekinds/"), requireJSON = TRUE)
-  return(fromJSON(valueKindsList))
+  return(rjson::fromJSON(valueKindsList))
 }
 #' valueTypes
 #'
@@ -1495,7 +1495,7 @@ getAllValueKinds <- function(lsServerURL = racas::applicationSettings$client.ser
 #' @param lsServerURL url for roo server
 getAllValueTypes <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   valueTypesList <- getURLcheckStatus(paste0(lsServerURL, "valuetypes/"), requireJSON = TRUE)
-  return(fromJSON(valueTypesList))
+  return(rjson::fromJSON(valueTypesList))
 }
 #' Saves value kinds
 #' 
@@ -1615,7 +1615,7 @@ flattenState <- function(lsState, includeFromState) {
 #' @rdname saveAcasEntities
 updateAcasEntity <- function(entity, acasCategory, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   url <- paste0(lsServerURL, acasCategory, "/")
-  putURLcheckStatus(url, toJSON(entity), requireJSON = TRUE)
+  putURLcheckStatus(url, rjson::toJSON(entity), requireJSON = TRUE)
 }
 
 #' Change container names
@@ -1910,7 +1910,7 @@ getEntityById <- function(id, entityKind, include="", errorEnv=NULL, lsServerURL
   }
   response <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
-    entity <- fromJSON(response)
+    entity <- rjson::fromJSON(response)
   }, error = function(e) {
     stopUserAndLogInvalidJSON(logName, logFileName, url, response)
   })
@@ -1929,7 +1929,7 @@ getEntityByCodeName <- function(codeName, entityKind, include="", errorEnv=NULL,
   url <- paste0(lsServerURL, entityKind, "/codename/", codeName, include)
   response <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
-    entity <- fromJSON(response)
+    entity <- rjson::fromJSON(response)
   }, error = function(e) {
     stopUserAndLogInvalidJSON(logName, logFileName, url, response)
   })
@@ -2086,7 +2086,7 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
 #' @export
 get_or_create_value_kinds <- function(df, persistence_full_path = racas::applicationSettings$client.service.persistence.fullpath) {
   valueTypeAndKindsJSON <- jsonlite::toJSON(df)
-  response <- fromJSON(getURL(
+  response <- rjson::fromJSON(getURL(
     paste0(persistence_full_path, "valuekinds/getOrCreate/jsonArray"),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
@@ -2188,7 +2188,7 @@ getDDictValuesByTypeKindFormat <- function(lsKind, lsType, format = "json", lsSe
 #' @param list (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))
 #' @return list of types
 getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  json <- toJSON(typesList)
+  json <- rjson::toJSON(typesList)
   url <- URLencode(paste0(lsServerURL, "setup/ddicttypes"))
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
@@ -2323,8 +2323,8 @@ updateWellContent <- function(containerCodeNameTable, callCustom = TRUE, lsServe
 
 getWellCodesByContainerCodes <- function(containerCodes, lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
-  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
-  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  wellCodes <- rjson::fromJSON(wellCodeJSON)
   wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
   return(wellCodes)
 }
@@ -2337,31 +2337,31 @@ getContainerCodesByLabels <- function(containerLabels, containerType = NA, conta
   if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
   queryString <- paste0(queryParams, collapse="&")
   url <- URLencode(paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString)))
-  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerLabels)))
-  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerLabels)))
+  wellCodes <- rjson::fromJSON(wellCodeJSON)
   wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, function(x) {if(length(x$foundCodeNames)==0) {x$foundCodeNames <-  NA_character_};as.data.table(x)}))
   return(wellCodes)
 }
 
 getWellCodesByContainerCodes <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/getWellCodesByContainerCodes')
-  wellCodeJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
-  wellCodes <- fromJSON(wellCodeJSON)
+  wellCodeJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  wellCodes <- rjson::fromJSON(wellCodeJSON)
   wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, as.data.table))
   return(wellCodes)
 }
 
 getDefinitionContainersByContainerCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/getDefinitionContainersByContainerCodeNames')
-  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
-  containers <- fromJSON(json)
+  json <- postJSONURL(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  containers <- rjson::fromJSON(json)
   return(containers)
 }
 
 getContainersByCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/getContainersByCodeNames')
-  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
-  containers <- fromJSON(json$body)
+  json <- postJSONURL(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  containers <- rjson::fromJSON(json$body)
   return(containers)
 }
 
@@ -2377,8 +2377,8 @@ moveToLocation <- function(containerCodeLocationCodeDT,  callCustom = TRUE, lsSe
 
 deleteContainers <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/deleteContainers')
-  deleteContainersJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerCodes)))
-  deleteContainersJSON <- fromJSON(deleteContainersJSON)
+  deleteContainersJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  deleteContainersJSON <- rjson::fromJSON(deleteContainersJSON)
   deleteContainersJSON <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(deleteContainersJSON, as.data.table))
   return(deleteContainersJSON)
 }
@@ -2401,7 +2401,7 @@ getWellContentByContainerLabels <- function(containerLabels, containerType = NA,
   if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
   queryString <- paste0(queryParams, collapse="&")
   url <- URLencode(paste0(lsServerURL, paste0('/api/getWellContentByContainerLabels?',queryString)))
-  wellContentJSON <- postURLcheckStatus(url,  postfields = toJSON(as.list(containerLabels)))
+  wellContentJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerLabels)))
   wellContent <- as.data.table(jsonlite::fromJSON(wellContentJSON))
   wellContentDT <- wellContent[ , as.data.table(wellContent[[1]]), by = c('containerCodeName', 'label')]
   return(wellContent)
@@ -2409,8 +2409,8 @@ getWellContentByContainerLabels <- function(containerLabels, containerType = NA,
 
 getContainerAndDefinitionContainerByContainerCodeNames <- function(containerCodes,  lsServerURL = racas::applicationSettings$server.nodeapi.path) {
   url <- paste0(lsServerURL, '/api/getContainerAndDefinitionContainerByContainerCodeNames')
-  json <- postJSONURL(url,  postfields = toJSON(as.list(containerCodes)))
-  containers <- fromJSON(json$body)
+  json <- postJSONURL(url,  postfields = rjson::toJSON(as.list(containerCodes)))
+  containers <- rjson::fromJSON(json$body)
   return(containers)
 }
 
