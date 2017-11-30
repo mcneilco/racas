@@ -352,7 +352,6 @@ api_doseResponse_refit <- function(POST, modelFit) {
   points <- data.table(POST$plotData$points)
   
   myMessenger$logger$debug("converting simple fit settings to advanced settings")
-  saveSession('/tmp/blahs')
   fitSettings <- simple_to_advanced_fit_settings(modelFit$default_fit_settings, POST$fitSettings, modelFit$simple_to_advanced_fittings_function, points)
   
   myMessenger$logger$debug("fitting the dose response model")
