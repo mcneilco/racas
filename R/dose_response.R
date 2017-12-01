@@ -190,6 +190,9 @@ simple_to_advanced_fit_settings <- function(defaultFitSettings, simpleSettings, 
   if(!is.null(simpleSettings$smartMode) && simpleSettings$smartMode) {
     if(!is.null(simpleSettings$inactiveThreshold) && simpleSettings$inactiveThresholdMode) {
       modifiedSettings$inactiveRule$value <- simpleSettings$inactiveThreshold    
+      if(!is.null(simpleSettings$baseline)) {
+        modifiedSettings$inactiveRule$baseline <- simpleSettings$baseline
+      }
     } else {
       modifiedSettings$inactiveRule <- list()    
     }
@@ -833,6 +836,11 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
   if(pointStats$dose.count < 2) return(list(inactive = FALSE, insufficientRange = FALSE, potent = FALSE))
   if(length(rule) > 0) {
     threshold <- rule$value
+    if(!is.null(rule$baseline) && !is.null(rule$baseline$value)) {
+      baseline <- rule$baseline$value
+    } else {
+      baseline <- 0
+    }
     mockControls <- ifelse(is.null(rule$mockControls), FALSE, rule$mockControls)
     if(mockControls) {
       response.empiricalMin <- pointStats$response.empiricalMin
@@ -843,10 +851,11 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
     numDoses <- nrow(means)
     #inverseAgonistMode = FALSE = inverse agonists are inactive
     if(!inverseAgonistMode) {
-      dosesAboveThreshold <- eval(parse(text = paste0('length(which(means$mean.response ',rule$operator,' threshold))')))
+      # Points must be greater than the baseline + the inactive threshold
+      dosesAboveThreshold <- eval(parse(text = paste0('length(which((means$mean.response-baseline)',rule$operator,' threshold))')))
       inverseAgonist <- coefficients(lm(dose ~ mean.response, means))[[2]] < 0
     } else {
-      dosesAboveThreshold <- eval(parse(text = paste0('length(which(abs(means$mean.response) ',rule$operator,' threshold))')))
+      dosesAboveThreshold <- eval(parse(text = paste0('length(which(abs(baseline-means$mean.response) ',rule$operator,' threshold))')))
     }
     potent <- dosesAboveThreshold == numDoses
     inactive <- (dosesAboveThreshold < rule$activeDoses) || ifelse(inverseAgonistMode, FALSE, inverseAgonist && !potent)
