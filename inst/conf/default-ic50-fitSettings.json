@@ -10,7 +10,10 @@
       "type":"threshold",
       "value":20,
       "activeDoses":2,
-      "operator":"<="
+      "operator":">=",
+      "baseline": {
+        "value":0
+      }
    },
    "biphasicRule":{
       "type":"parameter.percentage",
