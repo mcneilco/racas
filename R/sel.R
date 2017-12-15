@@ -174,11 +174,21 @@ createSELRawResults <- function(rawResults, curveIDColumn = "curve id", ls_kinds
 #' myFile <- tempfile()
 #' createSELFile(selExperimentMetaData, selCalculatedResults, outputFilePath = myFile)
 #' read.csv(myFile)
-createSELFile <- function(selExperimentMetaData, selCalculatedResults = NULL, selRawResults = NULL, outputFilePath = NULL, format = "CSV") {
+createSELFile <- function(selExperimentMetaData, selCalculatedResults = NULL, selRawResults = NULL, outputFilePath = NULL, format = "CSV", customExperimentMetaData = NULL) {
   #TODO  implement format other than CSV
   
   #Pivot the selExperimentMetaData
   metaData <- convertSELExperimentMetaDataToSEL(selExperimentMetaData)
+  
+  #Pivot the customExperimentMetaData if present
+  if(!is.null(customExperimentMetaData)) {
+    customMetaData <- convertSELExperimentMetaDataToSEL(customExperimentMetaData, header = "Custom Experiment Meta Data")
+    if(ncol(metaData) < ncol(customMetaData)) {
+      metaData <- cbind(metaData, list("Type"= ""), stringsAsFactors = FALSE)
+    }
+    metaData <- rbind(metaData, rep("", ncol(metaData)))
+    metaData <- rbind(metaData, customMetaData)
+  }
   
   #First determine how many columns are in this csv file
   ncolsOutput <- max(ncol(metaData),ncol(selCalculatedResults), ncol(selRawResults))
@@ -256,12 +266,16 @@ createSELFile <- function(selExperimentMetaData, selCalculatedResults = NULL, se
 #' convertSELExperimentMetaDataToSEL(experimentMetaData)
 #' 
 #' 
-convertSELExperimentMetaDataToSEL <- function(experimentMetaData) {
-  transposedExptMetaData <-   data.frame("V1" = t(experimentMetaData), check.names = FALSE)
-  selExperimentMetaDataSection <-   data.frame("Property" = c("Experiment Meta Data",row.names(transposedExptMetaData)) ,
+convertSELExperimentMetaDataToSEL <- function(experimentMetaData, header = "Experiment Meta Data") {
+  transposedExptMetaData <-   data.frame("V1" = t(experimentMetaData), check.names = FALSE, stringsAsFactors = FALSE)
+  selExperimentMetaDataSection <-   data.frame("Property" = c(header,row.names(transposedExptMetaData)) ,
                                                "Value" = c("",as.character(transposedExptMetaData[,1])), 
                                                check.names = FALSE,
                                                stringsAsFactors = FALSE)
+  if(ncol(transposedExptMetaData) > 1) {
+    selExperimentMetaDataSection$Type <- ""
+    selExperimentMetaDataSection[2:nrow(selExperimentMetaDataSection),]$"Type" <- as.character(transposedExptMetaData[,2])
+  }
   return(selExperimentMetaDataSection)
 }
 

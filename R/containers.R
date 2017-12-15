@@ -278,6 +278,7 @@ getBreadCrumbByContainerCode <- function(containerCodes, sep = ">") {
                                                                             AND container.ignored <> '1'", "<REPLACEME>", locationIds))
       
       if(nrow(movedToLocationLocation) > 0) {
+        setnames(movedToLocationLocation, toupper(names(movedToLocationLocation)))
         locationIds <- movedToLocationLocation$LOCATION_ID
         setkey(breadCrumbDT, lastLocationID)
         setkey(movedToLocationLocation, CONTAINER_ID)
