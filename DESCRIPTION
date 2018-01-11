@@ -30,7 +30,10 @@ Imports:
     utils,
     Hmisc,
     gplots,
-    methods
+    methods,
+    mailR,
+    pracma,
+    rmarkdown
 Suggests:
     RPostgreSQL
 Collate:
