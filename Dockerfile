@@ -1,4 +1,4 @@
-FROM mcneilco/centos-r-repo
+FROM mcneilco/centos-r-repo:mailr
 
 COPY	. /home/runner/racas
 
