@@ -45,19 +45,22 @@ Logger <- setRefClass(
 #' myLogger$debug("a debug statement")
 #' myLogger$info("a warn statement")
 #' 
-createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), logToConsole = FALSE, ...) {
+createLogger <- function(logName = "com.default.logger", logFileName = "racas.log", logDir = racas:::applicationSettings$server.log.path, logLevel = racas:::applicationSettings$server.log.level, envir = environment(), logToConsole = FALSE, forceAllToStdErrOnly = racas:::applicationSettings$server.rapache.forceAllToStdErrOnly, ...) {
   if(is.null(logLevel)) logLevel <- "INFO"
   logReset()
   logger <- getLogger(logName)
   setLevel(logLevel, logger)
-
-  if(is.null(logDir) || is.na(logDir)) {
-    logDir <-  getwd()
-  }
-  logPath <- paste0(logDir,"/",logFileName)
-  logger$addHandler(writeToFile, file=logPath, level = logLevel)
-  if(logToConsole) {
-    logger$addHandler("basic.stdout", writeToConsole, level = logLevel)
+  if(!forceAllToStdErrOnly) {
+    if(is.null(logDir) || is.na(logDir)) {
+      logDir <-  getwd()
+    }
+    logPath <- paste0(logDir,"/",logFileName)
+    logger$addHandler(writeToFile, file=logPath, level = logLevel)
+    if(logToConsole) {
+      logger$addHandler("basic.stdout", writeToConsole, level = logLevel)
+    }
+  } else {
+    logger$addHandler("basic.stderr", writeToStdErr, level = logLevel)
   }
   return(logger)
 }
@@ -118,3 +121,8 @@ logger <- function(racas = TRUE, reset = FALSE, envir = parent.frame(), ...) {
   return()
 }
 
+writeToStdErr <- function(msg, handler, ...) {
+  if(length(list(...)) && 'dry' %in% names(list(...)))
+    return(TRUE)
+  cat(paste(msg, '\n', sep=''), file = stderr())
+}
