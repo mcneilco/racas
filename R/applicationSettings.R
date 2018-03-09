@@ -57,7 +57,7 @@ readConfigFile <- function(configLocation, ...) {
   l <- lapply(l, sub, pattern = "=", replacement = replacement)
   t <- tempfile()
   writeLines(unlist(l), t)
-  applicationSettings <- utils::read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "")
+  applicationSettings <- utils::read.table(t, header=FALSE, sep=replacement, row.names=1, strip.white=TRUE, na.strings="NA", stringsAsFactors=FALSE, quote = "", comment.char="")
   unlink(t)
   applicationSettings <- as.data.frame(t(applicationSettings), stringsAsFactors=FALSE)
   
