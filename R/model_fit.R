@@ -42,3 +42,7 @@ kifit <- ModelFit$new()
 mm2 <- ModelFit$new()
 
 substrateInhibition <- ModelFit$new()
+
+scatter <- ModelFit$new()
+
+

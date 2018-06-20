@@ -597,7 +597,11 @@ get_model_fit_from_type_code <- function(modelFitTypeCode = NULL) {
   } else {
     source <- modelFitClasses[code==modelFitTypeCode]$RSource
   }
-  source(file.path(applicationSettings$appHome,source), local = TRUE)
+  if(!is.na(source)) {
+    source(file.path(applicationSettings$appHome,source), local = TRUE) 
+  } else {
+    modelFit <- NA
+  }
   return(modelFit)
 }
 get_model_fit_classes <- function() {
