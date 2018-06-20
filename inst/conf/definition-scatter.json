@@ -1,0 +1,95 @@
+{
+  "entryPoint": {
+    "analysis_group": "ag",
+    "analysis_group_state": "ags1",
+    "analysis_group_value": "curveId",
+    "field": "string_value"
+  },
+  "analysis_group": [
+    {
+      "name": "ag",
+      "where": {
+        "ignored": false
+      },
+      "select": [
+        {
+          "name": "analysisGroupCode",
+          "field": "code_name"
+        },
+        {
+          "name": "analysisGroupId",
+          "field": "id"
+        }
+      ],
+      "analysis_group_state": [
+        {
+          "name": "ags1",
+          "ls_type": "data",
+          "ls_kind": "dose response",
+          "where": {
+            "ignored": false
+          },
+          "select": [
+            {
+              "name": "analysisStateId_1",
+              "field": "id"
+            }
+          ],
+          "analysis_group_value": [
+            {
+              "name": "curveId",
+              "ls_kind": "curve id",
+              "select": [
+                {
+                  "name": "curveId",
+                  "field": "string_value"
+                },
+                {
+                  "name": "recordedBy",
+                  "field": "recorded_by"
+                },
+                {
+                  "name": "recordedDate",
+                  "field": "recorded_date"
+                },
+                {
+                  "name": "lsTransaction",
+                  "field": "ls_transaction"
+                }
+              ]
+            },
+            {
+              "name": "curveName",
+              "ls_kind": "curve name",
+              "select": [
+                {
+                  "name": "curveName",
+                  "field": "string_value"
+                }
+              ]
+            },
+            {
+              "name": "renderingHint",
+              "ls_kind": "Rendering Hint",
+              "select": [
+                {
+                  "name": "renderingHint",
+                  "field": "string_value"
+                }
+              ]
+            },
+           {
+              "name": "batchCode",
+              "ls_kind": "batch code",
+              "select": [
+                {
+                  "name": "batchCode",
+                  "field": "code_value"
+                }
+              ]
+            }
+          ]
+        }      ]
+    }
+  ]
+}

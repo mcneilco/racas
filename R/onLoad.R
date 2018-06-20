@@ -150,7 +150,7 @@
   
   definition <- read_json_file(system.file("conf", "definition-mm2.json", package = "racas"))
   queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
-  kifit <- ModelFit$new(drc_function = drc::MM.2, 
+  mm2 <- ModelFit$new(drc_function = drc::MM.2, 
                         paramNames = c("vmax", "km"), 
                         categorization_function = categorize.MM2, 
                         get_reported_parameters = get_reported_parameters.MM2,
@@ -166,7 +166,16 @@
                         raw_results_persistence_path = 'curvefit/rawdata',
                         typeMap = queriesAndTypeMap$typeMap
   )
-  assignInNamespace("mm2",kifit, ns="racas")
+  assignInNamespace("mm2",mm2, ns="racas")
+ 
+  definition <- read_json_file(system.file("conf", "definition-scatter.json", package = "racas"))
+  queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
+  scatter <- ModelFit$new(curveid_query = queriesAndTypeMap$curveSQL,
+                        experiment_query = queriesAndTypeMap$experimentSQL,
+                        raw_results_persistence_path = 'curvefit/rawdata',
+                        typeMap = queriesAndTypeMap$typeMap
+  )
+  assignInNamespace("scatter",scatter, ns="racas")
   
   definition <- read_json_file(system.file("conf", "definition-substrateInhibition.json", package = "racas"))
   queriesAndTypeMap <- entityDefinitionToQueriesAndTypeMap(definition, dbType)
