@@ -687,7 +687,7 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                                if(exists('renderingOptions')) {
                                  renderingOptions
                                } else {
-                                 stop("no rendering hint options found")
+                                 list(fct = NA, paramNames = NA, drawIntercept = NA)
                                }
                              }
   )
