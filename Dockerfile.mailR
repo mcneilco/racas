@@ -1,0 +1,4 @@
+FROM mcneilco/centos-r-repo
+
+RUN export R_LIBS=/home/runner/build/r_libs && \
+    Rscript -e 'options(download.file.method = "wget");install.packages(c("rmarkdown","pracma","mailR","XLConnect","XLConnectJars"), repos = "https://cran.microsoft.com/snapshot/2016-12-25")'
