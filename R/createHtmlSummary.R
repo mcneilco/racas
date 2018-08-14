@@ -41,7 +41,7 @@ createHtmlSummary <- function(hasError,errorList,hasWarning,warningList,summaryI
   emailViewerLink <- paste0(ifelse(useSSL, "https://", "http://"), applicationSettings$client.host, ":", applicationSettings$client.port, summaryInfo$viewerLink)
   if(!is.null(summaryInfo$viewerLink)) {
     htmlOutputFormat <- paste0(htmlOutputFormat,"<%=paste0('<a href=\"', summaryInfo$viewerLink, '\" target=\"_blank\" class=\"btn\">Open ", racas::applicationSettings$client.service.result.viewer.displayName, " Report*</a>
-<a href=\"mailto:?subject=", racas::applicationSettings$client.service.result.viewer.displayName, " Live Report for ', summaryInfo$info$\"Protocol\", ': ', summaryInfo$info$\"Experiment\" , '&body=Click the following link to run Live Report: ', URLencode(emailViewerLink, reserved = TRUE), '\" class=\"btn\">Email Link to ", racas::applicationSettings$client.service.result.viewer.displayName, " Report</a>
+<a href=\"mailto:?subject=", racas::applicationSettings$client.service.result.viewer.displayName, " Live Report for ', summaryInfo$info[racas::applicationSettings$client.protocol.label], ': ', summaryInfo$info[racas::applicationSettings$client.experiment.label] , '&body=Click the following link to run Live Report: ', URLencode(emailViewerLink, reserved = TRUE), '\" class=\"btn\">Email Link to ", racas::applicationSettings$client.service.result.viewer.displayName, " Report</a>
 <p>*Note: there may be a delay before data is visible in ", racas::applicationSettings$client.service.result.viewer.displayName, "</p>')%>")
   }
   

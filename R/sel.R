@@ -31,6 +31,8 @@ createSELExperimentMetaData <- function(format = "Generic", protocolName = "", e
                                    check.names=FALSE,
                                    stringsAsFactors = FALSE
   )
+  names(experimentMetaData)[names(experimentMetaData) == "Protocol Name"] <- paste0(racas::applicationSettings$client.protocol.label," Name")
+  names(experimentMetaData)[names(experimentMetaData) == "Experiment Name"] <- paste0(racas::applicationSettings$client.experiment.label," Name")
   return(experimentMetaData)
 }
 #' Creates a data.frame that contains the elements of the Calculated Results section of SEL

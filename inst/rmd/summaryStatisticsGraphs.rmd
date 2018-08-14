@@ -73,8 +73,8 @@ if (is.null(weeklyStatisticsDat) | nrow(weeklyStatisticsDat) == 1) {
 } else {
   plot3 <- ggplot(weeklyStatisticsDat, aes(date, cumsum)) 
   plot3 <- plot3 + geom_step(colour = "blue", size = rel(1.3))
-  plot3 <- plot3 + labs(title = "Protocol Creation", x = NULL, 
-                        y = "Number of Protocols\nRecorded to Date")
+  plot3 <- plot3 + labs(title = paste0(racas::applicationSettings$client.protocol.label," Creation"), x = NULL, 
+                        y = paste0("Number of ",racas::applicationSettings$client.protocol.label,"s\nRecorded to Date"))
   plot3 <- plot3 + theme(axis.title = element_text(size = rel(1.3)), 
                          plot.title = element_text(size = rel(2)),
                          axis.text = element_text(size = rel(1.1)))

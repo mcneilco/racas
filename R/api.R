@@ -11,13 +11,13 @@
 #' api_createProtocol(c("Brian Test Protocol2"), shortDescription = "Test Protocol", recordedBy = "bbolt")
 api_createProtocol <- function(protocolName, shortDescription, recordedBy, stopOnAnyExist = TRUE) {
   if(is.null(protocolName)){
-    stopUser("Protocol names cannot be null")
+    stopUser(paste0(racas::applicationSettings$client.protocol.label," names cannot be null"))
   }
   if(any(unlist(lapply(protocolName, function(x) x=="")))) {
-    stopUser("Protocol names cannot equal \"\"")
+    stopUser(paste0(racas::applicationSettings$client.protocol.label," names cannot equal \"\""))
   }
   if(any(duplicated(protocolName))) {
-    stopUser("Protocol names must be unique")
+    stopUser(paste0(racas::applicationSettings$client.protocol.label," names must be unique"))
   }
   if(is.null(recordedBy)){
     stopUser("Recorded by cannot be null")
@@ -30,7 +30,7 @@ api_createProtocol <- function(protocolName, shortDescription, recordedBy, stopO
   
   if(stopOnAnyExist) {
     if(any(unlist(protocolExistence))) {
-      stopUser(paste0("Protocols already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '")),"'")
+      stopUser(paste0(racas::applicationSettings$client.protocol.label,"s already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '")),"'")
     }
   }
   #Remove protocols that already exist
