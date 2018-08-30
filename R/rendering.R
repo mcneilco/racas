@@ -337,14 +337,28 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, ...) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
     drawCurve <- FALSE
     drawIntercept <- NA
   }
+  if(is.null(curveLwd) || is.na(curveLwd)) {
+    curveLwd <- 1
+    if(!is.null(racas::applicationSettings$server.curveRender.curveLwd) && racas::applicationSettings$server.curveRender.curveLwd != "") {
+      curveLwd <- racas::applicationSettings$server.curveRender.curveLwd
+    }
+  }
+  curveLwd <- as.numeric(curveLwd)
   
+  # Determine if overlay
+  overlay <- FALSE
+  if(nrow(params) > 1) {
+    overlay <- TRUE
+  }
+  drawPoints <- !overlay || racas::applicationSettings$server.curveRender.plotPointsOnOverlay
+    
   #Yay Pythagoras
   defaultDiagonal <- sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
   scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
@@ -358,13 +372,28 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
           function(x) 
             rgb(x[1], x[2], x[3], alpha=alpha))  
   }
-  plotColors <- rep(c("black","red","orange", "blue", "green","purple", "cyan"),100, replace = TRUE)  
-  if(nrow(params) > 1 && !is.na(mostRecentCurveColor) && "recordedDate" %in% names(params)) {
+  if(is.null(plotColors) | length(plotColors) == 0) {
+    plotColors <- "black"
+    if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
+      plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
+    }
+  }
+
+  if(is.na(mostRecentCurveColor)) {
+    if(!is.null(racas::applicationSettings$server.curveRender.mostRecentCurveColor) && racas::applicationSettings$server.curveRender.mostRecentCurveColor != "") {
+      mostRecentCurveColor <- trimws(racas::applicationSettings$server.curveRender.mostRecentCurveColor)
+    }
+  }
+  
+  if("recordedDate" %in% names(params)) {
     params <- params[order(params$recordedDate, decreasing = TRUE),]
+  }
+  if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
     params$color <- mostRecentCurveColor
-    params[2:nrow(params), ]$color <- plotColors[1]
+    params[2:nrow(params), ]$color <- rep_len(plotColors,nrow(params)-1)
   } else {
-    params$color <- plotColors[1:nrow(params)]
+    params$color <- rep_len(plotColors,nrow(params))
+#     params$color <- grDevices::cm.colors(nrow(params), alpha = 1)
   }
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
@@ -380,32 +409,23 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   
   #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
   #If the function can't 
-  if(modZero) {
+  if(modZero && drawPoints) {
     curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   }
   
-  #Determine axes ranges
-  plot_limits <- get_plot_window(curveData, logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
-  xrn <- plot_limits[c(1,3)]
-  yrn <- plot_limits[c(4,2)]
-  if(is.na(curveXrn[1])) {
-    curveXrn[1] <- xrn[1]
-  }
-  if(length(curveXrn) == 1 | is.na(curveXrn[2])) {
-    curveXrn[2] <- xrn[2]
-  }
-  
-  if(!drawPointsForRejectedCurve) {
+  if(!drawPointsForRejectedCurve && drawPoints) {
     rejectedCurveIds <-  params$curveId[params$userFlagStatus == "rejected" && params$algorithmFlagStatus != "no fit"]
     curveData <- subset(curveData, !curveId %in% rejectedCurveIds)
   }
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
-  flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
-  goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
-  
+  if(drawPoints) {
+    flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
+    goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
+  }
+
   ##Calculate Means and SDs
-  if(nrow(goodPoints) > 0) {
+  if(drawPoints && nrow(goodPoints) > 0) {
     sds <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveId=goodPoints$curveId, color = goodPoints$color), sd)
     names(sds)[ncol(sds)] <- "sd"
     means <- aggregate(goodPoints$response,list(dose=goodPoints$dose,curveId=goodPoints$curveId, color = goodPoints$color), mean)
@@ -451,64 +471,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     par(mar = margins)
     #Determine which axes will require log scale plotting
     plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
-    #First Plot Good Points so we that can see the flagged points if they are overlayed
-    plotPoints <- function(yrn, pts, ...) {
-      if(!plotMeans) {
-        #TODO: what if plotMeans but also plotPoints? deal with that later
-        plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
-      } else {
-        plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
-      }
-      if(drawStdDevs) {
-        plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
-      }
-    }
-    #Draw Legend if specified
-    if(nrow(goodPoints) > 0) {
-      plotPoints(yrn = yrn, goodPoints)
-    } else {
-      flaggedPoints$pch <- 4
-      plotPoints(yrn = yrn, flaggedPoints)
-    }
-    if(showLegend) {
-      #par(xpd=TRUE) # allows legends to be printed outside plot area
-      #legendYPosition <- 10 ^ par("usr")[2]
-      #legendXPosition <- par("usr")[4]
-      if(is.null(params$name)) {
-        legendText <- params$curveId
-      } else {
-        legendText <- params$name
-      }
-      legendTextColor <- params$color
-      legendPCH <- params$pch
-      legendLineWidth <- 1
-      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
-      if(nrow(goodPoints) > 0) {
-        plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
-      } else {
-        plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
-      }
-      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
-    }
-    if(connectPoints && exists("means")) {
-      cids <- unique(means$curveId)
-      for(c in 1:length(cids)) {
-        cid <- cids[c]
-        lineData <- subset(means, means$curveId == cid)
-        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
-      }
-    }
     
-    #If grid, then add grid
-    if(showGrid) {
-      grid(lwd = 1.7*scaleFactor)
-    }
-    #Now Plot Flagged Points
-    if(nrow(goodPoints) > 0) {
-      points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
-    }
-    #Draw Error Bars and Means
-    #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
     getDrawValues <- function(params) {
       reportedValueColumns <- match(paramNames, names(params))
       reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
@@ -534,23 +497,114 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
       return(tmp)
     }
+    
+    #Determine axes ranges
+    plot_limits <- get_plot_window(curveData, logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
+    xrn <- plot_limits[c(1,3)]
+    yrn <- plot_limits[c(4,2)]
+    if(is.na(curveXrn[1])) {
+      curveXrn[1] <- xrn[1]
+    }
+    if(length(curveXrn) == 1 | is.na(curveXrn[2])) {
+      curveXrn[2] <- xrn[2]
+    }
+    
     #Curve Drawing Function
-    drawCurveID <- function(cid) {
+    extractCurveData <- function(cid) {
       flagged <- any(params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit")
+      curveID <- params$curveId[cid]
+      curveParams <- subset(params, params$curveId == curveID)
+      color <- curveParams$color
+      curveData <- NULL
       if(drawFlagged == FALSE && !flagged) {
         drawValues <- getDrawValues(params = params[cid,])
-        curveID <- params$curveId[cid]
-        curveParams <- subset(params, params$curveId == curveID)
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
         }
         fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
-        curve(fct, from = curveXrn[1], to = curveXrn[2], add = TRUE, col = curveParams$color, lwd = 1*scaleFactor)  
+        curveData <- getCurveRangeData(fct, from = curveXrn[1], to = curveXrn[2], log = plotLog)
+      }
+      return(list(curveID=curveID, curveData=curveData, color=color))
+    }
+    
+    # getCurveData 
+    curveData <- lapply(1:length(params$curveId), extractCurveData)
+    curveDataDT <- rbindlist(Map(function(x) x$curveData, curveData))
+    
+    #Determine axes ranges
+    if(!drawPoints && nrow(curveDataDT) > 0) {
+      curveDataDT <- setnames(curveDataDT, c('dose','response'))
+      plot_limits <- get_plot_window(as.data.frame(curveDataDT), logDose = logDose, logResponse = logResponse, ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax)
+    }
+    xrn <- plot_limits[c(1,3)]
+    yrn <- plot_limits[c(4,2)]
+
+    
+    #First Plot Good Points so we that can see the flagged points if they are overlayed
+    plotPoints <- function(yrn, pts, ...) {
+      if(!plotMeans) {
+        #TODO: what if plotMeans but also plotPoints? deal with that later
+        plot(pts$dose, pts$response, log = plotLog, col = pts$color, pch = pts$pch, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
+      } else {
+        plot(means$dose, means$mean, log = plotLog, col = means$color, xlim = xrn, ylim = yrn, xaxt = "n", family = "sans", axes = FALSE, ylab = "", xlab = "", cex = 1*scaleFactor, ...)
+      }
+      if(drawStdDevs) {
+        plotCI(x=pts$dose,y=pts$response, uiw=pts$standardDeviation, col = pts$color, add=TRUE,err="y",pch=NA)
       }
     }
+
+    #Draw Legend if specified
+    if(drawPoints && nrow(goodPoints) > 0) {
+      plotPoints(yrn = yrn, goodPoints)
+    } else {
+      plot.new()
+      plot.window(xrn,yrn, log = plotLog)
+    }
+    if(showLegend) {
+      #par(xpd=TRUE) # allows legends to be printed outside plot area
+      #legendYPosition <- 10 ^ par("usr")[2]
+      #legendXPosition <- par("usr")[4]
+      if(is.null(params$name)) {
+        legendText <- params$curveId
+      } else {
+        legendText <- params$name
+      }
+      legendTextColor <- params$color
+      legendPCH <- params$pch
+      legendLineWidth <- 1
+      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+      if(drawPoints) {
+        if(nrow(goodPoints) > 0) {
+          plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
+        } else {
+          plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
+        }
+      }
+      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+    }
+    if(drawPoints && connectPoints && exists("means")) {
+      cids <- unique(means$curveId)
+      for(c in 1:length(cids)) {
+        cid <- cids[c]
+        lineData <- subset(means, means$curveId == cid)
+        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
+      }
+    }
+    
+    #If grid, then add grid
+    if(showGrid) {
+      grid(lwd = 1.7*scaleFactor)
+    }
+    #Now Plot Flagged Points
+    if(drawPoints && nrow(flaggedPoints) > 0) {
+      points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
+    }
+    #Draw Error Bars and Means
+    #plotCI(x=means$dose,y=means$MEAN,uiw=sds$SD,add=TRUE,err="y",pch="-")
+
     #Actually Draw Curves
     if(drawCurve) {
-      null <- lapply(1:length(params$curveId),drawCurveID)
+      null <- lapply(curveData,function(x) lines(x = x$curveData$x, y = x$curveData$y, type = "l", col = x$color, lwd = curveLwd*scaleFactor))
     }
     ##DO axes and Grid
     box()
@@ -786,6 +840,73 @@ parse_params_curve_render_dr <- function(getParams = GET) {
       curveIds <- curveIdsStrings
     }
   }
-  
-  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds, axes = axes))
+  if(is.null(getParams$plotColors)) {
+    plotColors <-  c()
+  } else {
+    plotColors <- getParams$plotColors
+    plotColors <- strsplit(plotColors,",")[[1]]
+  }
+  if(is.null(getParams$mostRecentCurveColor)) {
+    mostRecentCurveColor <- NA
+  } else {
+    mostRecentCurveColor <- getParams$mostRecentCurveColor
+  }
+  if(is.null(getParams$curveLwd)) {
+    curveLwd <- NA
+  } else {
+    curveLwd <- getParams$curveLwd
+  }
+  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds, axes = axes, mostRecentCurveColor = mostRecentCurveColor, plotColors = plotColors, curveLwd=curveLwd))
+}
+
+
+getCurveRangeData <- function (expr, from = NULL, to = NULL, n = 101, type = "l", xname = "x", log = NULL, xlim = NULL) {
+  sexpr <- substitute(expr)
+  if (is.name(sexpr)) {
+    expr <- call(as.character(sexpr), as.name(xname))
+  }
+  else {
+    if (!((is.call(sexpr) || is.expression(sexpr)) && xname %in% 
+          all.vars(sexpr))) 
+      stop(gettextf("'expr' must be a function, or a call or an expression containing '%s'", 
+                    xname), domain = NA)
+    expr <- sexpr
+  }
+
+  if (is.null(from) || is.null(to)) {
+    xl <- if (!is.null(xlim)) 
+      xlim
+    else if (!addF) {
+      pu <- par("usr")[1L:2L]
+      if (par("xaxs") == "r") 
+        pu <- extendrange(pu, f = -1/27)
+      if (par("xlog")) 
+        10^pu
+      else pu
+    }
+    else c(0, 1)
+    if (is.null(from)) 
+      from <- xl[1L]
+    if (is.null(to)) 
+      to <- xl[2L]
+  }
+  lg <- if (length(log)) 
+    log
+  else if (!addF && par("xlog")) 
+    "x"
+  else ""
+  if (length(lg) == 0) 
+    lg <- ""
+  if (grepl("x", lg, fixed = TRUE)) {
+    if (from <= 0 || to <= 0) 
+      stop("'from' and 'to' must be > 0 with log=\"x\"")
+    x <- exp(seq.int(log(from), log(to), length.out = n))
+  }
+  else x <- seq.int(from, to, length.out = n)
+  ll <- list(x = x)
+  names(ll) <- xname
+  y <- eval(expr, envir = ll, enclos = parent.frame())
+  if (length(y) != length(x)) 
+    stop("'expr' did not evaluate to an object of length 'n'")
+  invisible(list(x = x, y = y))
 }
