@@ -135,3 +135,31 @@ parse_command_line_args <- function(args) {
   names(options.args) <- unlist(options.names)
   return(options.args)  
 }
+
+combine.lists <- function(list1, list2) {
+  
+  list1.names <- names(list1)
+  list2.names <- names(list2)
+  
+  new.list <- list1
+  
+  
+  tmp <- match(list2.names, list1.names)
+  w <- which(!is.na(tmp))
+  
+  if (length(w) > 0)
+  {
+    # take values from list2 in matching dimension names
+    tmp <- tmp[!is.na(tmp)]
+    new.list[[tmp]] <- list2[[w]]
+    
+    # append elements of 'list2' with unmatched names
+    new.list <- c(new.list, list2[-w])
+  }
+  else
+  {
+    new.list <- c(new.list, list2)
+  }
+  
+  new.list
+} 
