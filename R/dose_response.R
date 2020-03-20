@@ -2953,3 +2953,49 @@ get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_obje
   return(fitData)
 }
 
+get_curve_data <- function(curveids, raw_data = FALSE, ...) {
+  qu <- "SELECT e.code_name as experiment_code_name, el.label_text as experiment_label, e.recorded_date as experiment_recorded_date, ag.id as analysis_group_id, agv.string_value as curve_id, batch.code_value as batch_code, rendering_hint.string_value as rendering_hint
+  FROM experiment e
+  JOIN experiment_label el
+  ON e.id = el.experiment_id
+  JOIN experiment_analysisgroup eag
+  ON e.id=eag.experiment_id
+  JOIN analysis_group ag
+  ON eag.analysis_group_id=ag.id
+  JOIN analysis_group_state ags
+  ON ag.id=ags.analysis_group_id
+  JOIN analysis_group_value agv
+  ON ags.id=agv.analysis_state_id
+  JOIN analysis_group_value batch
+  ON ags.id=batch.analysis_state_id
+  JOIN analysis_group_value rendering_hint
+  ON ags.id=rendering_hint.analysis_state_id
+  WHERE e.ignored = '0'
+  AND el.ignored = '0'
+  AND el.ls_type = 'name'
+  AND el.ls_kind = 'experiment name'
+  AND agv.ls_type       = 'stringValue'
+  AND agv.ls_kind         = 'curve id'
+  AND batch.ls_type       = 'codeValue'
+  AND batch.ls_kind         = 'batch code'
+  AND batch.ignored = '0'
+  AND rendering_hint.ls_type       = 'stringValue'
+  AND rendering_hint.ls_kind         = 'Rendering Hint'
+  AND rendering_hint.ignored = '0'
+  AND agv.ignored = '0'
+  AND ags.ignored = '0'
+  AND ags.ignored = '0'
+  AND ags.ls_type = 'data'
+  AND ags.ls_kind = 'dose response'
+  AND agv.string_value in (REPLACEME)"
+  fitData <- rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...))
+  
+  if(raw_data) {
+    parameters <- fitData[ , get_fit_data_curve_id(curve_id, ...), by = rendering_hint]
+    setkey(parameters, "curveId")
+    setkey(fitData, "curve_id")
+    fitData <- parameters[fitData]
+  }
+  
+  return(fitData)
+}
