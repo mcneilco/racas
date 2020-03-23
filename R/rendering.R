@@ -587,7 +587,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       for(c in 1:length(cids)) {
         cid <- cids[c]
         lineData <- subset(means, means$curveId == cid)
-        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted')
+        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted', lwd = 1.2*scaleFactor)
       }
     }
     
@@ -745,6 +745,13 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                                }
                              }
   )
+  
+  modelFitClasses <- jsonlite::fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes)
+  modelClass <- modelFitClasses[modelFitClasses$code == renderingHint,]
+  if("renderOptions" %in% names(modelClass)) {
+    renderingHintConfigs <- as.list(modelClass$renderOptions)
+    renderingOptions <- combine.lists(renderingOptions, renderingHintConfigs)
+  }
   return(renderingOptions)
 }
 
