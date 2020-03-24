@@ -379,7 +379,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   }
   if(is.null(plotColors) | length(plotColors) == 0) {
     plotColors <- "black"
-    if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
+    if(!is.null(racas::applicationSettings$server.curveRender.plotColors) && racas::applicationSettings$server.curveRender.usePlotColorsByDefault) {
       plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
     }
   }
@@ -679,8 +679,8 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
     }
     if(labelAxes) {
-      xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Concentration',as.character(curveData$doseKind[1])), " (",as.character(curveData$doseUnits[1]),")")
-      ylabel <- paste0(as.character(curveData$responseKind[1]), ifelse(is.na(as.character(curveData$responseUnits[1])) || as.character(curveData$responseUnits[1]) == "", "",paste0(" (",as.character(curveData$responseUnits[1]),")")))
+      xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Dose',as.character(curveData$doseKind[1])), ifelse(is.null(curveData$doseUnits[1]) || is.na(curveData$doseUnits[1]),'',paste0(" (",as.character(curveData$doseUnits[1]),")")))
+      ylabel <- paste0(ifelse(is.null(curveData$responseKind[1]) || is.na(curveData$responseKind[1]),'Response',as.character(curveData$responseKind[1])), ifelse(is.null(curveData$responseUnits[1]) || is.na(curveData$responseUnits[1]),'',paste0(" (",as.character(curveData$responseUnits[1]),")")))
       title(xlab = xlabel, ylab = ylabel)
     }
   }, error = plotError)
