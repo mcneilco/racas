@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, ...) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
@@ -357,8 +357,13 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if(nrow(params) > 1) {
     overlay <- TRUE
   }
-  drawPoints <- !overlay || racas::applicationSettings$server.curveRender.plotPointsOnOverlay
-    
+  drawPoints <- TRUE
+  if(!is.null(plotPoints) && !is.na(plotPoints) ) {
+    drawPoints <- plotPoints
+  } else {
+    drawPoints <- !overlay || racas::applicationSettings$server.curveRender.plotPointsOnOverlay
+  }
+
   #Yay Pythagoras
   defaultDiagonal <- sqrt(formals(plotCurve)$height^2+formals(plotCurve)$width^2)
   scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
@@ -388,12 +393,14 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
   if("recordedDate" %in% names(params)) {
     params <- params[order(params$recordedDate, decreasing = TRUE),]
   }
-  if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
-    params$color <- mostRecentCurveColor
-    params[2:nrow(params), ]$color <- rep_len(plotColors,nrow(params)-1)
-  } else {
-    params$color <- rep_len(plotColors,nrow(params))
-#     params$color <- grDevices::cm.colors(nrow(params), alpha = 1)
+  if(!"color" %in% names(params)) {
+    if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
+      params$color <- mostRecentCurveColor
+      params[2:nrow(params), ]$color <- rep_len(plotColors,nrow(params)-1)
+    } else {
+      params$color <- rep_len(plotColors,nrow(params))
+  #     params$color <- grDevices::cm.colors(nrow(params), alpha = 1)
+    }
   }
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
@@ -560,19 +567,22 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       plot.new()
       plot.window(xrn,yrn, log = plotLog)
     }
+
     if(showLegend) {
       #par(xpd=TRUE) # allows legends to be printed outside plot area
       #legendYPosition <- 10 ^ par("usr")[2]
       #legendXPosition <- par("usr")[4]
+      legendDF <- data.frame(color = params$color, stringsAsFactors = FALSE)
       if(is.null(params$name)) {
-        legendText <- params$curveId
+        legendDF$text <- params$curveId
       } else {
-        legendText <- params$name
+        legendDF$text <- params$name
       }
-      legendTextColor <- params$color
+      legendDF <- unique(legendDF)
       legendPCH <- params$pch
+      
       legendLineWidth <- 1
-      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+      leg <- legend("topright",legend = legendDF$text, col = legendDF$color, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
       if(drawPoints) {
         if(nrow(goodPoints) > 0) {
           plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), goodPoints)
@@ -580,7 +590,11 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
           plotPoints(yrn = c(yrn[1], yrn[2] + leg$rect$h), flaggedPoints)
         }
       }
-      leg <- legend("topright",legend = legendText, col = legendTextColor, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+      leg <- legend("topright",legend = legendDF$text, col = legendDF$color, lty = legendLineWidth, pch = legendPCH, cex=0.7*scaleFactor, box.lwd = 0)
+    }
+    #If grid, then add grid
+    if(showGrid) {
+      grid(lwd = 1.7*scaleFactor)
     }
     if(drawPoints && connectPoints && exists("means")) {
       cids <- unique(means$curveId)
@@ -591,10 +605,6 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
     }
     
-    #If grid, then add grid
-    if(showGrid) {
-      grid(lwd = 1.7*scaleFactor)
-    }
     #Now Plot Flagged Points
     if(drawPoints && nrow(flaggedPoints) > 0) {
       points(x = flaggedPoints$dose, y = flaggedPoints$response, col = flaggedPoints$coloralpha, pch = 4)
@@ -835,7 +845,11 @@ parse_params_curve_render_dr <- function(getParams = GET) {
   } else {
     legend <- as.logical(getParams$legend)
   }
-  
+  if(is.null(getParams$plotPoints)) {
+    plotPoints <- !inTable
+  } else {
+    plotPoints <- as.logical(getParams$plotPoints)
+  }
   if(is.null(getParams$curveIds)) {
     stop("curveIds not provided, provide curveIds")
     DONE
@@ -863,7 +877,12 @@ parse_params_curve_render_dr <- function(getParams = GET) {
   } else {
     curveLwd <- getParams$curveLwd
   }
-  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, legend = legend, curveIds = curveIds, axes = axes, mostRecentCurveColor = mostRecentCurveColor, plotColors = plotColors, curveLwd=curveLwd))
+  if(is.null(getParams$colorBy)) {
+    colorBy <- NA
+  } else {
+    colorBy <- getParams$colorBy
+  }
+  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, plotPoints = plotPoints, legend = legend, curveIds = curveIds, axes = axes, mostRecentCurveColor = mostRecentCurveColor, plotColors = plotColors, curveLwd=curveLwd, colorBy=colorBy))
 }
 
 

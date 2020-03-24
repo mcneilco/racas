@@ -2954,8 +2954,12 @@ get_fit_data_experiment_code <- function(experimentCode, modelFitType, full_obje
 }
 
 get_curve_data <- function(curveids, raw_data = FALSE, ...) {
-  qu <- "SELECT e.code_name as experiment_code_name, el.label_text as experiment_label, e.recorded_date as experiment_recorded_date, ag.id as analysis_group_id, agv.string_value as curve_id, batch.code_value as batch_code, rendering_hint.string_value as rendering_hint
-  FROM experiment e
+  qu <- "SELECT pl.label_text as protocol_label, e.protocol_id as protocol_id, e.code_name as experiment_code_name, el.label_text as experiment_label, e.recorded_date as experiment_recorded_date, ag.id as analysis_group_id, agv.string_value as curve_id, batch.code_value as batch_code, rendering_hint.string_value as rendering_hint
+  FROM protocol p
+  JOIN protocol_label pl
+  ON p.id = pl.protocol_id
+  JOIN experiment e
+  ON p.id = e.protocol_id
   JOIN experiment_label el
   ON e.id = el.experiment_id
   JOIN experiment_analysisgroup eag
@@ -2970,7 +2974,11 @@ get_curve_data <- function(curveids, raw_data = FALSE, ...) {
   ON ags.id=batch.analysis_state_id
   JOIN analysis_group_value rendering_hint
   ON ags.id=rendering_hint.analysis_state_id
-  WHERE e.ignored = '0'
+  WHERE p.ignored = '0'
+  AND pl.ignored = '0'
+  AND pl.ls_type = 'name'
+  AND pl.ls_kind = 'protocol name'
+  AND e.ignored = '0'
   AND el.ignored = '0'
   AND el.ls_type = 'name'
   AND el.ls_kind = 'experiment name'
