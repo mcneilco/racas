@@ -337,7 +337,7 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE) {
+plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
   #Check if paramNames match params column headers
   if(!is.na(paramNames) && drawCurve == TRUE) {
   } else {
@@ -679,8 +679,12 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
       }
     }
     if(labelAxes) {
-      xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Dose',as.character(curveData$doseKind[1])), ifelse(is.null(curveData$doseUnits[1]) || is.na(curveData$doseUnits[1]),'',paste0(" (",as.character(curveData$doseUnits[1]),")")))
-      ylabel <- paste0(ifelse(is.null(curveData$responseKind[1]) || is.na(curveData$responseKind[1]),'Response',as.character(curveData$responseKind[1])), ifelse(is.null(curveData$responseUnits[1]) || is.na(curveData$responseUnits[1]),'',paste0(" (",as.character(curveData$responseUnits[1]),")")))
+      if(is.na(xlabel)) {
+        xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Dose',as.character(curveData$doseKind[1])), ifelse(is.null(curveData$doseUnits[1]) || is.na(curveData$doseUnits[1]),'',paste0(" (",as.character(curveData$doseUnits[1]),")")))
+      }
+      if(is.na(ylabel)) {
+        ylabel <- paste0(ifelse(is.null(curveData$responseKind[1]) || is.na(curveData$responseKind[1]),'Response',as.character(curveData$responseKind[1])), ifelse(is.null(curveData$responseUnits[1]) || is.na(curveData$responseUnits[1]),'',paste0(" (",as.character(curveData$responseUnits[1]),")")))
+      }
       title(xlab = xlabel, ylab = ylabel)
     }
   }, error = plotError)
@@ -882,7 +886,32 @@ parse_params_curve_render_dr <- function(getParams = GET) {
   } else {
     colorBy <- getParams$colorBy
   }
-  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, plotPoints = plotPoints, legend = legend, curveIds = curveIds, axes = axes, mostRecentCurveColor = mostRecentCurveColor, plotColors = plotColors, curveLwd=curveLwd, colorBy=colorBy))
+  if(is.null(getParams$logDose)) {
+    logDose <- NA
+  } else {
+    logDose <- as.logical(getParams$logDose)
+  }
+  if(is.null(getParams$logResponse)) {
+    logResponse <- NA
+  } else {
+    logResponse <- as.logical(getParams$logResponse)
+  }
+  if(is.null(getParams$logResponse)) {
+    logResponse <- NA
+  } else {
+    logResponse <- as.logical(getParams$logResponse)
+  }
+  if(is.null(getParams$xLab)) {
+    xLab <- NA
+  } else {
+    xLab <- getParams$xLab
+  }
+  if(is.null(getParams$yLab)) {
+    yLab <- NA
+  } else {
+    yLab <- getParams$yLab
+  }
+  return(list(yMin = yMin, yMax = yMax, xMin = xMin, xMax = xMax, height = height, width = width, inTable = inTable, showAxes = showAxes, labelAxes = labelAxes, showGrid = showGrid, plotPoints = plotPoints, legend = legend, curveIds = curveIds, axes = axes, mostRecentCurveColor = mostRecentCurveColor, plotColors = plotColors, curveLwd=curveLwd, colorBy = colorBy, logDose = logDose, logResponse = logResponse, xLab = xLab, yLab = yLab))
 }
 
 
