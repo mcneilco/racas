@@ -8,7 +8,7 @@ getOrCreateDDictKinds(typesKindsDataFrame,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
-\item{typesKindsDataFrame}{(described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))}
+\item{typesKindsDataFrame}{(described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))}
 }
 \value{
 list of types and kinds

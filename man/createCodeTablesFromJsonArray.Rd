@@ -14,6 +14,6 @@ createCodeTablesFromJsonArray(codeTableDataFrame,
 a data frame of kinds
 }
 \description{
-Create code table (d dict values) from json array as described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
+Create code table (d dict values) from json array as described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
 }
 

@@ -259,10 +259,10 @@ getAcasFileLink <- function(fileCode, login = FALSE) {
                                   racas::applicationSettings$client.port,
                                   racas::applicationSettings$client.path),
                            racas::applicationSettings$server.nodeapi.path)
-    urlLocation <- paste0(fileRootPath, "/dataFiles/", URLencode(fileCode))
+    urlLocation <- paste0(fileRootPath, "/dataFiles/", RCurl::curlEscape(fileCode))
   } else if (fileServiceType == "custom") {
     urlLocation <- paste0(racas::applicationSettings$client.service.external.file.service.url, 
-                          URLencode(fileCode))
+                          RCurl::curlEscape(fileCode))
   }
   return(urlLocation)
 }

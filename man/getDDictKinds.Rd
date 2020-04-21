@@ -14,6 +14,6 @@
 a data frame of kinds
 }
 \description{
-Get ddict kinds as described by URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
+Get ddict kinds as described by RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
 }
 

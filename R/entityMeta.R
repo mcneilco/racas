@@ -10,7 +10,7 @@
 #' 
 getConfiguredEntityTypes <- function(displayName) {
   if(missing(displayName)) displayName <- ""
-  url <- URLencode(paste0(racas::applicationSettings$server.nodeapi.path, 
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$server.nodeapi.path, 
                                "/api/entitymeta/configuredEntityTypes/displayName/", displayName))
   configuredEntityTypes <- fromJSON(getURLcheckStatus(url))
   return(configuredEntityTypes)

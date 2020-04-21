@@ -1406,10 +1406,7 @@ putJSONURLWithTable <- function(url = url, table=table, ...) {
 #' @details returns a list as uniqueness is not always enforced
 #' @export
 getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
-  url <- paste0(lsServerURL, 
-                "protocols?FindByProtocolName&protocolName=", 
-                URLencode(protocolName, reserved = TRUE))
-  protocols <- getURLcheckStatus(url)
+  url <- paste0(lsServerURL, "protocols?FindByProtocolName&protocolName=", RCurl::curlEscape("PPB (20%FBS)"));protocols <- getURLcheckStatus(url)
   tryCatch({
     protocols <- rjson::fromJSON(protocols)
   }, error = function(e) {
@@ -1437,7 +1434,7 @@ getProtocolsByName <- function(protocolName, lsServerURL = racas::applicationSet
 getExperimentsByName <- function(experimentName, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) { 
   url <- paste0(lsServerURL, 
                 "experiments?FindByExperimentName&experimentName=", 
-                URLencode(experimentName, reserved = TRUE))
+                RCurl::curlEscape(experimentName, reserved = TRUE))
   experiments <- getURLcheckStatus(url, requireJSON = TRUE)
   tryCatch({
     experiments <- rjson::fromJSON(experiments)
@@ -2033,7 +2030,7 @@ getExperimentStatesByTypeAndKind <- function(experimentId, stateType, stateKind,
   #url <- "acas/api/v1/{entity}/{experimentIdOrCodeName}/exptstates/bytypekind/{stateType}/{stateKind}/{format}"
   url <- paste0(lsServerURL, "experiments/", experimentId, "/exptstates/bytypekind/", 
                 stateType, "/", stateKind, "/", responseFormat)
-  getURLcheckStatus(URLencode(url), requireJSON = responseFormat=="json")
+  getURLcheckStatus(RCurl::curlEscape(url), requireJSON = responseFormat=="json")
 }
 #' Get Experiment Values
 #' 
@@ -2053,7 +2050,7 @@ getExperimentValuesByTypeAndKind <- function(experimentId, stateType, stateKind,
   #url <- "acas/api/v1/experiments/{experimentIdOrCodeName}/exptvalues/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/{format}"
   url <- paste0(lsServerURL, "experiments/", experimentId, "/exptvalues/bystate/", 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/", responseFormat)
-  getURLcheckStatus(URLencode(url), requireJSON = responseFormat=="json")
+  getURLcheckStatus(RCurl::curlEscape(url), requireJSON = responseFormat=="json")
 }
 #' Update Values
 #' 
@@ -2075,7 +2072,7 @@ updateValueByTypeAndKind <- function(newValue, entityKind, parentId, stateType, 
   #url <- "acas/api/v1/values/{entity}/{idOrCodeName}/bystate/{stateType}/{stateKind}/byvalue/{valueType}/{valueKind}/"
   url <- paste0(lsServerURL, "values/", entityKind, "/", parentId, "/bystate/", 
                 stateType, "/", stateKind, "/byvalue/", valueType, "/", valueKind, "/")
-  putURLcheckStatus(URLencode(url), postfields = newValue, requireJSON = TRUE)
+  putURLcheckStatus(RCurl::curlEscape(url), postfields = newValue, requireJSON = TRUE)
 }
 #' Get Or Create Value Kind
 #' 
@@ -2179,17 +2176,17 @@ getPreferredLabelText <- function(entity, labelTypeAndKind = NA) {
 #' @param format (json, tsv)
 #' @return A data.frame or json of ddict values
 getDDictValuesByTypeKindFormat <- function(lsKind, lsType, format = "json", lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  getURLcheckStatus(URLencode(paste0(lsServerURL, "ddictvalues/all/",lsType,"/",lsKind,"/",format)))
+  getURLcheckStatus(RCurl::curlEscape(paste0(lsServerURL, "ddictvalues/all/",lsType,"/",lsKind,"/",format)))
 }
 #' getOrCreateDDictTypes
 #' 
 #' Registers ddict types from json
 #' 
-#' @param list (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))
+#' @param list (described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))
 #' @return list of types
 getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   json <- rjson::toJSON(typesList)
-  url <- URLencode(paste0(lsServerURL, "setup/ddicttypes"))
+  url <- RCurl::curlEscape(paste0(lsServerURL, "setup/ddicttypes"))
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
 }
@@ -2197,34 +2194,34 @@ getOrCreateDDictTypes <- function(typesList, lsServerURL = racas::applicationSet
 #' 
 #' Registers ddict kinds from json
 #' 
-#' @param typesKindsDataFrame (described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))
+#' @param typesKindsDataFrame (described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddictkinds")))
 #' @return list of types and kinds
 getOrCreateDDictKinds <- function(typesKindsDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   json <- jsonlite::toJSON(typesKindsDataFrame)
-  url <- URLencode(paste0(lsServerURL, "setup/ddictkinds"))
+  url <- RCurl::curlEscape(paste0(lsServerURL, "setup/ddictkinds"))
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
 }
 #' getDdictKinds
 #' 
-#' Get ddict kinds as described by URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
+#' Get ddict kinds as described by RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/ddictkinds"))
 #' 
 #' @param lsServerURL (racas::applicationSettings$client.service.persistence.fullpath)
 #' @return a data frame of kinds
 getDDictKinds <- function(lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
-  url <- URLencode(paste0(lsServerURL, "ddictkinds"))
+  url <- RCurl::curlEscape(paste0(lsServerURL, "ddictkinds"))
   response <- jsonlite::fromJSON(getURLcheckStatus(url))
   return(response)
 }
 #' createCodeTablesFromJsonArray
 #' 
-#' Create code table (d dict values) from json array as described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
+#' Create code table (d dict values) from json array as described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"ddictvalues/codetable/jsonArray"))
 #' 
 #' @param codeTableDataFrame of ddict values
 #' @return a data frame of kinds
 createCodeTablesFromJsonArray <- function(codeTableDataFrame, lsServerURL = racas::applicationSettings$client.service.persistence.fullpath) {
   json <- jsonlite::toJSON(codeTableDataFrame)
-  url <- URLencode(paste0(lsServerURL, "ddictvalues/codetable/jsonArray"))
+  url <- RCurl::curlEscape(paste0(lsServerURL, "ddictvalues/codetable/jsonArray"))
   response <- postURLcheckStatus(url, postfields=json, requireJSON = TRUE)
   return(response)
 }
@@ -2336,7 +2333,7 @@ getContainerCodesByLabels <- function(containerLabels, containerType = NA, conta
   if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
   if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
   queryString <- paste0(queryParams, collapse="&")
-  url <- URLencode(paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString)))
+  url <- RCurl::curlEscape(paste0(lsServerURL, paste0('/api/getContainerCodesByLabels?',queryString)))
   wellCodeJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerLabels)))
   wellCodes <- rjson::fromJSON(wellCodeJSON)
   wellCodes <- Reduce(function(x,y) rbind(x,y,fill = TRUE), lapply(wellCodes, function(x) {if(length(x$foundCodeNames)==0) {x$foundCodeNames <-  NA_character_};as.data.table(x)}))
@@ -2400,7 +2397,7 @@ getWellContentByContainerLabels <- function(containerLabels, containerType = NA,
   if(! is.na(labelType)) queryParams <- c(queryParams, paste0("labelType=",labelType))
   if(! is.na(labelKind)) queryParams <- c(queryParams, paste0("labelKind=",labelKind))
   queryString <- paste0(queryParams, collapse="&")
-  url <- URLencode(paste0(lsServerURL, paste0('/api/getWellContentByContainerLabels?',queryString)))
+  url <- RCurl::curlEscape(paste0(lsServerURL, paste0('/api/getWellContentByContainerLabels?',queryString)))
   wellContentJSON <- postURLcheckStatus(url,  postfields = rjson::toJSON(as.list(containerLabels)))
   wellContent <- as.data.table(jsonlite::fromJSON(wellContentJSON))
   wellContentDT <- wellContent[ , as.data.table(wellContent[[1]]), by = c('containerCodeName', 'label')]

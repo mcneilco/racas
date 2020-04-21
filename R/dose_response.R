@@ -432,7 +432,7 @@ get_dose_response_values <- function(id, type = c("analysisgroupvalues", "treatm
                     experiment = "experiments/",
                     analysisgroup = "analysisgroups/"
   )
-  urls <- lapply(paste0(racas::applicationSettings$client.service.persistence.fullpath, byRoute, id, typeRoute), URLencode)
+  urls <- lapply(paste0(racas::applicationSettings$client.service.persistence.fullpath, byRoute, id, typeRoute), RCurl::curlEscape)
   values <- lapply(urls, tsv_url_to_data_table, type = outputType)
   values <- rbindlist(values)
   return(values)  
@@ -448,7 +448,7 @@ get_analysisgroup_values <- function(experimentID, analysisGroupID) {
   return(ag_values)
 }
 curve_fit_controller_getFitDataByExperimentIdOrCodeName <- function(experiment, modelFitType, format = "tsv") {
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/fitdata?format=",format,"&experiment=",experiment,"&modelFitType=",modelFitType))
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/fitdata?format=",format,"&experiment=",experiment,"&modelFitType=",modelFitType))
   myMessenger <- messenger()  
   myMessenger$logger$debug(paste0("calling fit data service url: ", url))
   response <- getURL(url)
@@ -461,7 +461,7 @@ curve_fit_controller_getRawDataByExperimentIdOrCodeName <- function(experiment, 
   if(is.null(rawResultsPersistencePath) | length(rawResultsPersistencePath) == 0) {
     rawResultsPersistencePath <- 'curvefit/rawdata'
   }
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=",format,"&experiment=",experiment,"&response=",transformation))
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=",format,"&experiment=",experiment,"&response=",transformation))
   myMessenger <- messenger()  
   myMessenger$logger$debug(paste0("calling raw data service url: ", url))
   response <- getURL(url)
@@ -476,7 +476,7 @@ curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", r
   }
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format, "&response=",transformation)),
+    RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath, rawResultsPersistencePath,"?format=", format, "&response=",transformation)),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
@@ -486,7 +486,7 @@ curve_fit_controller_getRawDataByCurveId <- function(curveids, format = "tsv", r
 curve_fit_controller_getFitDataByCurveId <- function(curveids, format = "tsv") {
   curveids <- as.list(unlist(curveids))
   response <- getURL(
-    URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/fitdata?format=",format)),
+    RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath, "curvefit/fitdata?format=",format)),
     customrequest='POST',
     httpheader=c('Content-Type'='application/json'),
     postfields=toJSON(curveids)
@@ -1496,7 +1496,7 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
     create_ls_kind(lsType = type, kindName = lsKind)
   }
   if(missing(experimentCode)) experimentCode <- experimentID
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"values/experiment/", experimentCode,"/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/"))
   response <- getURL(
     url,
     customrequest='PUT',
@@ -1506,7 +1506,7 @@ update_or_replace_experiment_metadata_value <- function(experimentCode, experime
   return(response)
 }
 get_protocol_curve_display_min_and_max_by_curve_id <- function(curveid) {   
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/displayminmax"))
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"curvefit/displayminmax"))
   response <- getURL(
     url,
     customrequest='POST',
@@ -1535,7 +1535,7 @@ get_experiment_model_fit_transformation <- function(experimentCodeOrID, ...) {
   return(value)
 }
 get_experiment_metadata_value <- function(experimentCodeOrID, lsType, lsKind, fullValue = FALSE) {
-  url <- URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"experiments/", experimentCodeOrID,"/exptvalues/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/json"))  
+  url <- RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"experiments/", experimentCodeOrID,"/exptvalues/bystate/metadata/experiment metadata/byvalue/",lsType,"/",lsKind,"/json"))  
   response <- fromJSON(getURL(url))
   if(length(response) == 0) {
     value <- NULL

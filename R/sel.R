@@ -284,7 +284,7 @@ convertSELExperimentMetaDataToSEL <- function(experimentMetaData, header = "Expe
 getViewerLink <- function(protocol = NULL, experiment, experimentName = NULL, protocolName = NULL) {
   # Returns url link for viewer
   if (!is.null(racas::applicationSettings$client.service.result.viewer.protocolPrefix)) {
-    viewerLink <- paste0("/openExptInQueryTool?experiment=", URLencode(experiment$codeName, reserved=TRUE))
+    viewerLink <- paste0("/openExptInQueryTool?experiment=", RCurl::curlEscape(experiment$codeName, reserved=TRUE))
   } else {
     viewerLink <- NULL
   }

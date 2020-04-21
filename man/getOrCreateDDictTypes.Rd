@@ -8,7 +8,7 @@ getOrCreateDDictTypes(typesList,
   lsServerURL = racas::applicationSettings$client.service.persistence.fullpath)
 }
 \arguments{
-\item{list}{(described here URLencode(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))}
+\item{list}{(described here RCurl::curlEscape(paste0(racas::applicationSettings$client.service.persistence.fullpath,"/api/v1/setup/ddicttypes")))}
 }
 \value{
 list of types
