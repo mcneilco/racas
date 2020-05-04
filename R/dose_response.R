@@ -55,11 +55,11 @@ dose_response <- function(fitSettings, fitData) {
   fitData <- fitData[1]$modelFit[[1]]$apply_limits(fitData, iterations = 20)
   
   #Categorize the fit data
-  fitData[ , category := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
+  fitData[ , category := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]], fittedParameters[[1]], inactiveRule[[1]]), by = curveId]
   
   #Extract the reported Parameters
   fitData[ , reportedParameters := {
-    list(list(modelFit[[1]]$get_reported_parameters(results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]], theoreticalMaxMode, theoreticalMax)))
+    list(list(modelFit[[1]]$get_reported_parameters(results.parameterRules[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], fixedParameters[[1]], fittedParameters[[1]], pointStats[[1]], goodnessOfFit.parameters[[1]], goodnessOfFit.model[[1]], algorithmFlagStatus[[1]], userFlagStatus[[1]], theoreticalMaxMode, theoreticalMax, inactiveRule[[1]])))
     }
     , by = curveId]
   
@@ -68,7 +68,7 @@ dose_response <- function(fitSettings, fitData) {
 
 biphasic_detection <- function(fitData) {
   returnCols <- copy(names(fitData))
-  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, fittedParameters, category, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun, fixedParameters) {    
+  test_for_biphasic <- function(biphasicRule, points, pointStats, model.synced, goodnessOfFit.model, fittedParameters, category, biphasicParameterPreviousValue, testConc, continueBiphasicDetection, firstRun, fixedParameters, inactiveRule) {    
     points <- copy(points)
     if(!continueBiphasicDetection) {
       testConc <- as.numeric(NA)
@@ -79,7 +79,7 @@ biphasic_detection <- function(fitData) {
       #If detect biphasic is on and the following
       # there are doses above the empirical max dose with respnoses below empirical max respnose
       # the curve is not inactive, non-converged, insufficient range or potent 
-      continueBiphasicDetection <- (length(biphasicRule) > 0 && !biphasicRule$parameter %in% names(fixedParameters)) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid")
+      continueBiphasicDetection <- (length(biphasicRule) > 0 && !biphasicRule$parameter %in% names(fixedParameters)) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid"))
       if(!continueBiphasicDetection) {
         testConc <- as.numeric(NA)
         biphasicParameterPreviousValue <- as.numeric(NA)
@@ -151,12 +151,12 @@ biphasic_detection <- function(fitData) {
   fitData[ , continueBiphasicDetection := TRUE]
   fitData[ , firstRun := TRUE]
   fitData[ , biphasicParameterPreviousValue := as.numeric(NA)]
-  fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
-  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], fittedParameters[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun, fixedParameters = fixedParameters[[1]]), by = curveId]
+  fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]], fittedParameters[[1]], inactiveRule[[1]]), by = curveId]
+  fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], points[[1]], pointStats[[1]], model.synced, goodnessOfFit.model[[1]], fittedParameters[[1]], tempCategory, biphasicParameterPreviousValue = biphasicParameterPreviousValue, continueBiphasicDetection = continueBiphasicDetection, firstRun = firstRun, fixedParameters = fixedParameters[[1]], inactiveRule = inactiveRule[[1]]), by = curveId]
   fitData[ , firstRun := FALSE]
   while(any(!fitData$model.synced)) {
     fitData <- dose_response_fit(fitData)  
-    fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]]), by = curveId]
+    fitData[ ,  tempCategory := modelFit[[1]]$categorization_function(results.parameterRules[[1]], fitSettings[[1]], inactive[[1]], fitConverged[[1]], insufficientRange[[1]], potent[[1]], pointStats[[1]], fittedParameters[[1]], inactiveRule[[1]]), by = curveId]
     fitData[ , c("points","model.synced","biphasicParameterPreviousValue", "testConc", "continueBiphasicDetection") := test_for_biphasic(biphasicRule[[1]], 
                                                                                                                                          points[[1]], 
                                                                                                                                          pointStats[[1]], 
@@ -1928,7 +1928,7 @@ OneSiteKi <- 'max + (min-max)/(1+10^(log10(x)-log10(ki*(1+ligandConc/kd))))'
 MM2 <- '(vmax*x)/(km + x)'
 substrateInhibitionEq <- '(vmax*x)/(km+x*(1+x/ki))'
 
-categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats, fittedParameters, inactiveRule) {
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   if(!converged) {
@@ -1937,8 +1937,17 @@ categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, conver
   if(insufficientRange) {
     category <- "insufficient range"
   }
+  
   if("maxUncertaintyRule" %in% resultList | "ec50ThresholdHigh" %in% resultList) {
-    category <- "weak tested potency"
+    # Uncertainty may be high but its possible the max is stil close to the empirical max which would make it look like a decent fit
+    # For those curves, lets see if its somewhat close the empirical max by using the inactivethreshold value as a noise barrier
+    closeToEmpiricalMax <- !is_null_or_na(fittedParameters$max) && (abs(pointStats$response.empiricalMax - fittedParameters$max) < 2*inactiveRule$value)
+
+    if(closeToEmpiricalMax) {
+      # Let the algorithm continue here as it may be a decent sigmoid
+    } else {
+      category <- "weak tested potency" 
+    }
   }
   if("ec50ThresholdLow" %in% resultList | potent) {
     category <- "strong tested potency"
@@ -1952,7 +1961,7 @@ categorize.LL4 <- function(results.parameterRules, fitSettings, inactive, conver
   return(category)
 }
 
-categorize.LL4IC50 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+categorize.LL4IC50 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats, fittedParameters, inactiveRule) {
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   if(!converged) {
@@ -1976,7 +1985,7 @@ categorize.LL4IC50 <- function(results.parameterRules, fitSettings, inactive, co
   return(category)
 }
 
-categorize.ki <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+categorize.ki <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats, fittedParameters, inactiveRule) {
     category <- "sigmoid"
     resultList <- unlist(results.parameterRules)
     if(!converged) {
@@ -1999,7 +2008,7 @@ categorize.ki <- function(results.parameterRules, fitSettings, inactive, converg
     }
     return(category)
 }
-categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats, fittedParameters, inactiveRule) {
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   if("maxUncertaintyRule" %in% resultList | "kdThresholdHigh" %in% resultList) {
@@ -2022,7 +2031,7 @@ categorize.MM2 <- function(results.parameterRules, fitSettings, inactive, conver
   }
   return(category)
 }
-categorize.substrateInhibition <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats) {
+categorize.substrateInhibition <- function(results.parameterRules, fitSettings, inactive, converged, insufficientRange, potent, pointStats, fittedParameters, inactiveRule) {
   category <- "sigmoid"
   resultList <- unlist(results.parameterRules)
   if("maxUncertaintyRule" %in% resultList | "kdThresholdHigh" %in% resultList) {
@@ -2045,7 +2054,7 @@ categorize.substrateInhibition <- function(results.parameterRules, fitSettings, 
   }
   return(category)
 }
-get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
+get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -2078,7 +2087,11 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
     reportedValues <- list(min = min, max = max, ec50 = ec50)
     return(reportedValues)
   }
-  if("maxUncertaintyRule" %in% results$goodnessOfFits) {
+  # Uncertainty may be high but its possible the max is stil close to the empirical max which would make it look like a decent fit
+  # For those curves, lets see if its somewhat close the empirical max by using the inactivethreshold value as a noise barrier
+  closeToEmpiricalMax <- !is_null_or_na(fittedParameters$max) && (abs(pointStats$response.empiricalMax - fittedParameters$max) < 2*inactiveRule$value)
+
+  if(!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits) {
     max <- list(value = pointStats$response.empiricalMax, operator = NULL, stdErr = NULL)
   } else {
     if(is_null_or_na(fixedParameters$max)) {
@@ -2101,8 +2114,8 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   } else {
     slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
   }
-  if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
-    if(("ec50ThresholdHigh" %in% results$limits | "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+  if(("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
+    if(("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits)) {
       if (!theoreticalMaxMode) {
         ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
       } else {
@@ -2132,7 +2145,7 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   reportedValues <- list(min = min, max = max, slope = slope, ec50 = ec50)
   return(reportedValues)
 }
-get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
+get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -2219,8 +2232,8 @@ get_reported_parameters.LL4IC50 <- function(results, inactive, fitConverged, ins
   reportedValues <- list(min = min, max = max, slope = slope, ic50 = ic50)
   return(reportedValues)
 }
-get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
-  reportedParameters <- get_reported_parameters.LL4IC50(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax)
+get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule) {
+  reportedParameters <- get_reported_parameters.LL4IC50(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule)
   dmax <- list(value = "Not calculated", operator = NULL, stdErr = NULL)
   shouldCalculateDMax <- fitConverged && fittedParameters$max == reportedParameters$max$value && fittedParameters$min == reportedParameters$min$value && fittedParameters$slope > 0
   if(!is.na(shouldCalculateDMax) && shouldCalculateDMax) {
@@ -2238,7 +2251,7 @@ get_reported_parameters.LL4IC50DMax <- function(results, inactive, fitConverged,
   return(reportedParameters)
 }
 
-get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
+get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     vmax <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     km <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -2312,7 +2325,7 @@ get_reported_parameters.MM2 <- function(results, inactive, fitConverged, insuffi
   }
   return(reportedValues)
 }
-get_reported_parameters.substrateInhibition <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax) {
+get_reported_parameters.substrateInhibition <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus, theoreticalMaxMode, theoreticalMax, inactiveRule) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     vmax <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     km <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
@@ -2402,7 +2415,7 @@ get_reported_parameters.substrateInhibition <- function(results, inactive, fitCo
   }
   return(reportedValues)
 }
-get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus,  theoreticalMaxMode, theoreticalMax) {
+get_reported_parameters.ki <- function(results, inactive, fitConverged, insufficientRange, potent, fixedParameters, fittedParameters, pointStats, goodnessOfFit.parameters, goodnessOfFit.model, algorithmFlagStatus, userFlagStatus,  theoreticalMaxMode, theoreticalMax, inactiveRule) {
   if(algorithmFlagStatus != "" | identical(userFlagStatus, "rejected")) {
     max <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
     min <- list(value = ifelse(identical(userFlagStatus, "rejected"), userFlagStatus, algorithmFlagStatus), operator = NULL, stdErr = NULL)
