@@ -79,7 +79,7 @@ biphasic_detection <- function(fitData) {
       #If detect biphasic is on and the following
       # there are doses above the empirical max dose with respnoses below empirical max respnose
       # the curve is not inactive, non-converged, insufficient range or potent 
-      continueBiphasicDetection <- (length(biphasicRule) > 0 && !biphasicRule$parameter %in% names(fixedParameters)) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid"))
+      continueBiphasicDetection <- (length(biphasicRule) > 0 && !biphasicRule$parameter %in% names(fixedParameters)) & pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0 & (category == "sigmoid")
       if(!continueBiphasicDetection) {
         testConc <- as.numeric(NA)
         biphasicParameterPreviousValue <- as.numeric(NA)
@@ -2114,8 +2114,8 @@ get_reported_parameters.LL4 <- function(results, inactive, fitConverged, insuffi
   } else {
     slope <- list(value = -fixedParameters$slope, operator = NULL, stdErr = NULL)
   }
-  if(("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits) | ("ec50ThresholdLow" %in% results$limits)) {
-    if(("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits)) {
+  if("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && ("maxUncertaintyRule" %in% results$goodnessOfFits)) | "ec50ThresholdLow" %in% results$limits) {
+    if("ec50ThresholdHigh" %in% results$limits | (!closeToEmpiricalMax && "maxUncertaintyRule" %in% results$goodnessOfFits)) {
       if (!theoreticalMaxMode) {
         ec50 <- list(value = pointStats$dose.max, operator = ">", stdErr = NULL)
       } else {
