@@ -769,7 +769,12 @@ get_rendering_hint_options <- function(renderingHint = NA) {
   return(renderingOptions)
 }
 
-parse_params_curve_render_dr <- function(getParams = GET) {
+parse_params_curve_render_dr <- function(getParams = GET, postParams = NA) {
+
+  # If postParams are passed in then override the get params with the post params
+  # POST is used when there are too many curves to be rendered in a URL (url gets too long)
+  if(!is.na(postParams)) getParams <- combine.lists(getParams, postParams)
+  
   # Get data
   if(is.null(getParams$ymin)) {
     yMin <- NA
@@ -832,7 +837,7 @@ parse_params_curve_render_dr <- function(getParams = GET) {
   if(is.null(getParams$axes)) {
     axes <- c("x","y")
   } else {
-    axes <- strsplit(getParams$axes, ",")[[1]]
+    axes <- if(length(getParams$axes) == 1) strsplit(getParams$axes, ",")[[1]]
   }
   if(is.null(getParams$showGrid)) {
     showGrid <- !inTable
@@ -859,17 +864,19 @@ parse_params_curve_render_dr <- function(getParams = GET) {
     DONE
   } else {
     curveIds <- getParams$curveIds
-    curveIdsStrings <- strsplit(curveIds,",")[[1]]
-    curveIds <- suppressWarnings(as.integer(curveIds))
-    if(is.na(curveIds)) {
-      curveIds <- curveIdsStrings
+    if(length(curveIds) == 1) {
+      curveIdsStrings <- strsplit(curveIds,",")[[1]]
+      curveIds <- suppressWarnings(as.integer(curveIds))
+      if(is.na(curveIds)) {
+        curveIds <- curveIdsStrings
+      }
     }
   }
   if(is.null(getParams$plotColors)) {
     plotColors <-  c()
   } else {
     plotColors <- getParams$plotColors
-    plotColors <- strsplit(plotColors,",")[[1]]
+    if(length(plotColors) == 1) plotColors <- strsplit(plotColors,",")[[1]]
   }
   if(is.null(getParams$mostRecentCurveColor)) {
     mostRecentCurveColor <- NA
