@@ -21,7 +21,7 @@ installDeps <- function(description = "DESCRIPTION", skipInstalled = TRUE, type 
     pkgs <- pkgs[!pkgs %in% installed]
   }
   if(length(pkgs) > 0) {
-    install.packages(pkgs, repos = "http://cran.rstudio.com/", type = type)
+    install.packages(pkgs, repos = "https://cran.microsoft.com/snapshot/2016-12-20", type = type, method='wget')
   } else
     message("skipping, dependencies already installed")
 }
