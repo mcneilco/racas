@@ -19,7 +19,6 @@ Imports:
     logging,
     evaluate,
     XLConnect,
-    XLConnectJars,
     gdata,
     reshape,
     xtable,

@@ -28,7 +28,7 @@ RUN \
 #     rm R-${R_VERSION}-1-1.x86_64.rpm && \
 #     yum clean all
 
-ENV R_VERSION 3.2.3
+ENV R_VERSION 3.6.3
 RUN curl -O https://cran.rstudio.com/src/base/R-3/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
@@ -36,7 +36,7 @@ RUN curl -O https://cran.rstudio.com/src/base/R-3/R-${R_VERSION}.tar.gz && \
         --prefix=/opt/R/${R_VERSION} \
         --enable-memory-profiling \
         --enable-R-shlib \
-        --enable-BLAS-shlib \
+        --with-blas \
         --with-lapack && \
     make && \
     make install
