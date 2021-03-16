@@ -337,13 +337,8 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 
-plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "min", "max", "slope"), drawIntercept = "ec50", outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, connectPoints = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
-  #Check if paramNames match params column headers
-  if(!is.na(paramNames) && drawCurve == TRUE) {
-  } else {
-    drawCurve <- FALSE
-    drawIntercept <- NA
-  }
+plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
+
   if(is.null(curveLwd) || is.na(curveLwd)) {
     curveLwd <- 1
     if(!is.null(racas::applicationSettings$server.curveRender.curveLwd) && racas::applicationSettings$server.curveRender.curveLwd != "") {
@@ -480,6 +475,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
     
     getDrawValues <- function(params) {
+      paramNames <- params$renderingOptions[[1]]$paramNames
       reportedValueColumns <- match(paramNames, names(params))
       reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
       reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
@@ -502,6 +498,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         fittedValues <- fittedValues[sapply(fittedValues, function(x) !any(is.na(x)))] 
         tmp[1,match(tolower(names(fittedValues)),fittedColumnNames)] <- fittedValues
       }
+      tmp$renderingOptions <- params$renderingOptions
       return(tmp)
     }
     
@@ -528,7 +525,7 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
         }
-        fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
+        fct <- eval(parse(text=paste0('function(x) ', renderingOptions[[1]]$fct)))
         curveData <- getCurveRangeData(fct, from = curveXrn[1], to = curveXrn[2], log = plotLog)
       }
       return(list(curveID=curveID, curveData=curveData, color=color))
@@ -596,12 +593,15 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     if(showGrid) {
       grid(lwd = 1.7*scaleFactor)
     }
-    if(drawPoints && connectPoints && exists("means")) {
+    if(drawPoints && exists("means")) {
       cids <- unique(means$curveId)
       for(c in 1:length(cids)) {
-        cid <- cids[c]
-        lineData <- subset(means, means$curveId == cid)
-        lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted', lwd = 1.2*scaleFactor)
+        connectPoints <- params[c,]$renderingOptions[[1]]$connectPoints
+        if(!is.na(connectPoints) && connectPoints) {
+          cid <- cids[c]
+          lineData <- subset(means, means$curveId == cid)
+          lines(x = lineData$dose, y = lineData$mean, col = lineData$color, pch = 4, lty = 'dotted', lwd = 1.2*scaleFactor)
+        }
       }
     }
     
@@ -649,12 +649,18 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
     ##If only one curve then draw ac50 lines
     #Get coordinates to draw lines through curve at AC50
     #Vertical
-    if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept]))) {
-      if(nrow(params) == 1) {
+    if(nrow(params) == 1) {
+      drawValues <- getDrawValues(params = params[1,])
+      for(i in 1:ncol(drawValues)) {
+        assign(names(drawValues)[i], drawValues[,i])
+      }
+      drawIntercept <- renderingOptions[[1]]$drawIntercept
+      if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept])))
         drawValues <- getDrawValues(params = params[1,])
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
         }
+        fitFunction <- renderingOptions[[1]]$fct
         fct <- eval(parse(text=paste0('function(x) ', fitFunction)))
         curveIntercept <- fct(as.numeric(params[,drawIntercept]))
         ylin <- c()
@@ -676,7 +682,6 @@ plotCurve <- function(curveData, params, fitFunction, paramNames = c("ec50", "mi
         }
         lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
         lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
-      }
     }
     if(labelAxes) {
       if(is.na(xlabel)) {
@@ -765,6 +770,9 @@ get_rendering_hint_options <- function(renderingHint = NA) {
   if("renderOptions" %in% names(modelClass)) {
     renderingHintConfigs <- as.list(modelClass$renderOptions)
     renderingOptions <- combine.lists(renderingOptions, renderingHintConfigs)
+  }
+  if(!"connectPoints" %in% names(renderingOptions) || is.na(renderingOptions$connectPoints)) {
+    renderingOptions$connectPoints <- FALSE
   }
   return(renderingOptions)
 }

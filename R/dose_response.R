@@ -3012,7 +3012,9 @@ get_curve_data <- function(curveids, raw_data = FALSE, ...) {
   fitData <- rbindlist(query_replace_string_with_values(qu, "REPLACEME", curveids, ...))
   
   if(raw_data) {
-    parameters <- fitData[ , get_fit_data_curve_id(curve_id, ...), by = rendering_hint]
+    fitData[ , data:=list(list(get_fit_data_curve_id(curve_id, ...))), by = rendering_hint]
+    parameters <- rbindlist(fitData$data, fill = TRUE)
+    fitData[, data:= NULL]
     setkey(parameters, "curveId")
     setkey(fitData, "curve_id")
     fitData <- parameters[fitData]
