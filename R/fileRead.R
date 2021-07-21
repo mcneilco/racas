@@ -431,13 +431,12 @@ validateDate <- function(inputValue, expectedFormat = "%Y-%m-%d", secondaryForma
         
         # Add to the warnings that we coerced the date to a "Best Match"
         warnUser(paste0("A date is not in the proper format. Found: \"",inputValue,"\" This was interpreted as \"",bestMatchingDate, 
-                       "\". Please enter dates as YYYY-MM-DD, or click  <a href=\"http://xkcd.com/1179/\" target=\"_blank\">here</a>  for more information."))
+                       "\". Please enter dates as YYYY-MM-DD."))
         returnDate <- bestMatchingDate
       } else {
         # If we couldn't parse the data into any of the formats, then we add this to the erorrs and return no date
         addError(paste0("The loader was unable to change the date '", inputValue, 
-                        "' to the proper format. Please change it to the format YYYY-MM-DD, ",
-                        " or click  <a href=\"http://xkcd.com/1179/\" target=\"_blank\">here</a> for more information."),
+                        "' to the proper format. Please change it to the format YYYY-MM-DD."),
                  errorEnv = errorEnv)
       }
     } else {
