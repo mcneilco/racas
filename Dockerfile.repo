@@ -69,6 +69,16 @@ RUN \
 RUN yum -y localinstall https://download.postgresql.org/pub/repos/yum/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-3.noarch.rpm  && \
   yum install -y postgresql94-devel curl-devel libxml2-devel
 
+# NODE
+ENV NPM_CONFIG_LOGLEVEL warn
+ENV NODE_VERSION 14.15.1
+
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz" \
+	&& tar -xzf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1 \
+	&& rm -f "node-v$NODE_VERSION-linux-x64.tar.gz" \
+  && npm install -g npm@latest \
+  && npm install -g properties underscore underscore-deep-extend properties-parser flat glob
+ENV NODE_PATH /usr/local/lib/node_modules
 
 RUN	useradd -u 1000 -ms /bin/bash runner
 ENV ACAS_HOME /home/runner/build
