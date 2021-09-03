@@ -1,8 +1,4 @@
-ARG ACAS_IMAGE=mcneilco/acas-oss:latest
-FROM ${ACAS_IMAGE} AS acas-src
-
 FROM mcneilco/centos-r-repo:1.13.6
-# COPY --from=acas-src --chown=runner:runner /home/runner/build/bin /home/runner/build/bin
 COPY --chown=runner:runner . /home/runner/racas
 RUN  export R_LIBS=/home/runner/build/r_libs && R CMD INSTALL --no-multiarch --with-keep.source /home/runner/racas
 EXPOSE 1080
