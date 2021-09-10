@@ -79,7 +79,7 @@ RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-
 	&& tar -xzf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1 \
 	&& rm -f "node-v$NODE_VERSION-linux-x64.tar.gz" \
   && npm install -g npm@latest \
-  && npm install -g coffeescript properties underscore underscore-deep-extend properties-parser flat glob
+  && npm install -g coffeescript properties underscore underscore-deep-extend properties-parser flat glob dotenv dotenv-expand
 ENV NODE_PATH /usr/local/lib/node_modules
 
 RUN	useradd -u 1000 -ms /bin/bash runner
@@ -95,7 +95,7 @@ ENV PATH /usr/pgsql-13/bin/:$PATH
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
-RUN yum install -y nlopt nlopt-devel
+RUN yum install -y nlopt nlopt-devel sudo
 USER runner
 RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));" && \
      rm DESCRIPTION installation.R
