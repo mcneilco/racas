@@ -399,29 +399,6 @@ until [ -f $ACAS_HOME/conf/compiled/conf.properties  ] || [ $counter == $wait ];
 done
 source /dev/stdin <<< "$(cat $ACAS_HOME/conf/compiled/conf.properties | awk -f $ACAS_HOME/bin/readproperties.awk)"
 
-#Once tomcat is available then try and run prepare module conf json if in environment
-if [ "$PREPARE_MODULE_CONF_JSON" = "true" ]; then
-    (ping -c 1 ${client_service_persistence_host} > /dev/null
-    cd src/javascripts/BuildUtilities
-    if [ $? -eq 0 ];then
-        counter=0
-        wait=100
-        until $(curl --output /dev/null --silent --head --fail http://${client_service_persistence_host}:${client_service_persistence_port}) || [ $counter == $wait ]; do
-            sleep 1
-            counter=$((counter+1))
-        done
-        if [ $counter == $wait ]; then
-            echo "waited $wait seconds for acas to start, giving up on prepare module conf json"
-        else
-            node PrepareModuleConfJSON.js
-        fi
-    else
-        echo "${client_service_persistence_host} not available, not waiting for roo to start and not running prepare module conf json"
-    fi
-    cd ../../..
-    ) &
-fi
-
 # Export these variables so that the apache config can pick them up
 export ACAS_USER=${server_run_user}
 if [ "$ACAS_USER" == "" ] || [ "$ACAS_USER" == "null" ]; then
