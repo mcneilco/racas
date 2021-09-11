@@ -385,9 +385,8 @@ cd $ACAS_HOME
 [ -f $ACAS_HOME/bin/setenv.sh ] && . $ACAS_HOME/bin/setenv.sh  || echo "$ACAS_HOME/bin/setenv.sh not found"
 
 # Run Prepare config files as the compiled directory should be empty
-if [ "$PREPARE_CONFIG_FILES" = "true" ]; then
-    coffee $ACAS_HOME/src/javascripts/BuildUtilities/PrepareConfigFiles.coffee
-fi
+coffee $ACAS_HOME/src/javascripts/BuildUtilities/PrepareConfigFiles.coffee
+
 
 #Get ACAS config variables
 counter=0
