@@ -385,9 +385,8 @@ cd $ACAS_HOME
 [ -f $ACAS_HOME/bin/setenv.sh ] && . $ACAS_HOME/bin/setenv.sh  || echo "$ACAS_HOME/bin/setenv.sh not found"
 
 # Run Prepare config files as the compiled directory should be empty
-if [ "$PREPARE_CONFIG_FILES" = "true" ]; then
-    gulp execute:prepare_config_files
-fi
+coffee $ACAS_HOME/src/javascripts/BuildUtilities/PrepareConfigFiles.coffee
+
 
 #Get ACAS config variables
 counter=0
@@ -398,29 +397,6 @@ until [ -f $ACAS_HOME/conf/compiled/conf.properties  ] || [ $counter == $wait ];
     counter=$((counter+1))
 done
 source /dev/stdin <<< "$(cat $ACAS_HOME/conf/compiled/conf.properties | awk -f $ACAS_HOME/bin/readproperties.awk)"
-
-#Once tomcat is available then try and run prepare module conf json if in environment
-if [ "$PREPARE_MODULE_CONF_JSON" = "true" ]; then
-    (ping -c 1 ${client_service_persistence_host} > /dev/null
-    cd src/javascripts/BuildUtilities
-    if [ $? -eq 0 ];then
-        counter=0
-        wait=100
-        until $(curl --output /dev/null --silent --head --fail http://${client_service_persistence_host}:${client_service_persistence_port}) || [ $counter == $wait ]; do
-            sleep 1
-            counter=$((counter+1))
-        done
-        if [ $counter == $wait ]; then
-            echo "waited $wait seconds for acas to start, giving up on prepare module conf json"
-        else
-            node PrepareModuleConfJSON.js
-        fi
-    else
-        echo "${client_service_persistence_host} not available, not waiting for roo to start and not running prepare module conf json"
-    fi
-    cd ../../..
-    ) &
-fi
 
 # Export these variables so that the apache config can pick them up
 export ACAS_USER=${server_run_user}

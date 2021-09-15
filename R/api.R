@@ -30,7 +30,7 @@ api_createProtocol <- function(protocolName, shortDescription, recordedBy, stopO
   
   if(stopOnAnyExist) {
     if(any(unlist(protocolExistence))) {
-      stopUser(paste0(racas::applicationSettings$client.protocol.label,"s already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '")),"'")
+      stopUser(paste0(racas::applicationSettings$client.protocol.label,"s already registered: '",paste(names(protocolExistence[unlist(protocolExistence)]),collapse = "', '"),"'"))
     }
   }
   #Remove protocols that already exist
