@@ -1336,7 +1336,7 @@ create_analysis_group_values_from_fitData <- function(analysisGroupId, curveName
   resultTypes <- copy(typeMap)
   resultTypes <- resultTypes[!is.na(units)]
   resultTypes <- resultTypes[ ls_kind %in% values$lsKind ]
-  resultTypes[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
+  resultTypes[!units %in% knownTypes, if(.N > 0) setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
 
   values[lsKind %in% typeMap[units=="response"]$ls_kind, unitKind := responseUnits]
   values[lsKind %in% typeMap[units=="dose"]$ls_kind, unitKind := doseUnits]
@@ -1787,7 +1787,7 @@ add_clob_values_to_fit_data <- function(fitData) {
         resultTypes[ ,ls_kind:=gsub('/','',ls_kind)]
         resultTypes[ ,ls_kind:=tolower(ls_kind)]
         resultTypes <- resultTypes[ ls_kind %in% reportedValues$name ]
-        resultTypes[!units %in% knownTypes, setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
+        resultTypes[!units %in% knownTypes, if(.N > 0) setValueUnits(typeKind=ls_kind, typeUnit=units),by=c("ls_kind","units")]
 
         reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="response"]$ls_kind), units := responseUnits]
         reportedValues[name %in% tolower(modelFit[[1]]$typeMap[units=="dose"]$ls_kind), units := doseUnits]
