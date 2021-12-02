@@ -66,13 +66,7 @@ getFileEncoding <- function(filePath) {
   # "\xff\xfe" is the byte order mark for "UTF-16LE"
   # Referenced from the answer by 'roippi' in this question thread:
   # http://stackoverflow.com/questions/23729151/reading-text-file-into-variable-subsequent-print-returns-escape-characters
-  
-  # TODO: Change "paste0("\xff\xfe",LETTERS)" to something a bit more elegant.
-  #       The problem is that "grepl("\xff\xfe","\xff\xfeA", fixed=TRUE)" returns
-  #       "regular expression is invalid in this locale"
-  #       and "substring("\xff\xfeA", 1)" returns
-  #       "invalid multibyte string at '<ff><fe>A'"
-  fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) %in% paste0("\xff\xfe",LETTERS), 
+  fileEncoding <- ifelse(suppressWarnings(grepl("\xff\xfe",readLines(filePath, n=1), perl = TRUE)), 
                          "UTF-16LE", 
                          "")
   return(fileEncoding)
