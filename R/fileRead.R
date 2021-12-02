@@ -72,9 +72,12 @@ getFileEncoding <- function(filePath) {
   #       "regular expression is invalid in this locale"
   #       and "substring("\xff\xfeA", 1)" returns
   #       "invalid multibyte string at '<ff><fe>A'"
-  fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) %in% paste0("\xff\xfe",LETTERS), 
-                         "UTF-16LE", 
-                         "")
+  # fileEncoding <- ifelse(suppressWarnings(readLines(filePath, n=1)) %in% paste0("\xff\xfe",LETTERS), 
+  #                        "UTF-16LE", 
+  #                        "")
+  # TEMPORARY WORKAROUND AS THE ABOVE IFELSE FUNCTION IS CAUSING ERRORS
+  # http://mcneilco/acas/issues/833
+  fileEncoding <- ""
   return(fileEncoding)
 }
 
