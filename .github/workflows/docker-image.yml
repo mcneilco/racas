@@ -8,7 +8,7 @@ on:
   create:
     tags: "**"
 jobs:
-  acas:
+  racas:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
