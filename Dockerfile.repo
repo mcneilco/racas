@@ -1,23 +1,26 @@
-FROM centos:centos7
+FROM quay.io/centos/centos:stream8
 
 # R, Java
 ENV JAVA_VERSION 1.8.0
 ENV JAVA_HOME /usr/lib/jvm/java
-ENV LD_LIBRARY_PATH $JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server/
-RUN echo "$JAVA_HOME/jre/lib/amd64/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
+RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
+    export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/$(arch):$JAVA_HOME/jre/lib/$(arch)/server/ && \
     /sbin/ldconfig
 
 RUN \
   useradd -u 1001 -ms /bin/bash builder && \
-  yum update -y && \
-  yum upgrade -y && \
-  yum install -y epel-release && \
-  yum install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel protobuf-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel && \
-  yum-builddep -y R-devel && \
-  yum clean all
+  dnf update -y && \
+  dnf upgrade -y && \
+  dnf install -y epel-release && \
+  dnf config-manager --set-enabled powertools && \
+  dnf module enable -y postgresql:13 && \
+  dnf install postgresql-server-devel postgresql-devel -y && \
+  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel protobuf-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm5.0-devel llvm-toolset sudo cmake initscripts && \
+  dnf builddep -y R-devel && \
+  dnf clean all
 
-ENV R_VERSION 3.6.3
-RUN curl -O https://cran.rstudio.com/src/base/R-3/R-${R_VERSION}.tar.gz && \
+ENV R_VERSION 4.1.2
+RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
     ./configure \
@@ -32,9 +35,7 @@ RUN curl -O https://cran.rstudio.com/src/base/R-3/R-${R_VERSION}.tar.gz && \
 RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
 RUN ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
-ENV JAVA_HOME /usr/lib/jvm/java-1.8.0
-ENV LD_LIBRARY_PATH $JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server/
-RUN echo "$JAVA_HOME/jre/lib/amd64/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
+RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
     /sbin/ldconfig && \
     R CMD javareconf
 
@@ -46,9 +47,9 @@ RUN \
 
 RUN \
   cd ~ && \
-  wget https://github.com/jeffreyhorner/rapache/archive/v1.2.9.tar.gz -O rapache-1.2.9.tar.gz && \
-  tar xzvf rapache-1.2.9.tar.gz && \
-  cd rapache-1.2.9 && \
+  wget https://github.com/brianbolt/rapache/archive/master.tar.gz -O rapache-master.tar.gz && \
+  tar xzvf rapache-master.tar.gz && \
+  cd rapache-master && \
   ./configure \
     --with-R=/usr/local/bin/R\
     --with-apreq2-config=/usr/bin/apreq2-config && \
@@ -57,8 +58,8 @@ RUN \
 USER root
 
 RUN \
-  yum install -y MTA mod_ssl /usr/sbin/semanage && \
-  cd /home/builder/rapache-1.2.9 && \
+  dnf install -y MTA mod_ssl /usr/sbin/semanage && \
+  cd /home/builder/rapache-master && \
   make install
 
   
@@ -66,20 +67,12 @@ RUN \
   chkconfig httpd off \
   userdel builder
 
-RUN yum install -y centos-release-scl-rh && \
-    yum install -y llvm-toolset-7-clang && \
-    yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm && \
-    yum install -y llvm5.0-devel postgresql13-devel curl-devel libxml2-devel
-
 # NODE
 ENV NPM_CONFIG_LOGLEVEL warn
-ENV NODE_VERSION 14.15.1
-
-RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz" \
-	&& tar -xzf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1 \
-	&& rm -f "node-v$NODE_VERSION-linux-x64.tar.gz" \
-  && npm install -g npm@latest \
-  && npm install -g coffeescript properties underscore underscore-deep-extend properties-parser flat glob dotenv dotenv-expand
+ENV NODE_VERSION 14.x
+RUN curl -fsSL https://rpm.nodesource.com/setup_$NODE_VERSION | bash - && \
+  dnf install -y nodejs && \
+  npm install -g coffeescript properties underscore underscore-deep-extend properties-parser flat glob dotenv dotenv-expand
 ENV NODE_PATH /usr/local/lib/node_modules
 
 RUN	useradd -u 1000 -ms /bin/bash runner
@@ -90,14 +83,17 @@ WORKDIR $ACAS_HOME
 
 ENV R_LIBS $ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
-ENV PATH /usr/pgsql-13/bin/:$PATH
+# ENV PATH /usr/pgsql-13/bin/:$PATH
 
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
-RUN yum install -y nlopt nlopt-devel sudo
+RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
+    tar -xzvf v2.7.1.tar.gz && \
+    cd nlopt-2.7.1 && \
+    cmake . && make && sudo make install
+
 USER runner
-RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));" && \
-     rm DESCRIPTION installation.R
+RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"
 
 CMD ["bin/acas.sh", "run", "rservices"]

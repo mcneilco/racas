@@ -1,4 +1,4 @@
-FROM mcneilco/centos-r-repo:1.13.6
+FROM mcneilco/centos-r-repo:1.13.7
 
 ENV LANG en_US.UTF-8
 COPY --chown=runner:runner . /home/runner/racas
