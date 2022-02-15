@@ -16,7 +16,7 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v2
-       -
+      -
         name: Docker r-repo meta
         id: meta-repo
         uses: docker/metadata-action@v3
