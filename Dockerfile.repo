@@ -9,6 +9,7 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
 
 RUN \
   useradd -u 1001 -ms /bin/bash builder && \
+  echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
   dnf update -y && \
   dnf upgrade -y && \
   dnf install -y epel-release && \
