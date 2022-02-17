@@ -48,7 +48,7 @@ RUN \
 
 RUN \
   cd ~ && \
-  wget https://github.com/brianbolt/rapache/archive/master.tar.gz -O rapache-master.tar.gz && \
+  wget https://github.com/jeffreyhorner/rapache/archive/master.tar.gz -O rapache-master.tar.gz && \
   tar xzvf rapache-master.tar.gz && \
   cd rapache-master && \
   ./configure \
@@ -89,7 +89,6 @@ WORKDIR $ACAS_HOME
 
 ENV R_LIBS $ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
-# ENV PATH /usr/pgsql-13/bin/:$PATH
 
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
