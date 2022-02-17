@@ -8,7 +8,6 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
     /sbin/ldconfig
 
 RUN \
-  useradd -u 1001 -ms /bin/bash builder && \
   echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
   dnf update -y && \
   dnf upgrade -y && \
@@ -18,6 +17,7 @@ RUN \
   dnf install postgresql-server-devel postgresql-devel -y && \
   dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel protobuf-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm5.0-devel llvm-toolset sudo cmake initscripts && \
   dnf builddep -y R-devel && \
+  dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   dnf clean all
 
 ENV R_VERSION 4.1.2
@@ -40,14 +40,11 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
     /sbin/ldconfig && \
     R CMD javareconf
 
-USER builder
-
 RUN \
   mkdir -p ~/rpmbuild/SOURCES && \
   mkdir -p ~/rpmbuild/SPECS
 
 RUN \
-  dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   cd ~ && \
   wget https://github.com/jeffreyhorner/rapache/archive/master.tar.gz -O rapache-master.tar.gz && \
   tar xzvf rapache-master.tar.gz && \
@@ -59,8 +56,7 @@ RUN \
   make install
   
 RUN \
-  chkconfig httpd off \
-  userdel builder
+  chkconfig httpd off
 
 # NODE
 ENV NPM_CONFIG_LOGLEVEL warn
