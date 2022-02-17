@@ -1,4 +1,4 @@
-## Building Multiarch
+## Building Multiarch r-repo image
 
 ### Using Manifest 
 
@@ -23,8 +23,8 @@ On either system:
 ```
 docker manifest create \
 mcneilco/acas-r-repo:1.13.7 \
---amend mcneilco/acas-r-repo:1.13.7-linuxarm64v8 \
---amend mcneilco/acas-r-repo:1.13.7-linuxamd64
+--amend mcneilco/acas-r-repo:1.13.7-linuxamd64 \
+--amend mcneilco/acas-r-repo:1.13.7-linuxarm64v8
 
 docker manifest push mcneilco/acas-r-repo:1.13.7
 ```
@@ -35,4 +35,12 @@ This is much simpler but qemu is extremely slow when building multiarch packages
 
 ```
 docker buildx build --push --platform linux/amd64,linux/arm64/v8 -t mcneilco/acas-r-repo:1.13.7 -f Dockerfile.repo .
+```
+
+
+## Building Multiarch racas image from acas-r-repo
+
+This is currently done via automated builds but this command should be equivalent to the current build process
+```
+docker buildx build --push --no-cache --platform linux/amd64,linux/arm64/v8 -t mcneilco/racas-oss:1.13.7 .
 ```

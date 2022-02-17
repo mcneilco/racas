@@ -76,6 +76,11 @@ RUN curl -fsSL https://rpm.nodesource.com/setup_$NODE_VERSION | bash - && \
   npm install -g coffeescript properties underscore underscore-deep-extend properties-parser flat glob dotenv dotenv-expand
 ENV NODE_PATH /usr/local/lib/node_modules
 
+RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
+    tar -xzvf v2.7.1.tar.gz && \
+    cd nlopt-2.7.1 && \
+    cmake . && make && sudo make install
+
 RUN	useradd -u 1000 -ms /bin/bash runner
 ENV ACAS_HOME /home/runner/build
 RUN echo $ACAS_HOME && mkdir $ACAS_HOME
@@ -89,10 +94,6 @@ RUN mkdir $ACAS_HOME/r_libs
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
-RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
-    tar -xzvf v2.7.1.tar.gz && \
-    cd nlopt-2.7.1 && \
-    cmake . && make && sudo make install
 
 USER runner
 RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"

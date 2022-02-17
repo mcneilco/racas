@@ -21,7 +21,8 @@ installDeps <- function(description = "DESCRIPTION", skipInstalled = TRUE, type 
     pkgs <- pkgs[!pkgs %in% installed]
   }
   if(length(pkgs) > 0) {
-    install.packages(pkgs, repos = "https://cran.microsoft.com/", type = type, method='wget')
+    print(paste0("Installing ", type, " package:", pkgs))
+    install.packages(pkgs, repos = "https://cran.microsoft.com/", type = type)
   } else
     message("skipping, dependencies already installed")
 }
