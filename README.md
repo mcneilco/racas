@@ -21,6 +21,8 @@ docker push mcneilco/acas-r-repo:1.13.7-linuxamd64
 On either system:
 
 ```
+docker pull mcneilco/acas-r-repo:1.13.7-linuxamd64 
+docker pull mcneilco/acas-r-repo:1.13.7-linuxarm64v8
 docker manifest create \
 mcneilco/acas-r-repo:1.13.7 \
 --amend mcneilco/acas-r-repo:1.13.7-linuxamd64 \
