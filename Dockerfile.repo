@@ -9,7 +9,7 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
 
 RUN \
   echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
-  sed -i 's/vault.centos.org/mirror.stream.centos.org/g' /etc/yum.repos.d/* && \
+  sed -i 's/vault.centos.org/archive.kernel.org/g' /etc/yum.repos.d/* && \
   dnf update -y && \
   dnf upgrade -y && \
   dnf install -y epel-release && \
