@@ -20,10 +20,6 @@ jobs:
           # list of Docker images to use as base name for tags
           images: |
             ${{ github.repository }}-oss
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{raw}}
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v1
