@@ -43,11 +43,12 @@ RUN \
   mkdir -p ~/rpmbuild/SOURCES && \
   mkdir -p ~/rpmbuild/SPECS
 
+ENV RAPACHE_VERSION master
 RUN \
   cd ~ && \
-  wget https://github.com/jeffreyhorner/rapache/archive/master.tar.gz -O rapache-master.tar.gz && \
-  tar xzvf rapache-master.tar.gz && \
-  cd rapache-master && \
+  wget https://github.com/jeffreyhorner/rapache/archive/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
+  tar xzvf rapache-$RAPACHE_VERSION.tar.gz && \
+  cd rapache-$RAPACHE_VERSION && \
   ./configure \
     --with-R=/usr/local/bin/R\
     --with-apreq2-config=/usr/bin/apreq2-config && \
