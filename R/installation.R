@@ -22,7 +22,7 @@ installDeps <- function(description = "DESCRIPTION", skipInstalled = TRUE, type 
   }
   if(length(pkgs) > 0) {
     print(paste0("Installing ", type, " package:", pkgs))
-    install.packages(pkgs, repos = "https://cran.microsoft.com/", type = type)
+    install.packages(pkgs, repos = "https://cloud.r-project.org/", type = type)
   } else
     message("skipping, dependencies already installed")
 }
