@@ -1,6 +1,7 @@
-FROM mcneilco/centos-r-repo:1.13.6
+FROM mcneilco/acas-r-repo:1.13.7
 
 ENV LANG en_US.UTF-8
+ENV LC_ALL C.UTF-8
 COPY --chown=runner:runner . /home/runner/racas
 RUN  export R_LIBS=/home/runner/build/r_libs && R CMD INSTALL --no-multiarch --with-keep.source /home/runner/racas
 EXPOSE 1080
