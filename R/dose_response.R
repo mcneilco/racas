@@ -1834,7 +1834,7 @@ add_clob_values_to_fit_data <- function(fitData) {
                "<br>",
                "Residual standard error:","<br>",
                "<br>",
-               modelSummary$rseMat[,"rse"], "(",modelSummary$rseMat[,"df"], " degrees of freedom",")",
+               prettyNum(modelSummary$rseMat[,"rse"], 4), "(",modelSummary$rseMat[,"df"], " degrees of freedom",")",
                "<br>")
 
         goodnessOfFit.parameters <- flatten_list_to_data.table(goodnessOfFit.parameters[[1]])
