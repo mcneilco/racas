@@ -515,7 +515,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     
     #Curve Drawing Function
     extractCurveData <- function(cid) {
-      flagged <- any(params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit")
+      flagged <- !is.na(params[cid,]$userFlagStatus) && params[cid,]$userFlagStatus == "rejected" && params[cid,]$algorithmFlagStatus != "no fit"
       curveID <- params$curveId[cid]
       curveParams <- subset(params, params$curveId == curveID)
       color <- curveParams$color
