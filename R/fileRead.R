@@ -13,7 +13,7 @@
 #' In fileRead.R
 #' Hidden sheets in xls and xlsx files are ignored.
 
-readDelim <- function(filePath, delim=",", ...) {
+readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
     # Read in a delimited file
     # Use delim regex to count number of columns as read.delim only reads the first 5 rows.
     fileEncoding <- getFileEncoding(filePath)
@@ -32,6 +32,11 @@ readDelim <- function(filePath, delim=",", ...) {
     #   $        // Till the end  (This is necessary, else every comma will satisfy the condition)
     # )
     splitRegex <- paste0(delim,"(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+    if(testNLines > 0) {
+        if(length(fileData) >= testNLines) {
+            fileData <- fileData[1:testNLines]
+        }
+    }
     # Loop through the lines, split using the regex, count the number of columns, return the max number of columns
     nCol <- max(unlist(lapply(fileData, function(x) length(tstrsplit(x, split=splitRegex, perl = TRUE)))))
     # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
