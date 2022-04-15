@@ -13,6 +13,15 @@
 #' In fileRead.R
 #' Hidden sheets in xls and xlsx files are ignored.
 
+readDelim <- function(filePath, delim=",", ...) {
+      fileEncoding <- getFileEncoding(filePath)
+      fileData <- readLines(filePath, encoding=fileEncoding)
+      orig <- '(,)(?=(?:[^"]|"[^"]*")*$)'
+      nCol <- max(unlist(lapply(fileData, function(x) length(tstrsplit(x, split=paste0("(",delim,")(?=(?:[^\"]|\"[^\"]*\")*$)"), perl = TRUE)))))
+      output <- read.delim(filePath, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
+      return(output)
+}
+
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
@@ -32,15 +41,13 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     })
   } else if (grepl("\\.csv$",filePath)){
     tryCatch({
-      fileEncoding <- getFileEncoding(filePath)
-      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
+      output <- readDelim(filePath, delim = ",", header = header)
     }, error = function(e) {
       stopUser("Cannot read input csv file")
     })
   } else if (grepl("\\.txt$",filePath)){
     tryCatch({
-      fileEncoding <- getFileEncoding(filePath)
-      output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
+      output <- readDelim(filePath, delim = "\t")
     }, error = function(e) {
       stopUser("Cannot read input txt file")
     })
