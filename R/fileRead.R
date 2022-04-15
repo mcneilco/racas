@@ -32,15 +32,15 @@ readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
     #   $        // Till the end  (This is necessary, else every comma will satisfy the condition)
     # )
     splitRegex <- paste0(delim,"(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
-    if(testNLines > 0) {
-        if(length(fileData) >= testNLines) {
-            fileData <- fileData[1:testNLines]
-        }
+    if(testNLines > 0 && length(fileData) >= testNLines) {
+       linesToTestForNumColumns <- fileData[1:testNLines]
+    } else {
+        linesToTestForNumColumns <- fileData
     }
     # Loop through the lines, split using the regex, count the number of columns, return the max number of columns
-    nCol <- max(unlist(lapply(fileData, function(x) length(tstrsplit(x, split=splitRegex, perl = TRUE)))))
+    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(tstrsplit(x, split=splitRegex, perl = TRUE)))))
     # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
-    output <- read.delim(filePath, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
+    output <- read.delim(text = fileData, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
     return(output)
 }
 
