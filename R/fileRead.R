@@ -14,12 +14,29 @@
 #' Hidden sheets in xls and xlsx files are ignored.
 
 readDelim <- function(filePath, delim=",", ...) {
-      fileEncoding <- getFileEncoding(filePath)
-      fileData <- readLines(filePath, encoding=fileEncoding)
-      orig <- '(,)(?=(?:[^"]|"[^"]*")*$)'
-      nCol <- max(unlist(lapply(fileData, function(x) length(tstrsplit(x, split=paste0("(",delim,")(?=(?:[^\"]|\"[^\"]*\")*$)"), perl = TRUE)))))
-      output <- read.delim(filePath, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
-      return(output)
+    # Read in a delimited file
+    # Use delim regex to count number of columns as read.delim only reads the first 5 rows.
+    fileEncoding <- getFileEncoding(filePath)
+    fileData <- readLines(filePath, encoding=fileEncoding)
+    # https://stackoverflow.com/questions/18893390/splitting-on-comma-outside-quotes
+    # Regex explaination from stack overflow:
+    # ,           // Split on comma
+    # (?=         // Followed by
+    #   (?:      // Start a non-capture group
+    #     [^"]*  // 0 or more non-quote characters
+    #     "      // 1 quote
+    #     [^"]*  // 0 or more non-quote characters
+    #     "      // 1 quote
+    #   )*       // 0 or more repetition of non-capture group (multiple of 2 quotes will be even)
+    #   [^"]*    // Finally 0 or more non-quotes
+    #   $        // Till the end  (This is necessary, else every comma will satisfy the condition)
+    # )
+    splitRegex <- paste0(delim,"(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
+    # Loop through the lines, split using the regex, count the number of columns, return the max number of columns
+    nCol <- max(unlist(lapply(fileData, function(x) length(tstrsplit(x, split=splitRegex, perl = TRUE)))))
+    # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
+    output <- read.delim(filePath, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
+    return(output)
 }
 
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
@@ -32,29 +49,36 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   }
   
   if (grepl("\\.xlsx?$",filePath)) {
-    tryCatch({
+    output <- tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
       sheetToRead <- which(unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetVisible, object = wb)))[sheet]
-      output <- XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d")
+      return(XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d"))
     }, error = function(e) {
-      stopUser("Cannot read input excel file")
-    })
-  } else if (grepl("\\.csv$",filePath)){
-    tryCatch({
-      output <- readDelim(filePath, delim = ",", header = header)
-    }, error = function(e) {
-      stopUser("Cannot read input csv file")
-    })
-  } else if (grepl("\\.txt$",filePath)){
-    tryCatch({
-      output <- readDelim(filePath, delim = "\t")
-    }, error = function(e) {
-      stopUser("Cannot read input txt file")
+      stopUser("Cannot read input excel file: ", e$message)
     })
   } else {
-    stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
+    # Get delim
+    if (grepl("\\.csv$",filePath)) {
+      delim <- ","
+    } else if (grepl("\\.txt$",filePath)) {
+      delim <- "\t"
+    } else {
+      stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
+    }
+    output <- tryCatch({
+      return(readDelim(filePath, delim = delim, header = header))
+    }, warning = function(e) {
+      # We haven't caught additional warnings so far
+      # So we only stop if we get a warning that is known to cause issues
+      if(e$message == "EOF within quoted string") {
+        stop(e$message)
+      } else {
+        return(output)
+      }
+    }, error = function(e) {
+      stopUser(paste0("Cannot read input csv file: ", e$message))
+    })
   }
-  
   return(output)
 }
 
