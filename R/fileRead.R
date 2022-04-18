@@ -18,27 +18,14 @@ readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
     # Use delim regex to count number of columns as read.delim only reads the first 5 rows.
     fileEncoding <- getFileEncoding(filePath)
     fileData <- readLines(filePath, encoding=fileEncoding)
-    # https://stackoverflow.com/questions/18893390/splitting-on-comma-outside-quotes
-    # Regex explaination from stack overflow:
-    # ,           // Split on comma
-    # (?=         // Followed by
-    #   (?:      // Start a non-capture group
-    #     [^"]*  // 0 or more non-quote characters
-    #     "      // 1 quote
-    #     [^"]*  // 0 or more non-quote characters
-    #     "      // 1 quote
-    #   )*       // 0 or more repetition of non-capture group (multiple of 2 quotes will be even)
-    #   [^"]*    // Finally 0 or more non-quotes
-    #   $        // Till the end  (This is necessary, else every comma will satisfy the condition)
-    # )
-    splitRegex <- paste0(delim,"(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")
     if(testNLines > 0 && length(fileData) >= testNLines) {
        linesToTestForNumColumns <- fileData[1:testNLines]
     } else {
         linesToTestForNumColumns <- fileData
     }
-    # Loop through the lines, split using the regex, count the number of columns, return the max number of columns
-    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(tstrsplit(x, split=splitRegex, perl = TRUE)))))
+    # Loop through the number of test lines and scan for columns
+    # Scan is the underlying function under read.delim.  This is essentially allows us to extend the number of lines used to test for the number of columns because read.delim does not allow us to specify the number of lines to scan.
+    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(scan(text=x, sep=delim, na.strings = "", quote =  "\"", fileEncoding=fileEncoding, quiet=TRUE, what="character")))))
     # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
     output <- read.delim(text = fileData, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
     return(output)
@@ -70,19 +57,25 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     } else {
       stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
     }
-    output <- tryCatch({
-      return(readDelim(filePath, delim = delim, header = header))
-    }, warning = function(e) {
-      # We haven't caught additional warnings so far
-      # So we only stop if we get a warning that is known to cause issues
-      if(e$message == "EOF within quoted string") {
-        stop(e$message)
-      } else {
-        return(output)
+    output <- tryCatch(
+      withCallingHandlers(
+        {
+          readDelim(filePath, delim = delim, header = header)
+        }, warning = function(e) {
+          # We haven't caught additional warnings so far
+          # So we only stop if we get a warning that is known to cause issues
+          if(e$message == "EOF within quoted string") {
+            stop(e$message)
+          } else {
+            # warnUser(e$message)
+            invokeRestart("muffleWarning")
+          }
+        }
+      ),
+      error = function(e) {
+        stopUser(paste0("Cannot read input csv file: ", e$message))
       }
-    }, error = function(e) {
-      stopUser(paste0("Cannot read input csv file: ", e$message))
-    })
+    )
   }
   return(output)
 }
