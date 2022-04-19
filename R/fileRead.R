@@ -13,6 +13,24 @@
 #' In fileRead.R
 #' Hidden sheets in xls and xlsx files are ignored.
 
+readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
+    # Read in a delimited file
+    # Use delim regex to count number of columns as read.delim only reads the first 5 rows.
+    fileEncoding <- getFileEncoding(filePath)
+    fileData <- readLines(filePath, encoding=fileEncoding)
+    if(testNLines > 0 && length(fileData) >= testNLines) {
+       linesToTestForNumColumns <- fileData[1:testNLines]
+    } else {
+        linesToTestForNumColumns <- fileData
+    }
+    # Loop through the number of test lines and scan for columns
+    # Scan is the underlying function under read.delim.  This is essentially allows us to extend the number of lines used to test for the number of columns because read.delim does not allow us to specify the number of lines to scan.
+    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(scan(text=x, sep=delim, na.strings = "", quote =  "\"", fileEncoding=fileEncoding, quiet=TRUE, what="character")))))
+    # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
+    output <- read.delim(text = fileData, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
+    return(output)
+}
+
 readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   
   if (is.na(filePath)) {
@@ -23,31 +41,42 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   }
   
   if (grepl("\\.xlsx?$",filePath)) {
-    tryCatch({
+    output <- tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
       sheetToRead <- which(unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetVisible, object = wb)))[sheet]
-      output <- XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d")
+      return(XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d"))
     }, error = function(e) {
-      stopUser("Cannot read input excel file")
-    })
-  } else if (grepl("\\.csv$",filePath)){
-    tryCatch({
-      fileEncoding <- getFileEncoding(filePath)
-      output <- read.csv(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
-    }, error = function(e) {
-      stopUser("Cannot read input csv file")
-    })
-  } else if (grepl("\\.txt$",filePath)){
-    tryCatch({
-      fileEncoding <- getFileEncoding(filePath)
-      output <- read.delim(filePath, header = header, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding)
-    }, error = function(e) {
-      stopUser("Cannot read input txt file")
+      stopUser("Cannot read input excel file: ", e$message)
     })
   } else {
-    stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
+    # Get delim
+    if (grepl("\\.csv$",filePath)) {
+      delim <- ","
+    } else if (grepl("\\.txt$",filePath)) {
+      delim <- "\t"
+    } else {
+      stopUser("The input file must have extension .xls, .xlsx, .csv, or .txt")
+    }
+    output <- tryCatch(
+      withCallingHandlers(
+        {
+          readDelim(filePath, delim = delim, header = header)
+        }, warning = function(e) {
+          # We haven't caught additional warnings so far
+          # So we only stop if we get a warning that is known to cause issues
+          if(e$message == "EOF within quoted string") {
+            stop(e$message)
+          } else {
+            # warnUser(e$message)
+            invokeRestart("muffleWarning")
+          }
+        }
+      ),
+      error = function(e) {
+        stopUser(paste0("Cannot read input csv file: ", e$message))
+      }
+    )
   }
-  
   return(output)
 }
 
