@@ -15,7 +15,7 @@ RUN \
   dnf install -y epel-release && \
   dnf config-manager --set-enabled powertools && \
   dnf module enable -y postgresql:13 && \
-  dnf install postgresql-server-devel postgresql-devel -y && \
+  dnf install postgresql-server-devel postgresql-devel postgresql -y && \
   dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel protobuf-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm5.0-devel llvm-toolset sudo cmake initscripts && \
   dnf builddep -y R-devel && \
   dnf install -y MTA mod_ssl /usr/sbin/semanage && \
