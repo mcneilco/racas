@@ -520,7 +520,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
       curveParams <- subset(params, params$curveId == curveID)
       color <- curveParams$color
       curveData <- NULL
-      if(drawFlagged == FALSE && !flagged) {
+      if(drawFlagged == FALSE && is.na(flagged) || !flagged) {
         drawValues <- getDrawValues(params = params[cid,])
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
