@@ -6,7 +6,8 @@
 #' @param typeAndKind A string value that follows the form "lsType_lsKind"
 #' @return A list of lsStates
 getStatesByTypeAndKind <- function(entity, typeAndKind) {
-  return(entity$lsStates[lapply(entity$lsStates, function(x) x$"lsTypeAndKind")==typeAndKind])
+  return(Filter(f = function(x) x$lsTypeAndKind == typeAndKind && !x$ignored && !x$deleted,
+                     x = entity$lsStates))
 }
 
 #' Gets values from a state
@@ -16,5 +17,6 @@ getStatesByTypeAndKind <- function(entity, typeAndKind) {
 #' @param typeAndKind A string value that follows the form "lsType_lsKind"
 #' @return A list of lsValues
 getValuesByTypeAndKind <- function(lsState, typeAndKind) {
-  return(lsState$lsValues[lapply(lsState$lsValues, function(x) x$"lsTypeAndKind")==typeAndKind])
+  return(Filter(f = function(x) x$lsTypeAndKind == typeAndKind && !x$ignored && !x$deleted,
+                     x = lsState$lsValues))
 }
