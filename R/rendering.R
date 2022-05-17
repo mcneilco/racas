@@ -344,6 +344,70 @@ filterFlaggedPoints <- function(points, returnGood = TRUE) {
     return(subset(points, userFlagStatus==badFlag | preprocessFlagStatus==badFlag | algorithmFlagStatus==badFlag | tempFlagStatus==badFlag))
   }
 }
+applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDisplayValues) {
+    ## PREP FROM RENDER CURVE
+    # Colors
+    # plotColors <- c("black", "#0C5BB0FF", "#EE0011FF", "#15983DFF", "#EC579AFF", "#FA6B09FF", 
+    #                 "#149BEDFF", "#A1C720FF", "#FEC10BFF", "#16A08CFF", "#9A703EFF")
+    if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
+        plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
+    } else {
+        plotColors <- c("black", "#0C5BB0FF", "#EE0011FF", "#15983DFF", "#EC579AFF", "#FA6B09FF", 
+                        "#149BEDFF", "#A1C720FF", "#FEC10BFF", "#16A08CFF", "#9A703EFF")
+    }
+    if(!is.na(parsedParams$colorBy)) {
+        key <- switch(parsedParams$colorBy,
+                    "protocol" = "protocol_label",
+                    "experiment" = "experiment_label",
+                    "batch" = "batch_code"
+        )
+        uniqueKeys <- setkeyv(unique(fitData[ , key, with = FALSE]), key)
+        colorCategories <- uniqueKeys[, color:=rep(plotColors, length.out = .N)][ , name:=get(key)]
+        fitData <- merge(fitData, colorCategories, by = key)
+    }
+
+    if("category" %in% names(fitData)) {
+      fitData <- fitData[exists("category") & (!is.null(category) & category %in% c("inactive","potent")), c("fittedMax", "fittedMin") := {
+        responseMean <- mean(points[[1]][userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response)
+        list("fittedMax" = responseMean, "fittedMin" = responseMean)
+      }, by = curveId]
+    }
+    data <- list(parameters = as.data.frame(fitData), points = as.data.frame(rbindlist(fitData$points)))
+
+    #To be backwards compatable with hill slope example files
+    hillSlopes <- which(!is_null_or_na(data$parameters$hillslope))
+    if(length(hillSlopes) > 0  ) {
+      data$parameters$slope <- -data$parameters$hillslope[hillSlopes]
+    }
+    fittedHillSlopes <- which(!is_null_or_na(data$parameters$fitted_hillslope))
+    if(length(fittedHillSlopes) > 0 ) {
+      data$parameters$fitted_slope <- -data$parameters$fitted_hillslope[fittedHillSlopes]
+    }
+
+    if(is.na(parsedParams$logDose)) {
+        parsedParams$logDose <- TRUE
+        if(fitData[1]$renderingHint %in% c("Michaelis-Menten", "Substrate Inhibition", "Scatter", "Scatter Log-y")) parsedParams$logDose <- FALSE
+    }
+    if(is.na(parsedParams$logResponse)) {
+        parsedParams$logResponse <- FALSE
+        if(fitData[1]$renderingHint %in% c("Scatter Log-y","Scatter Log-x,y")) parsedParams$logResponse <- TRUE
+    }
+
+    # Apply protocol ymin/max
+    if(any(is.na(parsedParams$yMin),is.na(parsedParams$yMax))) {
+      plotWindowPoints <- rbindlist(fitData[ , points])[!userFlagStatus == "knocked out" & !preprocessFlagStatus == "knocked out" & !algorithmFlagStatus == "knocked out",]
+      if(nrow(plotWindowPoints) == 0) {
+        plotWindow <- racas::get_plot_window(fitData[1]$points[[1]], logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)      
+      } else {
+        plotWindow <- racas::get_plot_window(plotWindowPoints, logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)
+      }
+      recommendedDisplayWindow <- list(ymax = max(protocolDisplayValues$ymax,plotWindow[2], na.rm = TRUE), ymin = min(protocolDisplayValues$ymin,plotWindow[4], na.rm = TRUE))
+      if(is.na(parsedParams$yMin)) parsedParams$yMin <- recommendedDisplayWindow$ymin
+      if(is.na(parsedParams$yMax)) parsedParams$yMax <- recommendedDisplayWindow$ymax
+    }
+
+    return(list(data = data, parsedParams = parsedParams))
+}
 plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
   if(is.null(curveLwd) || is.na(curveLwd)) {
     curveLwd <- 1
