@@ -336,9 +336,15 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' curveData <- poIVPKCurveData$points
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
-
+filterFlaggedPoints <- function(points, returnGood = TRUE) {
+  badFlag <- "knocked out"
+  if(returnGood) {
+    return(subset(points, userFlagStatus!=badFlag & preprocessFlagStatus!=badFlag & algorithmFlagStatus!=badFlag & tempFlagStatus!=badFlag))
+  } else {
+    return(subset(points, userFlagStatus==badFlag | preprocessFlagStatus==badFlag | algorithmFlagStatus==badFlag | tempFlagStatus==badFlag))
+  }
+}
 plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
-
   if(is.null(curveLwd) || is.na(curveLwd)) {
     curveLwd <- 1
     if(!is.null(racas::applicationSettings$server.curveRender.curveLwd) && racas::applicationSettings$server.curveRender.curveLwd != "") {
@@ -422,8 +428,8 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
   if(drawPoints) {
-    flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
-    goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
+    flaggedPoints <- filterFlaggedPoints(curveData,  returnGood = FALSE)
+    goodPoints <- filterFlaggedPoints(curveData, returnGood = TRUE)
   }
 
   ##Calculate Means and SDs
@@ -765,14 +771,17 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                              }
   )
   
-  modelFitClasses <- jsonlite::fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes)
-  modelClass <- modelFitClasses[modelFitClasses$code == renderingHint,]
+  modelFitClasses <- fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes)
+  modelClass <- Filter(f = function(x) x$code == renderingHint, x=modelFitClasses)[[1]]
   if("renderOptions" %in% names(modelClass)) {
     renderingHintConfigs <- as.list(modelClass$renderOptions)
     renderingOptions <- combine.lists(renderingOptions, renderingHintConfigs)
   }
   if(!"connectPoints" %in% names(renderingOptions) || is.na(renderingOptions$connectPoints)) {
     renderingOptions$connectPoints <- FALSE
+  }
+  if("goodnessOfFit" %in% names(modelClass)) {
+    renderingOptions$goodnessOfFit <- as.list(modelClass$goodnessOfFit)
   }
   return(renderingOptions)
 }
