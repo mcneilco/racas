@@ -346,6 +346,22 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     }
   }
   curveLwd <- as.numeric(curveLwd)
+
+  # Set the x and y labels from the first row of data if they aren't already set
+  if(is.na(xlabel)) {
+    doseKind <- ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Dose',as.character(curveData$doseKind[1]))
+    doseUnits <- ifelse(is.null(curveData$doseUnits[1]) || is.na(curveData$doseUnits[1]),'',paste0(" (",as.character(curveData$doseUnits[1]),")"))
+    xlabel <- paste0(doseKind, doseUnits)
+  }
+  if(is.na(ylabel)) {
+    respKind <- ifelse(is.null(curveData$responseKind[1]) || is.na(curveData$responseKind[1]),'Response',as.character(curveData$responseKind[1]))
+    respUnits <- ifelse(is.null(curveData$responseUnits[1]) || is.na(curveData$responseUnits[1]),'',paste0(" (",as.character(curveData$responseUnits[1]),")"))
+    # Hack to work around the fact we replace "Response" -> "efficacy" when saving dose response data
+    if(respKind == "efficacy") {
+      respKind <- "Response"
+    }
+    ylabel <- paste0(respKind, respUnits)
+  }
   
   # Determine if overlay
   overlay <- FALSE
@@ -684,12 +700,6 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
     }
     if(labelAxes) {
-      if(is.na(xlabel)) {
-        xlabel <- paste0(ifelse(is.null(curveData$doseKind[1]) || is.na(curveData$doseKind[1]),'Dose',as.character(curveData$doseKind[1])), ifelse(is.null(curveData$doseUnits[1]) || is.na(curveData$doseUnits[1]),'',paste0(" (",as.character(curveData$doseUnits[1]),")")))
-      }
-      if(is.na(ylabel)) {
-        ylabel <- paste0(ifelse(is.null(curveData$responseKind[1]) || is.na(curveData$responseKind[1]),'Response',as.character(curveData$responseKind[1])), ifelse(is.null(curveData$responseUnits[1]) || is.na(curveData$responseUnits[1]),'',paste0(" (",as.character(curveData$responseUnits[1]),")")))
-      }
       title(xlab = xlabel, ylab = ylabel)
     }
   }, error = plotError)
