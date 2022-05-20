@@ -409,8 +409,9 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     curveData$pch <- params$pch[match(curveData$curveId,params$curveId)]
   }
   
-  #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
-  #If the function can't 
+  # If we are plotting in log space then we need to make sure that log dose are not 0
+  # If modZero is passed in as TRUE then we will make sure all 0 doses are scaled back
+  # one log back from the lowest non-zero dose
   if(modZero && drawPoints) {
     curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   }
