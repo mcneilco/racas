@@ -425,8 +425,9 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     curveData$pch <- params$pch[match(curveData$curveId,params$curveId)]
   }
   
-  #Doses at 0 don't really make sense (and won't work) so this function moves 0 doses down one more dose (calculated by using the next two doses)
-  #If the function can't 
+  # If we are plotting in log space then we need to make sure that log dose are not 0
+  # If modZero is passed in as TRUE then we will make sure all 0 doses are scaled back
+  # one log back from the lowest non-zero dose
   if(modZero && drawPoints) {
     curveData <- modify_or_remove_zero_dose_points(curveData, logDose)
   }
@@ -711,25 +712,35 @@ is.NULLorNA <- function(value) {
 }
 
 modify_or_remove_zero_dose_points <- function(points, logDose) {
+  # Users upload datapoints with dose = 0.0.
+  # This function removes those points and replaces them with the
+  # lowest non-zero concentration minus the difference between the lowest non-zero concentration and the next highest concentration)
   points <- as.data.table(points)
   setkey(points, dose)
+  # Only applies to 0 dose points
   points[dose==0, dose := rep(
-    points[ , {
-      doses <- unique(dose)
-      if(length(doses) > 2) {
-        values <- unique(doses)[2:3]
-        if(logDose) {
-          answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
+      # For the entire dataset
+      # Unique the doses and pick the 2 lowest non zero does and calculate their difference
+      # Then subtract that difference from the lowest non zero dose and return it
+      # Sets all 0 doses to this value
+      points[ , {
+        doses <- unique(dose)
+        if(length(doses) > 2) {
+          values <- unique(doses)[2:3]
+          # If we are doing log dose, then we need to take the log of the values to determine their difference in log space
+          if(logDose) {
+            answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
+          } else {
+            answer <- values[1] - (values[2] - values[1])
+          }
         } else {
-          answer <- values[1] - (values[2] - values[1])
+          # If we have only 1 dose (not including 0) then just return 0
+          # because we can't calculate the difference
+          answer <- 0
         }
-      } else {
-        answer <- 0
-      }
-      answer
-    },
-    by = curveId]$V1,
-    .N)]
+        answer
+      }]
+    , .N)]
   return(points[dose!=0,])
 }
 
