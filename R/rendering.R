@@ -701,25 +701,32 @@ is.NULLorNA <- function(value) {
 }
 
 modify_or_remove_zero_dose_points <- function(points, logDose) {
+  # Users upload datapoints with dose = 0.0.
+  # This function removes those points and replaces them with the
+  # lowest non-zero concentration minus the difference between the lowest non-zero concentration and the next highest concentration)
   points <- as.data.table(points)
   setkey(points, dose)
+  # Only applies to 0 dose points
   points[dose==0, dose := rep(
-    points[ , {
-      doses <- unique(dose)
-      if(length(doses) > 2) {
-        values <- unique(doses)[2:3]
-        if(logDose) {
-          answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
+      # For the entire dataset
+      # Unique the doses and pick the 2 lowest non zero does and calculate their difference
+      # Then subtract that difference from the lowest non zero dose and return it
+      # Sets all 0 doses to this value
+      points[ , {
+        doses <- unique(dose)
+        if(length(doses) > 2) {
+          values <- unique(doses)[2:3]
+          if(logDose) {
+            answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
+          } else {
+            answer <- values[1] - (values[2] - values[1])
+          }
         } else {
-          answer <- values[1] - (values[2] - values[1])
+          answer <- 0
         }
-      } else {
-        answer <- 0
-      }
-      answer
-    },
-    by = curveId]$V1,
-    .N)]
+        answer
+      }]
+    , .N)]
   return(points[dose!=0,])
 }
 
