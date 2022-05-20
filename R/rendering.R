@@ -716,12 +716,15 @@ modify_or_remove_zero_dose_points <- function(points, logDose) {
         doses <- unique(dose)
         if(length(doses) > 2) {
           values <- unique(doses)[2:3]
+          # If we are doing log dose, then we need to take the log of the values to determine their difference in log space
           if(logDose) {
             answer <- 10^(log10(values[1]) - (log10(values[2])-log10(values[1])))
           } else {
             answer <- values[1] - (values[2] - values[1])
           }
         } else {
+          # If we have only 1 dose (not including 0) then just return 0
+          # because we can't calculate the difference
           answer <- 0
         }
         answer
