@@ -244,7 +244,7 @@ api_doseResponse_get_curve_detail <- function(GET, ...) {
 #' api_doseResponse_fitData_to_curveDetail(fitData, cars)
 api_doseResponse_fitData_to_curveDetail <- function(fitData, saved = TRUE,...) {
   if(fitData$category %in% c("inactive","potent")) {
-    overRideMaxMin <- mean(fitData$points[[1]][userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response)    
+    overRideMaxMin <- mean(fitData$points[[1]][userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG,]$response)    
   } else {
     overRideMaxMin <- NA
   }

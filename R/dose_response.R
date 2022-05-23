@@ -1,3 +1,6 @@
+# Flag status set on all KNOCKED_OUT_FLAG points (datapoints which are not to be used in curve rendering or fitting)
+KNOCKED_OUT_FLAG <- "knocked out"
+
 #' Fit dose response data
 #'
 #' Converts a fitData object to a fitted fitData object (adds model, reported parameters...etc.)
@@ -91,7 +94,7 @@ biphasic_detection <- function(fitData) {
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
         testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
-        points[dose == testConc, tempFlagStatus := "knocked out"]
+        points[dose == testConc, tempFlagStatus := KNOCKED_OUT_FLAG]
         model.synced <- FALSE
         continueBiphasicDetection <- TRUE
       }
@@ -122,14 +125,14 @@ biphasic_detection <- function(fitData) {
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
-        points[dose == testConc, algorithmFlagStatus := "knocked out"]
+        points[dose == testConc, algorithmFlagStatus := KNOCKED_OUT_FLAG]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
         points[dose == testConc, algorithmFlagCause := "curvefit ko"]
         points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
         if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0) {
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
-          points[dose == testConc, tempFlagStatus := "knocked out"]
+          points[dose == testConc, tempFlagStatus := KNOCKED_OUT_FLAG]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
         } else {
@@ -847,7 +850,7 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
       response.empiricalMax <- pointStats$response.empiricalMax
       threshold <- threshold * abs(min(response.empiricalMin) - max(response.empiricalMax))
     }
-    means <- points[ userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", list("dose" = dose, "mean.response" = mean(response)), by = dose]
+    means <- points[ userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG, list("dose" = dose, "mean.response" = mean(response)), by = dose]
     numDoses <- nrow(means)
     #inverseAgonistMode = FALSE = inverse agonists are inactive
     if(!inverseAgonistMode) {
@@ -884,7 +887,7 @@ get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramName
   tryCatch({
     options(show.error.messages=FALSE)
     on.exit(options(show.error.messages=TRUE))
-    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
+    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG, robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)    
@@ -895,7 +898,7 @@ get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramName
 get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
   myMessenger <- messenger()
   pts <- copy(pts)
-  pts[ , knockedOut := userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus!=""]
+  pts[ , knockedOut := userFlagStatus==KNOCKED_OUT_FLAG | preprocessFlagStatus==KNOCKED_OUT_FLAG | algorithmFlagStatus==KNOCKED_OUT_FLAG | tempFlagStatus!=""]
   pts[, meanByDose := as.numeric(NA)]
   pts[ knockedOut == FALSE, meanByDose := mean(response), by = dose ]
   dose.count <- nrow(pts[ knockedOut == FALSE, .N, by = dose])
@@ -1146,7 +1149,7 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
 get_fit_stats_drc_object <- function(drcObject, points) {
   if(is.null(drcObject)) return(NULL)
   SSE <- suppressWarnings(sum((residuals(drcObject))^2))
-  SST <- sum((points$response-mean(points[userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response))^2)
+  SST <- sum((points$response-mean(points[userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG,]$response))^2)
   rSquared <- 1-(SSE/SST)
   return(list(SSE = SSE, SST = SST, rSquared = rSquared))
 }

@@ -337,13 +337,12 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
 filterFlaggedPoints <- function(points, returnGood = TRUE) {
-  badFlag <- "knocked out"
   if(returnGood) {
-    return(subset(points, userFlagStatus!=badFlag & preprocessFlagStatus!=badFlag & algorithmFlagStatus!=badFlag & tempFlagStatus!=badFlag))
+    return(subset(points, userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG))
   } else {
-    return(subset(points, userFlagStatus==badFlag | preprocessFlagStatus==badFlag | algorithmFlagStatus==badFlag | tempFlagStatus==badFlag))
+    return(subset(points, userFlagStatus==KNOCKED_OUT_FLAG | preprocessFlagStatus==KNOCKED_OUT_FLAG | algorithmFlagStatus==KNOCKED_OUT_FLAG | tempFlagStatus==KNOCKED_OUT_FLAG))
   }
-
+}
 
 #' Apply rendering options to fit data and parsed parameters list in order to match format of input parameters to \code{\link{plotCurve}}
 #'
@@ -387,7 +386,7 @@ applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDispla
       # Take the average of the response values for all points which are not flagged and set the min and max values to this
       # TODO: find a better way of knowing what values to set here as "fittedMin" and "fittedMax" are hardcoded names
       fitData <- fitData[exists("category") & (!is.null(category) & category %in% c("inactive","potent")), c("fittedMax", "fittedMin") := {
-        responseMean <- mean(points[[1]][userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response)
+        responseMean <- mean(points[[1]][userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG,]$response)
         list("fittedMax" = responseMean, "fittedMin" = responseMean)
       }, by = curveId]
     }
@@ -420,7 +419,7 @@ applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDispla
     # Apply protocol ymin/max
     # Use protocol min max (if provided) unless not overrident by parsedParameters
     if(any(is.na(parsedParams$yMin),is.na(parsedParams$yMax))) {
-      plotWindowPoints <- rbindlist(fitData[ , points])[!userFlagStatus == "knocked out" & !preprocessFlagStatus == "knocked out" & !algorithmFlagStatus == "knocked out",]
+      plotWindowPoints <- rbindlist(fitData[ , points])[!userFlagStatus == KNOCKED_OUT_FLAG & !preprocessFlagStatus == KNOCKED_OUT_FLAG & !algorithmFlagStatus == KNOCKED_OUT_FLAG,]
       if(nrow(plotWindowPoints) == 0) {
         plotWindow <- racas::get_plot_window(fitData[1]$points[[1]], logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)      
       } else {
