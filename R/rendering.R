@@ -343,38 +343,59 @@ filterFlaggedPoints <- function(points, returnGood = TRUE) {
   } else {
     return(subset(points, userFlagStatus==badFlag | preprocessFlagStatus==badFlag | algorithmFlagStatus==badFlag | tempFlagStatus==badFlag))
   }
-}
+
+
+#' Apply rendering options to fit data and parsed parameters list in order to match format of input parameters to \code{\link{plotCurve}}
+#'
+#' This function takes a data table with fit parameters and points and applies curve color options, protocol min/max options, hill slope overrides, max/min fit overrides by category
+#'
+#' @param fitData a data table with points and fit parameters
+#' @param params a list of options returned by (see \code{\link{parse_params_curve_render_dr}} documentation )
+#' @param protocolDisplayValues a list  of with names ymin and ymax with numeric values for the protocol
+
+#' @return A list with a modified fitData data table with applied colors and fit values, and a modified parsed parameters with applied log dose and plot window values
+#' @export
 applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDisplayValues) {
-    ## PREP FROM RENDER CURVE
-    # Colors
-    # plotColors <- c("black", "#0C5BB0FF", "#EE0011FF", "#15983DFF", "#EC579AFF", "#FA6B09FF", 
-    #                 "#149BEDFF", "#A1C720FF", "#FEC10BFF", "#16A08CFF", "#9A703EFF")
+   
+    ## Plot colors
+    # If the configuration is set, split on comma and get plot colors from the config 
     if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
         plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
     } else {
+       # If config is not set, then use default coloring scheme
         plotColors <- c("black", "#0C5BB0FF", "#EE0011FF", "#15983DFF", "#EC579AFF", "#FA6B09FF", 
                         "#149BEDFF", "#A1C720FF", "#FEC10BFF", "#16A08CFF", "#9A703EFF")
     }
+
+    ## If color by is set in parsed params, then set the colors per the "colorBy" options passed in
     if(!is.na(parsedParams$colorBy)) {
         key <- switch(parsedParams$colorBy,
                     "protocol" = "protocol_label",
                     "experiment" = "experiment_label",
                     "batch" = "batch_code"
         )
+        # For each row in the data table set the color by the matching key and repeat colors as long as the list of colors provides
         uniqueKeys <- setkeyv(unique(fitData[ , key, with = FALSE]), key)
         colorCategories <- uniqueKeys[, color:=rep(plotColors, length.out = .N)][ , name:=get(key)]
         fitData <- merge(fitData, colorCategories, by = key)
     }
 
+    ## Flat curve drawing for inactive or potent curves
+    # inactive and potent curves should be drawn with a flat line so it's obvious the curve is flat
+    # If category is set
     if("category" %in% names(fitData)) {
+      # Take the average of the response values for all points which are not flagged and set the min and max values to this
+      # TODO: find a better way of knowing what values to set here as "fittedMin" and "fittedMax" are hardcoded names
       fitData <- fitData[exists("category") & (!is.null(category) & category %in% c("inactive","potent")), c("fittedMax", "fittedMin") := {
         responseMean <- mean(points[[1]][userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response)
         list("fittedMax" = responseMean, "fittedMin" = responseMean)
       }, by = curveId]
     }
+
+    # Split the points and parameters into seperate data tables to match the required parameters for the plotCurve function
     data <- list(parameters = as.data.frame(fitData), points = as.data.frame(rbindlist(fitData$points)))
 
-    #To be backwards compatable with hill slope example files
+    #To be backwards compatable with hill slope example files flip the hill slope
     hillSlopes <- which(!is_null_or_na(data$parameters$hillslope))
     if(length(hillSlopes) > 0  ) {
       data$parameters$slope <- -data$parameters$hillslope[hillSlopes]
@@ -384,16 +405,20 @@ applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDispla
       data$parameters$fitted_slope <- -data$parameters$fitted_hillslope[fittedHillSlopes]
     }
 
+    # TODO: This should be a configuration per rendering hint to plot on log scale
+    # Determine log dose by rendering hint unless not overrident by parsedParameters
     if(is.na(parsedParams$logDose)) {
         parsedParams$logDose <- TRUE
         if(fitData[1]$renderingHint %in% c("Michaelis-Menten", "Substrate Inhibition", "Scatter", "Scatter Log-y")) parsedParams$logDose <- FALSE
     }
+    # Determine log response by rendering hint unless not overrident by parsedParameters
     if(is.na(parsedParams$logResponse)) {
         parsedParams$logResponse <- FALSE
         if(fitData[1]$renderingHint %in% c("Scatter Log-y","Scatter Log-x,y")) parsedParams$logResponse <- TRUE
     }
 
     # Apply protocol ymin/max
+    # Use protocol min max (if provided) unless not overrident by parsedParameters
     if(any(is.na(parsedParams$yMin),is.na(parsedParams$yMax))) {
       plotWindowPoints <- rbindlist(fitData[ , points])[!userFlagStatus == "knocked out" & !preprocessFlagStatus == "knocked out" & !algorithmFlagStatus == "knocked out",]
       if(nrow(plotWindowPoints) == 0) {
