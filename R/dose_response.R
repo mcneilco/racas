@@ -3024,3 +3024,82 @@ get_curve_data <- function(curveids, raw_data = FALSE, ...) {
   
   return(fitData)
 }
+
+#' Get gooness of fit list from rendering hint options
+#'
+#' Reads the default fit settings for the given model hint and updates it based on the simple request
+#' 
+#' @param renderingOptions a list of rendering options read from a config
+#' @return a list of rendering hint goodness of fits in the format [{"SSE": {"value": value, "operator": operator}, ...etc.}]
+get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOptions) {
+  goodnessOfFitStatNames <- c("SSE", "SST", "rSquared")
+  goodnessOfFitClasses <- c("warning", "error")
+  goodnessOfFitParameters <- list()
+  for(stat in goodnessOfFitStatNames) {
+    goodnessOfFitParameters[[stat]] <- list()
+    for(class in goodnessOfFitClasses) {
+      goodnessOfFitParameters[[stat]][[class]] <- list("value" = NA_real_, "operator" = NA_character_)
+      if(!is.null(renderingOptions$goodnessOfFit[[stat]][[class]]$value)) {
+        goodnessOfFitParameters[[stat]][[class]]$value <- renderingOptions$goodnessOfFit[[stat]][[class]]$value
+        goodnessOfFitParameters[[stat]][[class]]$operator <- renderingOptions$goodnessOfFit[[stat]][[class]]$operator
+      }
+    }
+  }
+  return(goodnessOfFitParameters)
+}
+
+
+#' Calculates goodness of fit for a set of curves
+#'
+#' Reads the default fit settings for the given model hint and updates it based on the simple request
+#' 
+#' @param fixedParams a list of fixed parameters to apply to the renderingOptions function
+#' @param missingParameters a list of missing parametrers which are missing from the renderingOptions function
+#' @param points a data table of points to calculate goodness of fit for
+#' @param renderingOptions a list of rendering options read from a config
+#' @return a list of goodness of fit values in the format [{"SSE": SSE, "SST": SST, "rSquared": rSquared}, ...etc.]
+get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, missingParameters, points, renderingOptions) {
+      # Calculate the goodness of fit parameters using the 
+      # curve fit function and fixed parameters the user has provided
+      SSE <- NA
+      SSR <- NA
+      SST <- NA
+      rSquared <- NA
+      if(!is.na(renderingOptions$fct) && !missingParameters) {
+        tmp <- as.data.frame(fixedParams[[1]])
+        fct <- eval(parse(text=paste0('function(x) ', renderingOptions$fct)))
+        plotLog <- "x"
+        for(i in 1:ncol(tmp)) {
+            assign(names(tmp)[i], tmp[,i])
+        }
+        goodPoints <- filterFlaggedPoints(points[[1]], returnGood = TRUE)
+        SSE <- sum((fct(goodPoints$dose) - goodPoints$response)^2)
+        SSR <- sum((fct(goodPoints$dose) - mean(goodPoints$response))^2)
+        SST <- SSR + SSE
+        rSquared <- SSR/SST
+      }
+      return(list(SSE = SSE, SSR = SSR, SST = SST, rSquared = rSquared))
+}
+
+#' Get the protocol display min and max from a protocol entity
+#' 
+#' @param protocol a protocol entity
+#' @return a list of of the format {"ymin": ymin, "ymax": ymax}
+get_protocol_curve_display_min_and_max_by_protocol <- function(protocol) {
+      # This function validates the calculated results against and subject data against the curve fit model
+    protocolDisplayValues <- list(ymax=NA, ymin=NA)
+    if(class(protocol) == "list" && length(protocol) > 1) {
+      metadataState <- getStatesByTypeAndKind(protocol, "metadata_screening assay")
+      if(length(metadataState) > 0) {
+          curve_display_min_value <- getValuesByTypeAndKind(metadataState[[1]], "numericValue_curve display min")
+          if(length(curve_display_min_value) > 0) {
+              protocolDisplayValues$ymin <- curve_display_min_value[[1]]$numericValue
+          }
+          curve_display_max_value <- getValuesByTypeAndKind(metadataState[[1]], "numericValue_curve display max")
+          if(length(curve_display_max_value) > 0) {
+              protocolDisplayValues$ymax <- curve_display_max_value[[1]]$numericValue
+          }
+      }
+    }
+    return(protocolDisplayValues)
+}
