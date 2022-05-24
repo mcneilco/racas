@@ -3048,7 +3048,6 @@ get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOption
   return(goodnessOfFitParameters)
 }
 
-
 #' Calculates goodness of fit for a set of curves
 #'
 #' Reads the default fit settings for the given model hint and updates it based on the simple request
