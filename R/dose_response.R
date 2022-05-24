@@ -3057,16 +3057,16 @@ get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOption
 #' @param points a data table of points to calculate goodness of fit for
 #' @param renderingOptions a list of rendering options read from a config
 #' @return a list of goodness of fit values in the format [{"SSE": SSE, "SST": SST, "rSquared": rSquared}, ...etc.]
-get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, missingParameters, points, renderingOptions) {
+get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, missingParameters, points, fct) {
       # Calculate the goodness of fit parameters using the 
       # curve fit function and fixed parameters the user has provided
       SSE <- NA
       SSR <- NA
       SST <- NA
       rSquared <- NA
-      if(!is.na(renderingOptions$fct) && !missingParameters) {
+      if(!is.na(fct) && !missingParameters) {
         tmp <- as.data.frame(fixedParams[[1]])
-        fct <- eval(parse(text=paste0('function(x) ', renderingOptions$fct)))
+        fct <- eval(parse(text=paste0('function(x) ', fct)))
         plotLog <- "x"
         for(i in 1:ncol(tmp)) {
             assign(names(tmp)[i], tmp[,i])
