@@ -355,7 +355,7 @@ filterFlaggedPoints <- function(points, returnGood = TRUE) {
 #' @return A list with a modified fitData data table with applied colors and fit values, and a modified parsed parameters with applied log dose and plot window values
 #' @export
 applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDisplayValues) {
-   
+
     ## Plot colors
     # If the configuration is set, split on comma and get plot colors from the config 
     if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
@@ -419,7 +419,7 @@ applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDispla
     # Apply protocol ymin/max
     # Use protocol min max (if provided) unless not overrident by parsedParameters
     if(any(is.na(parsedParams$yMin),is.na(parsedParams$yMax))) {
-      plotWindowPoints <- rbindlist(fitData[ , points])[!userFlagStatus == KNOCKED_OUT_FLAG & !preprocessFlagStatus == KNOCKED_OUT_FLAG & !algorithmFlagStatus == KNOCKED_OUT_FLAG,]
+      plotWindowPoints <- rbindlist(fitData[ , points])[userFlagStatus != KNOCKED_OUT_FLAG & preprocessFlagStatus != KNOCKED_OUT_FLAG & algorithmFlagStatus != KNOCKED_OUT_FLAG,]
       if(nrow(plotWindowPoints) == 0) {
         plotWindow <- racas::get_plot_window(fitData[1]$points[[1]], logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)      
       } else {
@@ -432,7 +432,7 @@ applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDispla
 
     return(list(data = data, parsedParams = parsedParams))
 }
-plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
+plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA, bg = "white") {
   if(is.null(curveLwd) || is.na(curveLwd)) {
     curveLwd <- 1
     if(!is.null(racas::applicationSettings$server.curveRender.curveLwd) && racas::applicationSettings$server.curveRender.curveLwd != "") {
@@ -535,12 +535,13 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   }
   
   originalMargins <- par("mar")
+  originalBg <- par("bg")
   plotError <- function(error) {
     if(!is.na(outFile)) {
       dev.off(dev.prev())
       png(file = outFile)
     }
-    par(mar = originalMargins)
+    par(mar = originalMargins, bg = originalBg)
     plot(-1:1, -1:1, type = "n", xlab = NA, ylab = NA, axes = FALSE)
     text(c(0,0),c(0,0),labels=c(error$message))
   }
@@ -564,7 +565,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         margins[marginAdd] <- defaultMargins[marginAdd] + 2
       }
     }
-    par(mar = margins)
+    par(mar = margins, bg = bg)
     #Determine which axes will require log scale plotting
     plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
     
