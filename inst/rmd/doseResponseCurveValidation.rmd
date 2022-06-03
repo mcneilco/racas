@@ -11,7 +11,9 @@
 table <- '<table class="table table-bordered bv_doseResponseSummaryTable">'
 thead <- "<thead>"
 tr <- "<tr>"
-for(stat in columnNames <- c(mainCode, "curve id", "Error Level", "Curve", "SSE", "SST", "R&#178;")) {
+statColumnsNames <- c("R&#178;")
+parameterNames <- unique(fitData$reportedParamLsKinds)[[1]]
+for(stat in columnNames <- c(mainCode, "curve id", "Error Level", "Curve", statColumnsNames, parameterNames)) {
     style <- ""
     if(stat == "Curve") {
       style <- paste0(' style="min-width: ', defaultRenderingParams$width,'px;"')

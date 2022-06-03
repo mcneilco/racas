@@ -3053,29 +3053,30 @@ get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOption
 #' Reads the default fit settings for the given model hint and updates it based on the simple request
 #' 
 #' @param fixedParams a list of fixed parameters to apply to the renderingOptions function
-#' @param missingParameters a list of missing parametrers which are missing from the renderingOptions function
 #' @param points a data table of points to calculate goodness of fit for
 #' @param renderingOptions a list of rendering options read from a config
 #' @return a list of goodness of fit values in the format [{"SSE": SSE, "SST": SST, "rSquared": rSquared}, ...etc.]
-get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, missingParameters, points, fct) {
+get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, points, fct) {
       # Calculate the goodness of fit parameters using the 
       # curve fit function and fixed parameters the user has provided
       SSE <- NA
       SSR <- NA
       SST <- NA
       rSquared <- NA
-      if(!is.na(fct) && !missingParameters) {
-        tmp <- as.data.frame(fixedParams[[1]])
+      missingParameters <- Filter(f=function(x) x$missing == TRUE, fixedParams)
+      if(!is.na(fct) && length(missingParameters) == 0) {
         fct <- eval(parse(text=paste0('function(x) ', fct)))
-        plotLog <- "x"
-        for(i in 1:ncol(tmp)) {
-            assign(names(tmp)[i], tmp[,i])
+        for(i in 1:length(fixedParams)) {
+            assign(names(fixedParams)[i], fixedParams[[i]]$value)
         }
         goodPoints <- filterFlaggedPoints(points[[1]], returnGood = TRUE)
         SSE <- sum((fct(goodPoints$dose) - goodPoints$response)^2)
         SSR <- sum((fct(goodPoints$dose) - mean(goodPoints$response))^2)
         SST <- SSR + SSE
         rSquared <- SSR/SST
+        if(is.nan(rSquared)) {
+          rSquared <- NA
+        }
       }
       return(list(SSE = SSE, SSR = SSR, SST = SST, rSquared = rSquared))
 }
