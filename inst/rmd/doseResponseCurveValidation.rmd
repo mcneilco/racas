@@ -1,0 +1,39 @@
+#### Dose Response Curve Summary
+
+***Curve Summary***
+* Curves in dataset: `r nrow(fitData)`
+* Clean curves: `r nrow(fitData[errorLevel == "",])`
+* Curves with error: `r nrow(fitData[errorLevel == "error",])`
+* Curves with warning: `r nrow(fitData[errorLevel == "warning",])`
+
+***Goodness of Fit Table***
+```{r goodnessOfFitTable, results='asis', echo=FALSE}
+table <- '<table class="table table-bordered bv_doseResponseSummaryTable">'
+thead <- "<thead>"
+tr <- "<tr>"
+statColumnsNames <- c("R&#178;")
+parameterNames <- unique(fitData$reportedParamLsKinds)[[1]]
+for(stat in columnNames <- c(mainCode, "curve id", "Error Level", "Curve", statColumnsNames, parameterNames)) {
+    style <- ""
+    if(stat == "Curve") {
+      style <- paste0(' style="min-width: ', defaultRenderingParams$width,'px;"')
+    }
+    if(stat == mainCode) {
+      style <- paste0(' style="min-width: 140px;"')
+    }
+    if(stat == "curve id") {
+      style <- paste0(' style="min-width: 60px;"')
+    }
+    tr <- paste0(tr,sprintf('<th%s>%s</th>', style, stat))
+}
+thead <- paste0(thead,tr)
+thead <- paste0(thead,"</thead>" )
+table <- paste0(table,thead)
+tbody <- "<tbody>"
+trs <- paste0(fitData$TR, collapse = "")
+tbody <- paste0(tbody,trs)
+tbody <- paste0(tbody,"</tbody>" )
+table <- paste0(table,tbody)
+table <- paste0(table,"</table>" )
+cat(table)
+```

@@ -1,3 +1,6 @@
+# Flag status set on all KNOCKED_OUT_FLAG points (datapoints which are not to be used in curve rendering or fitting)
+KNOCKED_OUT_FLAG <- "knocked out"
+
 #' Fit dose response data
 #'
 #' Converts a fitData object to a fitted fitData object (adds model, reported parameters...etc.)
@@ -91,7 +94,7 @@ biphasic_detection <- function(fitData) {
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
         testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
-        points[dose == testConc, tempFlagStatus := "knocked out"]
+        points[dose == testConc, tempFlagStatus := KNOCKED_OUT_FLAG]
         model.synced <- FALSE
         continueBiphasicDetection <- TRUE
       }
@@ -122,14 +125,14 @@ biphasic_detection <- function(fitData) {
                                                  stop(paste(biphasicRule$type, "not a valid biphasic rule type"))
         )
         points[dose == testConc & flagchanged == FALSE, flagchanged := TRUE]
-        points[dose == testConc, algorithmFlagStatus := "knocked out"]
+        points[dose == testConc, algorithmFlagStatus := KNOCKED_OUT_FLAG]
         points[dose == testConc, algorithmFlagObservation := "biphasic"]
         points[dose == testConc, algorithmFlagCause := "curvefit ko"]
         points[dose == testConc, algorithmFlagComment := "Biphasic"]
         points[dose == testConc, tempFlagStatus := ""]
         if(pointStats$count.doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout > 0) {
           testConc <- max(sort(pointStats$doses.withDoseAbove.doseEmpiricalMax.andResponseBelow.responseEmpiricalMax.andCanKnockout, decreasing = TRUE))
-          points[dose == testConc, tempFlagStatus := "knocked out"]
+          points[dose == testConc, tempFlagStatus := KNOCKED_OUT_FLAG]
           model.synced <- FALSE
           continueBiphasicDetection <- TRUE
         } else {
@@ -847,7 +850,7 @@ apply_inactive_rules <- function(pointStats, points, rule, inverseAgonistMode) {
       response.empiricalMax <- pointStats$response.empiricalMax
       threshold <- threshold * abs(min(response.empiricalMin) - max(response.empiricalMax))
     }
-    means <- points[ userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", list("dose" = dose, "mean.response" = mean(response)), by = dose]
+    means <- points[ userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG, list("dose" = dose, "mean.response" = mean(response)), by = dose]
     numDoses <- nrow(means)
     #inverseAgonistMode = FALSE = inverse agonists are inactive
     if(!inverseAgonistMode) {
@@ -884,7 +887,7 @@ get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramName
   tryCatch({
     options(show.error.messages=FALSE)
     on.exit(options(show.error.messages=TRUE))
-    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out", robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
+    drcObj <- drc::drm(formula = response ~ dose, data = dataSet, weights = dataSet$weight, subset = userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG, robust=robust, fct = fct, control = drc::drmc(errorm=TRUE))
   }, error = function(ex) {
     #Turned of printing of error message because shiny was printing to the browser because of a bug
     #print(ex$message)    
@@ -895,7 +898,7 @@ get_drc_model <- function(dataSet, drcFunction = drc::LL.4, subs = NA, paramName
 get_point_stats <- function(pts, theoreticalMaxMode, theoreticalMax) {
   myMessenger <- messenger()
   pts <- copy(pts)
-  pts[ , knockedOut := userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus!=""]
+  pts[ , knockedOut := userFlagStatus==KNOCKED_OUT_FLAG | preprocessFlagStatus==KNOCKED_OUT_FLAG | algorithmFlagStatus==KNOCKED_OUT_FLAG | tempFlagStatus!=""]
   pts[, meanByDose := as.numeric(NA)]
   pts[ knockedOut == FALSE, meanByDose := mean(response), by = dose ]
   dose.count <- nrow(pts[ knockedOut == FALSE, .N, by = dose])
@@ -1146,7 +1149,7 @@ get_parameters_drc_object <- function(drcObj = drcObject) {
 get_fit_stats_drc_object <- function(drcObject, points) {
   if(is.null(drcObject)) return(NULL)
   SSE <- suppressWarnings(sum((residuals(drcObject))^2))
-  SST <- sum((points$response-mean(points[userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out",]$response))^2)
+  SST <- sum((points$response-mean(points[userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG,]$response))^2)
   rSquared <- 1-(SSE/SST)
   return(list(SSE = SSE, SST = SST, rSquared = rSquared))
 }
@@ -3020,4 +3023,83 @@ get_curve_data <- function(curveids, raw_data = FALSE, ...) {
   }
   
   return(fitData)
+}
+
+#' Get gooness of fit list from rendering hint options
+#'
+#' Reads the default fit settings for the given model hint and updates it based on the simple request
+#' 
+#' @param renderingOptions a list of rendering options read from a config
+#' @return a list of rendering hint goodness of fits in the format [{"SSE": {"value": value, "operator": operator}, ...etc.}]
+get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOptions) {
+  goodnessOfFitStatNames <- c("SSE", "SST", "rSquared")
+  goodnessOfFitClasses <- c("warning", "error")
+  goodnessOfFitParameters <- list()
+  for(stat in goodnessOfFitStatNames) {
+    goodnessOfFitParameters[[stat]] <- list()
+    for(class in goodnessOfFitClasses) {
+      goodnessOfFitParameters[[stat]][[class]] <- list("value" = NA_real_, "operator" = NA_character_)
+      if(!is.null(renderingOptions$goodnessOfFit[[stat]][[class]]$value)) {
+        goodnessOfFitParameters[[stat]][[class]]$value <- renderingOptions$goodnessOfFit[[stat]][[class]]$value
+        goodnessOfFitParameters[[stat]][[class]]$operator <- renderingOptions$goodnessOfFit[[stat]][[class]]$operator
+      }
+    }
+  }
+  return(goodnessOfFitParameters)
+}
+
+#' Calculates goodness of fit for a set of curves
+#'
+#' Reads the default fit settings for the given model hint and updates it based on the simple request
+#' 
+#' @param fixedParams a list of fixed parameters to apply to the renderingOptions function
+#' @param points a data table of points to calculate goodness of fit for
+#' @param renderingOptions a list of rendering options read from a config
+#' @return a list of goodness of fit values in the format [{"SSE": SSE, "SST": SST, "rSquared": rSquared}, ...etc.]
+get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, points, fct) {
+      # Calculate the goodness of fit parameters using the 
+      # curve fit function and fixed parameters the user has provided
+      SSE <- NA
+      SSR <- NA
+      SST <- NA
+      rSquared <- NA
+      missingParameters <- Filter(f=function(x) x$missing == TRUE, fixedParams)
+      if(!is.na(fct) && length(missingParameters) == 0) {
+        fct <- eval(parse(text=paste0('function(x) ', fct)))
+        for(i in 1:length(fixedParams)) {
+            assign(names(fixedParams)[i], fixedParams[[i]]$value)
+        }
+        goodPoints <- filterFlaggedPoints(points[[1]], returnGood = TRUE)
+        SSE <- sum((fct(goodPoints$dose) - goodPoints$response)^2)
+        SSR <- sum((fct(goodPoints$dose) - mean(goodPoints$response))^2)
+        SST <- SSR + SSE
+        rSquared <- SSR/SST
+        if(is.nan(rSquared)) {
+          rSquared <- NA
+        }
+      }
+      return(list(SSE = SSE, SSR = SSR, SST = SST, rSquared = rSquared))
+}
+
+#' Get the protocol display min and max from a protocol entity
+#' 
+#' @param protocol a protocol entity
+#' @return a list of of the format {"ymin": ymin, "ymax": ymax}
+get_protocol_curve_display_min_and_max_by_protocol <- function(protocol) {
+      # This function validates the calculated results against and subject data against the curve fit model
+    protocolDisplayValues <- list(ymax=NA, ymin=NA)
+    if(class(protocol) == "list" && length(protocol) > 1) {
+      metadataState <- getStatesByTypeAndKind(protocol, "metadata_screening assay")
+      if(length(metadataState) > 0) {
+          curve_display_min_value <- getValuesByTypeAndKind(metadataState[[1]], "numericValue_curve display min")
+          if(length(curve_display_min_value) > 0) {
+              protocolDisplayValues$ymin <- curve_display_min_value[[1]]$numericValue
+          }
+          curve_display_max_value <- getValuesByTypeAndKind(metadataState[[1]], "numericValue_curve display max")
+          if(length(curve_display_max_value) > 0) {
+              protocolDisplayValues$ymax <- curve_display_max_value[[1]]$numericValue
+          }
+      }
+    }
+    return(protocolDisplayValues)
 }

@@ -336,9 +336,103 @@ getCurveIDAnalsysiGroupResults <- function(curveids, ...) {
 #' curveData <- poIVPKCurveData$points
 #' plotCurve(curveData, params, paramNames = NA, outFile = NA, ymin = NA, logDose = FALSE, logResponse=TRUE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, plotMeans = FALSE, connectPoints = TRUE, drawCurve = FALSE, addShapes = TRUE, drawStdDevs = TRUE)
 #' 
+filterFlaggedPoints <- function(points, returnGood = TRUE) {
+  if(returnGood) {
+    return(subset(points, userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG))
+  } else {
+    return(subset(points, userFlagStatus==KNOCKED_OUT_FLAG | preprocessFlagStatus==KNOCKED_OUT_FLAG | algorithmFlagStatus==KNOCKED_OUT_FLAG | tempFlagStatus==KNOCKED_OUT_FLAG))
+  }
+}
 
-plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA) {
+#' Apply rendering options to fit data and parsed parameters list in order to match format of input parameters to \code{\link{plotCurve}}
+#'
+#' This function takes a data table with fit parameters and points and applies curve color options, protocol min/max options, hill slope overrides, max/min fit overrides by category
+#'
+#' @param fitData a data table with points and fit parameters
+#' @param params a list of options returned by (see \code{\link{parse_params_curve_render_dr}} documentation )
+#' @param protocolDisplayValues a list  of with names ymin and ymax with numeric values for the protocol
 
+#' @return A list with a modified fitData data table with applied colors and fit values, and a modified parsed parameters with applied log dose and plot window values
+#' @export
+applyParsedParametersToFitData <- function(fitData, parsedParams, protocolDisplayValues) {
+
+    ## Plot colors
+    # If the configuration is set, split on comma and get plot colors from the config 
+    if(!is.null(racas::applicationSettings$server.curveRender.plotColors)) {
+        plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
+    } else {
+       # If config is not set, then use default coloring scheme
+        plotColors <- c("black", "#0C5BB0FF", "#EE0011FF", "#15983DFF", "#EC579AFF", "#FA6B09FF", 
+                        "#149BEDFF", "#A1C720FF", "#FEC10BFF", "#16A08CFF", "#9A703EFF")
+    }
+
+    ## If color by is set in parsed params, then set the colors per the "colorBy" options passed in
+    if(!is.na(parsedParams$colorBy)) {
+        key <- switch(parsedParams$colorBy,
+                    "protocol" = "protocol_label",
+                    "experiment" = "experiment_label",
+                    "batch" = "batch_code"
+        )
+        # For each row in the data table set the color by the matching key and repeat colors as long as the list of colors provides
+        uniqueKeys <- setkeyv(unique(fitData[ , key, with = FALSE]), key)
+        colorCategories <- uniqueKeys[, color:=rep(plotColors, length.out = .N)][ , name:=get(key)]
+        fitData <- merge(fitData, colorCategories, by = key)
+    }
+
+    ## Flat curve drawing for inactive or potent curves
+    # inactive and potent curves should be drawn with a flat line so it's obvious the curve is flat
+    # If category is set
+    if("category" %in% names(fitData)) {
+      # Take the average of the response values for all points which are not flagged and set the min and max values to this
+      # TODO: find a better way of knowing what values to set here as "fittedMin" and "fittedMax" are hardcoded names
+      fitData <- fitData[exists("category") & (!is.null(category) & category %in% c("inactive","potent")), c("fittedMax", "fittedMin") := {
+        responseMean <- mean(points[[1]][userFlagStatus!=KNOCKED_OUT_FLAG & preprocessFlagStatus!=KNOCKED_OUT_FLAG & algorithmFlagStatus!=KNOCKED_OUT_FLAG & tempFlagStatus!=KNOCKED_OUT_FLAG,]$response)
+        list("fittedMax" = responseMean, "fittedMin" = responseMean)
+      }, by = curveId]
+    }
+
+    # Split the points and parameters into seperate data tables to match the required parameters for the plotCurve function
+    data <- list(parameters = as.data.frame(fitData), points = as.data.frame(rbindlist(fitData$points)))
+
+    #To be backwards compatable with hill slope example files flip the hill slope
+    hillSlopes <- which(!is_null_or_na(data$parameters$hillslope))
+    if(length(hillSlopes) > 0  ) {
+      data$parameters$slope <- -data$parameters$hillslope[hillSlopes]
+    }
+    fittedHillSlopes <- which(!is_null_or_na(data$parameters$fitted_hillslope))
+    if(length(fittedHillSlopes) > 0 ) {
+      data$parameters$fitted_slope <- -data$parameters$fitted_hillslope[fittedHillSlopes]
+    }
+
+    # TODO: This should be a configuration per rendering hint to plot on log scale
+    # Determine log dose by rendering hint unless not overrident by parsedParameters
+    if(is.na(parsedParams$logDose)) {
+        parsedParams$logDose <- TRUE
+        if(fitData[1]$renderingHint %in% c("Michaelis-Menten", "Substrate Inhibition", "Scatter", "Scatter Log-y")) parsedParams$logDose <- FALSE
+    }
+    # Determine log response by rendering hint unless not overrident by parsedParameters
+    if(is.na(parsedParams$logResponse)) {
+        parsedParams$logResponse <- FALSE
+        if(fitData[1]$renderingHint %in% c("Scatter Log-y","Scatter Log-x,y")) parsedParams$logResponse <- TRUE
+    }
+
+    # Apply protocol ymin/max
+    # Use protocol min max (if provided) unless not overrident by parsedParameters
+    if(any(is.na(parsedParams$yMin),is.na(parsedParams$yMax))) {
+      plotWindowPoints <- rbindlist(fitData[ , points])[userFlagStatus != KNOCKED_OUT_FLAG & preprocessFlagStatus != KNOCKED_OUT_FLAG & algorithmFlagStatus != KNOCKED_OUT_FLAG,]
+      if(nrow(plotWindowPoints) == 0) {
+        plotWindow <- racas::get_plot_window(fitData[1]$points[[1]], logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)      
+      } else {
+        plotWindow <- racas::get_plot_window(plotWindowPoints, logDose = parsedParams$logDose, logResponse = parsedParams$logResponse)
+      }
+      recommendedDisplayWindow <- list(ymax = max(protocolDisplayValues$ymax,plotWindow[2], na.rm = TRUE), ymin = min(protocolDisplayValues$ymin,plotWindow[4], na.rm = TRUE))
+      if(is.na(parsedParams$yMin)) parsedParams$yMin <- recommendedDisplayWindow$ymin
+      if(is.na(parsedParams$yMax)) parsedParams$yMax <- recommendedDisplayWindow$ymax
+    }
+
+    return(list(data = data, parsedParams = parsedParams))
+}
+plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALSE, logResponse = FALSE, ymax = NA, xmin = NA, xmax = NA, height = 300, width = 300, showGrid = FALSE, showLegend = FALSE, showAxes = TRUE, drawCurve = TRUE, drawFlagged = FALSE, plotMeans = FALSE, drawStdDevs = FALSE, addShapes = FALSE, labelAxes = FALSE, curveXrn = c(NA, NA), mostRecentCurveColor = NA, axes = c("x","y"), modZero = TRUE, drawPointsForRejectedCurve = racas::applicationSettings$server.curveRender.drawPointsForRejectedCurve, plotColors = c("black"),curveLwd = 1, plotPoints = TRUE, xlabel = NA, ylabel = NA, bg = "white") {
   if(is.null(curveLwd) || is.na(curveLwd)) {
     curveLwd <- 1
     if(!is.null(racas::applicationSettings$server.curveRender.curveLwd) && racas::applicationSettings$server.curveRender.curveLwd != "") {
@@ -439,8 +533,8 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   
   ##Seperate Flagged and good points for plotting different point shapes..etc.
   if(drawPoints) {
-    flaggedPoints <- subset(curveData, userFlagStatus=="knocked out" | preprocessFlagStatus=="knocked out" | algorithmFlagStatus=="knocked out" | tempFlagStatus=="knocked out")
-    goodPoints <- subset(curveData, userFlagStatus!="knocked out" & preprocessFlagStatus!="knocked out" & algorithmFlagStatus!="knocked out" & tempFlagStatus!="knocked out")
+    flaggedPoints <- filterFlaggedPoints(curveData,  returnGood = FALSE)
+    goodPoints <- filterFlaggedPoints(curveData, returnGood = TRUE)
   }
 
   ##Calculate Means and SDs
@@ -458,12 +552,13 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   }
   
   originalMargins <- par("mar")
+  originalBg <- par("bg")
   plotError <- function(error) {
     if(!is.na(outFile)) {
       dev.off(dev.prev())
       png(file = outFile)
     }
-    par(mar = originalMargins)
+    par(mar = originalMargins, bg = originalBg)
     plot(-1:1, -1:1, type = "n", xlab = NA, ylab = NA, axes = FALSE)
     text(c(0,0),c(0,0),labels=c(error$message))
   }
@@ -487,7 +582,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         margins[marginAdd] <- defaultMargins[marginAdd] + 2
       }
     }
-    par(mar = margins)
+    par(mar = margins, bg = bg)
     #Determine which axes will require log scale plotting
     plotLog <- paste0(ifelse(logDose, "x", ""),ifelse(logResponse, "y", ""))
     
@@ -537,7 +632,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
       curveParams <- subset(params, params$curveId == curveID)
       color <- curveParams$color
       curveData <- NULL
-      if(drawFlagged == FALSE && !flagged) {
+      if(drawFlagged == FALSE && is.na(flagged) || !flagged) {
         drawValues <- getDrawValues(params = params[cid,])
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
@@ -786,14 +881,17 @@ get_rendering_hint_options <- function(renderingHint = NA) {
                              }
   )
   
-  modelFitClasses <- jsonlite::fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes)
-  modelClass <- modelFitClasses[modelFitClasses$code == renderingHint,]
+  modelFitClasses <- fromJSON(applicationSettings$client.curvefit.modelfitparameter.classes)
+  modelClass <- Filter(f = function(x) x$code == renderingHint, x=modelFitClasses)[[1]]
   if("renderOptions" %in% names(modelClass)) {
     renderingHintConfigs <- as.list(modelClass$renderOptions)
     renderingOptions <- combine.lists(renderingOptions, renderingHintConfigs)
   }
   if(!"connectPoints" %in% names(renderingOptions) || is.na(renderingOptions$connectPoints)) {
     renderingOptions$connectPoints <- FALSE
+  }
+  if("goodnessOfFit" %in% names(modelClass)) {
+    renderingOptions$goodnessOfFit <- as.list(modelClass$goodnessOfFit)
   }
   return(renderingOptions)
 }
