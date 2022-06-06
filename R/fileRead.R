@@ -46,7 +46,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
       sheetToRead <- which(unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetVisible, object = wb)))[sheet]
       return(XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d"))
     }, error = function(e) {
-      stopUser("Cannot read input excel file: ", e$message)
+      stopUser(paste0("Cannot read input excel file: ", e$message))
     })
   } else {
     # Get delim
