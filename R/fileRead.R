@@ -13,19 +13,13 @@
 #' In fileRead.R
 #' Hidden sheets in xls and xlsx files are ignored.
 
-readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
+readDelim <- function(filePath, delim=",", ...) {
     # Read in a delimited file
     # Use delim regex to count number of columns as read.delim only reads the first 5 rows.
     fileEncoding <- getFileEncoding(filePath)
     fileData <- readLines(filePath, encoding=fileEncoding)
-    if(testNLines > 0 && length(fileData) >= testNLines) {
-       linesToTestForNumColumns <- fileData[1:testNLines]
-    } else {
-        linesToTestForNumColumns <- fileData
-    }
-    # Loop through the number of test lines and scan for columns
-    # Scan is the underlying function under read.delim.  This is essentially allows us to extend the number of lines used to test for the number of columns because read.delim does not allow us to specify the number of lines to scan.
-    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(scan(text=x, sep=delim, na.strings = "", quote =  "\"", fileEncoding=fileEncoding, quiet=TRUE, what="character")))))
+    # Scan for the number of columns
+    nCol <- max(count.fields(filePath))
     # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
     output <- read.delim(text = fileData, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
     return(output)
