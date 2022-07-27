@@ -174,7 +174,7 @@ formatEntityAsTsvAndUpload <- function(entityData) {
   csvFile <- tempfile(pattern = "csvUpload", tmpdir = "", fileext = ".tsv")
   csvLocalLocation <- paste0(tempdir(), csvFile)
   
-  write.table(entityDataFormatted, file = csvLocalLocation, sep="\t", na = "", row.names = FALSE)
+  write.table(entityDataFormatted, file = csvLocalLocation, sep="\t", na = "", row.names = FALSE, qmethod = "double")
   
   tryCatch({
     response <- rjson::fromJSON(postForm(paste0(racas::applicationSettings$server.service.persistence.fileUrl), 
