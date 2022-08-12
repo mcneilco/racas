@@ -119,7 +119,16 @@ query_definition_list_to_sql <- function(queryDefinitionList, dbType = NA) {
   }
   
   valueJoins <- lapply(values, function(x) {
-    joins <- paste0("LEFT OUTER JOIN analysis_group_value ",gsub(" ","_",x$name)," \nON ",gsub(" ","_",x$parentName),".id = ",gsub(" ","_",x$name),".analysis_state_id \n","AND (",gsub(" ","_",x$name),".ls_kind='",x$ls_kind,"')")
+    alias <- gsub(" ","_",x$name)
+    joins <- paste0(
+      "LEFT OUTER JOIN analysis_group_value ", alias," \nON ",
+      gsub(" ","_",x$parentName),".id = ", alias, ".analysis_state_id \n",
+      "AND (", 
+        alias,".ls_kind='", x$ls_kind,
+        "' AND ",
+        alias,".ignored=", sqliz(getLogicalValue(FALSE)),
+      ")"
+    )
     return(joins)
   })
   valueJoins <- paste0(valueJoins,collapse = " \n")
