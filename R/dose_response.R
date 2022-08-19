@@ -3059,10 +3059,10 @@ get_goodness_of_fit_thresholds_from_rendering_options<- function(renderingOption
 get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, points, fct) {
       # Calculate the goodness of fit parameters using the 
       # curve fit function and fixed parameters the user has provided
-      SSE <- NA
-      SSR <- NA
-      SST <- NA
-      rSquared <- NA
+      SSE <- NA_real_
+      SSR <- NA_real_
+      SST <- NA_real_
+      rSquared <- NA_real_
       missingParameters <- Filter(f=function(x) x$missing == TRUE, fixedParams)
       if(!is.na(fct) && length(missingParameters) == 0) {
         fct <- eval(parse(text=paste0('function(x) ', fct)))
@@ -3075,7 +3075,7 @@ get_goodness_of_fit_stats_from_fixed_parameters <- function(fixedParams, points,
         SST <- SSR + SSE
         rSquared <- SSR/SST
         if(is.nan(rSquared)) {
-          rSquared <- NA
+          rSquared <- NA_real_
         }
       }
       return(list(SSE = SSE, SSR = SSR, SST = SST, rSquared = rSquared))
