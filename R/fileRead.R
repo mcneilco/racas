@@ -44,7 +44,7 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
     output <- tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
 
-      # If a "" is dectected, then set this to NA
+      # If a "" is detected, then set this to NA
       XLConnect::setMissingValue(wb, value = c(""))
       
       sheetToRead <- which(unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetVisible, object = wb)))[sheet]
