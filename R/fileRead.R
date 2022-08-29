@@ -43,6 +43,10 @@ readExcelOrCsv <- function(filePath, sheet = 1, header = FALSE) {
   if (grepl("\\.xlsx?$",filePath)) {
     output <- tryCatch({
       wb <- XLConnect::loadWorkbook(filePath)
+
+      # If a "" is detected, then set this to NA
+      XLConnect::setMissingValue(wb, value = c(""))
+      
       sheetToRead <- which(unlist(lapply(XLConnect::getSheets(wb), XLConnect::isSheetVisible, object = wb)))[sheet]
       return(XLConnect::readWorksheet(wb, sheet = sheetToRead, header = header, dateTimeFormat="%Y-%m-%d"))
     }, error = function(e) {
