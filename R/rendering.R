@@ -591,7 +591,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
       reportedValueColumns <- match(paramNames, names(params))
       reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
       reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
-      reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
+      if(length(reportedValues) > 0) reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
       if(length(paramNames) == 1) {
         reportedValues <- data.frame(reportedValues)
         names(reportedValues) <- paramNames
