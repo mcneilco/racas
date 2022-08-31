@@ -591,7 +591,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
       reportedValueColumns <- match(paramNames, names(params))
       reportedValueColumns <- reportedValueColumns[!is.na(reportedValueColumns)]
       reportedValues <- sapply(params[,reportedValueColumns], as.numeric)
-      reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
+      if(length(reportedValues) > 0) reportedValues <- reportedValues[sapply(reportedValues, function(x) !any(is.na(x)))] 
       if(length(paramNames) == 1) {
         reportedValues <- data.frame(reportedValues)
         names(reportedValues) <- paramNames
@@ -767,7 +767,9 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         assign(names(drawValues)[i], drawValues[,i])
       }
       drawIntercept <- renderingOptions[[1]]$drawIntercept
-      if(!is.na(drawIntercept) && !is.na(as.numeric(params[,drawIntercept])))
+
+      # Check to see if we have a valid intercept value and if so then draw the line
+      if(!is.na(drawIntercept) && drawIntercept %in% names(params) && !is.na(as.numeric(params[,drawIntercept]))) {
         drawValues <- getDrawValues(params = params[1,])
         for(i in 1:ncol(drawValues)) {
           assign(names(drawValues)[i], drawValues[,i])
@@ -794,6 +796,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         }
         lines(ylin,lty = 2, lwd = 2.0*scaleFactor,col= col)
         lines(xlin, lty = 2, lwd = 2.0*scaleFactor,col= col)
+      }
     }
     if(labelAxes) {
       title(xlab = xlabel, ylab = ylabel)
