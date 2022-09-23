@@ -352,6 +352,12 @@ meltWideData <- function(wideData, resultTypes, stateGroups=list(), splitColumn=
   
   # Turn result values to numeric values
   longResults$numericValue <-  as.numeric(gsub(",", "", gsub(matchExpression, "", longResults$numericValue)))
+
+  # Check the the values are finite
+  if (any(!is.finite(longResults$numericValue))) {
+    stopUser("The loader found a non-numeric value in the data. Please check your data and try again.")
+  }
+
   
   # For the results marked as "stringValue":
   #   Set the stringValue to the original value
@@ -517,11 +523,15 @@ validateCharacter <- function(inputValue, errorEnv = NULL) {
 #' @return \code{validateNumeric} a numeric
 validateNumeric <- function(inputValue, errorEnv = NULL) {
   
-  isCoercibleToNumeric <- !is.na(suppressWarnings(as.numeric(gsub(",", "", as.character(inputValue)))))
+  coercedValue <- suppressWarnings(as.numeric(gsub(",", "", as.character(inputValue))))
+  isCoercibleToNumeric <- !is.na(coercedValue)
+  isFinite <- is.finite(coercedValue)
   if(!isCoercibleToNumeric) {
     addError(paste0("An entry was expected to be a number but was: '", inputValue, "'. Please enter a number instead."), errorEnv)
+  } else if(!isFinite) {
+    addError(paste0("An entry was expected to be a finite number but was: '", inputValue, "'. Please enter a finite number instead."), errorEnv)
   }
-  return(suppressWarnings(as.numeric(gsub(",", "", as.character(inputValue)))))
+  return(coercedValue)
 }
 #' File Saving (deprecated)
 #' 
