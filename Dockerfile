@@ -1,4 +1,4 @@
-FROM mcneilco/acas-r-repo:1.13.7
+FROM mcneilco/acas-r-repo:2022.4.x
 
 ENV LANG en_US.UTF-8
 ENV LC_ALL C.UTF-8
