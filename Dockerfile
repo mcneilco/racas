@@ -1,5 +1,13 @@
 FROM mcneilco/acas-r-repo:2022.4.x
 
+# NODE
+ENV NPM_CONFIG_LOGLEVEL warn
+ENV NODE_VERSION 14.x
+RUN curl -fsSL https://rpm.nodesource.com/setup_$NODE_VERSION | bash - && \
+  dnf install -y nodejs && \
+  npm install -g coffeescript@2.5.1 properties@1.2.1 underscore@1.12.0 underscore-deep-extend@1.1.5 properties-parser@0.3.1 flat@5.0.2 glob@7.1.6
+ENV NODE_PATH /usr/lib/node_modules
+
 ENV LANG en_US.UTF-8
 ENV LC_ALL C.UTF-8
 COPY --chown=runner:runner . /home/runner/racas
