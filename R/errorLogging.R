@@ -129,9 +129,12 @@ stopUserAndLogInvalidJSON <- function (logName, logFileName, url, response, meth
 #'you will get an error if you try \code{warnUser("text ", variable, " text")}. Use paste0 
 #'instead: \code{warnUser(paste0("text ", variable, " text"))} (note that this syntax is also 
 #'perfectly acceptable inside \code{warning})
-warnUser <- function(message) {
+warnUser <- function(message, highPriority = FALSE) {
   w <- simpleWarning(message)
   class(w) <- c(class(w), "userWarning")
+  if(highPriority) {
+    class(w) <- c(class(w), "userWarningHighPriority")
+  }
   warning(w)
 }
 
