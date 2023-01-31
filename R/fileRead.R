@@ -25,7 +25,16 @@ readDelim <- function(filePath, delim=",", testNLines = 500, ...) {
     }
     # Loop through the number of test lines and scan for columns
     # Scan is the underlying function under read.delim.  This is essentially allows us to extend the number of lines used to test for the number of columns because read.delim does not allow us to specify the number of lines to scan.
-    nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(scan(text=x, sep=delim, na.strings = "", quote =  "\"", fileEncoding=fileEncoding, quiet=TRUE, what="character")))))
+    withCallingHandlers({
+      nCol <- max(unlist(lapply(linesToTestForNumColumns, function(x) length(scan(text=x, sep=delim, na.strings = "", quote =  "\"", fileEncoding=fileEncoding, quiet=TRUE, what="character")))))
+    }, warning = function(e) {
+      # New line characters within a quoted string will produce the "EOF within quoted string" warning
+      # However this does not generally affect our column counting as we are choosing the max number of columns to read
+      if(e$message == "EOF within quoted string") {
+        invokeRestart("muffleWarning")
+      }
+    })
+      
     # Use read.csv, specify the number of columns by passing in a list of column names using the default naming convention of V+{colIndex}
     output <- read.delim(text = fileData, sep = delim, na.strings = "", stringsAsFactors=FALSE, fileEncoding=fileEncoding, col.names=paste0("V", 1:nCol), ...)
     return(output)

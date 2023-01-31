@@ -131,7 +131,12 @@ Messenger <- setRefClass(Class = "Messenger",
                              if(!inherits(x, "warning")) {
                                x <- simpleWarning(x)
                              }
-                             warnings <<- c(warnings, list(x))
+                             # Add high priority warnings to the top of the list
+                             if(inherits(x, "userWarningHighPriority")) {
+                               warnings <<- c(list(x), warnings)
+                             } else {
+                               warnings <<- c(warnings, list(x))
+                             }
                            },
                            addInfo = function(x) {
                              if(!inherits(x, "message")) {
