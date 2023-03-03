@@ -47,6 +47,8 @@ setExperimentHtml <- function(htmlText, experiment, recordedBy, dryRun = F, lsTr
                            "experiment metadata", "clobValue", lsKind)
 }
 
+entityFileStorePaths <- c(experiment = "experiments", protocol = "protocols",  lsthing = "entities", cmpdregBulkLoad = "cmpdreg_bulkload")
+
 #' save file in ACAS
 #' 
 #' Saves a file into a file service and saves a reference to it in the
@@ -85,12 +87,13 @@ saveAcasFileToExperiment <- function(
   experimentCodeName <- experiment$codeName
   
   sourceLocation <- getUploadedFilePath(fileStartLocation)
-  
+  entityType <- "experiment"
   if (fileServiceType == "blueimp") {
+    folderPath <- entityFileStorePaths[entityType]
     if (additionalPath == "") {
-      folderLocation <- file.path("experiments", experimentCodeName)
+      folderLocation <- file.path(folderPath, experimentCodeName)
     } else {
-      folderLocation <- file.path("experiments", experimentCodeName, additionalPath)
+      folderLocation <- file.path(folderPath, experimentCodeName, additionalPath)
     }
     
     dir.create(getUploadedFilePath(folderLocation), showWarnings = FALSE, recursive = TRUE)
@@ -114,8 +117,8 @@ saveAcasFileToExperiment <- function(
     if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
-    serverFileLocation <- customSourceFileMove(sourceLocation, fileName, fileService, 
-                                               experiment, recordedBy, deleteOldFile)
+    serverFileLocation <- customSourceFileMove(sourceLocation, recordedBy, fileName = fileName, entityType = entityType, entity = experiment, 
+                                               deleteOldFile = deleteOldFile, additionalPath = additionalPath)
   } else {
     stopUser("Invalid file service type")
   }
@@ -196,12 +199,12 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
   }
   
   sourceLocation <- getUploadedFilePath(fileStartLocation)
-  
   if (fileServiceType == "blueimp") {
+    folderPath <- entityFileStorePaths[entityKind]
     if (additionalPath == "") {
-      folderLocation <- file.path("experiments", experimentCodeName)
+      folderLocation <- file.path(folderPath, experimentCodeName)
     } else {
-      folderLocation <- file.path("experiments", experimentCodeName, additionalPath)
+      folderLocation <- file.path(folderPath, experimentCodeName, additionalPath)
     }
 
     dir.create(getUploadedFilePath(folderLocation), showWarnings = FALSE, recursive = TRUE)
@@ -223,8 +226,9 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
     if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
-    serverFileLocation <- customSourceFileMove(sourceLocation, fileName, fileService, 
-                                               entity, recordedBy, deleteOldFile)
+    serverFileLocation <- customSourceFileMove(sourceLocation, recordedBy, fileName = fileName, entityType = entityKind, entity = experiment, 
+                                               deleteOldFile = deleteOldFile, additionalPath = additionalPath)
+                          
   } else {
     stopUser("Invalid file service type")
   }

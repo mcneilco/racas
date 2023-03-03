@@ -646,7 +646,7 @@ moveFileToFileServer <- function(fileStartLocation, targetPath=NULL,
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     fileName <- basename(fileStartLocation)
-    return(customSourceFileMove(fileStartLocation, fileName, fileService, experiment, recordedBy))
+    return(customSourceFileMove(fileStartLocation, NA, experiment, recordedBy, deleteOldFile = TRUE, additionalPath = NA))
   } else {
     stopUser("Configuration error: Invalid file service type")
   }
