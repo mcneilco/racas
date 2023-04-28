@@ -23,9 +23,11 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     fileName <- basename(reportFilePath)
     
     experimentCodeName <- experiment$codeName
+    entityType <- "experiment"
+    folderPath <- entityFileStorePaths["experiment"]
     
     if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
-      experimentFolderLocation <- file.path(dirname(reportFilePath),"experiments")
+      experimentFolderLocation <- file.path(dirname(reportFilePath),folderPath)
       if(!testMode) {
         dir.create(experimentFolderLocation, showWarnings = FALSE)
         
@@ -36,7 +38,13 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
         file.rename(from=reportFilePath, to=file.path(fullFolderLocation, fileName))
       }
       
-      serverFileLocation <- file.path("experiments", experimentCodeName, fileName)
+      serverFileLocation <- file.path(folderPath, experimentCodeName, fileName)
+    } else if (racas::applicationSettings$server.service.external.file.type == "custom") {
+      if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
+        stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
+      }
+      serverFileLocation <- customSourceFileMove(reportFilePath, recordedBy, fileName = fileName, entityType = entityType, entity = experiment, 
+                                                deleteOldFile = TRUE, additionalPath = NA)
     } else {
       stopUser(paste0("A file service custom code for ", racas::applicationSettings$server.service.external.file.type, " should be added in the configuration file"))
     }
@@ -109,7 +117,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
   }
   locationState <- existingStates[[1]]
   
-  if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
+  if (racas::applicationSettings$server.service.external.file.type == "blueimp" || racas::applicationSettings$server.service.external.file.type == "custom") {
     if (!is.null(reportFilePath)) {
       locationValue <- createStateValue(recordedBy = recordedBy,
                                         lsType = "fileValue",
