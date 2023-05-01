@@ -542,52 +542,6 @@ validateNumeric <- function(inputValue, errorEnv = NULL) {
   }
   return(coercedValue)
 }
-#' File Saving (deprecated)
-#' 
-#' Moves a file to the location for files and saves a reference to that location
-#' in the experiment
-#' 
-#' @param fileStartLocation Path to location to find the source file, relative
-#'   from working directory
-#' @param experiment experiment object to save file to
-#' @param recordedBy username of person saving
-#' @param lsTransaction integer of transaction
-#' @param fileServiceType "blueimp" or "custom"
-#' @param fileService url path to custom file service (will be passed to
-#'   customSourceFileMove, which should be defined in customFunctions)
-#'   
-#' @details Mostly deprecated in favor of
-#'   \code{\link{saveAcasFileToExperiment}}, where the fileStartLocation is
-#'   relative from privateUploads. In fileRead.R.
-#'   
-#' @return New file location (or code)
-moveFileToExperimentFolder <- function(fileStartLocation, experiment, recordedBy, lsTransaction, 
-                                       fileServiceType = racas::applicationSettings$server.service.external.file.type, 
-                                       fileService = racas::applicationSettings$server.service.external.file.service.url,
-                                       deleteOldFile = TRUE, customSourceFileMove = NULL) {
-  
-  fileName <- basename(fileStartLocation)
-  
-  if(fileServiceType == "blueimp") {
-    experimentCodeName <- experiment$codeName
-    
-    experimentFolderLocation <- getUploadedFilePath("experiments")
-    dir.create(experimentFolderLocation, showWarnings = FALSE)
-    
-    fullFolderLocation <- file.path(experimentFolderLocation, experimentCodeName)
-    dir.create(fullFolderLocation, showWarnings = FALSE)
-    
-    targetPath <- file.path("experiments", experimentCodeName, fileName)
-  }
-  
-  serverFileLocation <- moveFileToFileServer(fileStartLocation, targetPath, 
-                                             fileServiceType, fileService, experiment, recordedBy, customSourceFileMove = customSourceFileMove)
-  
-  updateValueByTypeAndKind(serverFileLocation, "experiment", experiment$id, 
-                           "metadata", "raw results locations", "fileValue", "source file")
-  
-  return(serverFileLocation)
-}
 
 #' Returns file path for uploaded files 
 #'
@@ -620,9 +574,9 @@ get_text_file_contents <- function(file_path) {
 
 #' Move file to file server
 #'
-#' @param fileServiceType "blueimp" or "custom"
+#' @param fileServiceType "blueimp" "gcs" or "custom"
 #' @param fileStartLocation current location of file, relative from working directory
-#' @param targetPath path to new file location, not currently used when fileServiceType == "custom"
+#' @param targetPath path to new file location, not currently used when fileServiceType is "custom" or "gcs"
 #' @param fileService path to file service, not used when fileServiceType == "blueimp"
 #' @param experiment experiment object, not used when fileServiceType == "blueimp"
 #' @param recordedBy logged in username, not used when fileServiceType == "blueimp"
@@ -634,19 +588,19 @@ get_text_file_contents <- function(file_path) {
 moveFileToFileServer <- function(fileStartLocation, targetPath=NULL, 
                                  fileServiceType = racas::applicationSettings$server.service.external.file.type, 
                                  fileService=racas::applicationSettings$server.service.external.file.service.url, 
-                                 experiment=NULL, recordedBy=NULL, customSourceFileMove=NULL) {
+                                 experiment=NULL, recordedBy=NULL, customSourceFileMove=NULL, additionalPath = NA) {
   # moves a file to file server
   if (fileServiceType == "blueimp") {
     # Move the file, cannot use file.rename across a mounted drive
     file.copy(from=fileStartLocation, to=getUploadedFilePath(targetPath), overwrite = TRUE)
     file.remove(fileStartLocation)
     return(targetPath)
-  } else if (fileServiceType == "custom") {
+  } else if (fileServiceType %in% c("custom", "gcs")) {
     if(!is.function(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
     fileName <- basename(fileStartLocation)
-    return(customSourceFileMove(fileStartLocation, NA, experiment, recordedBy, deleteOldFile = TRUE, additionalPath = NA))
+    return(customSourceFileMove(fileStartLocation, recordedBy = recordedBy, fileName = fileName, entityType = "experiment", entity = experiment, deleteOldFile = TRUE, additionalPath = additionalPath))
   } else {
     stopUser("Configuration error: Invalid file service type")
   }

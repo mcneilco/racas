@@ -113,7 +113,7 @@ saveAcasFileToExperiment <- function(
       }
     }
     
-  } else if (fileServiceType == "custom") {
+  } else if (fileServiceType %in% c("custom", "gcs")) {
     if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
@@ -170,7 +170,7 @@ saveAcasFileToExperiment <- function(
 #' @param valueType usually fileValue, could also be inlineFileValue
 #' @param additionalPath if saving to a file system and not a service, 
 #'   additional file organization, i.e. "analysis/final"
-#' @param fileServiceType "blueimp" for internal, "custom" for custom
+#' @param fileServiceType "blueimp" for internal, "gcs" for google cloud storage and "custom" for custom
 #' @param fileService only required if fileServiceType is "custom", path to 
 #'   custom file service
 #' @param deleteOldFile boolean, \code{TRUE} if current file should be deleted 
@@ -222,7 +222,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
       }
     }
     
-  } else if (fileServiceType == "custom") {
+  } else if (fileServiceType %in% c("custom", "gcs")) {
     if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
       stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
     }
@@ -257,7 +257,7 @@ saveAcasFile <- function(fileStartLocation, entity, entityKind, stateType, state
 #' @export
 getAcasFileLink <- function(fileCode, login = FALSE) {
   fileServiceType <- racas::applicationSettings$server.service.external.file.type
-  if (fileServiceType == "blueimp") {
+  if (fileServiceType %in% c("blueimp", "gcs")) {
     fileRootPath <- ifelse(login, 
                            paste0(getSSLString(), racas::applicationSettings$client.host, ":",
                                   racas::applicationSettings$client.port,

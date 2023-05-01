@@ -39,7 +39,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       }
       
       serverFileLocation <- file.path(folderPath, experimentCodeName, fileName)
-    } else if (racas::applicationSettings$server.service.external.file.type == "custom") {
+    } else if (racas::applicationSettings$server.service.external.file.type %in% c("custom", "gcs")) {
       if(!exists('customSourceFileMove') || is.null(customSourceFileMove)) {
         stop(paste0("customSourceFileMove has not been defined in customFunctions.R"))
       }
@@ -117,7 +117,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
   }
   locationState <- existingStates[[1]]
   
-  if (racas::applicationSettings$server.service.external.file.type == "blueimp" || racas::applicationSettings$server.service.external.file.type == "custom") {
+  if (racas::applicationSettings$server.service.external.file.type %in% c("blueimp", "gcs")) {
     if (!is.null(reportFilePath)) {
       locationValue <- createStateValue(recordedBy = recordedBy,
                                         lsType = "fileValue",
