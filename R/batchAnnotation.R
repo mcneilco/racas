@@ -24,10 +24,10 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
     
     experimentCodeName <- experiment$codeName
     entityType <- "experiment"
-    folderPath <- entityFileStorePaths["experiment"]
+    folderPath <- entityFileStorePaths[entityType]
     
     if (racas::applicationSettings$server.service.external.file.type == "blueimp") {
-      experimentFolderLocation <- file.path(dirname(reportFilePath),folderPath)
+      experimentFolderLocation <- file.path(dirname(reportFilePath), folderPath)
       if(!testMode) {
         dir.create(experimentFolderLocation, showWarnings = FALSE)
         
@@ -45,7 +45,7 @@ addFileLink <- function(batchCodeList, recordedBy, experiment, lsTransaction,
       }
       serverFileLocation <- customSourceFileMove(reportFilePath, recordedBy, fileName = fileName, entityType = entityType, entity = experiment, 
                                                 deleteOldFile = TRUE, additionalPath = NA)
-    } else {
+    } else {ß
       stopUser(paste0("A file service custom code for ", racas::applicationSettings$server.service.external.file.type, " should be added in the configuration file"))
     }
   }
