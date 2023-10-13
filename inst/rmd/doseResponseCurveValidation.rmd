@@ -35,5 +35,9 @@ tbody <- paste0(tbody,trs)
 tbody <- paste0(tbody,"</tbody>" )
 table <- paste0(table,tbody)
 table <- paste0(table,"</table>" )
+
+# Include the =html escape as we are outputting raw html. This is needed to prevent the html from being rendered by markdownToHTML and converting characters like 1/9 to html codes
+cat('```{=html}\n')
 cat(table)
+cat('\n```')
 ```
