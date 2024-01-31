@@ -100,7 +100,7 @@ getEntity <- function(x, type = c("protocolName", "experimentName", "protocolCod
   }
   type <- match.arg(type)
   servicePath <- switch(type,
-                        protocolName = "protocols?FindByProtocolName&protocolName=",
+                        protocolName = "protocols?FindByProtocolNameLike&protocolName=",
                         protocolCodeName = "protocols?FindByCodeName&codeName=",
                         experimentName = "experiments?FindByExperimentName&experimentName=",
                         experimentCodeName = "experiments?FindByCodeName&codeName="
