@@ -3,7 +3,7 @@ FROM mcneilco/acas-r-repo:2023.1.0
 # NODE
 USER root
 ENV NPM_CONFIG_LOGLEVEL warn
-ENV NODE_VERSION 18.x
+ENV NODE_VERSION 20.x
 RUN curl -fsSL https://rpm.nodesource.com/setup_$NODE_VERSION | bash - && \
   dnf install -y nodejs && \
   npm install -g coffeescript@2.5.1 properties@1.2.1 underscore@1.12.0 underscore-deep-extend@1.1.5 properties-parser@0.3.1 flat@5.0.2 glob@7.1.6
