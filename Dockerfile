@@ -1,4 +1,4 @@
-FROM mcneilco/acas-r-repo:2023.1.0
+FROM mcneilco/acas-r-repo:2024.1.0
 
 # NODE
 USER root
