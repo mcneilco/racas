@@ -108,9 +108,14 @@ getFileEncoding <- function(filePath) {
   # "\xff\xfe" is the byte order mark for "UTF-16LE"
   # Referenced from the answer by 'roippi' in this question thread:
   # http://stackoverflow.com/questions/23729151/reading-text-file-into-variable-subsequent-print-returns-escape-characters
-  fileEncoding <- ifelse(suppressWarnings(grepl("\xff\xfe",readLines(filePath, n=1), perl = TRUE)), 
-                         "UTF-16LE", 
-                         "")
+  # Read the first few bytes of the file in raw mode
+  firstBytes <- readBin(filePath, "raw", n = 2)
+
+  # Convert the raw bytes to a character string
+  firstBytesStr <- rawToChar(firstBytes)
+
+  # Check if the first bytes match the BOM for UTF-16 Little Endian encoding
+  fileEncoding <- ifelse(firstBytesStr == "\xff\xfe", "UTF-16LE", "")
   return(fileEncoding)
 }
 

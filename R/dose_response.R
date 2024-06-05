@@ -713,8 +713,8 @@ curve_fit_controller_fitData_dataTable_to_fitData <- function(serviceDataTable) 
                                                                                                                            list(list()),
                                                                                                                            TRUE,
                                                                                                                            list(list()))]
-  serviceDataTable[!exists("userFlagStatus") || is.na(userFlagStatus), userFlagStatus := ""]
-  serviceDataTable[!exists("algorithmFlagStatus") || is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
+  serviceDataTable[!exists("userFlagStatus") | is.na(userFlagStatus), userFlagStatus := ""]
+  serviceDataTable[!exists("algorithmFlagStatus") | is.na(algorithmFlagStatus), algorithmFlagStatus := ""]
   serviceDataTable[ , model.synced := FALSE]
   return(serviceDataTable)
 }
