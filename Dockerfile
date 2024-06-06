@@ -1,11 +1,6 @@
-FROM mcneilco/acas-r-repo:2023.1.0
+FROM mcneilco/acas-r-repo:2024.1.0
 
 USER root
-# EOL for Centos8-Stream workaround 
-RUN sed -i 's/^mirrorlist=/#&/' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^#baseurl=/baseurl=/' /etc/yum.repos.d/*.repo && \ 
-    sed -i 's/mirror.centos.org/vault.centos.org/' /etc/yum.repos.d/*.repo 
-
 # NODE
 ENV NPM_CONFIG_LOGLEVEL warn
 ENV NODE_VERSION 20.x

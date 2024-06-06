@@ -1,6 +1,6 @@
-FROM quay.io/centos/centos:stream8
+FROM quay.io/centos/centos:stream9
 
-# R, Java
+# R-Java
 ENV JAVA_VERSION 1.8.0
 ENV JAVA_HOME /usr/lib/jvm/java
 RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
@@ -9,19 +9,18 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
 
 RUN \
   echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
-  sed -i 's/vault.centos.org/archive.kernel.org/g' /etc/yum.repos.d/* && \
   dnf update -y && \
   dnf upgrade -y && \
   dnf install -y epel-release && \
-  dnf config-manager --set-enabled powertools && \
-  dnf module enable -y postgresql:13 && \
-  dnf install postgresql-server-devel postgresql-devel postgresql -y && \
-  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel protobuf-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm5.0-devel llvm-toolset sudo cmake initscripts && \
+  dnf config-manager --set-enabled crb && \
+  dnf module enable -y postgresql:15 && \
+  dnf install postgresql libpq libpq-devel -y && \
+  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset sudo cmake initscripts && \
   dnf builddep -y R-devel && \
   dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   dnf clean all
 
-ENV R_VERSION 4.1.2
+ENV R_VERSION 4.4.0
 RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
@@ -54,14 +53,14 @@ RUN \
     --with-apreq2-config=/usr/bin/apreq2-config && \
   make && \
   make install
-  
-RUN \
-  chkconfig httpd off
 
 RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
     tar -xzvf v2.7.1.tar.gz && \
     cd nlopt-2.7.1 && \
     cmake . && make && sudo make install
+ENV LD_LIBRARY_PATH /nlopt-2.7.1:${LD_LIBRARY_PATH}
+# Run ldconfig to update the shared library cache
+RUN ldconfig
 
 RUN	useradd -u 1000 -ms /bin/bash runner
 ENV ACAS_HOME /home/runner/build
