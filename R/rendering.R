@@ -482,31 +482,35 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
           function(x) 
             rgb(x[1], x[2], x[3], alpha=alpha))  
   }
-  if(is.null(plotColors) | length(plotColors) == 0) {
+
+  if (length(plotColors) > 1) {
+    requestedColors <- TRUE
+  } else if(is.null(plotColors) | length(plotColors) == 0) {
+    requestedColors <- FALSE
     plotColors <- "black"
     if(!is.null(racas::applicationSettings$server.curveRender.plotColors) && racas::applicationSettings$server.curveRender.usePlotColorsByDefault) {
       plotColors <- trimws(strsplit(racas::applicationSettings$server.curveRender.plotColors,",")[[1]])
     }
   }
 
-  if(is.na(mostRecentCurveColor)) {
+  if(is.na(mostRecentCurveColor && !requestedColors)) {
     if(!is.null(racas::applicationSettings$server.curveRender.mostRecentCurveColor) && racas::applicationSettings$server.curveRender.mostRecentCurveColor != "") {
       mostRecentCurveColor <- trimws(racas::applicationSettings$server.curveRender.mostRecentCurveColor)
     }
   }
   
-  if("recordedDate" %in% names(params)) {
-    params <- params[order(params$recordedDate, decreasing = TRUE),]
+  if("recordedDate" %in% names(params) && !requestedColors) {
+    params <- params[order(params$recordedDate, decreasing = FALSE),]
   }
   if(!"color" %in% names(params)) {
-    if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
-      params$color <- mostRecentCurveColor
-      params[2:nrow(params), ]$color <- rep_len(plotColors,nrow(params)-1)
+    if(nrow(params) > 1 && !is.na(mostRecentCurveColor) && !requestedColors) {
+      params$color <- rep_len(plotColors, nrow(params))
+      params[nrow(params), "color"] <- mostRecentCurveColor
     } else {
       params$color <- rep_len(plotColors,nrow(params))
-  #     params$color <- grDevices::cm.colors(nrow(params), alpha = 1)
     }
   }
+
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
   curveData$coloralpha <- plotColorsAlpha[match(curveData$curveId,params$curveId)] 
