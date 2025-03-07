@@ -474,7 +474,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   scaleFactor <- sqrt(height^2+width^2)/defaultDiagonal
   scaleFactor <- max(scaleFactor, 0.7)
   
-   #Assign Colors
+  #Assign Colors
   add.alpha <- function(col, alpha=1){
     if(missing(col))
       stop("Please provide a vector of colours.")
