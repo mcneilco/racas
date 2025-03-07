@@ -496,24 +496,21 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   } else if(mostRecentCurveColor == "none") {
       #requestor wants to override global configuration
       mostRecentCurveColor <- NA
-  }
+    }
   
-  if("recordedDate" %in% names(params)) {
-    params <- params[order(params$recordedDate, decreasing = TRUE),]
-  }
   if(!"color" %in% names(params)) {
     if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
       # mostRecentCurveColor in effect. Move the most recent curve to the end of the list
       # so that it shows on top of the other curves
-      # Identify the index of the record with the most recent recordedDate
-      most_recent_index <- which.max(params$recordedDate)
-      # Extract the most recent record
-      most_recent_record <- params[most_recent_index, ]
-      # Remove the most recent record from the original dataframe
-      params <- params[-most_recent_index, ]
-      # Append the most recent record to the end of the dataframe
-      params <- rbind(params, most_recent_record)
-
+      if("recordedDate" %in% names(params)) {
+        # Identify the index of the record with the most recent recordedDate
+        most_recent_index <- which.max(params$recordedDate)
+        most_recent_record <- params[most_recent_index, ]
+        # Remove the most recent record from the original dataframe
+        params <- params[-most_recent_index, ]
+        # Append the most recent record to the end of the dataframe
+        params <- rbind(params, most_recent_record)
+      }
       params$color <- rep_len(plotColors, nrow(params))
       params[nrow(params), "color"] <- mostRecentCurveColor
     } else {
