@@ -493,12 +493,13 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     if(!is.null(racas::applicationSettings$server.curveRender.mostRecentCurveColor) && racas::applicationSettings$server.curveRender.mostRecentCurveColor != "") {
       mostRecentCurveColor <- trimws(racas::applicationSettings$server.curveRender.mostRecentCurveColor)
     }
-  } else if(mostRecentCurveColor == "none") {
+  } else if(identical(mostRecentCurveColor, FALSE)) {
       #requestor wants to override global configuration
       mostRecentCurveColor <- NA
   }
   
   if(!"color" %in% names(params)) {
+    params$color <- rep_len(plotColors,nrow(params))
     if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
       # mostRecentCurveColor in effect. Move the most recent curve to the end of the list
       # so that it shows on top of the other curves
@@ -510,12 +511,21 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
         params <- params[-most_recent_index, ]
         # Append the most recent record to the end of the dataframe
         params <- rbind(params, most_recent_record)
+        params[nrow(params), "color"] <- mostRecentCurveColor
       }
-      params[nrow(params), "color"] <- mostRecentCurveColor
-    } else {
-      params$color <- rep_len(plotColors,nrow(params))
     }
   }
+  # regardless of color settings we need to order curveData to match params order by curveId
+  # the length of curveData does not match the length of params
+  # so we need to order curveData to match the order of params
+  roCurveData <- data.table()
+  for (i in 1:nrow(params)) {
+    loopCID <- as.character(params$curveId[i])
+    #append all curveData for this curveId to the roCurveData
+    roCurveData <- rbind(roCurveData, curveData[curveData$curveId == loopCID, ])
+  }
+  curveData <- roCurveData
+
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
   curveData$coloralpha <- plotColorsAlpha[match(curveData$curveId,params$curveId)] 
@@ -1019,6 +1029,8 @@ parse_params_curve_render_dr <- function(getParams = GET, postParams = NA) {
   }
   if(is.null(getParams$mostRecentCurveColor)) {
     mostRecentCurveColor <- NA
+  } else if (tolower(getParams$mostRecentCurveColor) == "none" || identical(as.logical(getParams$mostRecentCurveColor), FALSE)) {
+    mostRecentCurveColor <- FALSE
   } else {
     mostRecentCurveColor <- getParams$mostRecentCurveColor
   }
