@@ -518,13 +518,7 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
   # regardless of color settings we need to order curveData to match params order by curveId
   # the length of curveData does not match the length of params
   # so we need to order curveData to match the order of params
-  roCurveData <- data.table()
-  for (i in 1:nrow(params)) {
-    loopCID <- as.character(params$curveId[i])
-    #append all curveData for this curveId to the roCurveData
-    roCurveData <- rbind(roCurveData, curveData[curveData$curveId == loopCID, ])
-  }
-  curveData <- roCurveData
+  curveData <- curveData[order(match(curveData$curveId, params$curveId),na.last = TRUE), ]
 
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
