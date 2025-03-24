@@ -493,20 +493,33 @@ plotCurve <- function(curveData, params, outFile = NA, ymin = NA, logDose = FALS
     if(!is.null(racas::applicationSettings$server.curveRender.mostRecentCurveColor) && racas::applicationSettings$server.curveRender.mostRecentCurveColor != "") {
       mostRecentCurveColor <- trimws(racas::applicationSettings$server.curveRender.mostRecentCurveColor)
     }
+  } else if(identical(mostRecentCurveColor, FALSE)) {
+      #requestor wants to override global configuration
+      mostRecentCurveColor <- NA
   }
   
-  if("recordedDate" %in% names(params)) {
-    params <- params[order(params$recordedDate, decreasing = TRUE),]
-  }
   if(!"color" %in% names(params)) {
+    params$color <- rep_len(plotColors,nrow(params))
     if(nrow(params) > 1 && !is.na(mostRecentCurveColor)) {
-      params$color <- mostRecentCurveColor
-      params[2:nrow(params), ]$color <- rep_len(plotColors,nrow(params)-1)
-    } else {
-      params$color <- rep_len(plotColors,nrow(params))
-  #     params$color <- grDevices::cm.colors(nrow(params), alpha = 1)
+      # mostRecentCurveColor in effect. Move the most recent curve to the end of the list
+      # so that it shows on top of the other curves
+      params$color <- rep_len(plotColors, nrow(params))
+      if("recordedDate" %in% names(params)) {
+        most_recent_index <- which.max(params$recordedDate)
+        most_recent_record <- params[most_recent_index, ]
+        # Remove the most recent record from the original dataframe
+        params <- params[-most_recent_index, ]
+        # Append the most recent record to the end of the dataframe
+        params <- rbind(params, most_recent_record)
+        params[nrow(params), "color"] <- mostRecentCurveColor
+      }
     }
   }
+  # regardless of color settings we need to order curveData to match params order by curveId
+  # the length of curveData does not match the length of params
+  # so we need to order curveData to match the order of params
+  curveData <- curveData[order(match(curveData$curveId, params$curveId),na.last = TRUE), ]
+
   plotColorsAlpha <- add.alpha(params$color, alpha=0.3)
   curveData$color <- params$color[match(curveData$curveId,params$curveId)] 
   curveData$coloralpha <- plotColorsAlpha[match(curveData$curveId,params$curveId)] 
@@ -1010,6 +1023,8 @@ parse_params_curve_render_dr <- function(getParams = GET, postParams = NA) {
   }
   if(is.null(getParams$mostRecentCurveColor)) {
     mostRecentCurveColor <- NA
+  } else if (tolower(getParams$mostRecentCurveColor) == "none" || identical(as.logical(getParams$mostRecentCurveColor), FALSE)) {
+    mostRecentCurveColor <- FALSE
   } else {
     mostRecentCurveColor <- getParams$mostRecentCurveColor
   }
