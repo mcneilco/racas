@@ -33,10 +33,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: Dockerfile
           platforms: linux/amd64,linux/arm64/v8
+          cache-from: type=registry,ref=${{ github.repository }}-oss:cache
+          cache-to: type=registry,ref=${{ github.repository }}-oss:cache,mode=max
