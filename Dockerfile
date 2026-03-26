@@ -1,17 +1,28 @@
+ARG NODE_VERSION=20
+FROM node:${NODE_VERSION}-slim AS node
 FROM mcneilco/acas-r-repo:2024.1.0
 
 USER root
 # NODE
-ENV NPM_CONFIG_LOGLEVEL warn
-ENV NODE_VERSION 20.x
-RUN curl -fsSL https://rpm.nodesource.com/setup_$NODE_VERSION | bash - && \
-  dnf install -y nodejs && \
-  npm install -g coffeescript@2.5.1 properties@1.2.1 underscore@1.12.0 underscore-deep-extend@1.1.5 properties-parser@0.3.1 flat@5.0.2 glob@7.1.6
+ENV NPM_CONFIG_LOGLEVEL=warn
+# Add nodejs for prepare config files - copy from official image to avoid SSL issues with nodesource
+COPY --from=node /usr/local/include/node /usr/local/include/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
+RUN npm install -g \
+    coffeescript@2.5.1 \
+    properties@1.2.1 \
+    underscore@1.12.0 \
+    underscore-deep-extend@1.1.5 \
+    properties-parser@0.3.1 \
+    flat@5.0.2 \
+    glob@7.1.6
 USER runner
-ENV NODE_PATH /usr/lib/node_modules
+ENV NODE_PATH=/usr/local/lib/node_modules
 
-ENV LANG en_US.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=C.UTF-8
 COPY --chown=runner:runner . /home/runner/racas
 RUN  export R_LIBS=/home/runner/build/r_libs && R CMD INSTALL --no-multiarch --with-keep.source /home/runner/racas
 EXPOSE 1080
