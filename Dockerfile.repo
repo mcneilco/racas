@@ -100,7 +100,7 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
       renv::restore(packages = c('digest', 'xfun', 'testthat', 'fansi'), lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
       renv::restore(packages = c('rematch2', 'tibble'), lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
       # Explicitly install knitr which has been problematic \
-      renv::install('knitr@1.47'); \
+      renv::install('knitr@1.51'); \
       # Now restore the full lockfile to get all packages \
       renv::restore(lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
 
