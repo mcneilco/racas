@@ -89,23 +89,16 @@ RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org/')
 USER runner
 # R package installation using renv for reproducibility:
 # - Versions pinned in renv.lock (see README for update instructions)
-# - amd64: Uses Posit Package Manager (PPM) pre-built binaries (fast)
-# - arm64: Compiles from source (PPM doesn't provide ARM binaries)
 # - Cache mount stores compiled packages to speed up rebuilds
 ARG TARGETARCH
 RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGETARCH \
-    if [ "$TARGETARCH" = "amd64" ]; then \
-      REPO_URL="https://packagemanager.posit.co/cran/__linux__/centos9/latest"; \
-      echo "Installing R packages from PPM (pre-built binaries for amd64)"; \
-    else \
-      REPO_URL="https://cloud.r-project.org/"; \
-      echo "Installing R packages from CRAN (compiling from source for $TARGETARCH)"; \
-    fi && \
     export RENV_PATHS_CACHE=/home/runner/.cache/R/renv && \
     Rscript -e " \
-      # Pre-install testthat: nloptr has LinkingTo: testthat but renv \
-      # does not order LinkingTo deps before packages that need them \
-      renv::restore(packages = c('digest', 'xfun', 'testthat'), library = Sys.getenv('R_LIBS'), prompt = FALSE); \
-      renv::restore(library = Sys.getenv('R_LIBS'), prompt = FALSE)"
+      # Force renv to use exact lockfile versions from CRAN \
+      options(repos = c(CRAN = 'https://cloud.r-project.org')); \
+      # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
+      preinstall <- c('digest', 'xfun', 'testthat'); \
+      renv::restore(packages = preinstall, lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
+      renv::restore(exclude = preinstall, lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
