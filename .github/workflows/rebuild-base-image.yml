@@ -23,6 +23,7 @@ on:
       - 'Dockerfile.repo'
       - 'DESCRIPTION'
       - 'R/installation.R'
+      - 'renv.lock'
       - '.github/workflows/rebuild-base-image.yml'
     branches:
       - master
