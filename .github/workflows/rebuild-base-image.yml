@@ -73,13 +73,16 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJson(needs.prepare.outputs.matrix).branch }}
+        # Cross-product: each branch builds on both architectures
+        arch: [amd64, arm64]
         include:
-          - platform: linux/amd64
+          # Map arch to platform/runner details
+          - arch: amd64
+            platform: linux/amd64
             runner: ubuntu-latest
-            suffix: amd64
-          - platform: linux/arm64
+          - arch: arm64
+            platform: linux/arm64
             runner: ubuntu-24.04-arm
-            suffix: arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
@@ -104,7 +107,7 @@ jobs:
           TAG_BRANCH=$(echo "$BRANCH" | sed 's|/|-|g')
 
           # Architecture-specific tag for this build
-          ARCH_TAG="mcneilco/acas-r-repo:${TAG_BRANCH}-${{ matrix.suffix }}"
+          ARCH_TAG="mcneilco/acas-r-repo:${TAG_BRANCH}-${{ matrix.arch }}"
 
           echo "arch_tag=$ARCH_TAG" >> $GITHUB_OUTPUT
           echo "tag_branch=$TAG_BRANCH" >> $GITHUB_OUTPUT
@@ -117,8 +120,8 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.arch_tag }}
           platforms: ${{ matrix.platform }}
-          cache-from: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.suffix }}-cache
-          cache-to: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.suffix }}-cache,mode=max
+          cache-from: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache
+          cache-to: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache,mode=max
 
   # Merge per-architecture images into a single multi-arch manifest
   merge:
