@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM quay.io/centos/centos:stream9
 
 # R-Java
@@ -7,7 +8,8 @@ RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.
     export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/$(arch):$JAVA_HOME/jre/lib/$(arch)/server/ && \
     /sbin/ldconfig
 
-RUN \
+# Use BuildKit cache mount to speed up repeated builds
+RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
   echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
   dnf update -y && \
   dnf upgrade -y && \
@@ -42,23 +44,26 @@ RUN \
   mkdir -p ~/rpmbuild/SOURCES && \
   mkdir -p ~/rpmbuild/SPECS
 
-ENV RAPACHE_VERSION master
+# Pin rapache to a specific release tag for reproducible builds
+# Check https://github.com/jeffreyhorner/rapache/tags for latest releases
+ENV RAPACHE_VERSION v1.2.11
 RUN \
   cd ~ && \
-  wget https://github.com/jeffreyhorner/rapache/archive/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
+  wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
   tar xzvf rapache-$RAPACHE_VERSION.tar.gz && \
-  cd rapache-$RAPACHE_VERSION && \
+  cd rapache-${RAPACHE_VERSION#v} && \
   ./configure \
     --with-R=/usr/local/bin/R\
     --with-apreq2-config=/usr/bin/apreq2-config && \
   make && \
   make install
 
-RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
-    tar -xzvf v2.7.1.tar.gz && \
-    cd nlopt-2.7.1 && \
+ENV NLOPT_VERSION 2.7.1
+RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
+    tar -xzvf v${NLOPT_VERSION}.tar.gz && \
+    cd nlopt-${NLOPT_VERSION} && \
     cmake . && make && sudo make install
-ENV LD_LIBRARY_PATH /nlopt-2.7.1:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH /nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
 # Run ldconfig to update the shared library cache
 RUN ldconfig
 
@@ -76,6 +81,7 @@ COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
 
 USER runner
-RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"
+# TODO: R packages are not version-pinned; consider using renv for reproducibility
+RUN Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"
 
 CMD ["bin/acas.sh", "run", "rservices"]
