@@ -49,3 +49,27 @@ This is currently done via automated builds but this command should be equivalen
 ```
 docker buildx build --push --no-cache --platform linux/amd64,linux/arm64/v8 -t mcneilco/racas-oss:2024.1.0 .
 ```
+
+## Updating renv.lock
+
+The `renv.lock` file pins R package versions for reproducible builds. To update it:
+
+1. Start a container from a known-working image:
+   ```
+   docker run -it mcneilco/racas-oss:2024.1.0 bash
+   ```
+
+2. Inside the container, run R and generate the lockfile:
+   ```
+   R
+   > install.packages('renv')
+   > renv::init()
+   > q()
+   ```
+
+3. Copy the lockfile out:
+   ```
+   docker cp <container_id>:/home/runner/build/renv.lock ./renv.lock
+   ```
+
+4. Commit the updated lockfile.
