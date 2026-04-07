@@ -81,7 +81,18 @@ COPY	R/installation.R $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
 
 USER runner
-# TODO: R packages are not version-pinned; consider using renv for reproducibility
-RUN Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"
+# R package installation:
+# - amd64: Uses Posit Package Manager (PPM) pre-built binaries (fast)
+# - arm64: Compiles from source (PPM doesn't provide ARM binaries)
+# TODO: Consider using renv for version pinning/reproducibility
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      REPO_URL="https://packagemanager.posit.co/cran/__linux__/centos9/latest"; \
+      echo "Installing R packages from PPM (pre-built binaries for amd64)"; \
+    else \
+      REPO_URL="https://cloud.r-project.org/"; \
+      echo "Installing R packages from CRAN (compiling from source for $TARGETARCH)"; \
+    fi && \
+    Rscript -e "options(repos = c(CRAN = '$REPO_URL')); source('installation.R'); installDeps(sections = c('Imports', 'Suggests'));"
 
 CMD ["bin/acas.sh", "run", "rservices"]
