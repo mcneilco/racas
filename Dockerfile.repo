@@ -97,8 +97,11 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
       # Force renv to use exact lockfile versions from CRAN \
       options(repos = c(CRAN = 'https://cloud.r-project.org')); \
       # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
-      preinstall <- c('digest', 'xfun', 'testthat'); \
+      preinstall <- c('digest', 'xfun', 'testthat', 'rematch2', 'tibble'); \
       renv::restore(packages = preinstall, lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
-      renv::restore(exclude = preinstall, lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
+      # Explicitly install knitr which has been problematic \
+      renv::install('knitr@1.47'); \
+      # Now restore the full lockfile to get all packages \
+      renv::restore(lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
