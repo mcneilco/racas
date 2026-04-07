@@ -40,6 +40,9 @@ RUN ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
 RUN R CMD javareconf
 
+# Install renv globally for package management (before COPY to optimize layer caching)
+RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org/')"
+
 RUN \
   mkdir -p ~/rpmbuild/SOURCES && \
   mkdir -p ~/rpmbuild/SPECS
@@ -74,17 +77,14 @@ RUN echo $ACAS_HOME && mkdir $ACAS_HOME
 WORKDIR $ACAS_HOME
 
 ENV R_LIBS $ACAS_HOME/r_libs
+ENV RENV_PATHS_LIBRARY $ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
 
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
 # renv.lock pins exact package versions for reproducible builds
-# Regenerate with: ./scripts/generate-renv-lock.sh
 COPY	renv.lock $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
-
-# Install renv globally for package management
-RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org/')"
 
 USER runner
 # R package installation using renv for reproducibility:
@@ -94,12 +94,11 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGETARCH \
     export RENV_PATHS_CACHE=/home/runner/.cache/R/renv && \
     Rscript -e " \
-      # Force renv to use exact lockfile versions from CRAN \
       options(repos = c(CRAN = 'https://cloud.r-project.org')); \
+      renv::activate(prompt = FALSE); \
       # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
-      renv::restore(packages = c('digest', 'testthat', 'fansi'), lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
-      renv::restore(packages = c('rematch2', 'tibble'), lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE); \
-      # Now restore the full lockfile to get all packages \
-      renv::restore(lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
+      renv::restore(packages = c('digest', 'testthat', 'fansi'), prompt = FALSE); \
+      renv::restore(packages = c('rematch2', 'tibble'), prompt = FALSE); \
+      renv::restore(prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
