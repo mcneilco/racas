@@ -103,12 +103,9 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
     fi && \
     export RENV_PATHS_CACHE=/home/runner/.cache/R/renv && \
     Rscript -e " \
-      # Pre-install testthat: nloptr has LinkingTo: testthat but renv \
-      # does not order LinkingTo deps before packages that need them \
-      renv::install('testthat@3.2.1.1', prompt = FALSE); \
-      # Pre-install xfun 0.44: knitr has a hard dependency on xfun was \
-      # downloading the wrong version \
-      renv::install('xfun@0.44', prompt = FALSE); \
+      # Disable parallel installs to ensure LinkingTo dependencies \
+      # (like testthat for nloptr) are installed in correct order \
+      options(renv.config.install.jobs = 1); \
       renv::restore(lockfile = 'renv.lock', library = Sys.getenv('R_LIBS'), prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
