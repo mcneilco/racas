@@ -95,7 +95,7 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
     export RENV_PATHS_CACHE=/home/runner/.cache/R/renv && \
     Rscript -e " \
       options(repos = c(CRAN = 'https://cloud.r-project.org')); \
-      renv::activate(prompt = FALSE); \
+      renv::activate(); \
       # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
       renv::restore(packages = c('digest', 'testthat', 'fansi'), prompt = FALSE); \
       renv::restore(packages = c('rematch2', 'tibble'), prompt = FALSE); \
