@@ -27,6 +27,7 @@ on:
     branches:
       - master
       - 'release/**'
+      - ACAS-967-scheduled-rebuilds
 
 jobs:
   # Determine which branches to build
