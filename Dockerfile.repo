@@ -95,10 +95,10 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
     export RENV_PATHS_CACHE=/home/runner/.cache/R/renv && \
     Rscript -e " \
       options(repos = c(CRAN = 'https://cloud.r-project.org')); \
-      renv::activate(); \
+      lib <- Sys.getenv('R_LIBS'); \
       # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
-      renv::restore(packages = c('digest', 'testthat', 'fansi'), prompt = FALSE); \
-      renv::restore(packages = c('rematch2', 'tibble'), prompt = FALSE); \
-      renv::restore(prompt = FALSE)"
+      renv::restore(packages = c('digest', 'testthat', 'fansi'), library = lib, prompt = FALSE); \
+      renv::restore(packages = c('rematch2', 'tibble'), library = lib, prompt = FALSE); \
+      renv::restore(library = lib, prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
