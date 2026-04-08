@@ -105,39 +105,38 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
       renv::restore(library = lib, prompt = FALSE)"
 
 # =============================================================================
-# STAGE 2: Runtime (UBI9 Minimal)
-# Minimal RHEL-based runtime - same distro family as builder for compatibility
+# STAGE 2: Runtime (Debian Slim)
+# Minimal runtime with only what's needed to run R/rapache
 # =============================================================================
-FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
+FROM debian:bookworm-slim AS runtime
 
-# Runtime dependencies (RHEL packages via microdnf)
-RUN microdnf install -y \
-    # Apache + libapreq2 for rapache
-    httpd \
-    libapreq2 \
-    # Java 1.8 for rJava (same as builder)
-    java-1.8.0-openjdk-headless \
+# Runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Apache for rapache
+    apache2 \
+    libaprutil1 \
+    # Java 17 for rJava (Java 8 not in Debian Bookworm)
+    openjdk-17-jre-headless \
     # PostgreSQL client libs (for RPostgreSQL)
-    libpq \
+    libpq5 \
     # R runtime dependencies (from ldd analysis)
-    pcre2 \
-    libdeflate \
-    xz-libs \
-    bzip2-libs \
-    zlib \
-    libicu \
-    libgomp \
-    libgfortran \
-    readline \
-    libcurl \
+    libtirpc3 \
+    libpcre2-8-0 \
+    libdeflate0 \
+    liblzma5 \
+    libbz2-1.0 \
+    zlib1g \
+    libgomp1 \
+    libgfortran5 \
+    libreadline8 \
+    libcurl4 \
     libxml2 \
-    libpng \
-    openssl-libs \
-    libtirpc \
+    libpng16-16 \
+    libssl3 \
     # Fonts (for R plots)
     fontconfig \
-    dejavu-sans-fonts \
-    && microdnf clean all
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create runner user (match UID from builder)
 RUN useradd -u 1000 -ms /bin/bash runner
@@ -150,17 +149,26 @@ RUN ln -s /opt/R/4.4.0/bin/R /usr/local/bin/R && \
 # Copy R packages from builder
 COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner/build/r_libs
 
-# Copy rapache module (same path as builder since same distro family)
-COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib64/httpd/modules/mod_R.so
+# Copy rapache module (Debian uses different Apache module path)
+COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib/apache2/modules/mod_R.so
 
-# Copy nlopt (not in UBI repos, keep from builder)
+# Copy libapreq2 (not available in Debian repos)
+COPY --from=builder /lib64/libapreq2.so.3* /usr/lib/
+
+# Copy ICU libs from builder (R compiled against CentOS ICU 67, Debian has 72)
+COPY --from=builder /lib64/libicuuc.so.67* /usr/lib/
+COPY --from=builder /lib64/libicui18n.so.67* /usr/lib/
+COPY --from=builder /lib64/libicudata.so.67* /usr/lib/
+
+# Copy and relocate nlopt to standard library path
 COPY --from=builder /nlopt-2.7.1/libnlopt.so.0.11.1 /usr/local/lib/
 RUN ln -s /usr/local/lib/libnlopt.so.0.11.1 /usr/local/lib/libnlopt.so.0 && \
     ln -s /usr/local/lib/libnlopt.so.0 /usr/local/lib/libnlopt.so && \
     ldconfig
 
 # Environment setup
-ENV JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk
+ARG TARGETARCH
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-${TARGETARCH:-amd64}
 ENV R_VERSION=4.4.0
 ENV R_LIBS=/home/runner/build/r_libs
 ENV ACAS_HOME=/home/runner/build
