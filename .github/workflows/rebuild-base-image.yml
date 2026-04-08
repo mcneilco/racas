@@ -1,0 +1,182 @@
+name: Rebuild Base Image
+
+# Scheduled rebuilds of acas-r-repo base image to pick up CVE fixes
+# This builds Dockerfile.repo which contains CentOS, R, rapache, and system deps
+#
+# Multi-arch build on native runners (amd64 and arm64) for much faster builds than QEMU
+
+on:
+  schedule:
+    # Weekly on Sunday at 4am UTC
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build (leave empty for all branches)'
+        required: false
+        default: ''
+  push:
+    paths:
+      - 'Dockerfile.repo'
+      - 'DESCRIPTION'
+      - 'R/installation.R'
+      - 'renv.lock'
+      - '.github/workflows/rebuild-base-image.yml'
+    branches:
+      - master
+      - 'release/**'
+      - ACAS-967-scheduled-rebuilds
+
+jobs:
+  # Determine which branches to build
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set branch matrix
+        id: set-matrix
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            # Manual trigger with specific branch
+            echo "matrix={\"branch\":[\"${{ github.event.inputs.branch }}\"]}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # Push event - just build the pushed branch
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            echo "matrix={\"branch\":[\"$BRANCH\"]}" >> $GITHUB_OUTPUT
+          else
+            # Scheduled run - build master and active release branches
+            # Get release branches that have had commits in the last 6 months
+            BRANCHES='["master"'
+            for branch in $(git branch -r --list 'origin/release/*' | sed 's|origin/||' | tr -d ' '); do
+              LAST_COMMIT=$(git log -1 --format=%ct "origin/$branch" 2>/dev/null || echo 0)
+              SIX_MONTHS_AGO=$(date -d '6 months ago' +%s 2>/dev/null || date -v-6m +%s)
+              if [ "$LAST_COMMIT" -gt "$SIX_MONTHS_AGO" ]; then
+                BRANCHES="$BRANCHES,\"$branch\""
+              fi
+            done
+            BRANCHES="$BRANCHES]"
+            echo "matrix={\"branch\":$BRANCHES}" >> $GITHUB_OUTPUT
+          fi
+
+  # Build each architecture on its native runner (much faster than QEMU)
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.prepare.outputs.matrix).branch }}
+        # Cross-product: each branch builds on both architectures
+        arch: [amd64, arm64]
+        include:
+          # Map arch to platform/runner details
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          BRANCH="${{ matrix.branch }}"
+          # Sanitize branch name for docker tag (replace / with -)
+          TAG_BRANCH=$(echo "$BRANCH" | sed 's|/|-|g')
+
+          # Architecture-specific tag for this build
+          ARCH_TAG="mcneilco/acas-r-repo:${TAG_BRANCH}-${{ matrix.arch }}"
+
+          echo "arch_tag=$ARCH_TAG" >> $GITHUB_OUTPUT
+          echo "tag_branch=$TAG_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Build and push (single architecture)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.repo
+          push: true
+          tags: ${{ steps.tags.outputs.arch_tag }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache
+          cache-to: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache,mode=max
+
+  # Merge per-architecture images into a single multi-arch manifest
+  merge:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.prepare.outputs.matrix).branch }}
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate final tags
+        id: tags
+        run: |
+          BRANCH="${{ matrix.branch }}"
+          TAG_BRANCH=$(echo "$BRANCH" | sed 's|/|-|g')
+          DATE=$(date +%Y%m%d)
+
+          # Final multi-arch tags
+          echo "tag_branch=$TAG_BRANCH" >> $GITHUB_OUTPUT
+          echo "tag_date=${TAG_BRANCH}-${DATE}" >> $GITHUB_OUTPUT
+          echo "tag_build=${TAG_BRANCH}-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Create multi-arch manifest
+        run: |
+          # Combine amd64 and arm64 images into multi-arch manifests
+          docker buildx imagetools create -t mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }} \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-amd64 \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-arm64
+
+          docker buildx imagetools create -t mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_date }} \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-amd64 \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-arm64
+
+          docker buildx imagetools create -t mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_build }} \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-amd64 \
+            mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-arm64
+
+      - name: Summary
+        run: |
+          echo "## Base Image Rebuild Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Multi-arch tags pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_build }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Architecture-specific tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-amd64" >> $GITHUB_STEP_SUMMARY
+          echo "mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-arm64" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

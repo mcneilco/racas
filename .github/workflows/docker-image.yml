@@ -32,6 +32,28 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: Determine base image version
+        id: base-image
+        run: |
+          # Sanitize branch name (same as rebuild-base-image.yml)
+          BRANCH_TAG="${GITHUB_REF_NAME//\//-}"
+
+          # Check if branch-specific base image exists
+          if docker manifest inspect mcneilco/acas-r-repo:${BRANCH_TAG} > /dev/null 2>&1; then
+            echo "version=${BRANCH_TAG}" >> $GITHUB_OUTPUT
+            echo "Using branch-specific base: ${BRANCH_TAG}"
+          else
+            # Fallback to latest release tag
+            LATEST_RELEASE=$(git tag -l 'release-*' --sort=-v:refname | head -1 | sed 's/\//-/g')
+            if [ -n "$LATEST_RELEASE" ] && docker manifest inspect mcneilco/acas-r-repo:${LATEST_RELEASE} > /dev/null 2>&1; then
+              echo "version=${LATEST_RELEASE}" >> $GITHUB_OUTPUT
+              echo "Falling back to release: ${LATEST_RELEASE}"
+            else
+              echo "version=master" >> $GITHUB_OUTPUT
+              echo "Falling back to master"
+            fi
+          fi
+      -
         name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -40,5 +62,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           file: Dockerfile
           platforms: linux/amd64,linux/arm64/v8
+          build-args: |
+            REPO_IMAGE_VERSION=${{ steps.base-image.outputs.version }}
           cache-from: type=registry,ref=${{ github.repository }}-oss:cache
           cache-to: type=registry,ref=${{ github.repository }}-oss:cache,mode=max

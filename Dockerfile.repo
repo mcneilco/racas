@@ -1,13 +1,15 @@
+# syntax=docker/dockerfile:1
 FROM quay.io/centos/centos:stream9
 
 # R-Java
-ENV JAVA_VERSION 1.8.0
-ENV JAVA_HOME /usr/lib/jvm/java
+ENV JAVA_VERSION=1.8.0
+ENV JAVA_HOME=/usr/lib/jvm/java
 RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
     export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/$(arch):$JAVA_HOME/jre/lib/$(arch)/server/ && \
     /sbin/ldconfig
 
-RUN \
+# Use BuildKit cache mount to speed up repeated builds
+RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
   echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
   dnf update -y && \
   dnf upgrade -y && \
@@ -15,12 +17,12 @@ RUN \
   dnf config-manager --set-enabled crb && \
   dnf module enable -y postgresql:15 && \
   dnf install postgresql libpq libpq-devel -y && \
-  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset sudo cmake initscripts && \
+  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset cmake initscripts && \
   dnf builddep -y R-devel && \
   dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   dnf clean all
 
-ENV R_VERSION 4.4.0
+ENV R_VERSION=4.4.0
 RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
@@ -38,44 +40,63 @@ RUN ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
 
 RUN R CMD javareconf
 
+# Install renv globally for package management (before COPY to optimize layer caching)
+RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org/')"
+
 RUN \
   mkdir -p ~/rpmbuild/SOURCES && \
   mkdir -p ~/rpmbuild/SPECS
 
-ENV RAPACHE_VERSION master
+# Pin rapache to a specific release tag for reproducible builds
+# Check https://github.com/jeffreyhorner/rapache/tags for latest releases
+ENV RAPACHE_VERSION=v1.2.11
 RUN \
   cd ~ && \
-  wget https://github.com/jeffreyhorner/rapache/archive/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
+  wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
   tar xzvf rapache-$RAPACHE_VERSION.tar.gz && \
-  cd rapache-$RAPACHE_VERSION && \
+  cd rapache-${RAPACHE_VERSION#v} && \
   ./configure \
     --with-R=/usr/local/bin/R\
     --with-apreq2-config=/usr/bin/apreq2-config && \
   make && \
   make install
 
-RUN wget https://github.com/stevengj/nlopt/archive/v2.7.1.tar.gz && \
-    tar -xzvf v2.7.1.tar.gz && \
-    cd nlopt-2.7.1 && \
-    cmake . && make && sudo make install
-ENV LD_LIBRARY_PATH /nlopt-2.7.1:${LD_LIBRARY_PATH}
+ENV NLOPT_VERSION=2.7.1
+RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
+    tar -xzvf v${NLOPT_VERSION}.tar.gz && \
+    cd nlopt-${NLOPT_VERSION} && \
+    cmake . && make && make install
+ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
 # Run ldconfig to update the shared library cache
 RUN ldconfig
 
 RUN	useradd -u 1000 -ms /bin/bash runner
-ENV ACAS_HOME /home/runner/build
+ENV ACAS_HOME=/home/runner/build
 RUN echo $ACAS_HOME && mkdir $ACAS_HOME
 
 WORKDIR $ACAS_HOME
 
-ENV R_LIBS $ACAS_HOME/r_libs
+ENV R_LIBS=$ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
 
 COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
+# renv.lock pins exact package versions for reproducible builds
+COPY	renv.lock $ACAS_HOME
 RUN chown -R runner:runner $ACAS_HOME
 
 USER runner
-RUN  Rscript -e "source('installation.R');installDeps(sections = c('Imports', 'Suggests'));"
+# R package installation using renv for reproducibility:
+# - Versions pinned in renv.lock (see README for update instructions)
+# - Cache mount stores compiled packages to speed up rebuilds
+ARG TARGETARCH
+RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGETARCH \
+    Rscript -e " \
+      options(repos = c(CRAN = 'https://cloud.r-project.org')); \
+      lib <- Sys.getenv('R_LIBS'); \
+      # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
+      renv::restore(packages = c('digest', 'testthat', 'fansi'), library = lib, prompt = FALSE); \
+      renv::restore(packages = c('rematch2', 'tibble'), library = lib, prompt = FALSE); \
+      renv::restore(library = lib, prompt = FALSE)"
 
 CMD ["bin/acas.sh", "run", "rservices"]
