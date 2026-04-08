@@ -126,7 +126,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblzma5 \
     libbz2-1.0 \
     zlib1g \
-    libicu72 \
     libgomp1 \
     libgfortran5 \
     libreadline8 \
@@ -155,6 +154,11 @@ COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib/apache2/modules/m
 
 # Copy libapreq2 (not available in Debian repos)
 COPY --from=builder /lib64/libapreq2.so.3* /usr/lib/
+
+# Copy ICU libs from builder (R compiled against CentOS ICU 67, Debian has 72)
+COPY --from=builder /lib64/libicuuc.so.67* /usr/lib/
+COPY --from=builder /lib64/libicui18n.so.67* /usr/lib/
+COPY --from=builder /lib64/libicudata.so.67* /usr/lib/
 
 # Copy and relocate nlopt to standard library path
 COPY --from=builder /nlopt-2.7.1/libnlopt.so.0.11.1 /usr/local/lib/
