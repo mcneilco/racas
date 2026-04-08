@@ -112,9 +112,8 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
 
 # Runtime dependencies (RHEL packages via microdnf)
 RUN microdnf install -y \
-    # Apache + libapreq2 for rapache
+    # Apache for rapache (libapreq2 copied from builder)
     httpd \
-    libapreq2 \
     # Java 1.8 for rJava (same as builder)
     java-1.8.0-openjdk-headless \
     # PostgreSQL client libs (for RPostgreSQL)
@@ -153,7 +152,10 @@ COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner
 # Copy rapache module (same path as builder since same distro family)
 COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib64/httpd/modules/mod_R.so
 
-# Copy nlopt (not in UBI repos, keep from builder)
+# Copy libapreq2 (not in UBI repos)
+COPY --from=builder /lib64/libapreq2.so.3* /lib64/
+
+# Copy nlopt (not in UBI repos)
 COPY --from=builder /nlopt-2.7.1/libnlopt.so.0.11.1 /usr/local/lib/
 RUN ln -s /usr/local/lib/libnlopt.so.0.11.1 /usr/local/lib/libnlopt.so.0 && \
     ln -s /usr/local/lib/libnlopt.so.0 /usr/local/lib/libnlopt.so && \
