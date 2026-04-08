@@ -112,9 +112,9 @@ FROM debian:bookworm-slim AS runtime
 
 # Runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Apache for rapache (mod_apreq2 libs copied from builder)
+    # Apache for rapache
     apache2 \
-    libapreq2-3 \
+    libaprutil1 \
     # Java 17 for rJava (Java 8 not in Debian Bookworm)
     openjdk-17-jre-headless \
     # PostgreSQL client libs (for RPostgreSQL)
@@ -151,6 +151,9 @@ COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner
 
 # Copy rapache module (Debian uses different Apache module path)
 COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib/apache2/modules/mod_R.so
+
+# Copy libapreq2 (not available in Debian repos)
+COPY --from=builder /lib64/libapreq2.so.3* /usr/lib/
 
 # Copy and relocate nlopt to standard library path
 COPY --from=builder /nlopt-2.7.1/libnlopt.so.0.11.1 /usr/local/lib/
