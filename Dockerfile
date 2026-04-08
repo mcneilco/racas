@@ -1,6 +1,7 @@
 ARG NODE_VERSION=20
+ARG REPO_IMAGE_VERSION=master
 FROM node:${NODE_VERSION}-slim AS node
-FROM mcneilco/acas-r-repo:2024.1.0
+FROM mcneilco/acas-r-repo:${REPO_IMAGE_VERSION}
 
 USER root
 # NODE
