@@ -120,7 +120,6 @@ RUN microdnf install -y \
     libpq \
     # R runtime dependencies (from ldd analysis)
     pcre2 \
-    libdeflate \
     xz-libs \
     bzip2-libs \
     zlib \
@@ -152,8 +151,9 @@ COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner
 # Copy rapache module (same path as builder since same distro family)
 COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib64/httpd/modules/mod_R.so
 
-# Copy libapreq2 (not in UBI repos)
+# Copy libs not in UBI repos
 COPY --from=builder /lib64/libapreq2.so.3* /lib64/
+COPY --from=builder /lib64/libdeflate.so.0* /lib64/
 
 # Copy nlopt (not in UBI repos)
 COPY --from=builder /nlopt-2.7.1/libnlopt.so.0.11.1 /usr/local/lib/
