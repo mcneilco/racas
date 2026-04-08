@@ -71,7 +71,7 @@ RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
     tar -xzvf v${NLOPT_VERSION}.tar.gz && \
     cd nlopt-${NLOPT_VERSION} && \
     cmake . && make && make install
-ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 # Run ldconfig to update the shared library cache
 RUN ldconfig
 
@@ -112,11 +112,11 @@ FROM debian:bookworm-slim AS runtime
 
 # Runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Apache + mod_apreq2 for rapache
+    # Apache for rapache (mod_apreq2 libs copied from builder)
     apache2 \
-    libapache2-mod-apreq2 \
-    # Java 8 for rJava
-    openjdk-8-jre-headless \
+    libapreq2-3 \
+    # Java 17 for rJava (Java 8 not in Debian Bookworm)
+    openjdk-17-jre-headless \
     # PostgreSQL client libs (for RPostgreSQL)
     libpq5 \
     # R runtime dependencies (from ldd analysis)
@@ -160,7 +160,7 @@ RUN ln -s /usr/local/lib/libnlopt.so.0.11.1 /usr/local/lib/libnlopt.so.0 && \
 
 # Environment setup
 ARG TARGETARCH
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-${TARGETARCH:-amd64}
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-${TARGETARCH:-amd64}
 ENV R_VERSION=4.4.0
 ENV R_LIBS=/home/runner/build/r_libs
 ENV ACAS_HOME=/home/runner/build
