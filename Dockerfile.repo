@@ -148,6 +148,7 @@ COPY --from=builder /opt/R/4.4.0 /opt/R/4.4.0
 RUN ln -s /opt/R/4.4.0/bin/R /usr/local/bin/R && \
     ln -s /opt/R/4.4.0/bin/Rscript /usr/local/bin/Rscript && \
     echo "/opt/R/4.4.0/lib/R/lib" > /etc/ld.so.conf.d/R.conf && \
+    echo "/usr/lib/jvm/jre-1.8.0-openjdk/lib/server" > /etc/ld.so.conf.d/java.conf && \
     ldconfig
 
 # Copy R packages from builder
