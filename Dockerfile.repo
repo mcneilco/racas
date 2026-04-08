@@ -120,6 +120,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # PostgreSQL client libs (for RPostgreSQL)
     libpq5 \
     # R runtime dependencies (from ldd analysis)
+    libtirpc3 \
     libpcre2-8-0 \
     libdeflate0 \
     liblzma5 \
