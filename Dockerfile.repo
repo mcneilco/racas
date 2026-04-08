@@ -146,7 +146,9 @@ RUN useradd -u 1000 -ms /bin/bash runner
 # Copy R installation from builder
 COPY --from=builder /opt/R/4.4.0 /opt/R/4.4.0
 RUN ln -s /opt/R/4.4.0/bin/R /usr/local/bin/R && \
-    ln -s /opt/R/4.4.0/bin/Rscript /usr/local/bin/Rscript
+    ln -s /opt/R/4.4.0/bin/Rscript /usr/local/bin/Rscript && \
+    echo "/opt/R/4.4.0/lib/R/lib" > /etc/ld.so.conf.d/R.conf && \
+    ldconfig
 
 # Copy R packages from builder
 COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner/build/r_libs
