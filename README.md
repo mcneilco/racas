@@ -56,7 +56,7 @@ The `renv.lock` file pins R package versions for reproducible builds. To update 
 
 1. Start a container from a known-working image:
    ```
-   docker run -it mcneilco/racas-oss:2024.1.0 bash
+   docker run -it --name racas-oss-master mcneilco/racas-oss:master bash
    ```
 
 2. Inside the container, run R and generate the lockfile:
@@ -69,7 +69,7 @@ The `renv.lock` file pins R package versions for reproducible builds. To update 
 
 3. Copy the lockfile out:
    ```
-   docker cp <container_id>:/home/runner/build/renv.lock ./renv.lock
+   docker cp racas-oss-master:/home/runner/build/renv.lock ./renv.lock
    ```
 
 4. Commit the updated lockfile.

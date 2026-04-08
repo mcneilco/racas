@@ -3,10 +3,7 @@ name: Rebuild Base Image
 # Scheduled rebuilds of acas-r-repo base image to pick up CVE fixes
 # This builds Dockerfile.repo which contains CentOS, R, rapache, and system deps
 #
-# Architecture strategy:
-# - amd64: Built on ubuntu-latest, uses PPM pre-built R package binaries
-# - arm64: Built on ubuntu-24.04-arm (native), compiles R packages from source
-# - Both are combined into a single multi-arch manifest
+# Multi-arch build on native runners (amd64 and arm64) for much faster builds than QEMU
 
 on:
   schedule:

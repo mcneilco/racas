@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
   dnf config-manager --set-enabled crb && \
   dnf module enable -y postgresql:15 && \
   dnf install postgresql libpq libpq-devel -y && \
-  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset sudo cmake initscripts && \
+  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset cmake initscripts && \
   dnf builddep -y R-devel && \
   dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   dnf clean all
