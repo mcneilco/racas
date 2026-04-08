@@ -2,8 +2,8 @@
 FROM quay.io/centos/centos:stream9
 
 # R-Java
-ENV JAVA_VERSION 1.8.0
-ENV JAVA_HOME /usr/lib/jvm/java
+ENV JAVA_VERSION=1.8.0
+ENV JAVA_HOME=/usr/lib/jvm/java
 RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
     export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/$(arch):$JAVA_HOME/jre/lib/$(arch)/server/ && \
     /sbin/ldconfig
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
   dnf install -y MTA mod_ssl /usr/sbin/semanage && \
   dnf clean all
 
-ENV R_VERSION 4.4.0
+ENV R_VERSION=4.4.0
 RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
@@ -49,7 +49,7 @@ RUN \
 
 # Pin rapache to a specific release tag for reproducible builds
 # Check https://github.com/jeffreyhorner/rapache/tags for latest releases
-ENV RAPACHE_VERSION v1.2.11
+ENV RAPACHE_VERSION=v1.2.11
 RUN \
   cd ~ && \
   wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
@@ -61,7 +61,7 @@ RUN \
   make && \
   make install
 
-ENV NLOPT_VERSION 2.7.1
+ENV NLOPT_VERSION=2.7.1
 RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
     tar -xzvf v${NLOPT_VERSION}.tar.gz && \
     cd nlopt-${NLOPT_VERSION} && \
@@ -71,13 +71,12 @@ ENV LD_LIBRARY_PATH /nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
 RUN ldconfig
 
 RUN	useradd -u 1000 -ms /bin/bash runner
-ENV ACAS_HOME /home/runner/build
+ENV ACAS_HOME=/home/runner/build
 RUN echo $ACAS_HOME && mkdir $ACAS_HOME
 
 WORKDIR $ACAS_HOME
 
-ENV R_LIBS $ACAS_HOME/r_libs
-ENV RENV_PATHS_LIBRARY $ACAS_HOME/r_libs
+ENV R_LIBS=$ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
 
 COPY	DESCRIPTION $ACAS_HOME
