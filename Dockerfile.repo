@@ -135,6 +135,10 @@ RUN microdnf install -y \
     libpng \
     openssl-libs \
     libtirpc \
+    # Graphics libraries for R plots (Cairo backend)
+    libtiff \
+    libjpeg-turbo \
+    cairo \
     # Fonts (for R plots)
     fontconfig \
     dejavu-sans-fonts \
