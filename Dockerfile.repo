@@ -66,7 +66,7 @@ RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
     tar -xzvf v${NLOPT_VERSION}.tar.gz && \
     cd nlopt-${NLOPT_VERSION} && \
     cmake . && make && make install
-ENV LD_LIBRARY_PATH /nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
 # Run ldconfig to update the shared library cache
 RUN ldconfig
 
