@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     dnf module enable -y postgresql:15 && \
     dnf install -y \
         postgresql libpq libpq-devel \
-        which make wget tar cmake \
+        which make wget tar cmake redhat-rpm-config \
         httpd-devel libapreq2-devel \
         libcurl-devel openssl-devel libpng-devel curl-devel libxml2-devel \
         llvm-devel llvm-toolset \
