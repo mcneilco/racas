@@ -111,6 +111,7 @@ RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGE
 FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
 
 # Runtime dependencies (RHEL packages via microdnf)
+# Note: libcurl-minimal is pre-installed and conflicts with libcurl
 RUN microdnf install -y \
     # Apache for rapache (libapreq2 copied from builder)
     httpd \
@@ -127,7 +128,6 @@ RUN microdnf install -y \
     libgomp \
     libgfortran \
     readline \
-    libcurl \
     libxml2 \
     libpng \
     openssl-libs \
