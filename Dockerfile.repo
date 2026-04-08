@@ -115,6 +115,8 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
 RUN microdnf install -y \
     # Apache for rapache (libapreq2 copied from builder)
     httpd \
+    # Basic utilities needed by R
+    which \
     # Java 1.8 for rJava (same as builder)
     java-1.8.0-openjdk-headless \
     # PostgreSQL client libs (for RPostgreSQL)
