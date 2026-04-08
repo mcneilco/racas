@@ -139,6 +139,9 @@ RUN microdnf install -y \
     libtiff \
     libjpeg-turbo \
     cairo \
+    pango \
+    libSM \
+    libXt \
     # Fonts (for R plots)
     fontconfig \
     dejavu-sans-fonts \
