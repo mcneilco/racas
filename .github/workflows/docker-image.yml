@@ -35,24 +35,34 @@ jobs:
         name: Determine base image version
         id: base-image
         run: |
-          # Sanitize branch name (same as rebuild-base-image.yml)
-          BRANCH_TAG="${GITHUB_REF_NAME//\//-}"
+          # Sanitize ref name (same as rebuild-base-image.yml)
+          REF_TAG="${GITHUB_REF_NAME//\//-}"
 
-          # Check if branch-specific base image exists
-          if docker manifest inspect mcneilco/acas-r-repo:${BRANCH_TAG} > /dev/null 2>&1; then
-            echo "version=${BRANCH_TAG}" >> $GITHUB_OUTPUT
-            echo "Using branch-specific base: ${BRANCH_TAG}"
-          else
-            # Fallback to latest release tag
-            LATEST_RELEASE=$(git tag -l 'release-*' --sort=-v:refname | head -1 | sed 's/\//-/g')
-            if [ -n "$LATEST_RELEASE" ] && docker manifest inspect mcneilco/acas-r-repo:${LATEST_RELEASE} > /dev/null 2>&1; then
-              echo "version=${LATEST_RELEASE}" >> $GITHUB_OUTPUT
-              echo "Falling back to release: ${LATEST_RELEASE}"
-            else
-              echo "version=master" >> $GITHUB_OUTPUT
-              echo "Falling back to master"
+          # Check if ref-specific base image exists
+          if docker manifest inspect mcneilco/acas-r-repo:${REF_TAG} > /dev/null 2>&1; then
+            echo "version=${REF_TAG}" >> $GITHUB_OUTPUT
+            echo "Using ref-specific base: ${REF_TAG}"
+            exit 0
+          fi
+
+          # If on a tag, find which branch contains this commit
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "Tag detected, finding containing branch..."
+            git fetch --quiet origin 'refs/heads/release/*:refs/remotes/origin/release/*' 'refs/heads/master:refs/remotes/origin/master' || true
+            CONTAINING_BRANCH=$(git branch -r --contains HEAD 2>/dev/null | grep -E 'origin/(release/|master)' | head -1 | sed 's|.*origin/||' | tr '/' '-')
+            if [ -n "$CONTAINING_BRANCH" ]; then
+              echo "Found containing branch: ${CONTAINING_BRANCH}"
+              if docker manifest inspect mcneilco/acas-r-repo:${CONTAINING_BRANCH} > /dev/null 2>&1; then
+                echo "version=${CONTAINING_BRANCH}" >> $GITHUB_OUTPUT
+                echo "Using branch containing tag: ${CONTAINING_BRANCH}"
+                exit 0
+              fi
             fi
           fi
+
+          # Final fallback to master
+          echo "version=master" >> $GITHUB_OUTPUT
+          echo "Falling back to master"
       -
         name: Build and push
         uses: docker/build-push-action@v6
