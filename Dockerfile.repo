@@ -54,7 +54,7 @@ RUN \
   cd ~ && \
   wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
   tar xzvf rapache-$RAPACHE_VERSION.tar.gz && \
-  cd rapache-${RAPACHE_VERSION} && \
+  cd rapache-${RAPACHE_VERSION#v} && \
   ./configure \
     --with-R=/usr/local/bin/R\
     --with-apreq2-config=/usr/bin/apreq2-config && \
