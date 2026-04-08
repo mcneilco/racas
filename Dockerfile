@@ -1,5 +1,5 @@
 ARG NODE_VERSION=20
-ARG REPO_IMAGE_VERSION=release-2026.2.x
+ARG REPO_IMAGE_VERSION=master
 FROM node:${NODE_VERSION}-slim AS node
 FROM mcneilco/acas-r-repo:${REPO_IMAGE_VERSION}
 
