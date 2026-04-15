@@ -1,28 +1,49 @@
 # syntax=docker/dockerfile:1
-FROM quay.io/centos/centos:stream9
 
-# R-Java
-ENV JAVA_VERSION=1.8.0
+# =============================================================================
+# Build configuration
+# =============================================================================
+ARG R_VERSION=4.4.0
+ARG JAVA_VERSION=1.8.0
+ARG NLOPT_VERSION=2.7.1
+ARG RAPACHE_VERSION=v1.2.11
+
+# =============================================================================
+# STAGE 1: Builder (CentOS Stream 9)
+# Compiles R, rapache, nlopt from source and installs R packages
+# =============================================================================
+FROM quay.io/centos/centos:stream9 AS builder
+
+ARG R_VERSION
+ARG JAVA_VERSION
+ARG NLOPT_VERSION
+ARG RAPACHE_VERSION
+
+# Java environment for rJava compilation
 ENV JAVA_HOME=/usr/lib/jvm/java
 RUN echo "$JAVA_HOME/jre/lib/$(arch)/server/" > /etc/ld.so.conf.d/rApache_rJava.conf && \
-    export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/$(arch):$JAVA_HOME/jre/lib/$(arch)/server/ && \
-    /sbin/ldconfig
+    ldconfig
 
-# Use BuildKit cache mount to speed up repeated builds
+# Install build dependencies
 RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
-  echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
-  dnf update -y && \
-  dnf upgrade -y && \
-  dnf install -y epel-release && \
-  dnf config-manager --set-enabled crb && \
-  dnf module enable -y postgresql:15 && \
-  dnf install postgresql libpq libpq-devel -y && \
-  dnf install -y rpm-build which make wget tar httpd-devel libapreq2-devel libcurl-devel openssl-devel libpng-devel java-1.8.0-openjdk java-1.8.0-openjdk-devel curl-devel libxml2-devel llvm-devel llvm-toolset cmake initscripts && \
-  dnf builddep -y R-devel && \
-  dnf install -y MTA mod_ssl /usr/sbin/semanage && \
-  dnf clean all
+    echo "fastestmirror=1" >> /etc/dnf/dnf.conf && \
+    dnf update -y && dnf upgrade -y && \
+    dnf install -y epel-release && \
+    dnf config-manager --set-enabled crb && \
+    dnf module enable -y postgresql:15 && \
+    dnf install -y \
+        postgresql libpq libpq-devel \
+        which make wget tar cmake redhat-rpm-config \
+        httpd-devel libapreq2-devel \
+        libcurl-devel openssl-devel libpng-devel curl-devel libxml2-devel \
+        llvm-devel llvm-toolset \
+        java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel \
+        MTA mod_ssl /usr/sbin/semanage && \
+    dnf builddep -y R-devel && \
+    dnf clean all
 
-ENV R_VERSION=4.4.0
+# Compile R from source
+ENV R_VERSION=${R_VERSION}
 RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
     tar -xzvf R-${R_VERSION}.tar.gz && \
     cd R-${R_VERSION} && \
@@ -32,71 +53,108 @@ RUN curl -O https://cran.rstudio.com/src/base/R-4/R-${R_VERSION}.tar.gz && \
         --enable-R-shlib \
         --with-blas \
         --with-lapack && \
-    make && \
-    make install
+    make && make install && \
+    ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
+    ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript && \
+    R CMD javareconf
 
-RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R
-RUN ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript
-
-RUN R CMD javareconf
-
-# Install renv globally for package management (before COPY to optimize layer caching)
+# Install renv for R package management
 RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org/')"
 
-RUN \
-  mkdir -p ~/rpmbuild/SOURCES && \
-  mkdir -p ~/rpmbuild/SPECS
+# Compile rapache (Apache R module)
+# See https://github.com/jeffreyhorner/rapache/tags for releases
+ENV RAPACHE_VERSION=${RAPACHE_VERSION}
+RUN cd ~ && \
+    wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/${RAPACHE_VERSION}.tar.gz \
+        -O rapache-${RAPACHE_VERSION}.tar.gz && \
+    tar xzvf rapache-${RAPACHE_VERSION}.tar.gz && \
+    cd rapache-${RAPACHE_VERSION#v} && \
+    ./configure --with-R=/usr/local/bin/R --with-apreq2-config=/usr/bin/apreq2-config && \
+    make && make install
 
-# Pin rapache to a specific release tag for reproducible builds
-# Check https://github.com/jeffreyhorner/rapache/tags for latest releases
-ENV RAPACHE_VERSION=v1.2.11
-RUN \
-  cd ~ && \
-  wget https://github.com/jeffreyhorner/rapache/archive/refs/tags/$RAPACHE_VERSION.tar.gz -O rapache-$RAPACHE_VERSION.tar.gz && \
-  tar xzvf rapache-$RAPACHE_VERSION.tar.gz && \
-  cd rapache-${RAPACHE_VERSION#v} && \
-  ./configure \
-    --with-R=/usr/local/bin/R\
-    --with-apreq2-config=/usr/bin/apreq2-config && \
-  make && \
-  make install
-
-ENV NLOPT_VERSION=2.7.1
+# Compile nlopt (optimization library for nloptr R package)
+ENV NLOPT_VERSION=${NLOPT_VERSION}
 RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
     tar -xzvf v${NLOPT_VERSION}.tar.gz && \
     cd nlopt-${NLOPT_VERSION} && \
-    cmake . && make && make install
-ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}:${LD_LIBRARY_PATH}
-# Run ldconfig to update the shared library cache
-RUN ldconfig
+    cmake . && make && make install && \
+    ldconfig
+ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 
-RUN	useradd -u 1000 -ms /bin/bash runner
+# Setup build user and directories
 ENV ACAS_HOME=/home/runner/build
-RUN echo $ACAS_HOME && mkdir $ACAS_HOME
+ENV R_LIBS=${ACAS_HOME}/r_libs
+RUN useradd -u 1000 -ms /bin/bash runner && \
+    mkdir -p ${R_LIBS} && \
+    chown -R runner:runner ${ACAS_HOME}
 
-WORKDIR $ACAS_HOME
+WORKDIR ${ACAS_HOME}
+COPY --chown=runner:runner DESCRIPTION R/installation.R renv.lock ${ACAS_HOME}/
 
-ENV R_LIBS=$ACAS_HOME/r_libs
-RUN mkdir $ACAS_HOME/r_libs
-
-COPY	DESCRIPTION $ACAS_HOME
-COPY	R/installation.R $ACAS_HOME
-# renv.lock pins exact package versions for reproducible builds
-COPY	renv.lock $ACAS_HOME
-RUN chown -R runner:runner $ACAS_HOME
-
+# Install R packages using renv (versions pinned in renv.lock)
 USER runner
-# R package installation using renv for reproducibility:
-# - Versions pinned in renv.lock (see README for update instructions)
-# - Cache mount stores compiled packages to speed up rebuilds
 ARG TARGETARCH
 RUN --mount=type=cache,target=/home/runner/.cache/R/renv,uid=1000,id=renv-$TARGETARCH \
     Rscript -e " \
       options(repos = c(CRAN = 'https://cloud.r-project.org')); \
       lib <- Sys.getenv('R_LIBS'); \
-      # Pre-install packages with LinkingTo deps (renv doesn't order these correctly) \
       renv::restore(packages = c('digest', 'testthat', 'fansi'), library = lib, prompt = FALSE); \
       renv::restore(packages = c('rematch2', 'tibble'), library = lib, prompt = FALSE); \
       renv::restore(library = lib, prompt = FALSE)"
 
-CMD ["bin/acas.sh", "run", "rservices"]
+# =============================================================================
+# STAGE 2: Runtime (UBI9 Minimal)
+# Minimal RHEL-based runtime for binary compatibility with builder
+# =============================================================================
+FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
+
+ARG R_VERSION
+ARG JAVA_VERSION
+ARG NLOPT_VERSION
+
+# Runtime dependencies
+# Note: libcurl-minimal pre-installed, conflicts with full libcurl
+RUN microdnf install -y \
+    httpd \
+    which initscripts \
+    java-${JAVA_VERSION}-openjdk-headless \
+    libpq \
+    pcre2 xz-libs bzip2-libs zlib libicu libgomp libgfortran \
+    readline libxml2 libpng openssl-libs libtirpc \
+    libtiff libjpeg-turbo cairo pango libSM libXt \
+    fontconfig dejavu-sans-fonts \
+    && microdnf clean all
+
+# Setup user and copy R installation
+RUN useradd -u 1000 -ms /bin/bash runner
+COPY --from=builder /opt/R/${R_VERSION} /opt/R/${R_VERSION}
+RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
+    ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript && \
+    echo "/opt/R/${R_VERSION}/lib/R/lib" > /etc/ld.so.conf.d/R.conf && \
+    dirname $(find /usr/lib/jvm -name libjvm.so 2>/dev/null | head -1) > /etc/ld.so.conf.d/java.conf && \
+    ldconfig
+
+# Copy R packages and modules from builder
+COPY --from=builder --chown=runner:runner /home/runner/build/r_libs /home/runner/build/r_libs
+COPY --from=builder /usr/lib64/httpd/modules/mod_R.so /usr/lib64/httpd/modules/mod_R.so
+
+# Copy libraries not available in UBI repos
+COPY --from=builder /lib64/libapreq2.so.3* /lib64/
+COPY --from=builder /lib64/libdeflate.so.0* /lib64/
+COPY --from=builder /nlopt-${NLOPT_VERSION}/libnlopt.so.0* /usr/local/lib/
+RUN ldconfig
+
+# Environment configuration
+ENV JAVA_HOME=/usr/lib/jvm/jre-${JAVA_VERSION}-openjdk \
+    R_VERSION=${R_VERSION} \
+    R_LIBS=/home/runner/build/r_libs \
+    ACAS_HOME=/home/runner/build \
+    LD_LIBRARY_PATH=/opt/R/${R_VERSION}/lib/R/lib:/usr/local/lib
+
+# Final setup
+WORKDIR ${ACAS_HOME}
+RUN mkdir -p ${ACAS_HOME} && \
+    R CMD javareconf && \
+    chown -R runner:runner /home/runner
+
+USER runner

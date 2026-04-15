@@ -26,6 +26,7 @@ on:
       - master
       - 'release/**'
       - ACAS-967-scheduled-rebuilds
+      - ACAS-967-slimmer-base
 
 jobs:
   # Determine which branches to build
