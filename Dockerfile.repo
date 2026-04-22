@@ -79,7 +79,7 @@ RUN wget https://github.com/stevengj/nlopt/archive/v${NLOPT_VERSION}.tar.gz && \
     cd nlopt-${NLOPT_VERSION} && \
     cmake . && make && make install && \
     ldconfig
-ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/nlopt-${NLOPT_VERSION}
 
 # Setup build user and directories
 ENV ACAS_HOME=/home/runner/build
@@ -130,7 +130,7 @@ RUN useradd -u 1000 -ms /bin/bash runner
 COPY --from=builder /opt/R/${R_VERSION} /opt/R/${R_VERSION}
 RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
     ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript && \
-    echo "/opt/R/${R_VERSION}/lib/R/lib" > /etc/ld.so.conf.d/R.conf && \
+    dirname $(find /opt/R/${R_VERSION} -name "libR.so" 2>/dev/null | head -1) > /etc/ld.so.conf.d/R.conf && \
     dirname $(find /usr/lib/jvm -name libjvm.so 2>/dev/null | head -1) > /etc/ld.so.conf.d/java.conf && \
     ldconfig
 
@@ -149,7 +149,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-${JAVA_VERSION}-openjdk \
     R_VERSION=${R_VERSION} \
     R_LIBS=/home/runner/build/r_libs \
     ACAS_HOME=/home/runner/build \
-    LD_LIBRARY_PATH=/opt/R/${R_VERSION}/lib/R/lib:/usr/local/lib
+    LD_LIBRARY_PATH=/opt/R/${R_VERSION}/lib/R/lib:/opt/R/${R_VERSION}/lib64/R/lib:/usr/local/lib
 
 # Final setup
 WORKDIR ${ACAS_HOME}
