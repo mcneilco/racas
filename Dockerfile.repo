@@ -79,7 +79,6 @@ WORKDIR $ACAS_HOME
 ENV R_LIBS=$ACAS_HOME/r_libs
 RUN mkdir $ACAS_HOME/r_libs
 
-COPY	DESCRIPTION $ACAS_HOME
 COPY	R/installation.R $ACAS_HOME
 # renv.lock pins exact package versions for reproducible builds
 COPY	renv.lock $ACAS_HOME
