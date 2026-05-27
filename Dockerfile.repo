@@ -89,7 +89,7 @@ RUN useradd -u 1000 -ms /bin/bash runner && \
     chown -R runner:runner ${ACAS_HOME}
 
 WORKDIR ${ACAS_HOME}
-COPY --chown=runner:runner DESCRIPTION R/installation.R renv.lock ${ACAS_HOME}/
+COPY --chown=runner:runner R/installation.R renv.lock ${ACAS_HOME}/
 
 # Install R packages using renv (versions pinned in renv.lock)
 USER runner
