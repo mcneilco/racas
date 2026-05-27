@@ -83,6 +83,7 @@ jobs:
             for branch in $(git branch -r --list 'origin/release/*' | sed 's|origin/||' | tr -d ' '); do
               # Extract version part (e.g., 2026.2 from release/2026.2)
               relver="${branch#release/}"
+              relver="${relver%%.x}"  # Remove trailing .x if present
               if version_ge "$relver" "$MIN_RELEASE_VERSION"; then
                 BRANCHES="$BRANCHES,\"$branch\""
               fi
