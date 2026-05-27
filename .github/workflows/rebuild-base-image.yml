@@ -43,6 +43,33 @@ jobs:
       - name: Set branch matrix
         id: set-matrix
         run: |
+          # Set the minimum release version (e.g., 2026.2)
+          MIN_RELEASE_VERSION="2026.2"
+
+          version_ge() {
+            # Compare two version strings (e.g., 2026.2 >= 2026.1)
+            [ "$1" = "$2" ] && return 0
+            local IFS=.
+            local i ver1=($1) ver2=($2)
+            # Fill empty fields in ver1 with zeros
+            for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)); do
+                ver1[i]=0
+            done
+            # Fill empty fields in ver2 with zeros
+            for ((i=${#ver2[@]}; i<${#ver1[@]}; i++)); do
+                ver2[i]=0
+            done
+            for ((i=0; i<${#ver1[@]}; i++)); do
+                if ((10#${ver1[i]} > 10#${ver2[i]})); then
+                    return 0
+                fi
+                if ((10#${ver1[i]} < 10#${ver2[i]})); then
+                    return 1
+                fi
+            done
+            return 0
+          }
+
           if [ -n "${{ github.event.inputs.branch }}" ]; then
             # Manual trigger with specific branch
             echo "matrix={\"branch\":[\"${{ github.event.inputs.branch }}\"]}" >> $GITHUB_OUTPUT
@@ -51,13 +78,12 @@ jobs:
             BRANCH="${GITHUB_REF#refs/heads/}"
             echo "matrix={\"branch\":[\"$BRANCH\"]}" >> $GITHUB_OUTPUT
           else
-            # Scheduled run - build master and active release branches
-            # Get release branches that have had commits in the last 6 months
+            # Scheduled run - build master and release branches >= MIN_RELEASE_VERSION
             BRANCHES='["master"'
             for branch in $(git branch -r --list 'origin/release/*' | sed 's|origin/||' | tr -d ' '); do
-              LAST_COMMIT=$(git log -1 --format=%ct "origin/$branch" 2>/dev/null || echo 0)
-              SIX_MONTHS_AGO=$(date -d '6 months ago' +%s 2>/dev/null || date -v-6m +%s)
-              if [ "$LAST_COMMIT" -gt "$SIX_MONTHS_AGO" ]; then
+              # Extract version part (e.g., 2026.2 from release/2026.2)
+              relver="${branch#release/}"
+              if version_ge "$relver" "$MIN_RELEASE_VERSION"; then
                 BRANCHES="$BRANCHES,\"$branch\""
               fi
             done
