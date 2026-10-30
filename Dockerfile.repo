@@ -114,7 +114,12 @@ ARG NLOPT_VERSION
 
 # Runtime dependencies
 # Note: libcurl-minimal pre-installed, conflicts with full libcurl
-RUN microdnf install -y \
+# PKG_REFRESH (e.g. a date) is passed by the scheduled rebuild so this layer is
+# re-run instead of served from the registry cache, picking up new UBI errata.
+ARG PKG_REFRESH=unset
+RUN echo "package refresh: ${PKG_REFRESH}" && \
+    microdnf upgrade -y && \
+    microdnf install -y \
     httpd \
     which initscripts \
     java-${JAVA_VERSION}-openjdk-headless \

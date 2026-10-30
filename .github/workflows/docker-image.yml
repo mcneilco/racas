@@ -35,6 +35,9 @@ jobs:
         name: Determine base image version
         id: base-image
         run: |
+          # Date-based cache bust for the OS package upgrade layer (see Dockerfile)
+          echo "pkg_refresh=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
           # Sanitize ref name (same as rebuild-base-image.yml)
           REF_TAG="${GITHUB_REF_NAME//\//-}"
 
@@ -74,5 +77,6 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
           build-args: |
             REPO_IMAGE_VERSION=${{ steps.base-image.outputs.version }}
+            PKG_REFRESH=${{ steps.base-image.outputs.pkg_refresh }}
           cache-from: type=registry,ref=${{ github.repository }}-oss:cache
           cache-to: type=registry,ref=${{ github.repository }}-oss:cache,mode=max
