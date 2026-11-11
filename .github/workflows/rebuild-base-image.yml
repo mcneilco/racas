@@ -22,11 +22,9 @@ on:
       - 'R/installation.R'
       - 'renv.lock'
       - '.github/workflows/rebuild-base-image.yml'
-    branches:
-      - master
-      - 'release/**'
-      - ACAS-967-scheduled-rebuilds
-      - ACAS-967-slimmer-base
+    # No branch filter: any branch that changes the files above (including PR
+    # branches) gets its own acas-r-repo:<branch> image, so base image changes
+    # are built and tested before merge.
 
 jobs:
   # Determine which branches to build
@@ -150,7 +148,11 @@ jobs:
           platforms: ${{ matrix.platform }}
           build-args: |
             PKG_REFRESH=${{ steps.tags.outputs.pkg_refresh }}
-          cache-from: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache
+          # A new branch has no cache of its own yet; fall back to master's so the
+          # R compile stage isn't rebuilt from scratch.
+          cache-from: |
+            type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache
+            type=registry,ref=mcneilco/acas-r-repo:master-${{ matrix.arch }}-cache
           cache-to: type=registry,ref=mcneilco/acas-r-repo:${{ steps.tags.outputs.tag_branch }}-${{ matrix.arch }}-cache,mode=max
 
   # Merge per-architecture images into a single multi-arch manifest
