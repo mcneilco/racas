@@ -27,9 +27,13 @@ USER root
 # PKG_REFRESH (e.g. a date) is passed by CI so this layer is not served stale
 # from the build cache.
 ARG PKG_REFRESH=unset
+# The upgrade can move Java to a new versioned directory, so (re)point the loader at the stable
+# /usr/lib/jvm/jre symlink; a base built before this change has the old versioned path baked in.
 RUN echo "package refresh: ${PKG_REFRESH}" && \
     microdnf upgrade -y && \
-    microdnf clean all
+    microdnf clean all && \
+    ls -d /usr/lib/jvm/jre/lib/*/server > /etc/ld.so.conf.d/java.conf && \
+    ldconfig
 
 # NODE (runtime: PrepareConfigFiles.coffee on startup, confToView.R)
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
@@ -42,6 +46,8 @@ ENV LANG=en_US.UTF-8
 ENV LC_ALL=C.UTF-8
 COPY --chown=runner:runner . /home/runner/racas
 RUN  export R_LIBS=/home/runner/build/r_libs && R CMD INSTALL --no-multiarch --with-keep.source /home/runner/racas
+# Fail the build, instead of shipping a broken image, if Excel reading (XLConnect -> rJava -> JVM) does not work
+RUN  export R_LIBS=/home/runner/build/r_libs && Rscript -e 'library(XLConnect); cat("XLConnect + rJava ok, java", rJava::.jcall("java/lang/System", "S", "getProperty", "java.version"), "\n")'
 EXPOSE 1080
 
 COPY --chown=runner:runner ./inst/bin /home/runner/build/bin

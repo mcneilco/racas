@@ -133,10 +133,12 @@ RUN echo "package refresh: ${PKG_REFRESH}" && \
 # Setup user and copy R installation
 RUN useradd -u 1000 -ms /bin/bash runner
 COPY --from=builder /opt/R/${R_VERSION} /opt/R/${R_VERSION}
+# java.conf points at /usr/lib/jvm/jre (an alternatives symlink) rather than the versioned
+# java-1.8.0-openjdk-<version> directory, so rJava still finds libjvm.so after a Java upgrade.
 RUN ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R && \
     ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript && \
     dirname $(find /opt/R/${R_VERSION} -name "libR.so" 2>/dev/null | head -1) > /etc/ld.so.conf.d/R.conf && \
-    dirname $(find /usr/lib/jvm -name libjvm.so 2>/dev/null | head -1) > /etc/ld.so.conf.d/java.conf && \
+    ls -d /usr/lib/jvm/jre/lib/*/server > /etc/ld.so.conf.d/java.conf && \
     ldconfig
 
 # Copy R packages and modules from builder
